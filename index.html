@@ -1522,7 +1522,7 @@ footer{
           </div>
           <div class="twitch-player">
             <div class="offline-panel" id="offlinePanel">
-              <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+              <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
               <h4>Estamos offline por agora 💜</h4>
               <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
               <div class="offline-actions">
@@ -1786,11 +1786,11 @@ async function verificarStatusTwitch() {
     vodAtual = data.video;
     g('btnVod').style.display = vodAtual ? '' : 'none';
 
-    // Puxa a foto de perfil real da Twitch automaticamente
+    // Atualiza com precisão cirúrgica a imagem real de perfil da Twitch no player offline
     if (data.user) {
       if (data.user.profile_image_url) {
-        const avatarImg = panel.querySelector('img');
-        if (avatarImg) avatarImg.src = data.user.profile_image_url;
+        const avatarOffline = g('offlineAvatarImg');
+        if (avatarOffline) avatarOffline.src = data.user.profile_image_url;
       }
       if (data.user.offline_image_url) {
         panel.style.backgroundImage = `linear-gradient(rgba(11,7,19,.7),rgba(11,7,19,.9)),url(${data.user.offline_image_url})`;
