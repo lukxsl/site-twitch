@@ -898,23 +898,24 @@ nav ul button.on{
 a.si-btn:hover{background:var(--purple-dark)}
 
 .sfull{grid-column:1/-1}
-.cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
-.cfg div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.cfg b{display:block;font-size:1.05rem}.cfg span{font-size:.72rem;color:var(--mute)}
 
-/* Configuração de Jogo Estilizada com Valorant */
+/* Configuração de Jogo Estilizada com Valorant (Fundo Corrigido) */
 .cfg-box-valorant {
-  background: linear-gradient(rgba(14, 10, 22, 0.88), rgba(14, 10, 22, 0.94)), url('https://images.contentstack.io/v3/assets/bltb6530b271fca0b16/blt7204fc72feec5007/6320a174092cb41b1cfcf25d/Valorant_2022_E5A3_KeyArt_5000x2812.jpg');
+  background: linear-gradient(rgba(14, 10, 22, 0.82), rgba(14, 10, 22, 0.90)), url('https://images.contentstack.io/v3/assets/bltb6530b271fca0b16/blt7204fc72feec5007/6320a174092cb41b1cfcf25d/Valorant_2022_E5A3_KeyArt_5000x2812.jpg');
   background-size: cover;
   background-position: center;
+  position: relative;
+  overflow: hidden;
 }
 .cfg-grid-game {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+  position: relative;
+  z-index: 2;
 }
 .cfg-item {
-  background: rgba(11, 7, 19, 0.7);
+  background: rgba(11, 7, 19, 0.75);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 12px 14px;
@@ -1644,7 +1645,7 @@ dialog{width:min(520px,92vw)}
     <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
         <h3>🗳️ Qual o próximo jogo ou filme?</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo/filme</p>
+        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
         <div id="votoLista">Carregando votação...</div>
       </div>
     </div>
@@ -2012,8 +2013,10 @@ const CFG_JOGO = [
   ['Taxa de atualização','240Hz','Monitor principal']
 ];
 
-// Wishlist vazia para o bloco sumir automaticamente
-const UPGRADES = [];
+// Wishlist com a caixa mantida (adicione os itens aqui quando quiser)
+const UPGRADES = [
+  // Exemplo: ['💡', 'Iluminação para a webcam', 'Desejado', 'https://www.amazon.com.br/...']
+];
 
 const btnLoja = (kabum, amazon) => {
   let html = '<div class="si-btns">';
@@ -2024,12 +2027,12 @@ const btnLoja = (kabum, amazon) => {
   return html;
 };
 
-const wishlistHtml = UPGRADES.length > 0 ? `
+const wishlistHtml = `
   <div class="sbox">
     <h3>🛒 Wishlist de upgrades</h3>
-    <ul>${UPGRADES.map(([ic,nome,st,am]) =>
-      `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(st)}</small><b>${esc(nome)}</b></div>${btnLoja('', am)}</li>`).join('')}</ul>
-  </div>` : '';
+    <ul>${UPGRADES.length > 0 ? UPGRADES.map(([ic,nome,st,am]) =>
+      `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(st)}</small><b>${esc(nome)}</b></div>${btnLoja('', am)}</li>`).join('') : '<li style="color:var(--mute);font-size:.85rem;padding:4px 0;">Nenhum item na wishlist no momento. 💜</li>'}</ul>
+  </div>`;
 
 $('setupGrid').innerHTML =
   SETUP.map(c => `<div class="sbox"><h3>${c.t}</h3><ul>${c.i.map(([ic,lab,nome,kb,am]) =>
