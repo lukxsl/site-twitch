@@ -312,18 +312,28 @@ nav ul button:hover,nav ul button.on{color:var(--purple)}
 .setup-category ul{list-style:none}
 .setup-category li{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:.88rem}
 
+/* Setup v2: colunas empilhadas */
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;align-items:start}
+.scol{display:flex;flex-direction:column;gap:14px}
+.sbox{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
+.sbox h3{font-size:1.05rem;color:var(--purple-light);margin-bottom:10px}
+.sbox ul{list-style:none;display:grid;gap:6px}
+
 .si{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
 .si-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;font-size:1.1rem;background:rgba(168,85,247,.14);border-radius:99px}
 .si-tx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .si-tx small{font-size:.68rem;color:var(--mute)}
 .si-tx b{font-size:.85rem;font-weight:600}
 .si-btns{display:flex;gap:6px;flex:none}
-.si-btn{font-size:.68rem;font-weight:700;color:#fff;background:var(--purple);padding:5px 8px;border-radius:6px;text-align:center;transition:.2s}
-.si-btn.kabum{background:#ff6500}
-.si-btn.kabum:hover{background:#e05800}
-.si-btn.off{background:transparent;border:1px solid var(--line);color:var(--mute)}
-a.si-btn:hover{background:var(--purple-dark)}
-.sfull{grid-column:1/-1}
+.si-btn{
+  font-size:.7rem;font-weight:700;color:#fff;background:var(--purple);
+  padding:6px 12px;border-radius:6px;border:none;cursor:pointer;
+  font-family:inherit;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:4px;
+  transition:.2s;
+}
+.si-btn:hover{background:var(--purple-dark);transform:translateY(-1px)}
+.si-btn:active{transform:translateY(0)}
 
 /* TIER LIST */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0}
@@ -423,6 +433,17 @@ dialog::backdrop{background:rgba(5,3,9,.75);backdrop-filter:blur(4px)}
 .kv b{display:block;font-size:1.1rem;color:var(--white)}
 .kv span{font-size:.7rem;color:var(--mute)}
 .db p{color:var(--mute);font-size:.85rem}
+
+/* Botões de loja no modal de busca */
+.busca-loja{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 16px;border-radius:10px;font-weight:700;font-size:.9rem;
+  color:#fff;text-decoration:none;transition:.2s;width:100%;
+}
+.busca-loja:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.busca-loja.ml{background:#ffe600;color:#2d3277}
+.busca-loja.kb{background:#ff6500}
+.busca-loja.am{background:#ff9900;color:#111}
 
 /* FOOTER */
 footer{
@@ -738,7 +759,7 @@ footer{
 }
 @media(max-width:450px){.g{width:92px}.mrow{grid-template-columns:100px 1fr}}
 
-/* Setup */
+/* Setup foto */
 .setup-foto{
   margin-bottom:14px;border-radius:16px;overflow:hidden;
   border:1px solid var(--line);max-height:340px;
@@ -746,10 +767,6 @@ footer{
 .setup-foto img{
   display:block;width:100%;height:100%;max-height:340px;object-fit:cover;
 }
-.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.sbox{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
-.sbox h3{font-size:1.05rem;color:var(--purple-light);margin-bottom:10px}
-.sbox ul{list-style:none;display:grid;gap:6px}
 
 dialog{width:min(520px,92vw)}
 .mrow{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:start}
@@ -892,11 +909,9 @@ dialog{width:min(520px,92vw)}
 .dc-cta span{color:var(--mute);font-size:.82rem}
 .com2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;align-items:start}
 .com2 .rules-grid,.com2 .commands-list{grid-template-columns:1fr}
-.sgrid .sbox.wide{grid-column:1/-1}
-.sgrid .sbox.wide ul{grid-template-columns:repeat(2,1fr)}
 .footer-credit{margin-top:6px;font-size:.78rem;color:var(--mute)}
 .footer-credit b{color:var(--purple-light)}
-@media(max-width:900px){.com2,.sgrid .sbox.wide ul{grid-template-columns:1fr}}
+@media(max-width:900px){.com2{grid-template-columns:1fr}}
 @media(max-width:450px){.tm-three,.tm-feed{grid-template-columns:1fr}}
 </style>
 </head>
@@ -1150,7 +1165,7 @@ dialog{width:min(520px,92vw)}
 <section id="sec-setup" class="page-section">
   <div class="section-header">
     <h2>Meu Setup</h2>
-    <p>As ferramentas que fazem a mágica (e os travamentos) acontecerem. Clique nos pontos da foto ou nos cards abaixo.</p>
+    <p>As ferramentas que fazem a mágica (e os travamentos) acontecerem. Clique em "Buscar" para procurar em várias lojas.</p>
   </div>
   <div class="setup-interativo" id="setupInterativo">
     <img src="img/setup.jpg" alt="Setup da Soso" id="setupImg" onerror="this.parentNode.remove()">
@@ -1810,39 +1825,33 @@ dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
 
 /* ===== SETUP ===== */
 const SETUP = [
-  { t:'🖥️ PC Gamer', i:[
-    ['🗄️','Gabinete','Risemode Aquarium branco','https://www.kabum.com.br/busca/gabinete-risemode-aquarium-branco','https://www.amazon.com.br/s?k=Gabinete+Risemode+Aquarium+branco'],
-    ['🧠','Processador','Ryzen 9 5900x','https://www.kabum.com.br/busca/ryzen-9-5900x','https://www.amazon.com.br/s?k=Ryzen+9+5900x'],
-    ['🧩','Memória RAM','48GB','https://www.kabum.com.br/busca/memoria-ram-ddr4-48gb','https://www.amazon.com.br/s?k=Memoria+RAM+48gb'],
-    ['🔌','Placa Mãe','X570 TUF Gaming','https://www.kabum.com.br/busca/placa-mae-x570-tuf-gaming','https://www.amazon.com.br/s?k=Placa+Mae+X570+TUF+Gaming'],
-    ['🎮','Placa de Vídeo','RX 6750 XT / RX 9060','https://www.kabum.com.br/busca/placa-de-video-rx','https://www.amazon.com.br/s?k=Placa+de+Video+RX'],
-    ['💧','Water cooler','Risemode Aura RGB','https://www.kabum.com.br/busca/water-cooler-risemode-aura-rgb','https://www.amazon.com.br/s?k=Water+cooler+Risemode+Aura+RGB'],
-    ['💾','Armazenamento','SSD 2TB NVMe M2','https://www.kabum.com.br/busca/ssd-2tb-nvme-m2','https://www.amazon.com.br/s?k=SSD+2TB+NVMe+M2'],
-    ['⚡','Fonte','Corsair RM800w','https://www.kabum.com.br/busca/fonte-corsair-800w','https://www.amazon.com.br/s?k=Fonte+Corsair+800w']
+  { t:'🖥️ PC Gamer', col:1, i:[
+    ['🗄️','Gabinete','Risemode Aquarium branco'],
+    ['🧠','Processador','Ryzen 9 5900x'],
+    ['🧩','Memória RAM','48GB DDR4'],
+    ['🔌','Placa Mãe','X570 TUF Gaming'],
+    ['🎮','Placa de Vídeo','RX 6750 XT'],
+    ['💧','Water cooler','Risemode Aura RGB'],
+    ['💾','Armazenamento','SSD 2TB NVMe M2'],
+    ['⚡','Fonte','Corsair RM800w']
   ]},
-  { t:'🖱️ Periféricos & Outros', i:[
-    ['⌨','Teclado','AULA H88','https://www.kabum.com.br/busca/teclado-aula-h88','https://www.amazon.com.br/s?k=Teclado+AULA+H88'],
-    ['🖱','Mouse','Logitech G502X Superlight RGB','https://www.kabum.com.br/busca/logitech-g502x-superlight','https://www.amazon.com.br/s?k=Logitech+G502X+Superlight'],
-    ['🎧','Headset','Astro A50','https://www.kabum.com.br/busca/headset-astro-a50','https://www.amazon.com.br/s?k=Headset+Astro+A50'],
-    ['🎙️','Microfone','FIFINE AM8 Branco','https://www.kabum.com.br/busca/fifine-am8-branco','https://www.amazon.com.br/s?k=FIFINE+AM8+Branco'],
-    ['🖥️','Monitor','AOC 240Hz','https://www.kabum.com.br/busca/monitor-aoc-240hz','https://www.amazon.com.br/s?k=Monitor+AOC+240Hz'],
-    ['📷','Webcam','Logitech C920','https://www.kabum.com.br/busca/logitech-c920','https://www.amazon.com.br/s?k=Logitech+C920']
+  { t:'🖱️ Periféricos & Outros', col:2, i:[
+    ['⌨','Teclado','AULA H88'],
+    ['🖱','Mouse','Logitech G502X Superlight'],
+    ['🎧','Headset','Astro A50'],
+    ['🎙️','Microfone','FIFINE AM8 Branco'],
+    ['🖥️','Monitor','AOC 240Hz'],
+    ['📷','Webcam','Logitech C920']
   ]},
-  { t:'✨ Wishlist / Sonhos de consumo', i:[
-    ['🎥','Câmera profissional','Sony ZV-E10','https://www.kabum.com.br/busca/camera-sony-zv-e10','https://www.amazon.com.br/s?k=Sony+ZV-E10'],
-    ['🎤','Microfone pro','Shure SM7B','https://www.kabum.com.br/busca/microfone-shure-sm7b','https://www.amazon.com.br/s?k=Shure+SM7B'],
-    ['🖥️','Segundo monitor','LG Ultrawide 29"','https://www.kabum.com.br/busca/monitor-lg-ultrawide','https://www.amazon.com.br/s?k=Monitor+LG+Ultrawide'],
-    ['📸','Iluminação pro','Elgato Key Light','https://www.kabum.com.br/busca/elgato-key-light','https://www.amazon.com.br/s?k=Elgato+Key+Light'],
-    ['🎮','Console','PS5 / Nintendo Switch','https://www.kabum.com.br/busca/console','https://www.amazon.com.br/s?k=Console'],
-    ['💻','Notebook','MacBook Air M2','https://www.kabum.com.br/busca/macbook-air','https://www.amazon.com.br/s?k=MacBook+Air']
+  { t:'✨ Wishlist / Sonhos de consumo', col:2, i:[
+    ['🎥','Câmera profissional','Sony ZV-E10'],
+    ['🎤','Microfone pro','Shure SM7B']
   ]}
 ];
 
-function renderSetup(){
-  const g = $('setupGrid');
-  if(!g) return;
-  g.innerHTML = SETUP.map(cat => `
-    <div class="sbox${cat.t.includes('Wishlist') ? ' wide' : ''}">
+function renderCategoria(cat){
+  return `
+    <div class="sbox">
       <h3>${cat.t}</h3>
       <ul>
         ${cat.i.map(item => `
@@ -1854,17 +1863,47 @@ function renderSetup(){
                 <b>${item[2]}</b>
               </div>
               <div class="si-btns">
-                ${item[3] ? `<a href="${item[3]}" target="_blank" rel="noopener" class="si-btn kabum">KaBuM!</a>` : ''}
-                ${item[4] ? `<a href="${item[4]}" target="_blank" rel="noopener" class="si-btn off">Link</a>` : ''}
+                <button class="si-btn" data-produto="${esc(item[2])}" aria-label="Buscar ${esc(item[2])}">🔍 Buscar</button>
               </div>
             </div>
           </li>
         `).join('')}
       </ul>
     </div>
-  `).join('');
+  `;
+}
+
+function renderSetup(){
+  const g = $('setupGrid'); if(!g) return;
+  const col1 = SETUP.filter(c => c.col === 1);
+  const col2 = SETUP.filter(c => c.col !== 1);
+  g.innerHTML = `
+    <div class="scol">${col1.map(renderCategoria).join('')}</div>
+    <div class="scol">${col2.map(renderCategoria).join('')}</div>
+  `;
 }
 renderSetup();
+
+/* Modal de busca: Mercado Livre, KaBuM, Amazon */
+function abrirBuscaItem(produto){
+  const q = encodeURIComponent(produto);
+  $('dTitle').textContent = produto;
+  $('dBody').innerHTML = `
+    <p style="color:var(--mute);font-size:.85rem;margin-bottom:14px">Escolha onde procurar:</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a class="busca-loja ml" href="https://lista.mercadolivre.com.br/${q}" target="_blank" rel="noopener">🛒 Mercado Livre</a>
+      <a class="busca-loja kb" href="https://www.kabum.com.br/busca/${q}" target="_blank" rel="noopener">🛒 KaBuM!</a>
+      <a class="busca-loja am" href="https://www.amazon.com.br/s?k=${q}" target="_blank" rel="noopener">🛒 Amazon</a>
+    </div>
+  `;
+  $('dlg').showModal();
+}
+
+/* Delegação: botão "Buscar" nos cards do setup */
+document.addEventListener('click', e => {
+  const b = e.target.closest('.si-btn[data-produto]');
+  if(b) abrirBuscaItem(b.dataset.produto);
+});
 
 /* HOTSPOTS DO SETUP — ajuste left/top em % conforme a posição dos itens na SUA foto */
 const HOTSPOTS = [
@@ -1891,18 +1930,9 @@ function renderHotspots(){
 function abrirItemSetup(nomeItem){
   for (const cat of SETUP) {
     const it = cat.i.find(x => x[2].toLowerCase().includes(nomeItem.toLowerCase()));
-    if (it) {
-      $('dTitle').textContent = it[2];
-      $('dBody').innerHTML = `
-        <p style="color:var(--mute);font-size:.85rem;margin-bottom:10px">${esc(cat.t)} · ${esc(it[1])}</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${it[3] ? `<a href="${it[3]}" target="_blank" rel="noopener" class="btn">🛒 KaBuM!</a>` : ''}
-          ${it[4] ? `<a href="${it[4]}" target="_blank" rel="noopener" class="btn ghost">🛒 Amazon</a>` : ''}
-        </div>`;
-      $('dlg').showModal();
-      return;
-    }
+    if (it) { abrirBuscaItem(it[2]); return; }
   }
+  abrirBuscaItem(nomeItem);
 }
 renderHotspots();
 
