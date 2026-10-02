@@ -1484,18 +1484,6 @@ dialog{width:min(520px,92vw)}
 .destaque b{display:block;font-size:1.15rem;color:var(--white);margin:2px 0}
 .destaque span{font-size:.8rem;color:var(--mute)}
 .vt.lider .vt-top span::before{content:'👑 '}
-
-/* Estilo novo para integração Spotify e Top Doadores compactos */
-.tm-spotify{display:flex;align-items:center;gap:10px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.25);border-radius:12px;padding:10px 12px;text-decoration:none;transition:all .2s ease}
-.tm-spotify:hover{background:rgba(29,185,84,0.18);border-color:#1db954;transform:translateY(-1px)}
-.tm-spotify svg{width:22px;height:22px;fill:#1db954;flex:none}
-.tm-spotify div{flex:1;min-width:0;display:flex;flex-direction:column}
-.tm-spotify b{font-size:.82rem;color:#1db954;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tm-spotify span{font-size:.68rem;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tm-donors{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.tm-donor{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:6px;text-align:center}
-.tm-donor b{display:block;font-size:.78rem;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tm-donor span{font-size:.64rem;color:var(--purple-light)}
 </style>
 </head>
 
@@ -1616,44 +1604,18 @@ dialog{width:min(520px,92vw)}
           </div>
           <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
         </div>
-        
-        <!-- PAINEL DO CANAL (Perfil Spotify, Uptime & Top Doadores Midfielder) -->
         <div class="tmon">
-          <div class="tmon-h">
-            <span class="live-indicator"></span>
-            <b>PAINEL DO CANAL</b>
-            <span class="pill" id="tmStatus">OFFLINE</span>
-          </div>
+          <div class="tmon-h"><span class="live-indicator"></span><b>PAINEL DO CANAL</b><span class="pill" id="tmStatus">OFFLINE</span></div>
           <div class="tmon-b">
-            <!-- Link do Spotify -->
-            <a class="tm-spotify" id="spotifyLink" href="#" target="_blank" rel="noopener" title="Ver perfil no Spotify">
-              <svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.599-.12-.42.18-.78.599-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.54.66.24 1.08zm1.44-3.84c-.301.48-.9.66-1.38.36-3.24-1.98-8.16-2.58-11.94-1.44-.54.18-1.14-.12-1.32-.66-.18-.54.12-1.14.66-1.32 4.26-1.26 9.66-.6 13.5 1.8 0.48.3.66.9.36 1.38zm.12-4C15.24 7.32 8.88 7.08 5.16 8.22c-.66.198-1.38-.18-1.58-.84-.198-.66.18-1.38.84-1.58 4.38-1.32 11.4-1.02 15.6 1.44.6.36.78 1.14.42 1.74-.36.6-1.14.78-1.74.42z"/></svg>
-              <div>
-                <b id="spotifyTitle">Perfil no Spotify 🎧</b>
-                <span id="spotifySub">Clique para ouvir as playlists da live</span>
-              </div>
-            </a>
-
             <div class="tm-two-cols">
-              <div class="tm-t"><small>UPTIME / LIVE</small><b id="tmUptime">OFFLINE</b></div>
               <div class="tm-t"><small>SEGUIDORES</small><b id="tmSeg">—</b></div>
+              <div class="tm-t"><small>LIVES / 14 DIAS</small><b id="tmLives">—</b></div>
             </div>
-
-            <!-- Top Doadores Midfielder -->
-            <div class="tm-t" style="padding:8px 12px;">
-              <small style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                <span>🏆 TOP DOADORES (MIDFIELDER)</span>
-                <a href="https://midfielder.tv.br/asemtet0" target="_blank" rel="noopener" style="color:var(--purple-light);font-size:.62rem;">Ver todos →</a>
-              </small>
-              <div class="tm-donors" id="tmDonors">
-                <div class="tm-donor"><b>Carregando…</b><span>—</span></div>
-                <div class="tm-donor"><b>Carregando…</b><span>—</span></div>
-                <div class="tm-donor"><b>Carregando…</b><span>—</span></div>
-              </div>
-            </div>
+            <div class="tm-t"><small id="tmLbl">ÚLTIMA LIVE</small><p id="tmSub">Carregando…</p></div>
+            <div class="tm-h4">ÚLTIMAS LIVES · CLIQUE PARA REVER</div>
+            <div class="tm-vods" id="tmVods"></div>
           </div>
         </div>
-        
       </div>
     </div>
     <div class="clips-box" id="clipsBox" style="display:none">
@@ -1694,7 +1656,7 @@ dialog{width:min(520px,92vw)}
     <div class="sbox apoie">
       <h3 style="color:var(--white)">💜 Apoie o cantinho</h3>
       <p class="mute">Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
-      <a class="btn big" id="donateLink" href="https://midfielder.tv.br/asemtet0" target="_blank" rel="noopener">💜 Fazer uma doação</a>
+      <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
       <hr>
       <h3 style="color:var(--white)">👑 Seja Sub</h3>
       <div class="benefits-grid">
@@ -1728,7 +1690,7 @@ dialog{width:min(520px,92vw)}
       <div class="rule-card"><i>02</i><span class="rc-ic">🚫</span><div><strong>Sem spoilers nem dicas</strong><p>Não dê dicas ou spoilers de jogos e filmes, a não ser que eu peça. Muitas das minhas perguntas são retóricas!</p></div></div>
       <div class="rule-card"><i>03</i><span class="rc-ic">🕊️</span><div><strong>Cuide do clima do chat</strong><p>Evite discussões desnecessárias, brigas ou comentários que gerem conflito.</p></div></div>
       <div class="rule-card"><i>04</i><span class="rc-ic">💬</span><div><strong>Sem spam ou flood</strong><p>Não repita mensagens nem encha o chat de símbolos, pra não atrapalhar a leitura.</p></div></div>
-      <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organized.</p></div></div>
+      <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organizado.</p></div></div>
       <div class="rule-card"><i>06</i><span class="rc-ic">🎮</span><div><strong>Divirta-se!</strong><p>O objetivo é jogar, conversar e dar risada junto. Caos bom é bem-vindo.</p></div></div>
     </div>
     <p class="rules-foot">Vale a mesma regra na Twitch e no Discord. 💜</p>
@@ -1810,13 +1772,7 @@ dialog{width:min(520px,92vw)}
 </dialog>
 
 <script>
-const CONFIG = { 
-  subs: null, 
-  donate: 'https://midfielder.tv.br/asemtet0',
-  spotifyUrl: '', // Cole o link do seu perfil do Spotify aqui no futuro!
-  midfielderUser: 'asemtet0'
-};
-
+const CONFIG = { subs: null, donate: 'https://midfielder.tv.br/asemtet0' };
 const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
 const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
 const HOST = window.location.hostname || 'localhost';
@@ -1851,16 +1807,6 @@ function assistirVod(v, rolar){
   document.querySelector('.twitch-player-box').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// Função para formatar o Uptime da live atual
-function calcularUptime(startedAt) {
-  if (!startedAt) return 'OFFLINE';
-  const diff = Math.floor((Date.now() - new Date(startedAt)) / 1000);
-  const hrs = Math.floor(diff / 3600);
-  const mins = Math.floor((diff % 3600) / 60);
-  const secs = diff % 60;
-  return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
 async function verificarStatusTwitch() {
   const g = id => document.getElementById(id);
   const iframe = g('twitchIframe'), panel = g('offlinePanel'), badge = g('bannerLiveBadge');
@@ -1876,14 +1822,13 @@ async function verificarStatusTwitch() {
     vodAtual = data.video; videosTw = data.videos || (data.video ? [data.video] : []);
     g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
     g('tmSeg').textContent = data.followers != null ? data.followers.toLocaleString('pt-BR') : '—';
-    
-    // Uptime atualizado
-    if (live && data.stream.started_at) {
-      g('tmUptime').textContent = calcularUptime(data.stream.started_at);
-    } else {
-      g('tmUptime').textContent = 'OFFLINE';
-    }
-
+    const rec = videosTw.filter(x => x.created_at && Date.now() - new Date(x.created_at) < 14 * 864e5).length;
+    g('tmLives').textContent = videosTw.length ? rec : '—';
+    g('tmLbl').textContent = live ? 'AO VIVO AGORA' : 'ÚLTIMA LIVE';
+    g('tmSub').textContent = live
+      ? `${data.stream.title} · ${data.stream.game_name || ''} · ${data.stream.viewer_count} assistindo`
+      : (videosTw[0] && videosTw[0].created_at ? `${tempoAtras(videosTw[0].created_at)} · ${videosTw[0].title}` : 'Canal offline no momento.');
+    g('tmVods').innerHTML = videosTw.slice(0, 3).map((v, i) => `<button class="tm-vod" data-i="${i}">${v.thumbnail ? `<img src="${esc(v.thumbnail)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div><b>${esc(v.title || 'Live')}</b><span>${v.created_at ? tempoAtras(v.created_at) : ''}${v.duration ? ' · ' + durTw(v.duration) : ''}${v.views != null ? ' · 👁 ' + v.views : ''}</span></div><em>▶</em></button>`).join('') || '<span class="tm-h4">Nenhuma live gravada ainda.</span>';
     atualizarFoco(data.game, !!data.stream);
     renderClips(data.clips);
     g('btnVod').style.display = vodAtual ? '' : 'none';
@@ -1924,90 +1869,9 @@ async function verificarStatusTwitch() {
   }
 }
 
-// Configuração do Link de Perfil do Spotify
-function atualizarSpotifyLink() {
-  const linkEl = document.getElementById('spotifyLink');
-  const titleEl = document.getElementById('spotifyTitle');
-  const subEl = document.getElementById('spotifySub');
-  
-  if (CONFIG.spotifyUrl && CONFIG.spotifyUrl.trim() !== '' && CONFIG.spotifyUrl !== '#') {
-    linkEl.href = CONFIG.spotifyUrl;
-    titleEl.textContent = 'Perfil no Spotify 🎧';
-    subEl.textContent = 'Clique para abrir o perfil do Spotify';
-  } else {
-    linkEl.href = '#';
-    titleEl.textContent = 'Perfil no Spotify 🎧';
-    subEl.textContent = 'Link em breve no perfil';
-    linkEl.addEventListener('click', function(e) {
-      if (linkEl.getAttribute('href') === '#') {
-        e.preventDefault();
-        alert('O link do perfil do Spotify será adicionado em breve!');
-      }
-    });
-  }
-}
-
-// Busca isolada dos Top Doadores do MidFielder
-async function atualizarTopDoadoresMidfielder() {
-  const container = document.getElementById('tmDonors');
-  if (!container) return;
-
-  try {
-    const endpoints = [
-      '/api/midfielder',
-      '/api/midfielder-data',
-      `https://midfielder.tv.br/api/v1/users/${CONFIG.midfielderUser}/top-donators`,
-      `https://midfielder.tv.br/api/leaderboard/${CONFIG.midfielderUser}`
-    ];
-
-    let donors = null;
-
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url).catch(() => null);
-        if (res && res.ok) {
-          const data = await res.json();
-          const list = data.donors || data.leaderboard || data.topDonors || (Array.isArray(data) ? data : null);
-          if (list && Array.isArray(list) && list.length > 0) {
-            donors = list;
-            break;
-          }
-        }
-      } catch (e) {
-        // Tenta o próximo endpoint
-      }
-    }
-
-    if (donors && donors.length > 0) {
-      container.innerHTML = donors.slice(0, 3).map((d, i) => {
-        const nome = d.name || d.username || d.donor || `Doador ${i + 1}`;
-        const val = d.value || d.amount || d.total || 0;
-        const valorFormatado = typeof val === 'number' ? `R$ ${val.toFixed(2).replace('.', ',')}` : `R$ ${val}`;
-        return `<div class="tm-donor"><b>${esc(nome)}</b><span>${valorFormatado}</span></div>`;
-      }).join('');
-    } else {
-      container.innerHTML = `
-        <div class="tm-donor"><b>1º —</b><span>Seja o 1º!</span></div>
-        <div class="tm-donor"><b>2º —</b><span>—</span></div>
-        <div class="tm-donor"><b>3º —</b><span>—</span></div>
-      `;
-    }
-  } catch (e) {
-    console.error('Erro ao carregar top doadores:', e);
-    container.innerHTML = `
-      <div class="tm-donor"><b>1º —</b><span>—</span></div>
-      <div class="tm-donor"><b>2º —</b><span>—</span></div>
-      <div class="tm-donor"><b>3º —</b><span>—</span></div>
-    `;
-  }
-}
-
 document.addEventListener('click', e => { const b = e.target.closest('.tm-vod'); if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]); });
 verificarStatusTwitch();
-atualizarSpotifyLink();
-atualizarTopDoadoresMidfielder();
-setInterval(verificarStatusTwitch, 10000);
-setInterval(atualizarTopDoadoresMidfielder, 30000);
+setInterval(verificarStatusTwitch, 60000);
 
 const $ = id => document.getElementById(id);
 
@@ -2151,6 +2015,7 @@ $('clipsGrid').addEventListener('click', e => {
   b.innerHTML = `<iframe src="https://clips.twitch.tv/embed?clip=${encodeURIComponent(b.dataset.id)}&parent=${HOST}&autoplay=true" allowfullscreen title="Clipe"></iframe>`;
 });
 
+// Comunidade
 if (CONFIG.subs == null) { $('goalSubBox').style.display = 'none';$('goals3').style.gridTemplateColumns = 'repeat(2,1fr)'; }
 if (CONFIG.donate) { const d = $('donateLink'); d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
 document.querySelectorAll('.cmd').forEach(b => b.addEventListener('click', async () => {
@@ -2170,7 +2035,269 @@ function aplicarModo(novo, salvar = true){
   const m = MODOS[modo];
   $('tlTitulo').textContent = m.titulo; $('tlSub').textContent = m.sub; $('q').placeholder = m.busca;
   renderChips(); desenharStats(); desenhar();
+  $('tmdbNote').style.display = modo === 'filmes' ? '' : 'none';
+  if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
+}
+$('modo').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b || b.dataset.m === modo) return;
+  aplicarModo(b.dataset.m);
+});
+
+$('chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip');
+  if(!b) return;
+  filtro = b.dataset.s;
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.s === filtro));
+  desenhar();
+});
+
+$('q').addEventListener('input', desenhar);
+
+function cartao(j,i){
+  const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
+  return `
+    <button class="g" data-i="${i}" aria-label="${esc(j.nome)}">
+      <div class="cv">
+        <div class="ph">${esc(ini)}</div>
+        ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" onerror="this.remove()">` : ''}
+        ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
+        ${j.nota > 0 ? `<span class="nt">${n1(j.nota)}</span>` : ''}
+      </div>
+      <div class="cap">
+        <span class="cn">${esc(j.nome)}</span>
+        ${j.horas > 0 ? `<span class="ch">${fh(j.horas)}</span>` : ''}
+      </div>
+    </button>
+  `;
+}
+
+function linha(cls, rotulo, lista){
+  const L = LISTA();
+  return `
+    <div class="tier t-${cls}">
+      <div class="label"><div>${rotulo}</div></div>
+      <div class="games">
+        ${lista.length ? lista.map(j => cartao(j, L.indexOf(j))).join('') : `<span class="empty">${MODOS[modo].vazio}</span>`}
+      </div>
+    </div>
+  `;
+}
+
+function desenhar(){
+  const q = $('q').value.trim().toLowerCase();
+  const lista = LISTA().filter(j => (filtro === 'Todos' || j.status === filtro) && j.nome.toLowerCase().includes(q))
+    .sort((a,b) => (b.nota || 0) - (a.nota || 0) || (b.horas || 0) - (a.horas || 0));
+  const tiers = TIERS.map(t => linha(t, t, lista.filter(j => j.tier === t)));
+  const nr = lista.filter(j => j.tier === 'NR');
+  if(nr.length) tiers.push(linha('NR', '?', nr));
+  $('tiers').innerHTML = tiers.join('');
+}
+
+desenhar();
+try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
+
+const dlg = $('dlg');
+
+$('tiers').addEventListener('click', e => {   const b = e.target.closest('.g');   if(!b) return;   const m = MODOS[modo];   const j = LISTA()[+b.dataset.i];$('dTitle').textContent = j.nome;
+  const terceiro = modo === 'jogos'
+    ? (j.progresso != null ? `<div><b>${j.progresso}%</b><span>progresso</span></div>` : '')
+    : (j.ano ? `<div><b>${j.ano}</b><span>ano</span></div>` : '');
+  $('dBody').innerHTML = `
+    <div class="mrow">
+      ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
+      <div class="mside">
+        <div class="badges">
+          <span class="bd">${j.tier === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
+          <span class="bd">${esc(j.status)}</span>
+        </div>
+        <div class="kv">
+          <div><b>${j.horas ? fh(j.horas) : '—'}</b><span>${m.hl}</span></div>
+          <div><b>${j.nota > 0 ? n1(j.nota) : '—'}</b><span>nota</span></div>
+          ${terceiro}
+        </div>
+        ${(j.comentario || j.sinopse) ? `<p>${esc(j.comentario || j.sinopse)}</p>` : ''}
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+});
+
+$('dClose').addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
+
+const SETUP = [
+  { t:'🖥️ PC Gamer', i:[
+    ['🗄️','Gabinete','Risemode Aquarium branco','https://www.kabum.com.br/busca/gabinete-risemode-aquarium-branco','https://www.amazon.com.br/s?k=Gabinete+Risemode+Aquarium+branco'],
+    ['🧠','Processador','Ryzen 9 5900x','https://www.kabum.com.br/busca/ryzen-9-5900x','https://www.amazon.com.br/s?k=Ryzen+9+5900x'],
+    ['🧩','Memória RAM','48GB','https://www.kabum.com.br/busca/memoria-ram-ddr4-48gb','https://www.amazon.com.br/s?k=Memoria+RAM+48gb'],
+    ['🔌','Placa Mãe','X570 TUF Gaming','https://www.kabum.com.br/busca/placa-mae-x570-tuf-gaming','https://www.amazon.com.br/s?k=Placa+Mae+X570+TUF+Gaming'],
+    ['🎮','Placa de Vídeo','RX 6750 XT / RX 9060','https://www.kabum.com.br/busca/placa-de-video-rx','https://www.amazon.com.br/s?k=Placa+de+Video+RX'],
+    ['💧','Water cooler','Risemode Aura RGB','https://www.kabum.com.br/busca/water-cooler-risemode-aura-rgb','https://www.amazon.com.br/s?k=Water+cooler+Risemode+Aura+RGB'],
+    ['💾','Armazenamento','SSD 2TB NVMe M2','https://www.kabum.com.br/busca/ssd-2tb-nvme-m2','https://www.amazon.com.br/s?k=SSD+2TB+NVMe+M2'],
+    ['⚡','Fonte','Corsair RM800w','https://www.kabum.com.br/busca/fonte-corsair-800w','https://www.amazon.com.br/s?k=Fonte+Corsair+800w']
+  ]},
+  { t:'🖱️ Periféricos & Outros', i:[
+    ['⌨','Teclado','AULA H88','https://www.kabum.com.br/busca/teclado-aula-h88','https://www.amazon.com.br/s?k=Teclado+AULA+H88'],
+    ['🖱️','Mouse','Logitech G502X Superlight RGB','https://www.kabum.com.br/busca/logitech-g502x-superlight','https://www.amazon.com.br/s?k=Logitech+G502X+Superlight'],
+    ['🎧','Headset','Astro A50','https://www.kabum.com.br/busca/headset-astro-a50','https://www.amazon.com.br/s?k=Headset+Astro+A50'],
+    ['🎙️','Microfone','FIFINE AM8 Branco','https://www.kabum.com.br/busca/fifine-am8-branco','https://www.amazon.com.br/s?k=FIFINE+AM8+Branco'],
+    ['🖥️','Monitor','AOC 240Hz','https://www.kabum.com.br/busca/monitor-aoc-240hz','https://www.amazon.com.br/s?k=Monitor+AOC+240Hz'],
+    ['📷','Webcam','iPhone 11','','https://www.amazon.com.br/s?k=iPhone+11'],
+    ['🪑','Cadeira','XT Racer','https://www.kabum.com.br/busca/xt-racer','https://www.amazon.com.br/s?k=Cadeira+XT+Racer']
+  ]}
+];
+
+const CFG_JOGO = [
+  ['DPI','800','Mouse geral'],
+  ['Sensibilidade','1.2','In-game Valorant'],
+  ['Resolução','1920x1080','Tela cheia'],
+  ['Taxa de atualização','240Hz','Monitor principal']
+];
+
+const UPGRADES = [];
+
+const btnLoja = (kabum, amazon) => {
+  let html = '<div class="si-btns">';
+  if(kabum) html += `<a class="si-btn kabum" href="${esc(kabum)}" target="_blank" rel="noopener">KaBuM! ↗</a>`;
+  if(amazon) html += `<a class="si-btn" href="${esc(amazon)}" target="_blank" rel="noopener">Amazon ↗</a>`;
+  if(!kabum && !amazon) html = '<span class="si-btn off">Em breve</span>';
+  else html += '</div>';
+  return html;
+};
+
+const wishlistHtml = `
+  <div class="sbox">
+    <h3>🛒 Wishlist de upgrades</h3>
+    <ul>${UPGRADES.length > 0 ? UPGRADES.map(([ic,nome,st,am]) =>
+      `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(st)}</small><b>${esc(nome)}</b></div>${btnLoja('', am)}</li>`).join('') : '<li style="color:var(--mute);font-size:.85rem;padding:4px 0;">Nenhum item na wishlist no momento. 💜</li>'}</ul>
+  </div>`;
+
+$('setupGrid').innerHTML =
+  SETUP.map(c => `<div class="sbox"><h3>${c.t}</h3><ul>${c.i.map(([ic,lab,nome,kb,am]) =>
+    `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(lab)}</small><b>${esc(nome)}</b></div>${btnLoja(kb, am)}</li>`).join('')}</ul></div>`).join('') +
+  `<div class="sbox cfg-box-valorant"><h3>🎯 Configuração de Jogo (Valorant)</h3><div class="cfg-grid-game">${CFG_JOGO.map(([k,v,sub]) => `<div class="cfg-item"><b>${esc(v)}</b><span>${esc(k)}</span><small>${esc(sub)}</small></div>`).join('')}</div></div>` +
+  wishlistHtml;
+
+async function carregarVotos(corpo){
+  try {
+    const DEMO = /[?&]demo/.test(location.search);
+    const d = DEMO
+      ? { opcoes:[{id:'a',nome:'Hollow Knight',votos:14},{id:'b',nome:'Phasmophobia',votos:9},{id:'c',nome:'Stardew Valley',votos:5}], meuVoto:null, jaVotou:false }
+      : await (await fetch('/api/votos', corpo ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(corpo) } : undefined)).json();
+    if(!d.opcoes) throw new Error('sem dados');
+    const total = d.opcoes.reduce((a,o) => a + o.votos, 0);
+    const topo = d.opcoes.slice().sort((a,b) => b.votos - a.votos)[0];
+    const temLider = topo && topo.votos > 0;
+    if(temLider){
+      $('proxNome').textContent = '👑 ' + topo.nome;
+      $('proxInfo').textContent = `${topo.votos} voto${topo.votos === 1 ? '' : 's'} • ${Math.round(topo.votos / total * 100)}% da votação`;
+      const jg = JOGOS.find(x => norm(x.nome) === norm(topo.nome));
+      const cv = jg && jg.capa;
+      $('destaqueBox').innerHTML = `<div class="destaque">${cv ? `<img src="${esc(cv)}" alt="" onerror="this.outerHTML='<div class=ph2>🎮</div>'">` : '<div class="ph2">🎮</div>'}<div><small>🏆 Em destaque na votação</small><b>${esc(topo.nome)}</b><span>${topo.votos} voto${topo.votos === 1 ? '' : 's'} • ${Math.round(topo.votos / total * 100)}% • ${total} no total</span></div></div>`;
+    } else {
+      $('destaqueBox').innerHTML = '<div class="destaque"><div class="ph2">🗳️</div><div><small>Votação aberta</small><b>Ninguém votou ainda</b><span>O jogo mais votado aparece aqui em destaque.</span></div></div>';
+    }
+    $('votoLista').innerHTML = d.opcoes.slice().sort((a,b) => b.votos - a.votos).map(o => {
+      const p = total ? Math.round(o.votos / total * 100) : 0;
+      const meu = d.meuVoto === o.id;
+      const jg = JOGOS.find(x => norm(x.nome) === norm(o.nome)) || FILMES.find(x => norm(x.nome) === norm(o.nome));
+      const cv = jg && jg.capa;
+      return `
+        <div class="vt${meu ? ' meu' : ''}${temLider && o.id === topo.id ? ' lider' : ''}">
+          ${cv ? `<img class="vt-img" src="${esc(cv)}" alt="" onerror="this.remove()">` : ''}
+          <div class="vt-info">
+            <div class="vt-top">
+              <span>${esc(o.nome)}</span>
+              <b>${o.votos} voto${o.votos === 1 ? '' : 's'} • ${p}%</b>
+            </div>
+          </div>
+          <div class="goal-bar"><i style="width:${p}%"></i></div>
+          <button class="btn" data-v="${esc(o.id)}" ${d.jaVotou ? 'disabled' : ''}>${meu ? '✓ Seu voto' : 'Votar'}</button>
+        </div>
+      `;
+    }).join('') + `<p class="vt-total">${total} voto${total === 1 ? '' : 's'} no total</p>`;
+  } catch (e) {
+    $('votoBox').style.display = 'none';
+  }
+}
+
+$('votoLista').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]');
+  if(b && !b.disabled){ b.disabled = true; carregarVotos({ id:b.dataset.v }); }
+});
+carregarVotos();
+
+// ---------- TMDB (Corrigido para puxar os detalhes corretamente) ----------
+async function carregarFilmes(){
+  await Promise.allSettled(FILMES.map(async f => {
+    const qs = f.tmdbId ? `id=${f.tmdbId}` : `q=${encodeURIComponent(f.nome)}` + (f.ano ? `&ano=${f.ano}` : '');
+    const r = await fetch('/api/tmdb?' + qs);
+    if(!r.ok) return;
+    const d = await r.json();
+    if(!d.id && !d.poster && !d.overview) return;
+    f.capa = f.capa || d.poster || d.poster_path || '';
+    f.ano = f.ano || (d.ano || (d.release_date ? d.release_date.split('-')[0] : ''));
+    f.sinopse = f.sinopse || d.sinopse || d.overview || '';
+    if(f.horas == null && f.status === 'Assistido' && (d.horas || d.runtime)) {
+      f.horas = d.horas || (d.runtime ? d.runtime / 60 : null);
+    }
+  }));
+  if(modo === 'filmes'){ desenharStats(); desenhar(); }
+}
+carregarFilmes();
+
+async function carregarSteam(){
+  try {
+    const r = await fetch('/api/steam');
+    if(!r.ok) throw new Error('steam HTTP ' + r.status);
+    const d = await r.json();
+    if(!d.jogos || !d.jogos.length){ console.warn('Steam sem jogos:', d.aviso || d.error || 'resposta vazia'); return; }
+    const porId = new Map(d.jogos.map(x => [x.appid, x]));
+    const usados = new Set();
+    JOGOS = JOGOS.map(j => {
+      const st = j.appid && porId.get(j.appid);
+      if(!st) return j;
+      usados.add(st.appid);
+      return { ...j, nome: j.nome || st.nome, horas: st.horas, progresso: st.progresso != null ? st.progresso : j.progresso, capa: j.capa || st.capa };
+    });
+    d.jogos.filter(x => !usados.has(x.appid) && x.horas >= 1).slice(0, 40).forEach(x => JOGOS.push({
+      nome: x.nome, appid: x.appid, tier: 'NR', nota: 0, comentario: '', horas: x.horas, progresso: x.progresso, capa: x.capa,
+      status: x.recente ? 'Jogando' : (x.progresso === 100 ? 'Concluído' : 'Jogado')
+    }));
+    desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
+    carregarVotos(); // Atualiza a votação para exibir as capas dos jogos vindos da Steam se houver correspondência
+  } catch (e) { console.error('Steam indisponível, usando só a lista manual', e); }
+}
+carregarSteam();
+
+async function enviarSugestao(){
+  const status = $('sugStatus'), btn =$('sugBtn');
+  const nome = $('sugNome').value.trim();
+  const texto = $('sugTexto').value.trim();
+  const msg = t => { status.style.display = 'block'; status.innerText = t; };
+
+  if(!texto){ msg('Por favor, escreva uma sugestão antes de enviar!'); return; }
+
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/sugestao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, texto, site: $('sugSite').value })
+    });
+    if (r.status === 429) msg('Calma! Espere alguns segundos para enviar outra. 💜');
+    else if (!r.ok) msg('Não consegui enviar agora. Tente de novo mais tarde.');
+    else {
+      msg('Obrigada pela sugestão! Chegou direitinho 💜');
+      $('sugNome').value = '';$('sugTexto').value = '';
+    }
+  } catch (e) {
+    msg('Sem conexão. Tente de novo mais tarde.');
+  }
+  btn.disabled = false;
+  setTimeout(() => { status.style.display = 'none'; }, 6000);
 }
 </script>
+
 </body>
 </html>
