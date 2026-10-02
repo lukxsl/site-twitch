@@ -222,22 +222,27 @@ footer{background:#050309;padding:25px 0;text-align:center;color:var(--mute);bor
 .tm-vod em{font-style:normal;color:var(--purple-light);font-size:.8rem}
 .tm-h4{font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-top:2px}
 
-.vt{display:grid;grid-template-columns:auto 1fr auto;gap:10px 12px;align-items:center;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px;transition:border-color .2s,background .2s}
+/* ===== Votação: cards do 2º e 3º ===== */
+.vt{display:grid;grid-template-columns:auto 1fr auto;gap:10px 14px;align-items:center;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:10px;transition:border-color .2s,background .2s}
 .vt:hover{border-color:rgba(168,85,247,.5);background:rgba(168,85,247,.04)}
-.vt-img{width:66px;height:88px;object-fit:cover;border-radius:8px;border:1px solid var(--line);grid-row:1/3;background:#1d1433}
-.vt-info{grid-column:2;display:flex;flex-direction:column;gap:5px;min-width:0}
-.vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.88rem;align-items:baseline}
-.vt-top span{font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.vt-top b{color:var(--purple-light);font-size:.78rem;font-weight:700;flex:none}
+.vt-img{width:76px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--line);grid-row:1/3;background:#1d1433}
+.vt-info{grid-column:2;display:flex;flex-direction:column;gap:6px;min-width:0}
+.vt-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.vt-top span{font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92rem}
+.vt-top b{color:var(--purple-light);font-size:.78rem;font-weight:700;flex:none;white-space:nowrap}
+.vt-stat{font-size:.72rem;color:var(--mute);font-weight:600;display:flex;align-items:center;gap:6px;line-height:1.2}
+.vt-stat.zero{opacity:.75}
+.vt-stat.close{color:#ffd08a}
+.vt-stat .pip{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;box-shadow:0 0 6px currentColor}
 .vt .goal-bar{grid-column:1/3;position:relative;z-index:2;margin-top:2px}
 .vt .goal-bar i{background:linear-gradient(90deg,#7c3aed,#c084fc)}
-.vt .btn{grid-column:3;grid-row:1/3;padding:7px 14px;font-size:.78rem;position:relative;z-index:2;margin:0}
+.vt .btn{grid-column:3;grid-row:1/3;padding:8px 16px;font-size:.8rem;position:relative;z-index:2;margin:0}
 .vt.meu{border-color:rgba(183,255,0,.4)}
 .vt.meu .btn{background:transparent;border:1px solid var(--green);color:var(--green);box-shadow:none}
 .vt.meu .vt-top span{color:var(--green)}
 .vt.meu .vt-top span::before{content:'✓ ';color:var(--green)}
 .vt-total{font-size:.72rem;color:var(--mute);margin-top:12px;text-align:right;padding-right:4px}
-.vt-rank{position:absolute;top:6px;left:6px;font-size:1.25rem;z-index:4;filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+.vt-rank{position:absolute;top:8px;left:8px;font-size:1.5rem;z-index:4;filter:drop-shadow(0 2px 5px rgba(0,0,0,.85));width:auto;height:auto}
 .vazio-voto{text-align:center;padding:26px 14px;color:var(--mute);font-size:.85rem;background:rgba(255,255,255,.02);border:1px dashed var(--line);border-radius:12px}
 .vazio-voto b{display:block;color:var(--white);font-size:1rem;margin-bottom:4px;font-family:'Bricolage Grotesque',sans-serif}
 
@@ -1342,6 +1347,7 @@ function renderVotacao(){
     return `<button class="btn ${meu ? 'ghost' : ''}" ${bloq ? 'disabled' : ''} onclick="votar('${it.id}')">${meu ? 'Votado ✓' : txt}</button>`;
   };
 
+  // ---- Card do líder ----
   if(total > 0){
     const l = ord[0], p = pct(l.votos);
     destBox.innerHTML = `
@@ -1367,19 +1373,43 @@ function renderVotacao(){
     $('proxInfo').textContent = 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
 
+  // ---- Cards do 2º e 3º lugar ----
   const resto = total > 0 ? ord.slice(1) : ord;
   listaBox.innerHTML = resto.map((it, i) => {
     const p = pct(it.votos);
-    const rank = total > 0 ? (RANKS[i + 1] || '') : '';
+    const posicao = i + 2;
+    const medalha = RANKS[i + 1] || `#${posicao}`;
     const meu = meuVoto === it.id;
+    const votos = it.votos || 0;
+    const diff = (ord[0] ? ord[0].votos : 0) - votos;
+
+    let statusTxt, statusCls;
+    if (votos === 0) {
+      statusTxt = 'Aguardando o primeiro voto';
+      statusCls = 'zero';
+    } else if (diff === 0) {
+      statusTxt = 'Empatado com o 1º lugar 🔥';
+      statusCls = 'close';
+    } else if (diff === 1) {
+      statusTxt = 'Apenas 1 voto atrás do líder';
+      statusCls = 'close';
+    } else {
+      statusTxt = `${diff} votos atrás do líder`;
+      statusCls = '';
+    }
+
     return `
       <div class="vt ${meu ? 'meu' : ''}">
-        ${rank ? `<span class="vt-rank">${rank}</span>` : ''}
-        ${it.capa ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" class="vt-img" onerror="this.style.display='none'">` : '<div class="vt-img" style="display:grid;place-items:center;font-size:1.4rem">🎮</div>'}
+        <span class="vt-rank" title="${posicao}º lugar">${medalha}</span>
+        ${it.capa ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" class="vt-img" onerror="this.style.display='none'">` : '<div class="vt-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>'}
         <div class="vt-info">
-          <div class="vt-top"><span>${esc(it.nome)}</span><b>${p}% · ${it.votos || 0}/${total}</b></div>
-          <div class="goal-bar"><i style="width:${p}%"></i></div>
+          <div class="vt-top">
+            <span>${esc(it.nome)}</span>
+            <b>${posicao}º · ${p}%</b>
+          </div>
+          <span class="vt-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
         </div>
+        <div class="goal-bar"><i style="width:${p}%"></i></div>
         ${btn(it, 'Votar')}
       </div>`;
   }).join('') + `<div class="vt-total">Total: ${total} voto${total === 1 ? '' : 's'}</div>`;
@@ -1415,7 +1445,6 @@ async function enviarSugestao(){
       body:JSON.stringify({ nome, tipo, texto, site:$('sugSite').value })
     });
 
-    // Tenta ler o motivo real do erro
     let dados = null;
     try { dados = await res.json(); } catch(e){}
 
