@@ -1565,10 +1565,10 @@ dialog{width:min(520px,92vw)}
 /* =========================
    CARD "PRÓXIMO NA VOTAÇÃO" (Início)
 ========================= */
-.proximo{justify-content:center}
+.proximo{justify-content:flex-start}
 .proximo h3{font-size:1.15rem}
 .proximo.foco{align-items:center}
-.proximo.foco .foco-info{gap:6px}
+.proximo.foco .foco-info{gap:6px;flex:1}
 .proximo .foco-btns{margin-top:4px}
 .proximo .foco-label{color:var(--purple-light)}
 
@@ -2451,7 +2451,6 @@ function renderVotacao(){
     </div>
   `;
 
-  // Atualiza o card "Próximo na votação" na aba Início (com capa e texto limpo)
   if (proxCover) {
     if (lider.capa) {
       proxCover.onerror = () => { proxCover.style.display = 'none'; };
