@@ -133,13 +133,13 @@ nav li.admin-nav{display:none}
 .chip:hover{color:var(--white);border-color:var(--purple)}
 .chip[aria-pressed="true"]{background:var(--purple);border-color:var(--purple);color:#fff}
 
-.tier{display:grid;grid-template-columns:80px 1fr;background:var(--card-bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:10px}
+.tier{display:grid;grid-template-columns:80px 1fr;background:var(--card-bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:10px;transition:box-shadow .2s}
 .label{display:grid;place-items:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:2.2rem;color:#fff;background:var(--tc);min-height:85px}
 .t-S{--tc:linear-gradient(160deg,#c084fc,#7c3aed);border-color:rgba(192,132,252,.5);box-shadow:0 0 20px rgba(168,85,247,.15)}
 .t-A{--tc:#8b3fd9}.t-B{--tc:#6d3bb0}.t-C{--tc:#4f3280}.t-NR{--tc:#4a4560}
 .games{display:flex;flex-wrap:wrap;gap:8px;padding:10px;min-height:85px;align-items:flex-start}
 .empty{color:var(--mute);font-size:.85rem;align-self:center;padding-left:6px;opacity:.7}
-.g{position:relative;width:85px;aspect-ratio:3/4;border-radius:8px;border:1px solid var(--line);background:#1d1433;cursor:pointer;overflow:hidden;padding:0;font-family:inherit;color:var(--ink);transition:transform .2s,border-color .2s}
+.g{position:relative;width:85px;aspect-ratio:3/4;border-radius:8px;border:1px solid var(--line);background:#1d1433;cursor:pointer;overflow:hidden;padding:0;font-family:inherit;color:var(--ink);transition:transform .2s,border-color .2s,opacity .2s}
 .g:hover{transform:translateY(-3px) scale(1.04);border-color:var(--purple)}
 .g .ph{position:absolute;inset:0;display:grid;place-items:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.3rem;color:rgba(255,255,255,.55);background:linear-gradient(160deg,#2a1a4d,#160f28)}
 .g img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top}
@@ -411,7 +411,6 @@ dialog{width:min(520px,92vw)}
 .admin-voto-opcao b{color:var(--purple-light);font-size:.84rem}
 .admin-voto-opcao small{color:var(--mute);font-size:.66rem}
 
-/* Itens da tier list no admin */
 .admin-item{display:flex;gap:12px;align-items:center;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
 .admin-item img,.admin-item .ph3{width:44px;height:58px;border-radius:6px;object-fit:cover;flex:none;background:#1d1433;border:1px solid var(--line)}
 .admin-item .ph3{display:grid;place-items:center;font-size:1.2rem}
@@ -451,9 +450,23 @@ dialog{width:min(520px,92vw)}
 
 .mini-capa{width:60px;height:80px;border-radius:6px;object-fit:cover;background:#1d1433;border:1px solid var(--line);display:block}
 
-.aviso-box{padding:10px 12px;background:rgba(255,166,0,.1);border:1px solid rgba(255,166,0,.4);border-radius:10px;color:#ffd08a;font-size:.82rem;margin-bottom:14px}
-
 body.sou-admin nav li.admin-nav{display:list-item}
+
+/* ===== DRAG & DROP (tier list) ===== */
+.drag-hint{
+  display:none;align-items:center;gap:6px;
+  font-size:.75rem;color:var(--purple-light);
+  background:rgba(168,85,247,.1);border:1px dashed rgba(168,85,247,.4);
+  padding:7px 12px;border-radius:8px;margin-bottom:14px;width:fit-content;
+}
+body.sou-admin .drag-hint{display:inline-flex}
+body.sou-admin .g[draggable="true"]{cursor:grab}
+body.sou-admin .g[draggable="true"]:active{cursor:grabbing}
+.g.dragging{opacity:.35;transform:scale(.92) rotate(-3deg)}
+.games.drag-over{
+  outline:2px dashed var(--purple);outline-offset:-6px;
+  background:rgba(168,85,247,.08);border-radius:12px;
+}
 
 @media(max-width:900px){
   .admin-menu{grid-template-columns:1fr}
@@ -663,6 +676,7 @@ body.sou-admin nav li.admin-nav{display:list-item}
     <input class="search" id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo">
     <div class="chips" id="chips"></div>
   </div>
+  <div class="drag-hint">🖱️ Arraste os cards entre os tiers para reorganizar</div>
   <section id="tiers"></section>
   <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificado por ela.</p>
 </section>
@@ -1031,11 +1045,9 @@ window.addEventListener('DOMContentLoaded', () => {
   renderAviso(); renderEmotes(); renderTopDoadores(); renderSiteUpdate();
 });
 
-/* ===== TIER LIST (vem do Redis via /api/tierlist) ===== */
+/* ===== TIER LIST ===== */
 let JOGOS = [];
 let FILMES = [];
-
-const AVALIACOES = {};   // legado, não usado mais
 const TIERS = ['S','A','B','C'];
 
 async function carregarBiblioteca(){
@@ -1222,11 +1234,12 @@ $('q').addEventListener('input', desenhar);
 
 function cartao(j,i){
   const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
+  const podeArrastar = !!(USUARIO && USUARIO.admin);
   return `
-    <button class="g" data-i="${i}" aria-label="${esc(j.nome)}">
+    <button class="g" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}">
       <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
         <div class="ph">${esc(ini)}</div>
-        ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
+        ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
         ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
         ${j.nota > 0 ? `<span class="nt">${n1(j.nota)}</span>` : ''}
       </div>
@@ -1249,6 +1262,76 @@ function linha(cls, rotulo, lista){
     </div>
   `;
 }
+
+/* ===== DRAG & DROP ===== */
+let dragItem = null;
+
+function setupDragDrop(){
+  if(!USUARIO || !USUARIO.admin) return;
+
+  document.querySelectorAll('.g').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      const i = Number(el.dataset.i);
+      dragItem = { idx: i, nome: LISTA()[i].nome };
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', dragItem.nome); } catch(err){}
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+      document.querySelectorAll('.games.drag-over').forEach(x => x.classList.remove('drag-over'));
+      dragItem = null;
+    });
+  });
+
+  document.querySelectorAll('.games').forEach(gEl => {
+    gEl.addEventListener('dragover', e => {
+      if(!dragItem) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      gEl.classList.add('drag-over');
+    });
+    gEl.addEventListener('dragleave', e => {
+      if(!gEl.contains(e.relatedTarget)) gEl.classList.remove('drag-over');
+    });
+    gEl.addEventListener('drop', async e => {
+      e.preventDefault();
+      gEl.classList.remove('drag-over');
+      if(!dragItem) return;
+
+      const tierEl = gEl.closest('.tier');
+      if(!tierEl) return;
+      const m = tierEl.className.match(/t-(\w+)/);
+      if(!m) return;
+      const novoTier = m[1];
+
+      const item = LISTA()[dragItem.idx];
+      if(!item || item.tier === novoTier){ dragItem = null; return; }
+
+      const tierAntigo = item.tier;
+      item.tier = novoTier;
+      desenharStats();
+      desenhar();
+
+      const toast = document.createElement('div');
+      toast.textContent = `✅ "${item.nome}" movido de ${tierAntigo} para ${novoTier}`;
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(168,85,247,.95);color:#fff;padding:10px 18px;border-radius:99px;font-family:inherit;font-size:.85rem;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:opacity .3s';
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; }, 1500);
+      setTimeout(() => toast.remove(), 1900);
+
+      try {
+        await fetch('/api/admin?action=tierlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jogos: JOGOS, filmes: FILMES })
+        });
+      } catch(e){ console.warn('Erro ao salvar', e); }
+      dragItem = null;
+    });
+  });
+}
+
 function desenhar(){
   const q = $('q').value.trim().toLowerCase();
   const lista = LISTA().filter(j => (filtro === 'Todos' || j.status === filtro) && j.nome.toLowerCase().includes(q))
@@ -1257,6 +1340,7 @@ function desenhar(){
   const nr = lista.filter(j => j.tier === 'NR');
   if(nr.length) tiers.push(linha('NR', '?', nr));
   $('tiers').innerHTML = tiers.join('');
+  setupDragDrop();
 }
 desenhar();
 try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
@@ -1265,6 +1349,7 @@ const dlg = $('dlg');
 
 $('tiers').addEventListener('click', e => {
   const b = e.target.closest('.g'); if(!b) return;
+  if(b.classList.contains('dragging')) return;
   const m = MODOS[modo];
   const j = LISTA()[+b.dataset.i];
   $('dTitle').textContent = j.nome;
@@ -1399,6 +1484,7 @@ async function checarLogin(){
   }catch(e){ USUARIO = null; }
   renderLogin();
   document.body.classList.toggle('sou-admin', !!(USUARIO && USUARIO.admin));
+  if(USUARIO && USUARIO.admin) desenhar();
 }
 
 function renderLogin(){
@@ -1425,7 +1511,7 @@ async function sair(){
   try{ await fetch('/api/auth?action=logout'); }catch(e){}
   USUARIO = null; meuVoto = null;
   document.body.classList.remove('sou-admin');
-  renderLogin(); renderVotacao();
+  renderLogin(); renderVotacao(); desenhar();
   mudarAba('inicio', false);
 }
 
