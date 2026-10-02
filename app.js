@@ -32,8 +32,16 @@ const COMANDOS_LISTA = [
   { c:'!commands',d:'Lista de comandos' }
 ];
 
+const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
+const LABEL_CARGO = {
+  dev: '🛠️ Dev',
+  dono: '👑 Dono',
+  administrador: '🛡️ Administrador',
+  moderador: '🔰 Moderador'
+};
+
 /* ============================================================
-   ESTADO GLOBAL (tudo no topo pra evitar TDZ)
+   ESTADO GLOBAL
    ============================================================ */
 let USUARIO = null;
 let JOGOS = [];
@@ -59,6 +67,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
+const nivel = cargo => NIVEIS[cargo] || 0;
 
 function fmtDuracao(min){
   if(!min) return null;
@@ -93,7 +102,7 @@ function atualizarMeta(pre, atual, marcos = MARCOS){
 }
 
 /* ============================================================
-   RENDERIZAÇÃO BÁSICA
+   RENDER BÁSICO
    ============================================================ */
 function renderAviso(){
   const box = $('avisoBox'); if(!box) return;
@@ -324,14 +333,10 @@ const JOGOS_FALLBACK = [
     progresso:56, horas:50, nota:8,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
     comentario:'Um dos mundos mais vivos e detalhados dos games.' },
-  { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Jogado', nota:9,
-    horas:40,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg',
-    comentario:'' },
-  { id:'stardew-valley', nome:'Stardew Valley', tier:'A', status:'Jogando', nota:8,
-    horas:120,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg',
-    comentario:'' }
+  { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Jogado', nota:9, horas:40,
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario:'' },
+  { id:'stardew-valley', nome:'Stardew Valley', tier:'A', status:'Jogando', nota:8, horas:120,
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario:'' }
 ];
 const FILMES_FALLBACK = [
   { id:'interestelar', nome:'Interestelar', tier:'S', status:'Assistido', nota:9,
@@ -519,7 +524,7 @@ function setupDragDrop(){
       setTimeout(() => { toast.style.opacity = '0'; }, 1500);
       setTimeout(() => toast.remove(), 1900);
       try {
-        await fetch('/api/admin?action=tierlist', {
+        await fetch('/api/admin?action=tierlist-set', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jogos: JOGOS, filmes: FILMES })
@@ -830,24 +835,27 @@ async function carregarAdmin(){
 
 function renderAdminHome(){
   const area = $('adminArea'); if(!area) return;
+  const meu = USUARIO.cargo || 'moderador';
+  const podeEditar = nivel(meu) >= 2;
   area.innerHTML = `
     <div class="admin-menu">
       <button class="admin-menu-card" onclick="adminIrPara('votacao')">
         <span class="ic">🗳️</span>
         <h3>Votação</h3>
-        <p>Ver quem votou, editar as opções e resetar a votação.</p>
+        <p>Ver quem votou${podeEditar ? ', editar as opções e resetar a votação' : ''}.</p>
         <span class="cta">Abrir →</span>
       </button>
+      ${podeEditar ? `
       <button class="admin-menu-card" onclick="adminIrPara('tierlist')">
         <span class="ic">🎮</span>
         <h3>Tier List</h3>
         <p>Adicionar, editar e remover jogos e filmes.</p>
         <span class="cta">Abrir →</span>
-      </button>
+      </button>` : ''}
       <button class="admin-menu-card" onclick="adminIrPara('admins')">
         <span class="ic">👥</span>
         <h3>Admins</h3>
-        <p>Ver quem tem acesso ao painel administrativo.</p>
+        <p>${nivel(meu) >= 3 ? 'Gerenciar quem tem acesso ao painel.' : 'Ver quem tem acesso ao painel.'}</p>
         <span class="cta">Abrir →</span>
       </button>
     </div>
@@ -886,19 +894,23 @@ function renderAdminVotacao(){
   const mapaOpcao = {};
   (config || []).forEach(o => { mapaOpcao[o.id] = o; });
 
+  const meu = USUARIO.cargo || 'moderador';
+  const podeEditar = nivel(meu) >= 2;
+  const podeResetar = nivel(meu) >= 3;
+
   area.innerHTML = adminVoltarHTML('🗳️ Votação') + `
     <div class="admin-tabs">
       <button class="${ADMIN_TAB === 'votos' ? 'on' : ''}" onclick="adminIrAba('votos')">Votos (${totalVotos})</button>
-      <button class="${ADMIN_TAB === 'opcoes' ? 'on' : ''}" onclick="adminIrAba('opcoes')">Opções</button>
+      ${podeEditar ? `<button class="${ADMIN_TAB === 'opcoes' ? 'on' : ''}" onclick="adminIrAba('opcoes')">Opções</button>` : ''}
     </div>
     <div id="adminConteudo"></div>
   `;
 
-  if(ADMIN_TAB === 'votos') renderAdminVotos(usuarios, mapaOpcao);
-  else renderAdminOpcoes(config || [], contagem);
+  if(ADMIN_TAB === 'votos') renderAdminVotos(usuarios, mapaOpcao, podeResetar);
+  else if(podeEditar) renderAdminOpcoes(config || [], contagem);
 }
 
-function renderAdminVotos(usuarios, mapaOpcao){
+function renderAdminVotos(usuarios, mapaOpcao, podeResetar){
   const el = $('adminConteudo'); if(!el) return;
   if(!usuarios.length){
     el.innerHTML = `<div class="admin-card">
@@ -937,7 +949,7 @@ function renderAdminVotos(usuarios, mapaOpcao){
       </div>
       <div class="admin-actions">
         <button class="admin-btn ghost" onclick="carregarAdminVotacao()">🔄 Atualizar</button>
-        <button class="admin-btn perigo" onclick="resetarVotacao()">🗑️ Resetar votação</button>
+        ${podeResetar ? `<button class="admin-btn perigo" onclick="resetarVotacao()">🗑️ Resetar votação</button>` : ''}
       </div>
     </div>
   `;
@@ -970,7 +982,7 @@ function renderAdminOpcoes(opcoes, contagem){
 }
 
 async function resetarVotacao(){
-  if(!confirm('Tem certeza? TODOS os votos serão apagados e a votação começa do zero.')) return;
+  if(!confirm('Tem certeza? TODOS os votos serão apagados.')) return;
   try{
     const r = await fetch('/api/admin?action=reset', { method:'POST' });
     if(!r.ok) throw new Error('Falha ao resetar');
@@ -987,21 +999,14 @@ function editarOpcao(i){
   $('dTitle').textContent = 'Editar opção ' + (i+1);
   $('dBody').innerHTML = `
     <div class="admin-form">
-      <div>
-        <label>Nome do jogo/filme</label>
-        <input id="editNome" type="text" value="${esc(o.nome || '')}" placeholder="Ex: Elden Ring">
-      </div>
-      <div>
-        <label>Tipo</label>
+      <div><label>Nome do jogo/filme</label><input id="editNome" type="text" value="${esc(o.nome || '')}"></div>
+      <div><label>Tipo</label>
         <select id="editTipo">
           <option value="jogo" ${o.tipo === 'jogo' ? 'selected' : ''}>🎮 Jogo</option>
           <option value="filme" ${o.tipo === 'filme' ? 'selected' : ''}>🎬 Filme</option>
         </select>
       </div>
-      <div>
-        <label>URL da capa (opcional)</label>
-        <input id="editCapa" type="text" value="${esc(o.capa || '')}" placeholder="https://...">
-      </div>
+      <div><label>URL da capa (opcional)</label><input id="editCapa" type="text" value="${esc(o.capa || '')}"></div>
       <div class="admin-actions" style="justify-content:flex-end">
         <button class="admin-btn ghost" onclick="removerOpcao(${i})">Remover</button>
         <button class="admin-btn" onclick="salvarOpcao(${i})">Salvar</button>
@@ -1018,21 +1023,14 @@ function adicionarOpcao(){
   $('dTitle').textContent = 'Nova opção';
   $('dBody').innerHTML = `
     <div class="admin-form">
-      <div>
-        <label>Nome do jogo/filme</label>
-        <input id="editNome" type="text" placeholder="Ex: Elden Ring">
-      </div>
-      <div>
-        <label>Tipo</label>
+      <div><label>Nome do jogo/filme</label><input id="editNome" type="text"></div>
+      <div><label>Tipo</label>
         <select id="editTipo">
           <option value="jogo" selected>🎮 Jogo</option>
           <option value="filme">🎬 Filme</option>
         </select>
       </div>
-      <div>
-        <label>URL da capa (opcional)</label>
-        <input id="editCapa" type="text" placeholder="https://...">
-      </div>
+      <div><label>URL da capa (opcional)</label><input id="editCapa" type="text"></div>
       <div class="admin-actions" style="justify-content:flex-end">
         <button class="admin-btn" onclick="salvarOpcao(${i}, true)">Adicionar</button>
       </div>
@@ -1048,8 +1046,7 @@ async function salvarOpcao(i, ehNovo){
   if(!nome){ alert('Digite um nome!'); return; }
   const opcoes = (ADMIN_DADOS.config || []).slice();
   while(opcoes.length <= i) opcoes.push({});
-  const id = opcoes[i].id ||
-    nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
+  const id = opcoes[i].id || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
   opcoes[i] = { id, nome, tipo, capa: capa || null };
   await salvarOpcoesVotacao(opcoes);
 }
@@ -1069,7 +1066,7 @@ async function salvarOpcoesVotacao(opcoes){
       body: JSON.stringify({ opcoes })
     });
     const d = await r.json();
-    if(!r.ok) throw new Error(d.error || 'Falha ao salvar');
+    if(!r.ok) throw new Error(d.error || 'Falha');
     dlg.close();
     await carregarAdminVotacao();
     await carregarVotosApi();
@@ -1090,7 +1087,7 @@ async function carregarAdminTierList(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<p class="admin-vazio">Carregando…</p>`;
   try{
-    const r = await fetch('/api/admin?action=tierlist');
+    const r = await fetch('/api/admin?action=tierlist-get');
     if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
     const d = await r.json();
     ADMIN_TIER = { jogos: d.jogos || [], filmes: d.filmes || [] };
@@ -1104,7 +1101,8 @@ async function carregarAdminTierList(){
 function renderAdminTierList(){
   const area = $('adminArea'); if(!area) return;
   const lista = ADMIN_TIER[ADMIN_TIER_TAB] || [];
-  const botaoImport = ADMIN_TIER_TAB === 'jogos'
+  const podeImportar = nivel(USUARIO.cargo || '') >= 3;
+  const botaoImport = (ADMIN_TIER_TAB === 'jogos' && podeImportar)
     ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>`
     : '';
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `
@@ -1136,24 +1134,16 @@ function renderAdminTierList(){
   `;
 }
 
-/* ---------- IMPORTAR DA STEAM ---------- */
 async function importarSteam(){
   const btn = $('btnImportarSteam');
-  if(!confirm('Buscar jogos na Steam e adicionar na tier list? Jogos que você já tem não serão duplicados.')) return;
-
+  if(!confirm('Buscar jogos na Steam e adicionar na tier list?')) return;
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar 10-20s)'; }
-
   try{
     const r = await fetch('/api/admin?action=importar-steam', { method: 'POST' });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha na importação');
-
     if(btn) btn.textContent = `✅ ${d.adicionados} adicionados · ${d.pulados} já existiam`;
-    setTimeout(() => {
-      if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; }
-    }, 4000);
-
-    // Recarrega tudo
+    setTimeout(() => { if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; } }, 4000);
     await carregarAdminTierList();
     await carregarBiblioteca();
   }catch(e){
@@ -1177,60 +1167,43 @@ function abrirModalItemTier(i){
       <div>
         <label>Nome</label>
         <div class="busca-row">
-          <input id="itemNome" type="text" value="${esc(it.nome || '')}" placeholder="Nome do ${tipo === 'jogos' ? 'jogo' : 'filme'}">
+          <input id="itemNome" type="text" value="${esc(it.nome || '')}">
           <button type="button" onclick="buscarItemAuto()">🔍 Buscar</button>
         </div>
         <div id="buscaStatus" style="font-size:.72rem;color:var(--mute);margin-top:6px"></div>
       </div>
       <div class="row">
-        <div>
-          <label>Tier</label>
+        <div><label>Tier</label>
           <select id="itemTier">
             ${['S','A','B','C','NR'].map(t => `<option value="${t}" ${it.tier === t ? 'selected' : ''}>${t === 'NR' ? 'Sem tier' : t}</option>`).join('')}
           </select>
         </div>
-        <div>
-          <label>Status</label>
+        <div><label>Status</label>
           <select id="itemStatus">
             ${statusOpcoes.map(s => `<option value="${s}" ${it.status === s ? 'selected' : ''}>${s}</option>`).join('')}
           </select>
         </div>
       </div>
       <div class="row-3">
-        <div>
-          <label>Nota (0-10)</label>
-          <input id="itemNota" type="number" min="0" max="10" step="0.1" value="${it.nota || 0}">
-        </div>
+        <div><label>Nota (0-10)</label><input id="itemNota" type="number" min="0" max="10" step="0.1" value="${it.nota || 0}"></div>
         ${tipo === 'jogos' ? `
-          <div>
-            <label>Horas</label>
-            <input id="itemHoras" type="number" min="0" step="0.1" value="${it.horas || 0}">
-          </div>
-          <div>
-            <label>Progresso (%)</label>
-            <input id="itemProgresso" type="number" min="0" max="100" value="${it.progresso || 0}">
-          </div>
+          <div><label>Horas</label><input id="itemHoras" type="number" min="0" step="0.1" value="${it.horas || 0}"></div>
+          <div><label>Progresso (%)</label><input id="itemProgresso" type="number" min="0" max="100" value="${it.progresso || 0}"></div>
         ` : `
-          <div>
-            <label>Duração (min)</label>
-            <input id="itemDuracao" type="number" min="0" value="${it.duracao || ''}">
-          </div>
-          <div>
-            <label>Ano</label>
-            <input id="itemAno" type="number" min="1900" max="2100" value="${it.ano || ''}">
-          </div>
+          <div><label>Duração (min)</label><input id="itemDuracao" type="number" min="0" value="${it.duracao || ''}"></div>
+          <div><label>Ano</label><input id="itemAno" type="number" min="1900" max="2100" value="${it.ano || ''}"></div>
         `}
       </div>
       <div>
         <label>URL da capa</label>
-        <input id="itemCapa" type="text" value="${esc(it.capa || '')}" placeholder="https://...">
+        <input id="itemCapa" type="text" value="${esc(it.capa || '')}">
         <div style="margin-top:8px">
           ${it.capa ? `<img src="${esc(it.capa)}" class="mini-capa" id="itemCapaPreview" onerror="this.style.display='none'">` : `<img class="mini-capa" id="itemCapaPreview" style="display:none">`}
         </div>
       </div>
       <div>
         <label>Comentário / Sinopse</label>
-        <textarea id="itemComentario" placeholder="Escreva uma sinopse ou comentário...">${esc(it.comentario || it.sinopse || '')}</textarea>
+        <textarea id="itemComentario">${esc(it.comentario || it.sinopse || '')}</textarea>
         <button type="button" class="admin-btn ghost" style="margin-top:6px;font-size:.72rem;padding:6px 12px" onclick="traduzirComentario()">🌐 Traduzir EN→PT</button>
       </div>
       <div class="admin-actions" style="justify-content:flex-end">
@@ -1298,14 +1271,11 @@ async function salvarItemTier(i){
 
   const item = {
     id: (i >= 0 && ADMIN_TIER[tipo][i].id) || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
-    nome,
-    tier: $('itemTier').value,
-    status: $('itemStatus').value,
+    nome, tier: $('itemTier').value, status: $('itemStatus').value,
     nota: Number($('itemNota').value) || 0,
     capa: $('itemCapa').value.trim() || null,
     comentario: $('itemComentario').value.trim()
   };
-
   if(tipo === 'jogos'){
     item.horas = Number($('itemHoras').value) || 0;
     item.progresso = Number($('itemProgresso').value) || 0;
@@ -1313,12 +1283,10 @@ async function salvarItemTier(i){
     item.duracao = Number($('itemDuracao').value) || null;
     item.ano = Number($('itemAno').value) || null;
   }
-
   const nova = ADMIN_TIER[tipo].slice();
   if(i >= 0) nova[i] = item;
   else nova.push(item);
   ADMIN_TIER[tipo] = nova;
-
   await salvarTierList();
 }
 
@@ -1332,13 +1300,13 @@ async function removerItemTier(i){
 
 async function salvarTierList(){
   try{
-    const r = await fetch('/api/admin?action=tierlist', {
+    const r = await fetch('/api/admin?action=tierlist-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jogos: ADMIN_TIER.jogos, filmes: ADMIN_TIER.filmes })
     });
     const d = await r.json();
-    if(!r.ok) throw new Error(d.error || 'Falha ao salvar');
+    if(!r.ok) throw new Error(d.error || 'Falha');
     dlg.close();
     await carregarAdminTierList();
     await carregarBiblioteca();
@@ -1350,32 +1318,154 @@ async function salvarTierList(){
 async function renderAdminAdmins(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('👥 Admins') + `<p class="admin-vazio">Carregando…</p>`;
-  let admins = [];
+
+  let dados = { admins: [], meuCargo: null };
   try{
-    const r = await fetch('/api/admin?action=admins');
-    if(r.ok){ const d = await r.json(); admins = d.admins || []; }
+    const r = await fetch('/api/admin?action=admins-ver');
+    if(r.ok) dados = await r.json();
   }catch(e){}
+
+  const meCargo = dados.meuCargo || (USUARIO && USUARIO.cargo) || 'moderador';
+  const nivelMeu = NIVEIS[meCargo] || 0;
+  const podeGerenciar = nivelMeu >= 3;
+  const podeMexerDev = meCargo === 'dev';
+
+  const adminsHTML = (dados.admins || []).map(a => {
+    const nivelAlvo = NIVEIS[a.cargo] || 0;
+    const podeEditar = podeGerenciar && (podeMexerDev || nivelAlvo < nivelMeu) && a.id !== USUARIO.id;
+    return `
+      <div class="admin-voto" style="flex-wrap:wrap">
+        ${a.avatar
+          ? `<img class="admin-voto-avatar" src="${esc(a.avatar)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'admin-voto-ph',textContent:'👤'}))">`
+          : '<div class="admin-voto-ph">👤</div>'}
+        <div class="admin-voto-info">
+          <b>${a.username ? '@' + esc(a.username) : 'Sem nick'}</b>
+          <small>${esc(a.id)}</small>
+        </div>
+        <div class="admin-voto-opcao" style="gap:6px">
+          <b>${LABEL_CARGO[a.cargo] || a.cargo}</b>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            ${podeEditar ? `<button class="btn-mini" onclick="editarAdmin('${a.id}','${esc(a.username||'')}','${esc(a.avatar||'')}','${a.cargo}')">Editar</button>` : ''}
+            ${podeEditar ? `<button class="btn-mini danger" onclick="removerAdmin('${a.id}')">Remover</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
   area.innerHTML = adminVoltarHTML('👥 Admins') + `
     <div class="admin-card">
-      <h3>👥 Administradores <span class="cont">${admins.length}</span></h3>
-      ${admins.length ? `
-        <div class="admin-votos">
-          ${admins.map(a => `
-            <div class="admin-voto">
-              <div class="admin-voto-ph">👤</div>
-              <div class="admin-voto-info">
-                <b>ID ${esc(a.id)}</b>
-                <small>Administrador</small>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      ` : `<p class="admin-vazio" style="padding:20px">Nenhum admin cadastrado</p>`}
+      <h3>👥 Administradores <span class="cont">${(dados.admins||[]).length}</span></h3>
+      ${dados.admins && dados.admins.length ? `<div class="admin-votos">${adminsHTML}</div>`
+        : '<p class="admin-vazio" style="padding:20px">Nenhum admin cadastrado</p>'}
       <div class="admin-actions">
-        <button class="admin-btn ghost" onclick="carregarAdmin()">🔄 Atualizar</button>
+        ${podeGerenciar ? `<button class="admin-btn" onclick="adicionarAdmin()">+ Adicionar admin</button>` : ''}
+        <button class="admin-btn ghost" onclick="renderAdminAdmins()">🔄 Atualizar</button>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>📋 Cargos e permissões</h3>
+      <table class="cmds-table" style="font-size:.82rem">
+        <thead><tr><th>Cargo</th><th>Pode fazer</th></tr></thead>
+        <tbody>
+          <tr><td>🛠️ Dev</td><td style="color:var(--mute)">Tudo, incluindo gerenciar outros Devs</td></tr>
+          <tr><td>👑 Dono</td><td style="color:var(--mute)">Tudo, menos mexer em Devs</td></tr>
+          <tr><td>🛡️ Administrador</td><td style="color:var(--mute)">Votação, Tier List, ver admins</td></tr>
+          <tr><td>🔰 Moderador</td><td style="color:var(--mute)">Ver votos e opções</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function editarAdmin(id, username, avatar, cargoAtual){
+  $('dTitle').textContent = 'Editar admin';
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div><label>ID do Discord</label><input type="text" value="${esc(id)}" disabled></div>
+      <div><label>Nick</label><input type="text" value="${esc(username)}" disabled></div>
+      <div><label>Cargo</label>
+        <select id="editAdminCargo" style="width:100%;background:#1a102d;border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--ink);font-family:inherit;font-size:.85rem">
+          <option value="dev" ${cargoAtual==='dev'?'selected':''}>🛠️ Dev</option>
+          <option value="dono" ${cargoAtual==='dono'?'selected':''}>👑 Dono</option>
+          <option value="administrador" ${cargoAtual==='administrador'?'selected':''}>🛡️ Administrador</option>
+          <option value="moderador" ${cargoAtual==='moderador'?'selected':''}>🔰 Moderador</option>
+        </select>
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn" onclick="salvarAdmin('${id}','${esc(username)}','${esc(avatar)}')">Salvar</button>
       </div>
     </div>
   `;
+  dlg.showModal();
+}
+
+async function salvarAdmin(id, username, avatar){
+  const cargo = $('editAdminCargo').value;
+  try{
+    const r = await fetch('/api/admin?action=admins-edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: id, cargo, username, avatar })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    dlg.close();
+    await renderAdminAdmins();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+function adicionarAdmin(){
+  $('dTitle').textContent = 'Adicionar admin';
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div><label>ID do Discord</label><input id="novoAdminId" type="text" placeholder="123456789012345678"></div>
+      <div><label>Cargo</label>
+        <select id="novoAdminCargo" style="width:100%;background:#1a102d;border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--ink);font-family:inherit;font-size:.85rem">
+          <option value="moderador">🔰 Moderador</option>
+          <option value="administrador">🛡️ Administrador</option>
+          <option value="dono">👑 Dono</option>
+          <option value="dev">🛠️ Dev</option>
+        </select>
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn" onclick="salvarNovoAdmin()">Adicionar</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+async function salvarNovoAdmin(){
+  const userId = $('novoAdminId').value.trim();
+  const cargo = $('novoAdminCargo').value;
+  if(!userId) return alert('Digite o ID');
+  try{
+    const r = await fetch('/api/admin?action=admins-add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, cargo })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    dlg.close();
+    await renderAdminAdmins();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+async function removerAdmin(id){
+  if(!confirm('Remover esse admin?')) return;
+  try{
+    const r = await fetch('/api/admin?action=admins-remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: id })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    await renderAdminAdmins();
+  }catch(e){ alert('Erro: ' + e.message); }
 }
 
 /* ============================================================
@@ -1402,16 +1492,16 @@ async function enviarSugestao(){
       msg('#b7ff00', 'Mensagem enviada! Obrigado 💜');
       $('sugNome').value = ''; $('sugTexto').value = '';
     } else if(res.status === 429){
-      msg('#ff4d5f', 'Calma! Aguarde alguns segundos para enviar outra.');
+      msg('#ff4d5f', 'Calma! Aguarde alguns segundos.');
     } else if(res.status === 500 && dados && dados.error === 'Webhook não configurado'){
-      msg('#ff4d5f', '⚠️ Webhook do Discord não configurado (avise o admin).');
+      msg('#ff4d5f', '⚠️ Webhook do Discord não configurado.');
     } else if(res.status === 502){
-      msg('#ff4d5f', '⚠️ Discord recusou o envio. Verifique o webhook.');
+      msg('#ff4d5f', '⚠️ Discord recusou o envio.');
     } else {
       msg('#ff4d5f', 'Não consegui enviar agora. Tente de novo em instantes.');
     }
   }catch(e){
-    msg('#ff4d5f', 'Sem conexão com o servidor. Tente de novo.');
+    msg('#ff4d5f', 'Sem conexão com o servidor.');
   }finally{
     btn.disabled = false;
     setTimeout(() => { status.style.display = 'none'; }, 6000);
@@ -1419,15 +1509,13 @@ async function enviarSugestao(){
 }
 
 /* ============================================================
-   BOOT — TUDO RODA AQUI
+   BOOT
    ============================================================ */
 window.addEventListener('DOMContentLoaded', () => {
-  // Abas
   const abaSalva = localStorage.getItem('abaAtiva');
   if(abaSalva && document.getElementById('sec-' + abaSalva)) mudarAba(abaSalva, false);
   else mudarAba('inicio', false);
 
-  // Renderizadores independentes
   renderAviso();
   renderEmotes();
   renderTopDoadores();
@@ -1436,7 +1524,6 @@ window.addEventListener('DOMContentLoaded', () => {
   renderChips();
   renderComandos();
 
-  // Comandos do chat — busca + copiar
   const buscaCmd = $('buscaCmd');
   if(buscaCmd){
     buscaCmd.addEventListener('input', e => renderComandos(e.target.value));
@@ -1449,13 +1536,11 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Donate link
   if (CONFIG.donate) {
     const d = $('donateLink');
     if(d){ d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
   }
 
-  // Listeners de filtro/busca da tier list
   const modoEl = $('modo');
   if(modoEl) modoEl.addEventListener('click', e => {
     const b = e.target.closest('button');
@@ -1472,16 +1557,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const qEl = $('q');
   if(qEl) qEl.addEventListener('input', desenhar);
 
-  // Restaurar modo salvo
   try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
 
-  // Modal do setup (delegação)
   document.addEventListener('click', e => {
     const b = e.target.closest('.si-btn[data-produto]');
     if(b) abrirBuscaItem(b.dataset.produto);
   });
 
-  // Modal de detalhes da tier list
   const tiersEl = $('tiers');
   if(tiersEl) tiersEl.addEventListener('click', e => {
     const b = e.target.closest('.g'); if(!b) return;
@@ -1516,14 +1598,12 @@ window.addEventListener('DOMContentLoaded', () => {
     $('dlg').showModal();
   });
 
-  // Fechar modal
   const dlgEl = $('dlg');
   if(dlgEl){
     $('dClose').addEventListener('click', () => dlgEl.close());
     dlgEl.addEventListener('click', e => { if(e.target === dlgEl) dlgEl.close(); });
   }
 
-  // Carrega dados
   carregarAtividade();
   setInterval(carregarAtividade, 300000);
   verificarStatusTwitch();
