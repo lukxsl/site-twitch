@@ -884,7 +884,6 @@ nav ul button.on{
   font-size:.88rem;
 }
 
-/* Estilização dos botões duplos de lojas */
 .si{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
 .si-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;font-size:1.1rem;background:rgba(168,85,247,.14);border-radius:9px}
 .si-tx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
@@ -1497,7 +1496,7 @@ dialog{width:min(520px,92vw)}
     <button data-t="regras">📜 Regras</button>
   </div>
 
-  <div class="cpane ativo" id="c-apoiar">
+  <div class="cpane" id="c-apoiar">
     <div class="apoio-grid">
       <a href="#" class="card" id="donateLink">
         <div class="icon">💜</div>
@@ -1611,8 +1610,8 @@ dialog{width:min(520px,92vw)}
     
     <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
-        <h3>🗳️ Qual o próximo jogo?</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
+        <h3>🗳️ Qual o próximo jogo ou filme?</h3>
+        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo/filme</p>
         <div id="votoLista">Carregando votação...</div>
       </div>
     </div>
@@ -1949,26 +1948,26 @@ $('tiers').addEventListener('click', e => {
 $('dClose').addEventListener('click', () => dlg.close());
 dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
 
-// ---------- SETUP COM BOTÕES DUPLOS (AMAZON / KABUM) ----------
+// ---------- SETUP COM LINKS DE BUSCA GERAL (EVITA PRODUTO ESGOTADO) ----------
 const SETUP = [
   { t:'🖥️ PC Gamer', i:[
-    ['🗄️','Gabinete','Risemode Aquarium branco','https://www.kabum.com.br/produto/470870','https://www.amazon.com.br/s?k=Gabinete+Risemode+Aquarium'],
-    ['🧠','Processador','Ryzen 9 5900x','https://www.kabum.com.br/produto/158525','https://www.amazon.com.br/s?k=Ryzen+9+5900x'],
-    ['🧩','Memória RAM','48GB','https://www.kabum.com.br/produto/114798','https://www.amazon.com.br/s?k=Memoria+RAM+DDR4'],
-    ['🔌','Placa Mãe','X570 TUF Gaming','https://www.kabum.com.br/produto/108992','https://www.amazon.com.br/s?k=Placa+Mae+X570+TUF+Gaming'],
-    ['🎮','Placa de Vídeo','RX 6750 XT / RX 9060','https://www.kabum.com.br/produto/472412','https://www.amazon.com.br/s?k=Placa+de+Video+RX'],
-    ['💧','Water cooler','Risemode Aura RGB','https://www.kabum.com.br/produto/380295','https://www.amazon.com.br/s?k=Water+cooler+Risemode+Aura+RGB'],
-    ['💾','Armazenamento','SSD 2TB NVMe M2','https://www.kabum.com.br/produto/380745','https://www.amazon.com.br/s?k=SSD+2TB+NVMe+M2'],
-    ['⚡','Fonte','Corsair RM800w','https://www.kabum.com.br/produto/103282','https://www.amazon.com.br/s?k=Fonte+Corsair+800w']
+    ['🗄️','Gabinete','Risemode Aquarium branco','https://www.kabum.com.br/busca/gabinete-risemode-aquarium-branco','https://www.amazon.com.br/s?k=Gabinete+Risemode+Aquarium+branco'],
+    ['🧠','Processador','Ryzen 9 5900x','https://www.kabum.com.br/busca/ryzen-9-5900x','https://www.amazon.com.br/s?k=Ryzen+9+5900x'],
+    ['🧩','Memória RAM','48GB','https://www.kabum.com.br/busca/memoria-ram-ddr4-48gb','https://www.amazon.com.br/s?k=Memoria+RAM+48gb'],
+    ['🔌','Placa Mãe','X570 TUF Gaming','https://www.kabum.com.br/busca/placa-mae-x570-tuf-gaming','https://www.amazon.com.br/s?k=Placa+Mae+X570+TUF+Gaming'],
+    ['🎮','Placa de Vídeo','RX 6750 XT / RX 9060','https://www.kabum.com.br/busca/placa-de-video-rx','https://www.amazon.com.br/s?k=Placa+de+Video+RX'],
+    ['💧','Water cooler','Risemode Aura RGB','https://www.kabum.com.br/busca/water-cooler-risemode-aura-rgb','https://www.amazon.com.br/s?k=Water+cooler+Risemode+Aura+RGB'],
+    ['💾','Armazenamento','SSD 2TB NVMe M2','https://www.kabum.com.br/busca/ssd-2tb-nvme-m2','https://www.amazon.com.br/s?k=SSD+2TB+NVMe+M2'],
+    ['⚡','Fonte','Corsair RM800w','https://www.kabum.com.br/busca/fonte-corsair-800w','https://www.amazon.com.br/s?k=Fonte+Corsair+800w']
   ]},
   { t:'🖱️ Periféricos & Outros', i:[
-    ['⌨️','Teclado','AULA H88','https://www.kabum.com.br/produto/615891','https://www.amazon.com.br/s?k=Teclado+AULA+H88'],
-    ['🖱️','Mouse','Logitech G502X Superlight RGB','https://www.kabum.com.br/produto/380299','https://www.amazon.com.br/s?k=Logitech+G502X+Superlight'],
-    ['🎧','Headset','Astro A50','https://www.kabum.com.br/produto/103328','https://www.amazon.com.br/s?k=Headset+Astro+A50'],
-    ['🎙️','Microfone','FIFINE AM8 Branco','https://www.kabum.com.br/produto/472648','https://www.amazon.com.br/dp/B0C74G9RLH'],
-    ['🖥️','Monitor','AOC 240Hz','https://www.kabum.com.br/produto/470956','https://www.amazon.com.br/s?k=Monitor+AOC+240Hz'],
+    ['⌨️','Teclado','AULA H88','https://www.kabum.com.br/busca/teclado-aula-h88','https://www.amazon.com.br/s?k=Teclado+AULA+H88'],
+    ['🖱️','Mouse','Logitech G502X Superlight RGB','https://www.kabum.com.br/busca/logitech-g502x-superlight','https://www.amazon.com.br/s?k=Logitech+G502X+Superlight'],
+    ['🎧','Headset','Astro A50','https://www.kabum.com.br/busca/headset-astro-a50','https://www.amazon.com.br/s?k=Headset+Astro+A50'],
+    ['🎙️','Microfone','FIFINE AM8 Branco','https://www.kabum.com.br/busca/fifine-am8-branco','https://www.amazon.com.br/s?k=FIFINE+AM8+Branco'],
+    ['🖥️','Monitor','AOC 240Hz','https://www.kabum.com.br/busca/monitor-aoc-240hz','https://www.amazon.com.br/s?k=Monitor+AOC+240Hz'],
     ['📷','Webcam','iPhone 11','','https://www.amazon.com.br/s?k=iPhone+11'],
-    ['🪑','Cadeira','XT Racer','https://www.kabum.com.br/produto/114250','https://www.amazon.com.br/s?k=Cadeira+Gamer+XT+Racer']
+    ['🪑','Cadeira','XT Racer','https://www.kabum.com.br/busca/xt-racer','https://www.amazon.com.br/s?k=Cadeira+XT+Racer']
   ]}
 ];
 
@@ -1980,7 +1979,6 @@ const UPGRADES = [
   ['🖱️','Mousepad grande','Desejado','https://www.amazon.com.br/s?k=Mousepad+gamer+grande']
 ];
 
-// Função inteligente que gera os dois botões (KaBuM e Amazon) se houver links
 const btnLoja = (kabum, amazon) => {
   let html = '<div class="si-btns">';
   if(kabum) html += `<a class="si-btn kabum" href="${esc(kabum)}" target="_blank" rel="noopener">KaBuM! ↗</a>`;
