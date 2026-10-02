@@ -1629,6 +1629,12 @@ async function carregarAdmin(){
   const area = $('adminArea'); if(!area) return;
   const sub = $('adminSub');
 
+  // Se ainda não sabemos se está logado, checa AGORA (antes de mostrar "restrito")
+  if(USUARIO === null){
+    area.innerHTML = `<p class="admin-vazio">Verificando login…</p>`;
+    await checarLogin();
+  }
+
   if(!USUARIO || !USUARIO.admin){
     if(sub) sub.textContent = 'Acesso restrito.';
     area.innerHTML = `<div class="admin-vazio">
