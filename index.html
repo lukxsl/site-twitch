@@ -1572,6 +1572,58 @@ dialog{width:min(520px,92vw)}
 .proximo .foco-btns{margin-top:4px}
 .proximo .foco-label{color:var(--purple-light)}
 
+/* =========================
+   SEÇÃO DE APOIO (Início)
+========================= */
+.apoio-home{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:4px;
+}
+.apoio-home .sbox{
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.apoio-home .sbox h3{
+  font-size:1.15rem;
+  color:var(--white);
+  margin-bottom:0;
+}
+.apoio-home .sbox p{
+  color:var(--mute);
+  font-size:.85rem;
+}
+.apoio-home .btn.big{
+  display:block;
+  text-align:center;
+  padding:12px;
+  font-size:.9rem;
+  margin:0;
+  align-self:stretch;
+}
+.apoio-home .benefits-grid{
+  grid-template-columns:1fr;
+  margin-bottom:0;
+}
+.apoio-home .twitch-sub-btn{
+  align-self:stretch;
+  justify-content:center;
+  padding:12px;
+  font-size:.88rem;
+  margin-top:auto;
+}
+.apoio-home .sub-crown{
+  font-size:1.6rem;
+  margin-bottom:2px;
+}
+
+@media(max-width:900px){
+  .apoio-home{grid-template-columns:1fr}
+}
+
 @media(max-width:1100px){
   .clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.apoio-grid,.sugestoes-grid{grid-template-columns:1fr}
 }
@@ -1816,9 +1868,26 @@ dialog{width:min(520px,92vw)}
         </div>
       </div>
     </div>
-    <div class="clips-box" id="clipsBox" style="display:none">
-      <h3><span>🎬 Clipes em destaque</span><a href="https://www.twitch.tv/asemtet0/clips" target="_blank" rel="noopener">Ver todos →</a></h3>
-      <div class="clips-grid" id="clipsGrid"></div>
+
+    <!-- APOIO NA HOME (movido da Comunidade) -->
+    <div class="apoio-home">
+      <div class="sbox apoie">
+        <h3>💜 Apoie o cantinho</h3>
+        <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
+        <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
+      </div>
+      <div class="sbox apoie">
+        <span class="sub-crown">👑</span>
+        <h3>Seja Sub</h3>
+        <p>Vire Sub e desbloqueie vantagens exclusivas no cantinho.</p>
+        <div class="benefits-grid">
+          <div class="benefit">✨ Cargos exclusivos no Discord</div>
+          <div class="benefit">🎁 Emotes personalizados pro chat</div>
+          <div class="benefit">💜 Apoio direto ao canal e às lives</div>
+          <div class="benefit">🎮 Vantagens destinadas aos subs</div>
+        </div>
+        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch</a>
+      </div>
     </div>
   </div>
 </section>
@@ -1850,35 +1919,24 @@ dialog{width:min(520px,92vw)}
     <div class="goalc" id="goalSubBox"><div class="gc-top"><span>👑 Subs</span><b id="goalSubNum">…</b></div><div class="goal-bar"><i id="goalSubBar" style="width:0%"></i></div><small id="goalSubDesc">Carregando…</small></div>
   </div>
 
-  <div class="com-grid">
-    <div class="sbox apoie">
-      <h3 style="color:var(--white)">💜 Apoie o cantinho</h3>
-      <p class="mute">Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
-      <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
-      <hr>
-      <h3 style="color:var(--white)">👑 Seja Sub</h3>
-      <div class="benefits-grid">
-        <div class="benefit">✨ Cargos exclusivos no Discord da comunidade</div>
-        <div class="benefit">🎁 Emotes personalizados para usar no chat</div>
-        <div class="benefit">💜 Apoio direto ao canal e às lives</div>
-        <div class="benefit">🎮 Participação nas vantagens destinadas aos subs</div>
-      </div>
-      <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch</a>
+  <div class="sbox cmds" style="margin-bottom:14px">
+    <h3 style="color:var(--white)">🤖 Comandos do chat</h3>
+    <p class="mute">Toque em um comando para copiar e colar no chat.</p>
+    <div class="commands-list">
+      <button class="command cmd" data-c="!discord"><span><strong>!discord</strong> — Link do Discord</span><em>copiar</em></button>
+      <button class="command cmd" data-c="!insta"><span><strong>!insta</strong> — Instagram da Soso</span><em>copiar</em></button>
+      <button class="command cmd" data-c="!social"><span><strong>!social</strong> — Instagram, Discord e TikTok</span><em>copiar</em></button>
+      <button class="command cmd" data-c="!lurk"><span><strong>!lurk</strong> — Avisar que vai ficar de lurk</span><em>copiar</em></button>
+      <button class="command cmd" data-c="!uptime"><span><strong>!uptime</strong> — Tempo de live</span><em>copiar</em></button>
+      <button class="command cmd" data-c="!commands"><span><strong>!commands</strong> — Lista de comandos</span><em>copiar</em></button>
     </div>
+    <a href="https://streamelements.com/asemtet0/commands" target="_blank" rel="noopener" class="full-commands">Ver todos os comandos no StreamElements →</a>
+  </div>
 
-    <div class="sbox cmds">
-      <h3 style="color:var(--white)">🤖 Comandos do chat</h3>
-      <p class="mute">Toque em um comando para copiar e colar no chat.</p>
-      <div class="commands-list">
-        <button class="command cmd" data-c="!discord"><span><strong>!discord</strong> — Link do Discord</span><em>copiar</em></button>
-        <button class="command cmd" data-c="!insta"><span><strong>!insta</strong> — Instagram da Soso</span><em>copiar</em></button>
-        <button class="command cmd" data-c="!social"><span><strong>!social</strong> — Instagram, Discord e TikTok</span><em>copiar</em></button>
-        <button class="command cmd" data-c="!lurk"><span><strong>!lurk</strong> — Avisar que vai ficar de lurk</span><em>copiar</em></button>
-        <button class="command cmd" data-c="!uptime"><span><strong>!uptime</strong> — Tempo de live</span><em>copiar</em></button>
-        <button class="command cmd" data-c="!commands"><span><strong>!commands</strong> — Lista de comandos</span><em>copiar</em></button>
-      </div>
-      <a href="https://streamelements.com/asemtet0/commands" target="_blank" rel="noopener" class="full-commands">Ver todos os comandos no StreamElements →</a>
-    </div>
+  <!-- CLIPES EM DESTAQUE (movido da Início) -->
+  <div class="clips-box" id="clipsBox" style="display:none;margin-bottom:14px">
+    <h3><span>🎬 Clipes em destaque</span><a href="https://www.twitch.tv/asemtet0/clips" target="_blank" rel="noopener">Ver todos →</a></h3>
+    <div class="clips-grid" id="clipsGrid"></div>
   </div>
 
   <div class="rules-wrap">
@@ -2350,6 +2408,30 @@ const SETUP = [
     ['🎙️','Microfone','FIFINE AM8 Branco','https://www.kabum.com.br/busca/fifine-am8-branco','https://www.amazon.com.br/s?k=FIFINE+AM8+Branco'],
     ['🖥️','Monitor','AOC 240Hz','https://www.kabum.com.br/busca/monitor-aoc-240hz','https://www.amazon.com.br/s?k=Monitor+AOC+240Hz'],
     ['📷','Webcam','Logitech C920','https://www.kabum.com.br/busca/logitech-c920','https://www.amazon.com.br/s?k=Logitech+C920']
+  ]},
+  { t:'🎬 Stream & Software', i:[
+    ['📹','Transmissão','OBS Studio','https://obsproject.com/pt-br/download','https://www.youtube.com/results?search_query=obs+studio+tutorial'],
+    ['🔔','Alertas & Bot','StreamElements','https://streamelements.com/','https://www.youtube.com/results?search_query=streamelements+tutorial'],
+    ['💬','Comunidade','Discord','https://discord.com/','https://discord.gg/J4gGaKWFPZ'],
+    ['🎞️','Edição de vídeo','CapCut / Premiere','https://www.capcut.com/pt-br/','https://www.adobe.com/br/products/premiere.html'],
+    ['🎨','Thumbnails & Design','Canva Pro','https://www.canva.com/','https://www.figma.com/'],
+    ['📊','Analytics','TwitchTracker','https://twitchtracker.com/asemtet0','https://streamscharts.com/']
+  ]},
+  { t:'💡 Ambiente & Iluminação', i:[
+    ['💡','Ring Light','Neewer 45cm USB','https://www.kabum.com.br/busca/ring-light-neewer','https://www.amazon.com.br/s?k=Ring+Light+Neewer'],
+    ['🌈','LED Strip','Fita LED RGB Inteligente','https://www.kabum.com.br/busca/fita-led-rgb','https://www.amazon.com.br/s?k=Fita+LED+RGB+inteligente'],
+    ['🪑','Cadeira','Cadeira Gamer / Escritório','https://www.kabum.com.br/busca/cadeira-gamer','https://www.amazon.com.br/s?k=Cadeira+Gamer'],
+    ['🪵','Mesa','Mesa em L','https://www.kabum.com.br/busca/mesa-escritorio','https://www.amazon.com.br/s?k=Mesa+em+L'],
+    ['🌱','Decoração','Plantas & Posters','https://www.amazon.com.br/s?k=plantas+artificiais','https://www.amazon.com.br/s?k=posters+games'],
+    ['🔊','Caixas de som','Edifier R1280T','https://www.kabum.com.br/busca/caixa-de-som-edifier','https://www.amazon.com.br/s?k=Edifier+R1280T']
+  ]},
+  { t:'✨ Wishlist / Sonhos de consumo', i:[
+    ['🎥','Câmera profissional','Sony ZV-E10','https://www.kabum.com.br/busca/camera-sony-zv-e10','https://www.amazon.com.br/s?k=Sony+ZV-E10'],
+    ['🎤','Microfone pro','Shure SM7B','https://www.kabum.com.br/busca/microfone-shure-sm7b','https://www.amazon.com.br/s?k=Shure+SM7B'],
+    ['🖥️','Segundo monitor','LG Ultrawide 29"','https://www.kabum.com.br/busca/monitor-lg-ultrawide','https://www.amazon.com.br/s?k=Monitor+LG+Ultrawide'],
+    ['📸','Iluminação pro','Elgato Key Light','https://www.kabum.com.br/busca/elgato-key-light','https://www.amazon.com.br/s?k=Elgato+Key+Light'],
+    ['🎮','Console','PS5 / Nintendo Switch','https://www.kabum.com.br/busca/console','https://www.amazon.com.br/s?k=Console'],
+    ['💻','Notebook','MacBook Air M2','https://www.kabum.com.br/busca/macbook-air','https://www.amazon.com.br/s?k=MacBook+Air']
   ]}
 ];
 
@@ -2370,7 +2452,7 @@ function renderSetup(){
               </div>
               <div class="si-btns">
                 ${item[3] ? `<a href="${item[3]}" target="_blank" rel="noopener" class="si-btn kabum">KaBuM!</a>` : ''}
-                ${item[4] ? `<a href="${item[4]}" target="_blank" rel="noopener" class="si-btn off">Amazon</a>` : ''}
+                ${item[4] ? `<a href="${item[4]}" target="_blank" rel="noopener" class="si-btn off">Link</a>` : ''}
               </div>
             </div>
           </li>
