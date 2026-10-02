@@ -1,3 +1,23 @@
+// Vercel serverless: /api/tmdb.js
+// Variável de ambiente: TMDB_TOKEN (API Read Access Token) ou TMDB_API_KEY (chave v3)
+// Uso: /api/tmdb?q=Interestelar&ano=2014   ou   /api/tmdb?id=157336
+const BASE = 'https://api.themoviedb.org/3';
+
+export default async function handler(req, res) {
+  const token = process.env.TMDB_TOKEN;
+  const key = process.env.TMDB_API_KEY;
+  if (!token && !key) return res.status(500).json({ error: 'TMDB não configurado' });
+
+  const { q, ano, id } = req.query || {};
+
+  const chamar = async (path, params = {}) => {
+    const u = new URL(BASE + path);
+    Object.entries({ language: 'pt-BR', ...params }).forEach(([k, v]) => u.searchParams.set(k, v));
+    if (!token) u.searchParams.set('api_key', key);
+    const r = await fetch(u, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    return r.json();
+  };
+
   try {
     let filmeId = /^\d+$/.test(String(id || '')) ? String(id) : null;
 
@@ -47,3 +67,4 @@
   } catch (e) {
     return res.status(500).json({ error: 'Erro ao consultar o TMDB' });
   }
+}

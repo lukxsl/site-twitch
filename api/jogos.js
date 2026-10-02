@@ -31,25 +31,48 @@ async function igdbQuery(body) {
 }
 
 export default async function handler(req, res) {
-  if (!STEAM_KEY) return res.status(500).json({ error: 'Steam API Key não configurada' });
+  if (!STEAM_KEY) {
+    return res.status(200).json({
+      jogos: [],
+      aviso: 'STEAM_API_KEY não configurada nas env vars da Vercel.'
+    });
+  }
 
   try {
     // ---------- 1) Steam: horas + appid ----------
-    const r = await fetch(`https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`);
-    if (!r.ok) return res.status(200).json({ jogos: [], aviso: `Steam HTTP ${r.status}` });
+    const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
+    const r = await fetch(url);
+
+    if (!r.ok) {
+      return res.status(200).json({
+        jogos: [],
+        aviso: `Steam respondeu HTTP ${r.status}. ${
+          r.status === 401 ? 'Chave inválida.' :
+          r.status === 403 ? 'Perfil privado ou chave sem permissão.' :
+          'Tente de novo em instantes.'
+        }`
+      });
+    }
+
     const sd = await r.json();
     const lista = (sd.response && sd.response.games) || [];
-    if (!lista.length) return res.status(200).json({ jogos: [], aviso: 'Nenhum jogo público. Verifique se "Detalhes do jogo" está público.' });
 
-    const jogados = lista.filter(g => g.playtime_forever > 0)
+    if (!lista.length) {
+      return res.status(200).json({
+        jogos: [],
+        aviso: 'Nenhum jogo encontrado. Verifique se "Detalhes do jogo" no seu perfil da Steam está Público.'
+      });
+    }
+
+    const jogados = lista
+      .filter(g => g.playtime_forever > 0)
       .sort((a, b) => b.playtime_forever - a.playtime_forever)
       .slice(0, 60);
 
-    // ---------- 2) IGDB: enriquece ----------
+    // ---------- 2) IGDB: enriquece com nota, capa, sinopse ----------
     const igdbData = {};
     if (TWITCH_ID && TWITCH_SECRET) {
       try {
-        // Agrupa em lotes de 40 nomes (where name = ("A","B",...))
         const lotes = [];
         const nomes = jogados.map(g => g.name.replace(/"/g, '').trim());
         for (let i = 0; i < nomes.length; i += 40) lotes.push(nomes.slice(i, i + 40));
@@ -75,9 +98,11 @@ export default async function handler(req, res) {
       } catch (e) { /* segue só com Steam */ }
     }
 
-    // ---------- 3) Merge ----------
+    // ---------- 3) Merge final ----------
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=3600');
     return res.status(200).json({
+      total: jogados.length,
+      temIgdb: Object.keys(igdbData).length > 0,
       jogos: jogados.map(g => {
         const extra = igdbData[g.name.toLowerCase()] || {};
         return {
@@ -93,6 +118,6 @@ export default async function handler(req, res) {
       })
     });
   } catch (e) {
-    return res.status(500).json({ error: 'Erro ao consultar jogos' });
+    return res.status(200).json({ jogos: [], aviso: 'Erro inesperado: ' + e.message });
   }
 }
