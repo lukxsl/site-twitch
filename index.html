@@ -30,9 +30,31 @@ nav .wrapper{display:flex;align-items:center;justify-content:space-between;min-h
 .twitch-logo-img{width:32px;height:32px;object-fit:contain;border-radius:9px}
 .logo-text{font-weight:800;font-size:1.3rem;letter-spacing:-.02em;color:var(--white)}
 .logo-text span{color:var(--purple)}
+.nav-right{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:flex-end}
 nav ul{display:flex;gap:18px;list-style:none;flex-wrap:wrap;justify-content:flex-end}
 nav ul button{background:none;border:none;font-family:inherit;font-size:.9rem;font-weight:500;color:var(--mute);cursor:pointer;transition:color .2s}
 nav ul button:hover,nav ul button.on{color:var(--purple)}
+
+/* Login Discord na navbar */
+.nav-user{display:flex;align-items:center;gap:8px;margin-left:6px;padding-left:14px;border-left:1px solid var(--line)}
+.nav-user-deslogado{
+  display:inline-flex;align-items:center;gap:7px;
+  background:#5865f2;color:#fff;padding:7px 14px;border-radius:8px;
+  font-family:inherit;font-weight:700;font-size:.78rem;text-decoration:none;
+  transition:.2s;white-space:nowrap;
+}
+.nav-user-deslogado:hover{background:#4752c4;transform:translateY(-1px)}
+.nav-user-deslogado svg{width:14px;height:14px;fill:currentColor;flex:none}
+
+.nav-user-logado{display:flex;align-items:center;gap:8px}
+.nav-user-logado img{width:32px;height:32px;border-radius:50%;background:#1a102d;flex:none;border:1.5px solid rgba(88,101,242,.5)}
+.nav-user-logado .nick{font-size:.78rem;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px}
+.nav-user-sair{
+  background:transparent;border:1px solid var(--line);color:var(--mute);
+  padding:5px 9px;border-radius:6px;font-family:inherit;font-size:.68rem;
+  font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap;
+}
+.nav-user-sair:hover{border-color:#ff4d5f;color:#ff4d5f}
 
 .page-section{display:none;padding:20px 0 40px}
 .page-section.ativo{display:block}
@@ -243,8 +265,25 @@ footer{background:#050309;padding:25px 0;text-align:center;color:var(--mute);bor
 .vt.meu .vt-top span::before{content:'✓ ';color:var(--green)}
 .vt-total{font-size:.72rem;color:var(--mute);margin-top:12px;text-align:right;padding-right:4px}
 .vt-rank{position:absolute;top:8px;left:8px;font-size:1.5rem;z-index:4;filter:drop-shadow(0 2px 5px rgba(0,0,0,.85));width:auto;height:auto}
-.vazio-voto{text-align:center;padding:26px 14px;color:var(--mute);font-size:.85rem;background:rgba(255,255,255,.02);border:1px dashed var(--line);border-radius:12px}
-.vazio-voto b{display:block;color:var(--white);font-size:1rem;margin-bottom:4px;font-family:'Bricolage Grotesque',sans-serif}
+
+/* Aviso quando deslogado */
+.voto-bloqueado{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;padding:28px 18px;text-align:center;
+  background:radial-gradient(circle at 50% 0%,rgba(88,101,242,.15),transparent 70%),var(--card-bg);
+  border:1px dashed rgba(88,101,242,.35);border-radius:14px;
+}
+.voto-bloqueado .loot{font-size:2rem;line-height:1}
+.voto-bloqueado b{color:var(--white);font-size:1.02rem;font-family:'Bricolage Grotesque',sans-serif}
+.voto-bloqueado p{color:var(--mute);font-size:.85rem;max-width:320px;line-height:1.5}
+.voto-bloqueado .btn-entrar{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#5865f2;color:#fff;padding:11px 22px;border-radius:10px;
+  font-weight:700;font-size:.88rem;text-decoration:none;transition:.2s;
+  box-shadow:0 4px 12px rgba(88,101,242,.4);
+}
+.voto-bloqueado .btn-entrar:hover{background:#4752c4;transform:translateY(-2px)}
+.voto-bloqueado .btn-entrar svg{width:18px;height:18px;fill:currentColor}
 
 .destaque{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,rgba(168,85,247,.22),rgba(168,85,247,.04));border:1px solid var(--purple);border-radius:14px;padding:14px;margin-bottom:14px;position:relative;overflow:hidden}
 .destaque::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(192,132,252,.18),transparent 60%);pointer-events:none}
@@ -364,21 +403,16 @@ dialog{width:min(520px,92vw)}
 .footer-credit b{color:var(--purple-light)}
 @media(max-width:450px){.tm-three,.tm-feed{grid-template-columns:1fr}}
 
-/* ===== Login Discord (votação) ===== */
-.user-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(88,101,242,.12);border:1px solid rgba(88,101,242,.35);border-radius:12px;margin-bottom:12px}
-.user-bar img{width:34px;height:34px;border-radius:50%;flex:none;background:#1a102d}
-.user-bar-info{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
-.user-bar-info b{font-size:.85rem;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.user-bar-info small{font-size:.68rem;color:var(--mute)}
-.user-bar-logout{background:transparent;border:1px solid var(--line);color:var(--mute);padding:5px 10px;border-radius:6px;font-family:inherit;font-size:.72rem;font-weight:700;cursor:pointer;transition:.2s}
-.user-bar-logout:hover{border-color:#ff4d5f;color:#ff4d5f}
-
-.login-cta{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 18px;background:linear-gradient(135deg,rgba(88,101,242,.18),transparent),var(--card-bg);border:1px dashed rgba(88,101,242,.45);border-radius:14px;text-align:center;margin-bottom:12px}
-.login-cta b{color:var(--white);font-size:.95rem;font-family:'Bricolage Grotesque',sans-serif}
-.login-cta small{color:var(--mute);font-size:.78rem;line-height:1.4}
-.btn-discord{display:inline-flex;align-items:center;gap:8px;background:#5865f2;color:#fff;padding:11px 22px;border-radius:10px;font-weight:700;font-size:.88rem;text-decoration:none;border:none;cursor:pointer;font-family:inherit;transition:.2s;box-shadow:0 4px 12px rgba(88,101,242,.4)}
-.btn-discord:hover{transform:translateY(-2px);background:#4752c4;box-shadow:0 6px 16px rgba(88,101,242,.5)}
-.btn-discord svg{width:18px;height:18px;fill:currentColor}
+/* Ajustes mobile do login */
+@media(max-width:900px){
+  nav .wrapper{flex-wrap:wrap}
+  .nav-right{width:100%;justify-content:center}
+  nav ul{justify-content:center}
+  .nav-user{border-left:none;padding-left:0;margin-left:0}
+}
+@media(max-width:600px){
+  .nav-user-logado .nick{max-width:70px}
+}
 </style>
 </head>
 
@@ -390,13 +424,16 @@ dialog{width:min(520px,92vw)}
       <img src="img/twitch.png" alt="Twitch" class="twitch-logo-img">
       <div class="logo-text">asemtet<span>0</span></div>
     </div>
-    <ul>
-      <li><button onclick="mudarAba('inicio')" id="btn-inicio" class="on">Início</button></li>
-      <li><button onclick="mudarAba('tierlist')" id="btn-tierlist">Tier List</button></li>
-      <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
-      <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
-      <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
-    </ul>
+    <div class="nav-right">
+      <ul>
+        <li><button onclick="mudarAba('inicio')" id="btn-inicio" class="on">Início</button></li>
+        <li><button onclick="mudarAba('tierlist')" id="btn-tierlist">Tier List</button></li>
+        <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
+        <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
+        <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
+      </ul>
+      <div class="nav-user" id="navUser"></div>
+    </div>
   </div>
 </nav>
 
@@ -638,10 +675,7 @@ dialog{width:min(520px,92vw)}
     <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
         <h3>🗳️ Qual o próximo jogo ou filme?</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo/filme que você quer ver na live. Entre com o Discord para votar!</p>
-
-        <!-- Área de login / usuário -->
-        <div id="loginArea" style="margin-bottom:12px"></div>
+        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo/filme que você quer ver na live. Um voto por pessoa 💜</p>
 
         <div id="destaqueBox"></div>
         <div id="votoLista">Carregando votação...</div>
@@ -1343,28 +1377,21 @@ async function checarLogin(){
 }
 
 function renderLogin(){
-  const area = $('loginArea'); if(!area) return;
+  const area = $('navUser'); if(!area) return;
   if(USUARIO){
     area.innerHTML = `
-      <div class="user-bar">
+      <div class="nav-user-logado">
         <img src="${esc(USUARIO.avatar)}" alt="" onerror="this.style.display='none'">
-        <div class="user-bar-info">
-          <b>@${esc(USUARIO.username)}</b>
-          <small>Logado com Discord</small>
-        </div>
-        <button class="user-bar-logout" onclick="sair()">Sair</button>
+        <span class="nick">@${esc(USUARIO.username)}</span>
+        <button class="nav-user-sair" onclick="sair()">Sair</button>
       </div>
     `;
   } else {
     area.innerHTML = `
-      <div class="login-cta">
-        <b>🔒 Login necessário para votar</b>
-        <small>Só assim garantimos 1 voto por pessoa. Sem senha, sem cadastro chato.</small>
-        <a class="btn-discord" href="/api/auth?action=login">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
-          Entrar com Discord
-        </a>
-      </div>
+      <a class="nav-user-deslogado" href="/api/auth?action=login" title="Entrar com Discord para votar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
+        Entrar
+      </a>
     `;
   }
 }
@@ -1407,7 +1434,16 @@ function renderVotacao(){
 
   if(!USUARIO){
     destBox.innerHTML = '';
-    listaBox.innerHTML = `<div class="vazio-voto"><b>🔒 Entre para ver e votar</b>Assim que você logar, aparecem as opções disponíveis.</div>`;
+    listaBox.innerHTML = `
+      <div class="voto-bloqueado">
+        <span class="loot">🔒</span>
+        <b>Só falta você escolher!</b>
+        <p>Entra rapidinho com o Discord pra votar e ajudar a decidir o próximo jogo da live 💜</p>
+        <a class="btn-entrar" href="/api/auth?action=login">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
+          Entrar com Discord
+        </a>
+      </div>`;
     if(proxCover) proxCover.style.display = 'none';
     return;
   }
