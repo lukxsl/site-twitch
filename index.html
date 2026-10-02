@@ -1727,7 +1727,7 @@ async function verificarStatusTwitch() {
       badge.style.display = 'flex';
       g('bannerLiveText').textContent = `AO VIVO • ${data.stream.game_name || 'Jogando'} (${data.stream.viewer_count} espectadores)`;
       g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
-      g('playerNoteText').textContent = `A transmitir: ${data.stream.title}`;
+      g('playerNoteText').textContent = `Transmitindo: ${data.stream.title}`;
     } else {
       badge.style.display = 'none';
       g('viewerCountStatus').textContent = '@asemtet0';
