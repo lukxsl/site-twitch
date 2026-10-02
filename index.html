@@ -21,7 +21,7 @@ body::before{content:'';position:absolute;top:0;left:0;width:600px;height:600px;
 body::after{content:'';position:absolute;top:30%;right:0;width:700px;height:700px;background:radial-gradient(circle,rgba(147,51,234,.1) 0%,transparent 70%);pointer-events:none}
 h1,h2,h3{font-family:'Bricolage Grotesque',sans-serif;line-height:1.1}
 a{color:inherit;text-decoration:none}
-a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--purple);outline-offset:3px}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--purple);outline-offset:3px}
 .wrapper{width:100%;max-width:1400px;margin:0 auto;padding:0 4vw;position:relative;z-index:1}
 
 nav{position:sticky;top:0;z-index:100;background:rgba(11,7,19,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
@@ -31,11 +31,12 @@ nav .wrapper{display:flex;align-items:center;justify-content:space-between;min-h
 .logo-text{font-weight:800;font-size:1.3rem;letter-spacing:-.02em;color:var(--white)}
 .logo-text span{color:var(--purple)}
 .nav-right{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:flex-end}
-nav ul{display:flex;gap:18px;list-style:none;flex-wrap:wrap;justify-content:flex-end}
-nav ul button{background:none;border:none;font-family:inherit;font-size:.9rem;font-weight:500;color:var(--mute);cursor:pointer;transition:color .2s}
+nav ul{display:flex;gap:18px;list-style:none;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+nav ul li{display:list-item}
+nav ul button{background:none;border:none;font-family:inherit;font-size:.9rem;font-weight:500;color:var(--mute);cursor:pointer;transition:color .2s;padding:0}
 nav ul button:hover,nav ul button.on{color:var(--purple)}
+nav li.admin-nav{display:none}
 
-/* Login Discord na navbar */
 .nav-user{display:flex;align-items:center;gap:8px;margin-left:6px;padding-left:14px;border-left:1px solid var(--line)}
 .nav-user-deslogado{
   display:inline-flex;align-items:center;gap:7px;
@@ -266,7 +267,6 @@ footer{background:#050309;padding:25px 0;text-align:center;color:var(--mute);bor
 .vt-total{font-size:.72rem;color:var(--mute);margin-top:12px;text-align:right;padding-right:4px}
 .vt-rank{position:absolute;top:8px;left:8px;font-size:1.5rem;z-index:4;filter:drop-shadow(0 2px 5px rgba(0,0,0,.85));width:auto;height:auto}
 
-/* Aviso quando deslogado */
 .voto-bloqueado{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:14px;padding:28px 18px;text-align:center;
@@ -403,6 +403,48 @@ dialog{width:min(520px,92vw)}
 .footer-credit b{color:var(--purple-light)}
 @media(max-width:450px){.tm-three,.tm-feed{grid-template-columns:1fr}}
 
+/* ===== Painel Admin ===== */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.admin-card{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
+.admin-card h3{color:var(--white);margin-bottom:12px;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+.admin-tabela{width:100%;border-collapse:collapse;font-size:.85rem}
+.admin-tabela th{text-align:left;font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;color:var(--mute);padding:0 8px 8px;border-bottom:1px solid var(--line)}
+.admin-tabela td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--ink)}
+.admin-tabela tr:last-child td{border-bottom:none}
+.admin-tabela .uid{font-family:'Bricolage Grotesque',sans-serif;color:var(--purple-light);font-weight:700}
+
+.admin-opcao{display:flex;gap:12px;align-items:center;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+.admin-opcao img,.admin-opcao .ph3{width:44px;height:58px;border-radius:6px;object-fit:cover;flex:none;background:#1d1433;border:1px solid var(--line)}
+.admin-opcao .ph3{display:grid;place-items:center;font-size:1.2rem}
+.admin-opcao-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.admin-opcao-info b{color:var(--white);font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-opcao-info small{color:var(--mute);font-size:.68rem}
+.admin-opcao .btn-mini{background:transparent;border:1px solid var(--line);color:var(--mute);padding:5px 10px;border-radius:6px;font-family:inherit;font-size:.7rem;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
+.admin-opcao .btn-mini:hover{border-color:var(--purple);color:var(--purple-light)}
+
+.admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.admin-btn{background:var(--purple);color:#fff;border:0;padding:9px 16px;border-radius:8px;font-family:inherit;font-weight:700;font-size:.8rem;cursor:pointer;transition:.2s}
+.admin-btn:hover{background:var(--purple-dark);transform:translateY(-1px)}
+.admin-btn.ghost{background:transparent;border:1px solid var(--line);color:var(--mute)}
+.admin-btn.ghost:hover{border-color:var(--purple);color:var(--purple-light);transform:none}
+.admin-btn.perigo{background:#ff4d5f;color:#fff}
+.admin-btn.perigo:hover{background:#e63946}
+
+.admin-form{display:grid;gap:10px}
+.admin-form label{display:block;font-size:.72rem;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.admin-form input,.admin-form select{width:100%;background:#1a102d;border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--ink);font-family:inherit;font-size:.85rem}
+.admin-form input:focus,.admin-form select:focus{border-color:var(--purple);outline:none}
+
+.admin-vazio{color:var(--mute);font-size:.85rem;text-align:center;padding:30px 14px;background:rgba(255,255,255,.02);border:1px dashed var(--line);border-radius:12px}
+.admin-vazio b{display:block;color:var(--white);font-size:1rem;margin-bottom:4px;font-family:'Bricolage Grotesque',sans-serif}
+.admin-vazio a{color:var(--purple-light);font-weight:700;text-decoration:underline}
+
+body.sou-admin nav li.admin-nav{display:list-item}
+
+@media(max-width:900px){
+  .admin-grid{grid-template-columns:1fr}
+}
+
 /* Ajustes mobile do login */
 @media(max-width:900px){
   nav .wrapper{flex-wrap:wrap}
@@ -431,6 +473,7 @@ dialog{width:min(520px,92vw)}
         <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
         <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
         <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
+        <li class="admin-nav"><button onclick="mudarAba('admin')" id="btn-admin">⚙️ Admin</button></li>
       </ul>
       <div class="nav-user" id="navUser"></div>
     </div>
@@ -716,6 +759,17 @@ dialog{width:min(520px,92vw)}
   </div>
 </section>
 
+<section id="sec-admin" class="page-section">
+  <div class="section-header">
+    <h2>⚙️ Painel Admin</h2>
+    <p>Gerencie a votação, veja quem votou e edite as opções.</p>
+  </div>
+
+  <div id="adminArea">
+    <p class="admin-vazio">Carregando…</p>
+  </div>
+</section>
+
 </main>
 
 <footer>
@@ -959,6 +1013,8 @@ function mudarAba(nome, salvar = true){
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
   window.scrollTo({ top:0, behavior:'smooth' });
+
+  if(nome === 'admin') carregarAdmin();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -1374,6 +1430,7 @@ async function checarLogin(){
     USUARIO = d.logado ? d : null;
   }catch(e){ USUARIO = null; }
   renderLogin();
+  document.body.classList.toggle('sou-admin', !!(USUARIO && USUARIO.admin));
 }
 
 function renderLogin(){
@@ -1399,7 +1456,9 @@ function renderLogin(){
 async function sair(){
   try{ await fetch('/api/auth?action=logout'); }catch(e){}
   USUARIO = null; meuVoto = null;
+  document.body.classList.remove('sou-admin');
   renderLogin(); renderVotacao();
+  mudarAba('inicio', false);
 }
 
 function aplicarVotos(d){
@@ -1438,7 +1497,7 @@ function renderVotacao(){
       <div class="voto-bloqueado">
         <span class="loot">🔒</span>
         <b>Só falta você escolher!</b>
-        <p>Entra rapidinho com o Discord pra votar e ajudar a decidir o próximo jogo/filme da live 💜</p>
+        <p>Entra rapidinho com o Discord pra votar e ajudar a decidir o próximo jogo da live 💜</p>
         <a class="btn-entrar" href="/api/auth?action=login">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
           Entrar com Discord
@@ -1531,6 +1590,215 @@ async function votar(id){
   renderVotacao();
 }
 
+/* ===== PAINEL ADMIN ===== */
+let ADMIN_DADOS = null;
+
+async function carregarAdmin(){
+  const area = $('adminArea'); if(!area) return;
+
+  if(!USUARIO || !USUARIO.admin){
+    area.innerHTML = `<div class="admin-vazio">
+      <b>🔒 Acesso restrito</b>
+      Só administradores do site podem ver esta área.
+      ${!USUARIO ? '<br><a href="/api/auth?action=login">Entrar com Discord</a>' : ''}
+    </div>`;
+    return;
+  }
+
+  area.innerHTML = `<p class="admin-vazio">Carregando dados…</p>`;
+
+  try{
+    const r = await fetch('/api/admin?action=votos');
+    if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
+    ADMIN_DADOS = await r.json();
+  }catch(e){
+    area.innerHTML = `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+    return;
+  }
+
+  renderAdmin();
+}
+
+function renderAdmin(){
+  const area = $('adminArea'); if(!area || !ADMIN_DADOS) return;
+  const { usuarios, contagem, config } = ADMIN_DADOS;
+  const opcoes = config || [
+    { id:'hollow-knight', nome:'Hollow Knight', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
+    { id:'phasmophobia', nome:'Phasmophobia', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/739630/library_600x900.jpg' },
+    { id:'stardew-valley', nome:'Stardew Valley', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
+  ];
+
+  const totalVotos = Object.values(contagem || {}).reduce((a,b)=>a+b, 0);
+  const mapaNome = {};
+  opcoes.forEach(o => { mapaNome[o.id] = o.nome; });
+
+  area.innerHTML = `
+    <div class="admin-grid">
+      <div class="admin-card">
+        <h3>🗳️ Votos atuais <span style="color:var(--purple-light);font-size:.8rem;margin-left:auto">Total: ${totalVotos}</span></h3>
+        ${usuarios && usuarios.length ? `
+          <table class="admin-tabela">
+            <thead><tr><th>User ID</th><th>Votou em</th></tr></thead>
+            <tbody>
+              ${usuarios.map(u => `
+                <tr>
+                  <td><span class="uid">${esc(u.userId)}</span></td>
+                  <td>${esc(mapaNome[u.opcao] || u.opcao)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<p class="admin-vazio" style="padding:20px">Nenhum voto ainda</p>'}
+        <div class="admin-actions">
+          <button class="admin-btn ghost" onclick="carregarAdmin()">🔄 Atualizar</button>
+          <button class="admin-btn perigo" onclick="resetarVotacao()">🗑️ Resetar votação</button>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>🎯 Opções da votação</h3>
+        <div id="adminOpcoes">
+          ${opcoes.map((o,i) => `
+            <div class="admin-opcao">
+              ${o.capa ? `<img src="${esc(o.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
+              <div class="admin-opcao-info">
+                <b>${esc(o.nome)}</b>
+                <small>${o.tipo === 'filme' ? '🎬 Filme' : '🎮 Jogo'} · ${contagem[o.id] || 0} voto${(contagem[o.id]||0) === 1 ? '' : 's'}</small>
+              </div>
+              <button class="btn-mini" onclick="editarOpcao(${i})">Editar</button>
+            </div>
+          `).join('')}
+        </div>
+        <div class="admin-actions">
+          <button class="admin-btn" onclick="adicionarOpcao()">+ Adicionar opção</button>
+          <button class="admin-btn ghost" onclick="restaurarPadrao()">Restaurar padrão</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function resetarVotacao(){
+  if(!confirm('Tem certeza? TODOS os votos serão apagados e a votação começa do zero.')) return;
+  try{
+    const r = await fetch('/api/admin?action=reset', { method:'POST' });
+    if(!r.ok) throw new Error('Falha ao resetar');
+    alert('Votação resetada! ✅');
+    await carregarAdmin();
+    await carregarVotosApi();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+function editarOpcao(i){
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  while(opcoes.length < 3) opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
+  const o = opcoes[i] || { nome:'', tipo:'jogo' };
+
+  $('dTitle').textContent = 'Editar opção ' + (i+1);
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div>
+        <label>Nome do jogo/filme</label>
+        <input id="editNome" type="text" value="${esc(o.nome || '')}" placeholder="Ex: Elden Ring">
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="editTipo">
+          <option value="jogo" ${o.tipo === 'jogo' ? 'selected' : ''}>🎮 Jogo</option>
+          <option value="filme" ${o.tipo === 'filme' ? 'selected' : ''}>🎬 Filme</option>
+        </select>
+      </div>
+      <div>
+        <label>URL da capa (opcional — se deixar vazio, buscamos automaticamente)</label>
+        <input id="editCapa" type="text" value="${esc(o.capa || '')}" placeholder="https://...">
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn ghost" onclick="removerOpcao(${i})">Remover</button>
+        <button class="admin-btn" onclick="salvarOpcao(${i})">Salvar</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+function adicionarOpcao(){
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
+  const i = opcoes.length - 1;
+
+  $('dTitle').textContent = 'Nova opção';
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div>
+        <label>Nome do jogo/filme</label>
+        <input id="editNome" type="text" placeholder="Ex: Elden Ring">
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="editTipo">
+          <option value="jogo" selected>🎮 Jogo</option>
+          <option value="filme">🎬 Filme</option>
+        </select>
+      </div>
+      <div>
+        <label>URL da capa (opcional)</label>
+        <input id="editCapa" type="text" placeholder="https://...">
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn" onclick="salvarOpcao(${i}, true)">Adicionar</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+async function salvarOpcao(i, ehNovo){
+  const nome = $('editNome').value.trim();
+  const tipo = $('editTipo').value;
+  const capa = $('editCapa').value.trim();
+  if(!nome){ alert('Digite um nome!'); return; }
+
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  while(opcoes.length <= i) opcoes.push({});
+  const id = opcoes[i].id ||
+    nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
+
+  opcoes[i] = { id, nome, tipo, capa: capa || null };
+
+  await salvarOpcoes(opcoes);
+}
+
+async function removerOpcao(i){
+  if(!confirm('Remover essa opção?')) return;
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  opcoes.splice(i, 1);
+  await salvarOpcoes(opcoes);
+}
+
+async function salvarOpcoes(opcoes){
+  try{
+    const r = await fetch('/api/admin?action=opcoes', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ opcoes })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha ao salvar');
+    dlg.close();
+    await carregarAdmin();
+    await carregarVotosApi();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+async function restaurarPadrao(){
+  if(!confirm('Restaurar as opções padrão (Hollow Knight, Phasmophobia, Stardew Valley)?')) return;
+  await salvarOpcoes([
+    { id:'hollow-knight', nome:'Hollow Knight', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
+    { id:'phasmophobia', nome:'Phasmophobia', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/739630/library_600x900.jpg' },
+    { id:'stardew-valley', nome:'Stardew Valley', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
+  ]);
+}
+
 /* ===== SUGESTÕES ===== */
 async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
@@ -1574,7 +1842,9 @@ async function enviarSugestao(){
 
 /* ===== BOOT ===== */
 renderComandos();
-carregarVotosApi();
+carregarVotosApi().then(() => {
+  if(USUARIO && USUARIO.admin) carregarAdmin();
+});
 carregarBiblioteca();
 carregarFilmes();
 </script>
