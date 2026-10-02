@@ -222,7 +222,7 @@ footer{background:#050309;padding:25px 0;text-align:center;color:var(--mute);bor
 .tm-vod em{font-style:normal;color:var(--purple-light);font-size:.8rem}
 .tm-h4{font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-top:2px}
 
-/* ===== Votação: cards do 2º e 3º ===== */
+/* Votação */
 .vt{display:grid;grid-template-columns:auto 1fr auto;gap:10px 14px;align-items:center;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:10px;transition:border-color .2s,background .2s}
 .vt:hover{border-color:rgba(168,85,247,.5);background:rgba(168,85,247,.04)}
 .vt-img{width:76px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--line);grid-row:1/3;background:#1d1433}
@@ -363,6 +363,22 @@ dialog{width:min(520px,92vw)}
 .footer-credit{margin-top:6px;font-size:.78rem;color:var(--mute)}
 .footer-credit b{color:var(--purple-light)}
 @media(max-width:450px){.tm-three,.tm-feed{grid-template-columns:1fr}}
+
+/* ===== Login Discord (votação) ===== */
+.user-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(88,101,242,.12);border:1px solid rgba(88,101,242,.35);border-radius:12px;margin-bottom:12px}
+.user-bar img{width:34px;height:34px;border-radius:50%;flex:none;background:#1a102d}
+.user-bar-info{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.user-bar-info b{font-size:.85rem;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-bar-info small{font-size:.68rem;color:var(--mute)}
+.user-bar-logout{background:transparent;border:1px solid var(--line);color:var(--mute);padding:5px 10px;border-radius:6px;font-family:inherit;font-size:.72rem;font-weight:700;cursor:pointer;transition:.2s}
+.user-bar-logout:hover{border-color:#ff4d5f;color:#ff4d5f}
+
+.login-cta{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 18px;background:linear-gradient(135deg,rgba(88,101,242,.18),transparent),var(--card-bg);border:1px dashed rgba(88,101,242,.45);border-radius:14px;text-align:center;margin-bottom:12px}
+.login-cta b{color:var(--white);font-size:.95rem;font-family:'Bricolage Grotesque',sans-serif}
+.login-cta small{color:var(--mute);font-size:.78rem;line-height:1.4}
+.btn-discord{display:inline-flex;align-items:center;gap:8px;background:#5865f2;color:#fff;padding:11px 22px;border-radius:10px;font-weight:700;font-size:.88rem;text-decoration:none;border:none;cursor:pointer;font-family:inherit;transition:.2s;box-shadow:0 4px 12px rgba(88,101,242,.4)}
+.btn-discord:hover{transform:translateY(-2px);background:#4752c4;box-shadow:0 6px 16px rgba(88,101,242,.5)}
+.btn-discord svg{width:18px;height:18px;fill:currentColor}
 </style>
 </head>
 
@@ -622,7 +638,11 @@ dialog{width:min(520px,92vw)}
     <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
         <h3>🗳️ Qual o próximo jogo ou filme?</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo/filme que você quer ver na live. Um voto por dispositivo!</p>
+        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo/filme que você quer ver na live. Entre com o Discord para votar!</p>
+
+        <!-- Área de login / usuário -->
+        <div id="loginArea" style="margin-bottom:12px"></div>
+
         <div id="destaqueBox"></div>
         <div id="votoLista">Carregando votação...</div>
       </div>
@@ -1308,24 +1328,75 @@ function renderHotspots(){
 }
 renderHotspots();
 
-/* ===== VOTAÇÃO ===== */
+/* ===== VOTAÇÃO (com login Discord) ===== */
 let VOTOS_DADOS = [], meuVoto = null, votoStatus = 'carregando';
+let USUARIO = null;
 const RANKS = ['🥇','🥈','🥉'];
-const CHAVE_LOCAL = 'votou_ciclo_2';
+
+async function checarLogin(){
+  try{
+    const r = await fetch('/api/auth?action=me');
+    const d = await r.json();
+    USUARIO = d.logado ? d : null;
+  }catch(e){ USUARIO = null; }
+  renderLogin();
+}
+
+function renderLogin(){
+  const area = $('loginArea'); if(!area) return;
+  if(USUARIO){
+    area.innerHTML = `
+      <div class="user-bar">
+        <img src="${esc(USUARIO.avatar)}" alt="" onerror="this.style.display='none'">
+        <div class="user-bar-info">
+          <b>@${esc(USUARIO.username)}</b>
+          <small>Logado com Discord</small>
+        </div>
+        <button class="user-bar-logout" onclick="sair()">Sair</button>
+      </div>
+    `;
+  } else {
+    area.innerHTML = `
+      <div class="login-cta">
+        <b>🔒 Login necessário para votar</b>
+        <small>Só assim garantimos 1 voto por pessoa. Sem senha, sem cadastro chato.</small>
+        <a class="btn-discord" href="/api/auth?action=login">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
+          Entrar com Discord
+        </a>
+      </div>
+    `;
+  }
+}
+
+async function sair(){
+  try{ await fetch('/api/auth?action=logout'); }catch(e){}
+  USUARIO = null; meuVoto = null;
+  renderLogin(); renderVotacao();
+}
 
 function aplicarVotos(d){
   if(d && Array.isArray(d.opcoes)){
     VOTOS_DADOS = d.opcoes;
     meuVoto = d.meuVoto || null;
-    try {
-      const local = localStorage.getItem(CHAVE_LOCAL);
-      if (!meuVoto && local) meuVoto = local;
-    } catch(e){}
+    if(d.usuario && !USUARIO) USUARIO = { ...d.usuario };
   }
 }
 async function carregarVotosApi(){
-  try{ const r = await fetch('/api/votos'); if(!r.ok) throw 0; aplicarVotos(await r.json()); votoStatus = 'ok'; }
-  catch(e){ votoStatus = 'erro'; }
+  await checarLogin();
+
+  if(!USUARIO){
+    votoStatus = 'sem-login';
+    renderVotacao();
+    return;
+  }
+
+  try{
+    const r = await fetch('/api/votos');
+    if(!r.ok) throw 0;
+    aplicarVotos(await r.json());
+    votoStatus = 'ok';
+  }catch(e){ votoStatus = 'erro'; }
   renderVotacao();
 }
 
@@ -1333,21 +1404,29 @@ function renderVotacao(){
   const destBox = $('destaqueBox'), listaBox = $('votoLista');
   if(!destBox || !listaBox) return;
   const proxCover = $('proxCover');
+
+  if(!USUARIO){
+    destBox.innerHTML = '';
+    listaBox.innerHTML = `<div class="vazio-voto"><b>🔒 Entre para ver e votar</b>Assim que você logar, aparecem as opções disponíveis.</div>`;
+    if(proxCover) proxCover.style.display = 'none';
+    return;
+  }
+
   if(!VOTOS_DADOS.length){
     destBox.innerHTML = '';
     listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível no momento' : 'Carregando votação…'}</b>${votoStatus === 'erro' ? 'Tente de novo em instantes.' : ''}</div>`;
     return;
   }
+
   const total = VOTOS_DADOS.reduce((a, x) => a + (x.votos || 0), 0);
   const ord = [...VOTOS_DADOS].sort((a, b) => (b.votos || 0) - (a.votos || 0));
   const pct = v => total ? Math.round((v || 0) / total * 100) : 0;
-  const btn = (it, txt) => {
+  const btn = (it) => {
     const meu = meuVoto === it.id;
-    const bloq = meuVoto && !meu;
-    return `<button class="btn ${meu ? 'ghost' : ''}" ${bloq ? 'disabled' : ''} onclick="votar('${it.id}')">${meu ? 'Votado ✓' : txt}</button>`;
+    if(meu) return `<button class="btn ghost" disabled>Votado ✓</button>`;
+    return `<button class="btn" onclick="votar('${it.id}')">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
   };
 
-  // ---- Card do líder ----
   if(total > 0){
     const l = ord[0], p = pct(l.votos);
     destBox.innerHTML = `
@@ -1358,7 +1437,7 @@ function renderVotacao(){
           <div class="d-bar"><i style="width:${p}%"></i></div>
           <span class="d-meta"><b>${p}%</b> · ${l.votos}/${total} votos</span>
         </div>
-        ${btn(l, 'Votar →')}
+        ${btn(l)}
       </div>`;
     if(proxCover){
       if(l.capa){ proxCover.onerror = () => { proxCover.style.display = 'none'; }; proxCover.src = l.capa; proxCover.style.display = ''; }
@@ -1373,7 +1452,6 @@ function renderVotacao(){
     $('proxInfo').textContent = 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
 
-  // ---- Cards do 2º e 3º lugar ----
   const resto = total > 0 ? ord.slice(1) : ord;
   listaBox.innerHTML = resto.map((it, i) => {
     const p = pct(it.votos);
@@ -1384,45 +1462,35 @@ function renderVotacao(){
     const diff = (ord[0] ? ord[0].votos : 0) - votos;
 
     let statusTxt, statusCls;
-    if (votos === 0) {
-      statusTxt = 'Aguardando o primeiro voto';
-      statusCls = 'zero';
-    } else if (diff === 0) {
-      statusTxt = 'Empatado com o 1º lugar 🔥';
-      statusCls = 'close';
-    } else if (diff === 1) {
-      statusTxt = 'Apenas 1 voto atrás do líder';
-      statusCls = 'close';
-    } else {
-      statusTxt = `${diff} votos atrás do líder`;
-      statusCls = '';
-    }
+    if (votos === 0) { statusTxt = 'Aguardando o primeiro voto'; statusCls = 'zero'; }
+    else if (diff === 0) { statusTxt = 'Empatado com o 1º lugar 🔥'; statusCls = 'close'; }
+    else if (diff === 1) { statusTxt = 'Apenas 1 voto atrás do líder'; statusCls = 'close'; }
+    else { statusTxt = `${diff} votos atrás do líder`; statusCls = ''; }
 
     return `
       <div class="vt ${meu ? 'meu' : ''}">
         <span class="vt-rank" title="${posicao}º lugar">${medalha}</span>
         ${it.capa ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" class="vt-img" onerror="this.style.display='none'">` : '<div class="vt-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>'}
         <div class="vt-info">
-          <div class="vt-top">
-            <span>${esc(it.nome)}</span>
-            <b>${posicao}º · ${p}%</b>
-          </div>
+          <div class="vt-top"><span>${esc(it.nome)}</span><b>${posicao}º · ${p}%</b></div>
           <span class="vt-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
         </div>
         <div class="goal-bar"><i style="width:${p}%"></i></div>
-        ${btn(it, 'Votar')}
+        ${btn(it)}
       </div>`;
   }).join('') + `<div class="vt-total">Total: ${total} voto${total === 1 ? '' : 's'}</div>`;
 }
 
 async function votar(id){
-  if(meuVoto) return;
+  if(!USUARIO) return;
   try{
-    const r = await fetch('/api/votos', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ id }) });
-    if(r.ok){
-      aplicarVotos(await r.json());
-      try{ localStorage.setItem(CHAVE_LOCAL, id); }catch(e){}
-    }
+    const r = await fetch('/api/votos', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({ id })
+    });
+    if(r.status === 401){ await checarLogin(); return; }
+    if(r.ok) aplicarVotos(await r.json());
   }catch(e){}
   renderVotacao();
 }
