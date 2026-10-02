@@ -1486,10 +1486,11 @@ dialog{width:min(520px,92vw)}
 .vt.lider .vt-top span::before{content:'👑 '}
 
 /* Estilo novo para integração Spotify e Top Doadores compactos */
-.tm-spotify{display:flex;align-items:center;gap:10px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.25);border-radius:12px;padding:8px 12px}
-.tm-spotify svg{width:20px;height:20px;fill:#1db954;flex:none}
+.tm-spotify{display:flex;align-items:center;gap:10px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.25);border-radius:12px;padding:10px 12px;text-decoration:none;transition:all .2s ease}
+.tm-spotify:hover{background:rgba(29,185,84,0.18);border-color:#1db954;transform:translateY(-1px)}
+.tm-spotify svg{width:22px;height:22px;fill:#1db954;flex:none}
 .tm-spotify div{flex:1;min-width:0;display:flex;flex-direction:column}
-.tm-spotify b{font-size:.8rem;color:#1db954;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm-spotify b{font-size:.82rem;color:#1db954;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tm-spotify span{font-size:.68rem;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tm-donors{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .tm-donor{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:6px;text-align:center}
@@ -1616,7 +1617,7 @@ dialog{width:min(520px,92vw)}
           <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
         </div>
         
-        <!-- PAINEL DO CANAL ATUALIZADO (Spotify, Uptime & Top Doadores Midfielder) -->
+        <!-- PAINEL DO CANAL (Perfil Spotify, Uptime & Top Doadores Midfielder) -->
         <div class="tmon">
           <div class="tmon-h">
             <span class="live-indicator"></span>
@@ -1624,14 +1625,14 @@ dialog{width:min(520px,92vw)}
             <span class="pill" id="tmStatus">OFFLINE</span>
           </div>
           <div class="tmon-b">
-            <!-- Música do Spotify -->
-            <div class="tm-spotify" id="spotifyBox">
+            <!-- Link do Spotify -->
+            <a class="tm-spotify" id="spotifyLink" href="#" target="_blank" rel="noopener" title="Ver perfil no Spotify">
               <svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.599-.12-.42.18-.78.599-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.54.66.24 1.08zm1.44-3.84c-.301.48-.9.66-1.38.36-3.24-1.98-8.16-2.58-11.94-1.44-.54.18-1.14-.12-1.32-.66-.18-.54.12-1.14.66-1.32 4.26-1.26 9.66-.6 13.5 1.8 0.48.3.66.9.36 1.38zm.12-4C15.24 7.32 8.88 7.08 5.16 8.22c-.66.198-1.38-.18-1.58-.84-.198-.66.18-1.38.84-1.58 4.38-1.32 11.4-1.02 15.6 1.44.6.36.78 1.14.42 1.74-.36.6-1.14.78-1.74.42z"/></svg>
               <div>
-                <b id="spotifySong">Carregando música...</b>
-                <span id="spotifyArtist">Spotify • Tocando agora</span>
+                <b id="spotifyTitle">Perfil no Spotify 🎧</b>
+                <span id="spotifySub">Clique para ouvir as playlists da live</span>
               </div>
-            </div>
+            </a>
 
             <div class="tm-two-cols">
               <div class="tm-t"><small>UPTIME / LIVE</small><b id="tmUptime">OFFLINE</b></div>
@@ -1727,7 +1728,7 @@ dialog{width:min(520px,92vw)}
       <div class="rule-card"><i>02</i><span class="rc-ic">🚫</span><div><strong>Sem spoilers nem dicas</strong><p>Não dê dicas ou spoilers de jogos e filmes, a não ser que eu peça. Muitas das minhas perguntas são retóricas!</p></div></div>
       <div class="rule-card"><i>03</i><span class="rc-ic">🕊️</span><div><strong>Cuide do clima do chat</strong><p>Evite discussões desnecessárias, brigas ou comentários que gerem conflito.</p></div></div>
       <div class="rule-card"><i>04</i><span class="rc-ic">💬</span><div><strong>Sem spam ou flood</strong><p>Não repita mensagens nem encha o chat de símbolos, pra não atrapalhar a leitura.</p></div></div>
-      <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organizado.</p></div></div>
+      <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organized.</p></div></div>
       <div class="rule-card"><i>06</i><span class="rc-ic">🎮</span><div><strong>Divirta-se!</strong><p>O objetivo é jogar, conversar e dar risada junto. Caos bom é bem-vindo.</p></div></div>
     </div>
     <p class="rules-foot">Vale a mesma regra na Twitch e no Discord. 💜</p>
@@ -1809,7 +1810,13 @@ dialog{width:min(520px,92vw)}
 </dialog>
 
 <script>
-const CONFIG = { subs: null, donate: 'https://midfielder.tv.br/asemtet0' };
+const CONFIG = { 
+  subs: null, 
+  donate: 'https://midfielder.tv.br/asemtet0',
+  spotifyUrl: '', // Cole o link do seu perfil do Spotify aqui no futuro!
+  midfielderUser: 'asemtet0'
+};
+
 const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
 const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
 const HOST = window.location.hostname || 'localhost';
@@ -1917,42 +1924,90 @@ async function verificarStatusTwitch() {
   }
 }
 
-// Função simulada/integrada para buscar música do Spotify e Top Doadores do MidFielder
-async function atualizarWidgetsMidfielder() {
+// Configuração do Link de Perfil do Spotify
+function atualizarSpotifyLink() {
+  const linkEl = document.getElementById('spotifyLink');
+  const titleEl = document.getElementById('spotifyTitle');
+  const subEl = document.getElementById('spotifySub');
+  
+  if (CONFIG.spotifyUrl && CONFIG.spotifyUrl.trim() !== '' && CONFIG.spotifyUrl !== '#') {
+    linkEl.href = CONFIG.spotifyUrl;
+    titleEl.textContent = 'Perfil no Spotify 🎧';
+    subEl.textContent = 'Clique para abrir o perfil do Spotify';
+  } else {
+    linkEl.href = '#';
+    titleEl.textContent = 'Perfil no Spotify 🎧';
+    subEl.textContent = 'Link em breve no perfil';
+    linkEl.addEventListener('click', function(e) {
+      if (linkEl.getAttribute('href') === '#') {
+        e.preventDefault();
+        alert('O link do perfil do Spotify será adicionado em breve!');
+      }
+    });
+  }
+}
+
+// Busca isolada dos Top Doadores do MidFielder
+async function atualizarTopDoadoresMidfielder() {
+  const container = document.getElementById('tmDonors');
+  if (!container) return;
+
   try {
-    // Exemplo de integração com os endpoints do Midfielder / Spotify se disponíveis na sua API
-    const res = await fetch('/api/midfielder-data').catch(() => null);
-    if (res && res.ok) {
-      const info = await res.json();
-      if (info.spotify) {
-        document.getElementById('spotifySong').textContent = info.spotify.song || 'Nenhuma música tocando';
-        document.getElementById('spotifyArtist').textContent = info.spotify.artist || 'Spotify';
+    const endpoints = [
+      '/api/midfielder',
+      '/api/midfielder-data',
+      `https://midfielder.tv.br/api/v1/users/${CONFIG.midfielderUser}/top-donators`,
+      `https://midfielder.tv.br/api/leaderboard/${CONFIG.midfielderUser}`
+    ];
+
+    let donors = null;
+
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url).catch(() => null);
+        if (res && res.ok) {
+          const data = await res.json();
+          const list = data.donors || data.leaderboard || data.topDonors || (Array.isArray(data) ? data : null);
+          if (list && Array.isArray(list) && list.length > 0) {
+            donors = list;
+            break;
+          }
+        }
+      } catch (e) {
+        // Tenta o próximo endpoint
       }
-      if (info.donors && info.donors.length) {
-        document.getElementById('tmDonors').innerHTML = info.donors.slice(0, 3).map(d => 
-          `<div class="tm-donor"><b>${esc(d.name)}</b><span>R$ ${Number(d.value).toFixed(2)}</span></div>`
-        ).join('');
-      }
+    }
+
+    if (donors && donors.length > 0) {
+      container.innerHTML = donors.slice(0, 3).map((d, i) => {
+        const nome = d.name || d.username || d.donor || `Doador ${i + 1}`;
+        const val = d.value || d.amount || d.total || 0;
+        const valorFormatado = typeof val === 'number' ? `R$ ${val.toFixed(2).replace('.', ',')}` : `R$ ${val}`;
+        return `<div class="tm-donor"><b>${esc(nome)}</b><span>${valorFormatado}</span></div>`;
+      }).join('');
     } else {
-      // Fallback estático/exemplo caso a API puxe direto do widget público
-      document.getElementById('spotifySong').textContent = 'Conectado ao MidFielder';
-      document.getElementById('spotifyArtist').textContent = 'Spotify • asemtet0';
-      document.getElementById('tmDonors').innerHTML = `
-        <div class="tm-donor"><b>Top 1</b><span>R$ —</span></div>
-        <div class="tm-donor"><b>Top 2</b><span>R$ —</span></div>
-        <div class="tm-donor"><b>Top 3</b><span>R$ —</span></div>
+      container.innerHTML = `
+        <div class="tm-donor"><b>1º —</b><span>Seja o 1º!</span></div>
+        <div class="tm-donor"><b>2º —</b><span>—</span></div>
+        <div class="tm-donor"><b>3º —</b><span>—</span></div>
       `;
     }
-  } catch(e) {
-    console.error(e);
+  } catch (e) {
+    console.error('Erro ao carregar top doadores:', e);
+    container.innerHTML = `
+      <div class="tm-donor"><b>1º —</b><span>—</span></div>
+      <div class="tm-donor"><b>2º —</b><span>—</span></div>
+      <div class="tm-donor"><b>3º —</b><span>—</span></div>
+    `;
   }
 }
 
 document.addEventListener('click', e => { const b = e.target.closest('.tm-vod'); if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]); });
 verificarStatusTwitch();
-atualizarWidgetsMidfielder();
+atualizarSpotifyLink();
+atualizarTopDoadoresMidfielder();
 setInterval(verificarStatusTwitch, 10000);
-setInterval(atualizarWidgetsMidfielder, 30000);
+setInterval(atualizarTopDoadoresMidfielder, 30000);
 
 const $ = id => document.getElementById(id);
 
@@ -2096,7 +2151,6 @@ $('clipsGrid').addEventListener('click', e => {
   b.innerHTML = `<iframe src="https://clips.twitch.tv/embed?clip=${encodeURIComponent(b.dataset.id)}&parent=${HOST}&autoplay=true" allowfullscreen title="Clipe"></iframe>`;
 });
 
-// Comunidade
 if (CONFIG.subs == null) { $('goalSubBox').style.display = 'none';$('goals3').style.gridTemplateColumns = 'repeat(2,1fr)'; }
 if (CONFIG.donate) { const d = $('donateLink'); d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
 document.querySelectorAll('.cmd').forEach(b => b.addEventListener('click', async () => {
