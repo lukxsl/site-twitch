@@ -1370,18 +1370,197 @@ dialog{width:min(520px,92vw)}
 .sbox ul{list-style:none;display:grid;gap:6px}
 .sfull{grid-column:1/-1}
 
-/* Estilos refinados da Votação */
-.vt{display:grid;grid-template-columns:auto 1fr auto;gap:10px 12px;align-items:center;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px}
-.vt-img{width:42px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line);grid-row:1/3;background:#1d1433}
-.vt-info{grid-column:2;display:flex;flex-direction:column;gap:4px}
-.vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;position:relative;z-index:2}
-.vt-top span{font-weight:700;color:var(--white)}
-.vt-top b{color:var(--purple-light);font-size:.8rem}
+/* =========================
+   VOTAÇÃO - ESTILOS REFINADOS
+========================= */
+.vt{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:10px 12px;
+  align-items:center;
+  padding:12px 14px;
+  background:rgba(255,255,255,.02);
+  border:1px solid var(--line);
+  border-radius:12px;
+  position:relative;
+  overflow:hidden;
+  margin-bottom:8px;
+  transition:border-color .2s,background .2s;
+}
+.vt:hover{
+  border-color:rgba(168,85,247,.5);
+  background:rgba(168,85,247,.04);
+}
+.vt-img{
+  width:44px;
+  height:58px;
+  object-fit:cover;
+  border-radius:6px;
+  border:1px solid var(--line);
+  grid-row:1/3;
+  background:#1d1433;
+}
+.vt-info{
+  grid-column:2;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  min-width:0;
+}
+.vt-top{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:.88rem;
+  align-items:baseline;
+}
+.vt-top span{
+  font-weight:700;
+  color:var(--white);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.vt-top b{
+  color:var(--purple-light);
+  font-size:.78rem;
+  font-weight:700;
+  flex:none;
+}
 .vt .goal-bar{grid-column:1/3;position:relative;z-index:2;margin-top:2px}
 .vt .goal-bar i{background:linear-gradient(90deg,#7c3aed,#c084fc)}
-.vt .btn{grid-column:3;grid-row:1/3;padding:7px 14px;font-size:.8rem;position:relative;z-index:2}
-.vt.meu .vt-top span{color:var(--purple-light)}
-.vt-total{font-size:.75rem;color:var(--mute);margin-top:10px;text-align:right}
+.vt .btn{
+  grid-column:3;
+  grid-row:1/3;
+  padding:7px 14px;
+  font-size:.78rem;
+  position:relative;
+  z-index:2;
+  margin:0;
+}
+.vt.meu{border-color:rgba(183,255,0,.4)}
+.vt.meu .btn{background:transparent;border:1px solid var(--green);color:var(--green);box-shadow:none}
+.vt.meu .vt-top span{color:var(--green)}
+.vt-total{
+  font-size:.72rem;
+  color:var(--mute);
+  margin-top:12px;
+  text-align:right;
+  padding-right:4px;
+}
+.vt-rank{
+  position:absolute;
+  top:8px;
+  right:8px;
+  font-size:1rem;
+  z-index:3;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.6));
+}
+.vazio-voto{
+  text-align:center;
+  padding:26px 14px;
+  color:var(--mute);
+  font-size:.85rem;
+  background:rgba(255,255,255,.02);
+  border:1px dashed var(--line);
+  border-radius:12px;
+}
+.vazio-voto b{
+  display:block;
+  color:var(--white);
+  font-size:1rem;
+  margin-bottom:4px;
+  font-family:'Bricolage Grotesque',sans-serif;
+}
+
+/* =========================
+   CARD LÍDER (DESTAQUE)
+========================= */
+.destaque{
+  display:flex;
+  gap:14px;
+  align-items:center;
+  background:linear-gradient(135deg,rgba(168,85,247,.22),rgba(168,85,247,.04));
+  border:1px solid var(--purple);
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+  position:relative;
+  overflow:hidden;
+}
+.destaque::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at top right,rgba(192,132,252,.18),transparent 60%);
+  pointer-events:none;
+}
+.destaque img,.destaque .ph2{
+  width:70px;
+  aspect-ratio:2/3;
+  object-fit:cover;
+  border-radius:8px;
+  flex:none;
+  background:#1d1433;
+  border:1px solid var(--line);
+  position:relative;
+  z-index:1;
+}
+.destaque .ph2{display:grid;place-items:center;font-size:1.6rem}
+.destaque .d-info{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  position:relative;
+  z-index:1;
+}
+.destaque small{
+  font-size:.62rem;
+  font-weight:800;
+  letter-spacing:.6px;
+  color:var(--purple-light);
+  text-transform:uppercase;
+}
+.destaque b{
+  display:block;
+  font-size:1.12rem;
+  color:var(--white);
+  margin:1px 0 2px;
+  line-height:1.15;
+  font-family:'Bricolage Grotesque',sans-serif;
+  font-weight:800;
+}
+.destaque .d-bar{
+  width:100%;
+  height:6px;
+  border-radius:99px;
+  background:rgba(255,255,255,.08);
+  overflow:hidden;
+  margin:4px 0 3px;
+}
+.destaque .d-bar i{
+  display:block;
+  height:100%;
+  border-radius:99px;
+  background:linear-gradient(90deg,#7c3aed,#c084fc);
+  box-shadow:0 0 10px rgba(168,85,247,.5);
+}
+.destaque .d-meta{
+  font-size:.72rem;
+  color:var(--mute);
+  font-weight:600;
+}
+.destaque .d-meta b{display:inline;font-size:.72rem;color:var(--purple-light);margin:0}
+.destaque .btn{
+  position:relative;
+  z-index:1;
+  margin:0;
+  flex:none;
+  font-size:.82rem;
+  padding:9px 16px;
+}
 
 @media(max-width:1100px){
   .clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.apoio-grid,.sugestoes-grid{grid-template-columns:1fr}
@@ -1488,12 +1667,6 @@ dialog{width:min(520px,92vw)}
 .tm-vod span{font-size:.68rem;color:var(--mute)}
 .tm-vod em{font-style:normal;color:var(--purple-light);font-size:.8rem}
 .tm-h4{font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-top:2px}
-.destaque{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,rgba(168,85,247,.22),rgba(168,85,247,.04));border:1px solid var(--purple);border-radius:14px;padding:12px;margin-bottom:14px}
-.destaque img,.destaque .ph2{width:64px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;flex:none;background:#1d1433}
-.destaque .ph2{display:grid;place-items:center;font-size:1.6rem}
-.destaque small{font-size:.65rem;font-weight:800;letter-spacing:.5px;color:var(--purple-light);text-transform:uppercase}
-.destaque b{display:block;font-size:1.15rem;color:var(--white);margin:2px 0}
-.destaque span{font-size:.8rem;color:var(--mute)}
 .vt.lider .vt-top span::before{content:'👑 '}
 </style>
 </head>
@@ -2216,55 +2389,81 @@ async function carregarVotosApi() {
   renderVotacao();
 }
 
+const RANKS = ['🥇','🥈','🥉'];
+
 function renderVotacao(){
   const destBox = $('destaqueBox');
   const listaBox = $('votoLista');
   if(!destBox || !listaBox) return;
 
-  const totalVotos = VOTOS_DADOS.reduce((acc, item) => acc + (item.votos || 0), 0) || 1;
+  const totalVotos = VOTOS_DADOS.reduce((acc, item) => acc + (item.votos || 0), 0);
   const ordenados = [...VOTOS_DADOS].sort((a,b) => (b.votos || 0) - (a.votos || 0));
-  const lider = ordenados[0];
-  const pctLider = totalVotos > 0 ? Math.round(((lider.votos || 0) / totalVotos) * 100) : 0;
 
-  if (lider) {
-    destBox.innerHTML = `
-      <div class="destaque">
-        <img src="${esc(lider.capa)}" alt="${esc(lider.nome)}" onerror="this.style.display='none'">
-        <div style="flex:1;">
-          <small>👑 LÍDER DA VOTAÇÃO</small>
-          <b>${esc(lider.nome)}</b>
-          <span>${pctLider}% dos votos · ${lider.votos} de ${totalVotos} votos</span>
-        </div>
-        <button class="btn ${meuVoto === lider.id ? 'ghost' : ''}" style="margin-top:0;" onclick="votar('${lider.id}')">
-          ${meuVoto === lider.id ? 'Votado ✓' : 'Votar'}
-        </button>
+  if (!ordenados.length || totalVotos === 0) {
+    destBox.innerHTML = '';
+    listaBox.innerHTML = `
+      <div class="vazio-voto">
+        <b>Ninguém votou ainda 💜</b>
+        Seja a primeira pessoa a escolher o próximo jogo!
       </div>
     `;
-
-    if ($('proxNome'))$('proxNome').textContent = lider.nome;
-    if ($('proxInfo'))$('proxInfo').textContent = `Líder da votação com ${pctLider}% dos votos (${lider.votos} de ${totalVotos} votos)!`;
-  } else {
-    destBox.innerHTML = '';
+    if ($('proxNome')) $('proxNome').textContent = 'Votação aberta';
+    if ($('proxInfo')) $('proxInfo').textContent = 'Ainda sem votos. Seja a primeira pessoa a escolher!';
+    return;
   }
 
+  const lider = ordenados[0];
+  const pctLider = Math.round(((lider.votos || 0) / totalVotos) * 100);
+  const isMeu = meuVoto === lider.id;
+  const capaHtml = lider.capa
+    ? `<img src="${esc(lider.capa)}" alt="${esc(lider.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">`
+    : `<div class="ph2">🎮</div>`;
+
+  destBox.innerHTML = `
+    <div class="destaque">
+      ${capaHtml}
+      <div class="d-info">
+        <small>👑 Líder da votação</small>
+        <b>${esc(lider.nome)}</b>
+        <div class="d-bar"><i style="width:${pctLider}%"></i></div>
+        <span class="d-meta"><b>${pctLider}%</b> · ${lider.votos}/${totalVotos} votos</span>
+      </div>
+      <button class="btn ${isMeu ? 'ghost' : ''}" onclick="votar('${lider.id}')">
+        ${isMeu ? 'Votado ✓' : 'Votar →'}
+      </button>
+    </div>
+  `;
+
+  if ($('proxNome')) $('proxNome').textContent = lider.nome;
+  if ($('proxInfo')) $('proxInfo').textContent = `Liderando com ${pctLider}% (${lider.votos}/${totalVotos} votos). Faltam ${totalVotos - lider.votos} para garantir!`;
+
   const demais = ordenados.slice(1);
-  listaBox.innerHTML = demais.map(item => {
-    const pct = totalVotos > 0 ? Math.round(((item.votos || 0) / totalVotos) * 100) : 0;
+  if (!demais.length) {
+    listaBox.innerHTML = `<div class="vt-total">Total: ${totalVotos} voto${totalVotos > 1 ? 's' : ''}</div>`;
+    return;
+  }
+
+  listaBox.innerHTML = demais.map((item, i) => {
+    const pct = Math.round(((item.votos || 0) / totalVotos) * 100);
     const isMeu = meuVoto === item.id;
+    const rank = RANKS[i + 1] || '';
     return `
       <div class="vt ${isMeu ? 'meu' : ''}">
+        ${rank ? `<span class="vt-rank">${rank}</span>` : ''}
         <img src="${esc(item.capa)}" alt="${esc(item.nome)}" class="vt-img" onerror="this.style.display='none'">
         <div class="vt-info">
           <div class="vt-top">
             <span>${esc(item.nome)}</span>
-            <b>${pct}% (${item.votos} de ${totalVotos} votos)</b>
+            <b>${pct}% · ${item.votos}/${totalVotos}</b>
           </div>
           <div class="goal-bar"><i style="width:${pct}%"></i></div>
         </div>
-        <button class="btn ${isMeu ? 'ghost' : ''}" onclick="votar('${item.id}')">${isMeu ? 'Votado ✓' : 'Votar'}</button>
+        <button class="btn ${isMeu ? 'ghost' : ''}" onclick="votar('${item.id}')">
+          ${isMeu ? 'Votado ✓' : 'Votar'}
+        </button>
       </div>
     `;
-  }).join('') + `<div class="vt-total">Total de votos: ${totalVotos}</div>`;
+  }).join('') + `<div class="vt-total">Total: ${totalVotos} voto${totalVotos > 1 ? 's' : ''}</div>`;
 }
 
 async function votar(id) {
