@@ -3,12 +3,12 @@
 // UPSTASH_REDIS_REST_URL e UPSTASH_REDIS_REST_TOKEN (ou KV_REST_API_URL / KV_REST_API_TOKEN)
 import { createHash } from 'crypto';
 
-// EDITE AQUI: jogos em votação. Para zerar a votação, troque o CICLO.
+// EDITE AQUI: jogos em votação (appid = número da página do jogo na Steam, para a capa). Para zerar a votação, troque o CICLO.
 const CICLO = '2';
 const OPCOES = [
-  { id: 'hollow-knight', nome: 'Hollow Knight' },
-  { id: 'phasmophobia', nome: 'Phasmophobia' },
-  { id: 'stardew-valley', nome: 'Stardew Valley' }
+  { id: 'hollow-knight', nome: 'Hollow Knight', appid: 367520 },
+  { id: 'phasmophobia', nome: 'Phasmophobia', appid: 739630 },
+  { id: 'stardew-valley', nome: 'Stardew Valley', appid: 413150 }
 ];
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -49,7 +49,8 @@ export default async function handler(req, res) {
     const cont = {};
     for (let i = 0; i < (flat || []).length; i += 2) cont[flat[i]] = Number(flat[i + 1]);
     return res.status(200).json({
-      opcoes: OPCOES.map(o => ({ ...o, votos: cont[o.id] || 0 })),
+      opcoes: OPCOES.map(o => ({ id: o.id, nome: o.nome, votos: cont[o.id] || 0,
+        capa: o.appid ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${o.appid}/library_600x900.jpg` : null })),
       meuVoto: meu || null,
       jaVotou
     });
