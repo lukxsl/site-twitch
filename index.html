@@ -1050,15 +1050,41 @@ let JOGOS = [];
 let FILMES = [];
 const TIERS = ['S','A','B','C'];
 
+const JOGOS_FALLBACK = [
+  { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando',
+    progresso:56, horas:50, nota:8,
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
+    comentario:'Um dos mundos mais vivos e detalhados dos games.' },
+  { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Jogado', nota:9,
+    horas:40,
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg',
+    comentario:'' },
+  { id:'stardew-valley', nome:'Stardew Valley', tier:'A', status:'Jogando', nota:8,
+    horas:120,
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg',
+    comentario:'' }
+];
+
+const FILMES_FALLBACK = [
+  { id:'interestelar', nome:'Interestelar', tier:'S', status:'Assistido', nota:9,
+    duracao:169, ano:2014,
+    capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
+    comentario:'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas para receberem a população mundial, possibilitando a continuação da espécie.' }
+];
+
 async function carregarBiblioteca(){
   try{
     const r = await fetch('/api/tierlist');
-    const d = await r.json();
-    JOGOS = Array.isArray(d.jogos) ? d.jogos : [];
-    FILMES = Array.isArray(d.filmes) ? d.filmes : [];
+    const d = r.ok ? await r.json() : {};
+    JOGOS = (Array.isArray(d.jogos) && d.jogos.length) ? d.jogos : JOGOS_FALLBACK;
+    FILMES = (Array.isArray(d.filmes) && d.filmes.length) ? d.filmes : FILMES_FALLBACK;
     if (d.aviso) console.warn('Tierlist:', d.aviso);
-    desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
-  }catch(e){ console.warn('Tierlist indisponível', e); }
+  }catch(e){
+    console.warn('Tierlist indisponível, usando padrão:', e.message);
+    JOGOS = JOGOS_FALLBACK;
+    FILMES = FILMES_FALLBACK;
+  }
+  desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
 }
 
 const MODOS = {
