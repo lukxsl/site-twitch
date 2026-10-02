@@ -1736,22 +1736,31 @@ dialog{width:min(520px,92vw)}
 
     <div class="setup-box" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
-        <h3>💡 Envie sua Sugestão</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Mande uma mensagem direta ou ideia de jogo!</p>
+        <h3>💡 Envie uma mensagem</h3>
+        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Sua mensagem pode virar uma nova ideia, jogo ou correção no site.</p>
         <div style="display:grid;gap:15px;">
           <div>
             <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Seu Nome / Apelido</label>
             <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
           </div>
           <div>
-            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Sugestão de Jogo ou Comentário</label>
+            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Tipo</label>
+            <select id="sugTipo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;outline:none;cursor:pointer;">
+              <option value="Sugestão / ideia" style="background:#140e21;">💡 Sugestão / ideia</option>
+              <option value="Sugestão de jogo" style="background:#140e21;">🎮 Sugestão de jogo</option>
+              <option value="Feedback" style="background:#140e21;">💬 Feedback</option>
+              <option value="Reportar bug do site" style="background:#140e21;">🐛 Reportar bug do site</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Mensagem</label>
             <textarea id="sugTexto" rows="4" placeholder="Ex: Joga Hollow Knight na próxima live!" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
           </div>
           <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
         </div>
       </div>
       <div style="margin-top: 15px;">
-        <button class="btn" id="sugBtn" onclick="enviarSugestao()">Enviar Sugestão 🚀</button>
+        <button class="btn" id="sugBtn" onclick="enviarSugestao()">Enviar para o Discord 🚀</button>
         <span id="sugStatus" style="font-size:.85rem;color:var(--purple);display:none;margin-top:6px;"></span>
       </div>
     </div>
@@ -2149,7 +2158,7 @@ const SETUP = [
   ]},
   { t:'🖱️ Periféricos & Outros', i:[
     ['⌨','Teclado','AULA H88','https://www.kabum.com.br/busca/teclado-aula-h88','https://www.amazon.com.br/s?k=Teclado+AULA+H88'],
-    ['🖱️️','Mouse','Logitech G502X Superlight RGB','https://www.kabum.com.br/busca/logitech-g502x-superlight','https://www.amazon.com.br/s?k=Logitech+G502X+Superlight'],
+    ['🖱','Mouse','Logitech G502X Superlight RGB','https://www.kabum.com.br/busca/logitech-g502x-superlight','https://www.amazon.com.br/s?k=Logitech+G502X+Superlight'],
     ['🎧','Headset','Astro A50','https://www.kabum.com.br/busca/headset-astro-a50','https://www.amazon.com.br/s?k=Headset+Astro+A50'],
     ['🎙️','Microfone','FIFINE AM8 Branco','https://www.kabum.com.br/busca/fifine-am8-branco','https://www.amazon.com.br/s?k=FIFINE+AM8+Branco'],
     ['🖥️','Monitor','AOC 240Hz','https://www.kabum.com.br/busca/monitor-aoc-240hz','https://www.amazon.com.br/s?k=Monitor+AOC+240Hz'],
@@ -2289,6 +2298,7 @@ async function votar(id) {
 
 async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
+  const tipo = $('sugTipo') ?$('sugTipo').value : '';
   const texto = $('sugTexto').value.trim();
   const honeypot = $('sugSite').value;
   const status = $('sugStatus');
@@ -2299,7 +2309,7 @@ async function enviarSugestao(){
   if(!texto){
     status.style.display = 'block';
     status.style.color = '#ff4d5f';
-    status.textContent = 'Por favor, escreva sua sugestão!';
+    status.textContent = 'Por favor, escreva sua mensagem!';
     return;
   }
 
@@ -2312,19 +2322,19 @@ async function enviarSugestao(){
     const res = await fetch('/api/sugestoes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: nome || 'Anônimo', sugestao: texto })
+      body: JSON.stringify({ nome: nome || 'Anônimo', tipo, sugestao: texto })
     });
 
     if(res.ok) {
       status.style.color = '#b7ff00';
-      status.textContent = 'Sugestão enviada com sucesso! Obrigado 💜';
+      status.textContent = 'Mensagem enviada com sucesso! Obrigado 💜';
       $('sugNome').value = '';$('sugTexto').value = '';
     } else {
       throw new Error();
     }
   } catch(e) {
     status.style.color = '#b7ff00';
-    status.textContent = 'Sugestão registrada com sucesso! 💜';
+    status.textContent = 'Mensagem registrada com sucesso! 💜';
     $('sugNome').value = '';$('sugTexto').value = '';
   } finally {
     btn.disabled = false;
