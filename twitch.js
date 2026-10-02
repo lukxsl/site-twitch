@@ -1,6 +1,19 @@
 // Vercel serverless: /api/twitch.js
 const STREAMER = 'asemtet0';
 const DISCORD_INVITE = 'J4gGaKWFPZ';
+
+// ---- METAS ----
+const GOALS = {
+  followers: 10000,
+  subs: 50,
+  discord: 250
+};
+
+// A API da Twitch não expõe subs via client_credentials.
+// Configure TWITCH_SUBS_ATUAIS na Vercel (Settings > Environment Variables)
+// ou edite o padrão 45 aqui.
+const SUBS_ATUAIS = Number(process.env.TWITCH_SUBS_ATUAIS) || 45;
+
 let cache = { token: null, exp: 0 };
 
 async function getToken(id, secret) {
@@ -41,6 +54,15 @@ export default async function handler(req, res) {
     ]);
 
     const stream = s.data && s.data[0] ? s.data[0] : null;
+
+    let uptime = null;
+    if (stream && stream.started_at) {
+      const diff = Date.now() - new Date(stream.started_at).getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      uptime = `${h}h ${m}m`;
+    }
+
     const mapVideo = x => ({
       id: x.id, title: x.title, created_at: x.created_at, duration: x.duration, views: x.view_count,
       thumbnail: x.thumbnail_url ? x.thumbnail_url.replace('%{width}', '320').replace('%{height}', '180') : null
@@ -48,7 +70,6 @@ export default async function handler(req, res) {
     const videos = (v.data || []).map(mapVideo);
     const video = videos[0] || null;
 
-    // Último jogo (a categoria do canal fica salva mesmo offline)
     const c = ch.data && ch.data[0];
     let game = null;
     if (c && c.game_id) {
@@ -61,12 +82,26 @@ export default async function handler(req, res) {
       id: x.id, title: x.title, views: x.view_count, thumbnail: x.thumbnail_url
     }));
 
+    const followersTotal = typeof f.total === 'number' ? f.total : 0;
+    const discordTotal = typeof dc.approximate_member_count === 'number' ? dc.approximate_member_count : 0;
+
     res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=30');
     return res.status(200).json({
-      user: { profile_image_url: user.profile_image_url, offline_image_url: user.offline_image_url || null },
-      stream: stream && { title: stream.title, game_name: stream.game_name, viewer_count: stream.viewer_count },
-      followers: typeof f.total === 'number' ? f.total : null,
-      discord: typeof dc.approximate_member_count === 'number' ? dc.approximate_member_count : null,
+      user: {
+        profile_image_url: user.profile_image_url,
+        offline_image_url: user.offline_image_url || null
+      },
+      stream: stream && {
+        title: stream.title,
+        game_name: stream.game_name,
+        viewer_count: stream.viewer_count,
+        uptime,
+        started_at: stream.started_at
+      },
+      // 👇 Estes 3 campos alimentam os cards de meta (seguidores, discord, subs)
+      followers: followersTotal || null,
+      discord: discordTotal || null,
+      subs: SUBS_ATUAIS,
       video, videos, game, clips
     });
   } catch (e) {
