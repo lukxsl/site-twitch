@@ -30,10 +30,12 @@ export default async function handler(req, res) {
     const user = u.data && u.data[0];
     if (!user) return res.status(404).json({ error: 'Canal não encontrado' });
 
-    const [s, f, v, dc] = await Promise.all([
+    const [s, f, v, ch, cl, dc] = await Promise.all([
       api(`streams?user_id=${user.id}`),
       api(`channels/followers?broadcaster_id=${user.id}&first=1`).catch(() => ({})),
       api(`videos?user_id=${user.id}&type=archive&first=1`).catch(() => ({})),
+      api(`channels?broadcaster_id=${user.id}`).catch(() => ({})),
+      api(`clips?broadcaster_id=${user.id}&first=6`).catch(() => ({})),
       fetch(`https://discord.com/api/v10/invites/${DISCORD_INVITE}?with_counts=true`)
         .then(r => r.json()).catch(() => ({}))
     ]);
@@ -41,13 +43,26 @@ export default async function handler(req, res) {
     const stream = s.data && s.data[0] ? s.data[0] : null;
     const video = v.data && v.data[0] ? { id: v.data[0].id, title: v.data[0].title } : null;
 
+    // Último jogo (a categoria do canal fica salva mesmo offline)
+    const c = ch.data && ch.data[0];
+    let game = null;
+    if (c && c.game_id) {
+      const g = await api(`games?id=${c.game_id}`).catch(() => ({}));
+      const box = g.data && g.data[0] && g.data[0].box_art_url;
+      game = { name: c.game_name, box_art: box ? box.replace('{width}', '285').replace('{height}', '380') : null };
+    }
+
+    const clips = (cl.data || []).map(x => ({
+      id: x.id, title: x.title, views: x.view_count, thumbnail: x.thumbnail_url
+    }));
+
     res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=30');
     return res.status(200).json({
       user: { profile_image_url: user.profile_image_url, offline_image_url: user.offline_image_url || null },
       stream: stream && { title: stream.title, game_name: stream.game_name, viewer_count: stream.viewer_count },
       followers: typeof f.total === 'number' ? f.total : null,
       discord: typeof dc.approximate_member_count === 'number' ? dc.approximate_member_count : null,
-      video
+      video, game, clips
     });
   } catch (e) {
     return res.status(500).json({ error: 'Erro ao consultar a Twitch' });
