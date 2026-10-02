@@ -1,12 +1,12 @@
 // Vercel serverless: /api/admin.js
-// Painel admin: ver votos, editar opções, resetar.
-// Env: UPSTASH_REDIS_REST_URL/TOKEN, SESSION_SECRET, TWITCH_CLIENT_ID/SECRET, TMDB_TOKEN
+// Painel admin: ver votos, editar opções, resetar, ver admins.
 import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'troque-isso-urgente';
 const COOKIE_NAME = 'sessao_site';
+const ADMIN_IDS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const TMDB_TOKEN = process.env.TMDB_TOKEN;
@@ -50,7 +50,6 @@ async function igdbToken(){
   igdbCache = { token: d.access_token, exp: Date.now() + (d.expires_in - 60) * 1000 };
   return igdbCache.token;
 }
-
 async function buscarCapaJogo(nome){
   if(!TWITCH_ID || !TWITCH_SECRET) return null;
   try{
@@ -66,7 +65,6 @@ async function buscarCapaJogo(nome){
     return `https:${g.cover.url.replace('t_thumb','t_cover_big').replace('t_cover_small','t_cover_big')}`;
   }catch(e){ return null; }
 }
-
 async function buscarCapaFilme(nome){
   if(!TMDB_TOKEN && !TMDB_KEY) return null;
   try{
@@ -94,24 +92,39 @@ export default async function handler(req, res){
   const action = (req.query && req.query.action) || '';
 
   try {
-    // -------- Ver quem votou --------
+    // ============ VOTOS: tabela completa ============
     if(req.method === 'GET' && action === 'votos'){
       const ciclo = (await redis([['GET','votos:ciclo_atual']]))[0] || '1';
       const kUsuarios = `votos_usuarios:${ciclo}`;
       const kCont = `votos:${ciclo}`;
-      const kConfig = 'votos:config';
 
       const [usuariosRaw, contRaw, configRaw] = await redis([
         ['HGETALL', kUsuarios],
         ['HGETALL', kCont],
-        ['GET', kConfig]
+        ['GET', 'votos:config']
       ]);
 
-      // usuariosRaw = [userId1, idOpcao1, userId2, idOpcao2, ...]
       const usuarios = [];
       for(let i = 0; i < (usuariosRaw||[]).length; i += 2){
-        usuarios.push({ userId: usuariosRaw[i], opcao: usuariosRaw[i+1] });
+        const userId = usuariosRaw[i];
+        let raw = usuariosRaw[i+1];
+        let dados;
+        try {
+          dados = JSON.parse(raw);
+          if(!dados || typeof dados !== 'object' || !dados.opcao) dados = { opcao: raw };
+        } catch(e){
+          dados = { opcao: raw };
+        }
+        usuarios.push({
+          userId,
+          opcao: dados.opcao,
+          username: dados.username || null,
+          avatar: dados.avatar || null,
+          ts: dados.ts || null
+        });
       }
+      // Mais recentes primeiro
+      usuarios.sort((a,b) => (b.ts||0) - (a.ts||0));
 
       const cont = {};
       for(let i = 0; i < (contRaw||[]).length; i += 2){
@@ -121,21 +134,15 @@ export default async function handler(req, res){
       let config = null;
       try { config = configRaw ? JSON.parse(configRaw) : null; } catch(e){}
 
-      return res.status(200).json({
-        ciclo,
-        usuarios,      // [{userId, opcao}]
-        contagem: cont,// {idOpcao: votos}
-        config         // null se não foi customizada ainda
-      });
+      return res.status(200).json({ ciclo, usuarios, contagem: cont, config });
     }
 
-    // -------- Salvar novas opções --------
+    // ============ SALVAR OPÇÕES ============
     if(req.method === 'POST' && action === 'opcoes'){
       const body = req.body || {};
       const opcoes = Array.isArray(body.opcoes) ? body.opcoes.slice(0, 5) : [];
       if(!opcoes.length) return res.status(400).json({ error: 'Nenhuma opção enviada' });
 
-      // Valida + gera capas
       const processadas = [];
       for(const o of opcoes){
         const nome = String(o.nome || '').trim().slice(0, 80);
@@ -144,39 +151,35 @@ export default async function handler(req, res){
         const id = String(o.id || '').trim().slice(0, 40) ||
                    nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
 
-        // Só busca capa se admin não forneceu uma manual
         let capa = String(o.capa || '').trim();
         if(!capa){
           capa = tipo === 'filme' ? await buscarCapaFilme(nome) : await buscarCapaJogo(nome);
         }
-
         processadas.push({ id, nome, tipo, capa: capa || null });
       }
-
       if(!processadas.length) return res.status(400).json({ error: 'Nenhuma opção válida' });
 
       await redis([['SET', 'votos:config', JSON.stringify(processadas)]]);
       return res.status(200).json({ ok: true, opcoes: processadas });
     }
 
-    // -------- Resetar votação --------
+    // ============ RESETAR VOTAÇÃO ============
     if(req.method === 'POST' && action === 'reset'){
       const cicloAtual = Number((await redis([['GET','votos:ciclo_atual']]))[0]) || 1;
       const novo = cicloAtual + 1;
-
-      // Apaga as contagens antigas + usuários do ciclo atual
       await redis([
         ['DEL', `votos:${cicloAtual}`],
         ['DEL', `votos_usuarios:${cicloAtual}`],
         ['SET', 'votos:ciclo_atual', String(novo)]
       ]);
-
       return res.status(200).json({ ok: true, novoCiclo: novo });
     }
 
-    // -------- Lista de admins (útil pra Fase 3) --------
+    // ============ LISTAR ADMINS ============
     if(req.method === 'GET' && action === 'admins'){
-      return res.status(200).json({ admins: [] }); // placeholder
+      return res.status(200).json({
+        admins: ADMIN_IDS.map(id => ({ id }))
+      });
     }
 
     return res.status(400).json({ error: 'Ação inválida' });

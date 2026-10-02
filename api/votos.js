@@ -1,5 +1,6 @@
 // Vercel serverless: /api/votos.js
 // Voto por conta Discord, opções editáveis pelo painel admin.
+// Agora salva nick + avatar + data junto com o voto.
 import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -7,7 +8,6 @@ const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TO
 const SESSION_SECRET = process.env.SESSION_SECRET || 'troque-isso-urgente';
 const COOKIE_NAME = 'sessao_site';
 
-// Opções PADRÃO (usadas se o admin nunca salvou nada pelo painel)
 const OPCOES_PADRAO = [
   { id: 'hollow-knight', nome: 'Hollow Knight', tipo: 'jogo',
     capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
@@ -55,6 +55,15 @@ async function pegarCiclo(){
   return String(raw || '1');
 }
 
+// Lê um voto (string antiga OU objeto novo)
+function lerVoto(raw){
+  if(!raw) return null;
+  try {
+    const d = JSON.parse(raw);
+    return d && d.opcao ? d : { opcao: raw };
+  } catch(e){ return { opcao: raw }; }
+}
+
 export default async function handler(req, res){
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
   res.setHeader('Cache-Control', 'no-store');
@@ -74,13 +83,23 @@ export default async function handler(req, res){
       const id = (req.body || {}).id;
       if(!OPCOES.some(o => o.id === id)) return res.status(400).json({ error: 'Opção inválida' });
 
-      const [anterior] = await redis([['HGET', kTodos, sessao.id]]);
+      const [anteriorRaw] = await redis([['HGET', kTodos, sessao.id]]);
+      const anterior = lerVoto(anteriorRaw);
+      const opcaoAnterior = anterior ? anterior.opcao : null;
 
-      if(anterior === id){
+      if(opcaoAnterior === id){
         jaVotou = true;
       } else {
-        const cmds = [['HSET', kTodos, sessao.id, id]];
-        if(anterior) cmds.push(['HINCRBY', kCont, anterior, -1]);
+        // Salva o voto novo com nick/avatar/data
+        const payload = JSON.stringify({
+          opcao: id,
+          username: sessao.username || 'Anônimo',
+          avatar: sessao.avatar || null,
+          ts: Date.now()
+        });
+
+        const cmds = [['HSET', kTodos, sessao.id, payload]];
+        if(opcaoAnterior) cmds.push(['HINCRBY', kCont, opcaoAnterior, -1]);
         cmds.push(['HINCRBY', kCont, id, 1]);
         await redis(cmds);
       }
@@ -88,9 +107,10 @@ export default async function handler(req, res){
       return res.status(405).json({ error: 'Método não permitido' });
     }
 
-    const [flat, meu] = await redis([['HGETALL', kCont], ['HGET', kTodos, sessao.id]]);
+    const [flat, meuRaw] = await redis([['HGETALL', kCont], ['HGET', kTodos, sessao.id]]);
     const cont = {};
     for(let i = 0; i < (flat||[]).length; i += 2) cont[flat[i]] = Number(flat[i+1]);
+    const meu = lerVoto(meuRaw);
 
     return res.status(200).json({
       opcoes: OPCOES.map(o => ({
@@ -98,7 +118,7 @@ export default async function handler(req, res){
         votos: cont[o.id] || 0,
         capa: o.capa || null
       })),
-      meuVoto: meu || null,
+      meuVoto: meu ? meu.opcao : null,
       jaVotou,
       usuario: { id: sessao.id, username: sessao.username, avatar: sessao.avatar }
     });
