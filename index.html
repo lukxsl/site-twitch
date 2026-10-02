@@ -1378,6 +1378,67 @@ dialog{width:min(520px,92vw)}
 @media(max-width:450px){
   .g{width:92px}.mrow{grid-template-columns:100px 1fr}
 }
+
+/* =========================
+   AJUSTES v3
+========================= */
+.t-NR{--tc:#4a4560}
+.mute{color:var(--mute);font-size:.88rem}
+/* Twitch monitor */
+.tmon{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 25px rgba(0,0,0,.35)}
+.tmon-h{display:flex;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(90deg,#9333ea,#7c3aed);font-size:.78rem;letter-spacing:.4px}
+.tmon-h .pill{margin-left:auto;background:rgba(0,0,0,.3);padding:3px 10px;border-radius:99px;font-size:.66rem;font-weight:800}
+.tmon-b{padding:12px;display:grid;gap:8px;flex:1;align-content:start}
+.tm-id{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px}
+.tm-id img{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--purple)}
+.tm-id div{flex:1;display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.tm-id small{color:var(--mute);font-weight:400}
+.tm-id span{font-size:.72rem;color:var(--mute)}
+.tm-id .btn{margin:0}
+.tm-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tm-t{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+.tm-t small{display:block;font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-bottom:3px}
+.tm-t b{font-size:.95rem;font-weight:800}
+.tm-t p{font-size:.82rem;line-height:1.35}
+/* Clipes */
+.clips-box h3{display:flex;justify-content:space-between;align-items:baseline}
+.clips-box h3 a{font-size:.78rem;color:var(--purple-light);font-weight:600}
+.clips-grid{grid-template-columns:1.8fr 1fr;grid-auto-rows:minmax(140px,auto)}
+.clips-grid .clip{aspect-ratio:auto;min-height:140px}
+.clips-grid .clip:first-child{grid-row:1/3;min-height:300px}
+.clip .vw{position:absolute;top:8px;right:8px;background:rgba(11,7,19,.8);border:1px solid var(--line);border-radius:99px;padding:2px 8px;font-size:.66rem;font-weight:700}
+.clip .tag{position:absolute;top:8px;left:8px;background:var(--purple);border-radius:99px;padding:2px 9px;font-size:.66rem;font-weight:800}
+.clip:first-child .ct{font-size:.95rem;padding:30px 12px 10px}
+@media(max-width:700px){.clips-grid{grid-template-columns:1fr}.clips-grid .clip:first-child{grid-row:auto;min-height:190px}}
+/* Tier list: jogos/filmes */
+.modo{display:inline-flex;gap:4px;background:var(--card-bg);border:1px solid var(--line);border-radius:99px;padding:4px;margin-top:14px}
+.modo button{background:none;border:0;color:var(--mute);font-family:inherit;font-weight:700;font-size:.88rem;padding:8px 20px;border-radius:99px;cursor:pointer}
+.modo button.on{background:var(--purple);color:#fff;box-shadow:0 4px 12px rgba(168,85,247,.35)}
+/* Comunidade v3 */
+.goals3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.goalc{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;gap:9px}
+.gc-top{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:.9rem}
+.gc-top b{color:var(--purple-light);font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem}
+.goalc small{color:var(--mute);font-size:.72rem}
+.com-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.apoie,.cmds{display:flex;flex-direction:column;gap:10px}
+.apoie .benefits-grid{grid-template-columns:1fr}
+.apoie .big{display:block;text-align:center;padding:13px;font-size:.92rem;margin:4px 0;align-self:stretch}
+.apoie hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+.apoie .twitch-sub-btn{align-self:flex-start}
+.cmds .commands-list{grid-template-columns:1fr}
+.cmd{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;font-family:inherit;cursor:pointer;transition:border-color .2s}
+.cmd:hover{border-color:var(--purple)}
+.cmd em{font-style:normal;font-size:.68rem;color:var(--purple-light);font-weight:700}
+.rules-acc{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:6px 20px}
+.rules-acc summary{cursor:pointer;font-weight:700;padding:14px 0;list-style:none}
+.rules-acc[open] summary{border-bottom:1px solid var(--line);margin-bottom:12px}
+.rules-acc .rules-list{padding-bottom:12px}
+@media(max-width:900px){.goals3,.com-grid{grid-template-columns:1fr}}
+.tmdb-note{font-size:.72rem;color:var(--mute);margin-top:14px;text-align:center}
+.coluna-esquerda .foco{flex:1}
+.proximo{justify-content:center}
+.proximo h3{font-size:1.15rem}
 </style>
 </head>
 
@@ -1459,6 +1520,12 @@ dialog{width:min(520px,92vw)}
             <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
           </div>
         </div>
+        <div class="box proximo" id="proximoBox" style="display:none">
+          <span class="foco-label">🗳️ Próximo na votação</span>
+          <h3 id="proxNome">—</h3>
+          <p id="proxInfo"></p>
+          <button class="btn" onclick="mudarAba('sugestoes')">Votar →</button>
+        </div>
       </div>
 
       <div class="coluna-direita">
@@ -1484,15 +1551,25 @@ dialog{width:min(520px,92vw)}
           </div>
           <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
         </div>
-        <div class="box monitor">
-          <div class="mon"><b id="mStatus">…</b><span>Status do canal</span></div>
-          <div class="mon"><b id="mSeg">…</b><span>Seguidores</span></div>
-          <div class="mon"><b id="mDc">…</b><span>Membros no Discord</span></div>
+        <div class="tmon">
+          <div class="tmon-h"><span class="live-indicator"></span><b>TWITCH MONITOR</b><span class="pill">TWITCH.TV</span></div>
+          <div class="tmon-b">
+            <div class="tm-id">
+              <img id="tmAvatar" src="img/avatar.png" alt="" onerror="this.style.display='none'">
+              <div><b>Sophs <small>(@asemtet0)</small></b><span id="tmSub">Canal offline no momento.</span></div>
+              <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Abrir Twitch</a>
+            </div>
+            <div class="tm-two">
+              <div class="tm-t"><small>STATUS</small><b id="tmStatus" style="color:#ff4d5f">OFFLINE</b></div>
+              <div class="tm-t"><small>CATEGORIA</small><b id="tmCat">—</b></div>
+            </div>
+            <div class="tm-t"><small>TÍTULO DA LIVE</small><p id="tmTitle">Canal offline</p></div>
+          </div>
         </div>
       </div>
     </div>
     <div class="clips-box" id="clipsBox" style="display:none">
-      <h3>🎬 Clipes em destaque</h3>
+      <h3><span>🎬 Clipes em destaque</span><a href="https://www.twitch.tv/asemtet0/clips" target="_blank" rel="noopener">Ver todos →</a></h3>
       <div class="clips-grid" id="clipsGrid"></div>
     </div>
   </div>
@@ -1500,8 +1577,9 @@ dialog{width:min(520px,92vw)}
 
 <section id="sec-tierlist" class="page-section">
   <div class="section-header">
-    <h1>Tier List de Jogos</h1>
-    <p>Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.</p>
+    <h1 id="tlTitulo">Tier List de Jogos</h1>
+    <p id="tlSub">Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.</p>
+    <div class="modo" id="modo"><button class="on" data-m="jogos">🎮 Jogos</button><button data-m="filmes">🎬 Filmes</button></div>
   </div>
   <section class="stats" id="stats" aria-label="Resumo"></section>
   <div class="tools">
@@ -1509,82 +1587,55 @@ dialog{width:min(520px,92vw)}
     <div class="chips" id="chips"></div>
   </div>
   <section id="tiers"></section>
+  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificado por ela.</p>
 </section>
 
 <section id="sec-comunidade" class="page-section">
   <div class="section-header">
     <h2>Comunidade & Vantagens</h2>
-    <p>Entre para o cantinho da Soso, confira os comandos e veja as metas da comunidade.</p>
+    <p>Entre para o cantinho da Soso, confira os comandos e acompanhe as metas da comunidade.</p>
   </div>
 
-  <div class="stats com-stats">
-    <div class="stat"><b id="cSeg">…</b><span>seguidores</span></div>
-    <div class="stat"><b id="cDc">…</b><span>membros no Discord</span></div>
-    <div class="stat" id="cSubsBox"><b id="cSubs">…</b><span>subs</span></div>
+  <div class="goals3" id="goals3">
+    <div class="goalc"><div class="gc-top"><span>💜 Seguidores</span><b id="goalSegNum">…</b></div><div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div><small id="goalSegDesc">Carregando…</small></div>
+    <div class="goalc"><div class="gc-top"><span>🎮 Discord</span><b id="goalDcNum">…</b></div><div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div><small id="goalDcDesc">Carregando…</small></div>
+    <div class="goalc" id="goalSubBox"><div class="gc-top"><span>👑 Subs</span><b id="goalSubNum">…</b></div><div class="goal-bar"><i id="goalSubBar" style="width:0%"></i></div><small id="goalSubDesc">Carregando…</small></div>
   </div>
 
-  <div class="subtabs" id="cTabs">
-    <button class="on" data-t="apoiar">💜 Apoiar</button>
-    <button data-t="metas">🎯 Metas</button>
-    <button data-t="comandos">🤖 Comandos</button>
-    <button data-t="regras">📜 Regras</button>
-  </div>
-
-  <div class="cpane" id="c-apoiar">
-    <div class="apoio-grid">
-      <a href="#" class="card" id="donateLink">
-        <div class="icon">💜</div>
-        <h3>Donate</h3>
-        <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
-      </a>
-      <div class="sub-box">
-        <div class="sub-header">
-          <div>
-            <h3>👑 Seja Sub & Benefícios</h3>
-            <p class="subtitle">Apoie a Soso e faça parte ainda mais do cantinho.</p>
-          </div>
-          <div class="sub-crown">👑</div>
-        </div>
-        <div class="benefits-grid">
-          <div class="benefit">✨ Cargos exclusivos no Discord da comunidade</div>
-          <div class="benefit">🎁 Emotes personalizados para usar no chat</div>
-          <div class="benefit">💜 Apoio direto ao canal e às lives</div>
-          <div class="benefit">🎮 Participação nas vantagens destinadas aos subs</div>
-        </div>
-        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch</a>
+  <div class="com-grid">
+    <div class="sbox apoie">
+      <h3 style="color:var(--white)">💜 Apoie o cantinho</h3>
+      <p class="mute">Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
+      <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
+      <hr>
+      <h3 style="color:var(--white)">👑 Seja Sub</h3>
+      <div class="benefits-grid">
+        <div class="benefit">✨ Cargos exclusivos no Discord da comunidade</div>
+        <div class="benefit">🎁 Emotes personalizados para usar no chat</div>
+        <div class="benefit">💜 Apoio direto ao canal e às lives</div>
+        <div class="benefit">🎮 Participação nas vantagens destinadas aos subs</div>
       </div>
+      <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch</a>
     </div>
-  </div>
 
-  <div class="cpane" id="c-metas">
-    <div class="goals-box">
-      <h3>🎯 Metas da Comunidade</h3>
-      <p style="color:var(--mute);font-size:.9rem;margin-top:5px;">Objetivos que a Soso e a comunidade estão construindo juntas. 💜</p>
-      <div class="goal"><div class="goal-top"><span class="goal-title">💜 Meta de seguidores</span><span class="goal-number" id="goalSegNum">…</span></div><div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div><div class="goal-description" id="goalSegDesc">Carregando…</div></div>
-      <div class="goal"><div class="goal-top"><span class="goal-title">🎮 Meta do Discord (membros)</span><span class="goal-number" id="goalDcNum">…</span></div><div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div><div class="goal-description" id="goalDcDesc">Carregando…</div></div>
-      <div class="goal" id="goalSubBox"><div class="goal-top"><span class="goal-title">👑 Meta de subs</span><span class="goal-number" id="goalSubNum">…</span></div><div class="goal-bar"><i id="goalSubBar" style="width:0%"></i></div><div class="goal-description" id="goalSubDesc">Carregando…</div></div>
-    </div>
-  </div>
-
-  <div class="cpane" id="c-comandos">
-    <div class="commands-box">
-      <h3>🤖 Comandos Principais</h3>
-      <p style="color:var(--mute);font-size:.9rem;margin-top:5px;">Alguns dos comandos mais úteis do chat. A lista completa está no StreamElements.</p>
+    <div class="sbox cmds">
+      <h3 style="color:var(--white)">🤖 Comandos do chat</h3>
+      <p class="mute">Toque em um comando para copiar e colar no chat.</p>
       <div class="commands-list">
-        <div class="command"><strong>!discord</strong> — Link do Discord</div>
-        <div class="command"><strong>!insta</strong> — Instagram da Soso</div>
-        <div class="command"><strong>!social</strong> — Redes sociais</div>
-        <div class="command"><strong>!lurk</strong> — Avisar que vai ficar de lurk</div>
-        <div class="command"><strong>!uptime</strong> — Tempo de live</div>
-        <div class="command"><strong>!commands</strong> — Lista de comandos</div>
+        <button class="command cmd" data-c="!discord"><span><strong>!discord</strong> — Link do Discord</span><em>copiar</em></button>
+        <button class="command cmd" data-c="!insta"><span><strong>!insta</strong> — Instagram da Soso</span><em>copiar</em></button>
+        <button class="command cmd" data-c="!social"><span><strong>!social</strong> — Redes sociais</span><em>copiar</em></button>
+        <button class="command cmd" data-c="!lurk"><span><strong>!lurk</strong> — Avisar que vai ficar de lurk</span><em>copiar</em></button>
+        <button class="command cmd" data-c="!uptime"><span><strong>!uptime</strong> — Tempo de live</span><em>copiar</em></button>
+        <button class="command cmd" data-c="!commands"><span><strong>!commands</strong> — Lista de comandos</span><em>copiar</em></button>
       </div>
       <a href="https://streamelements.com/asemtet0/commands" target="_blank" rel="noopener" class="full-commands">Ver todos os comandos no StreamElements →</a>
     </div>
   </div>
 
-  <div class="cpane" id="c-regras">
-    <div class="setup-box rules-box">
-      <ul class="rules-list">
+  <details class="rules-acc">
+    <summary>📜 Regras da comunidade</summary>
+    <ul class="rules-list">
         <li class="rule">
           <span class="rule-icon">✨</span>
           <div>
@@ -1621,8 +1672,7 @@ dialog{width:min(520px,92vw)}
           </div>
         </li>
       </ul>
-    </div>
-  </div>
+  </details>
 </section>
 
 <section id="sec-setup" class="page-section">
@@ -1698,7 +1748,7 @@ dialog{width:min(520px,92vw)}
 </dialog>
 
 <script>
-const CONFIG = { subs: null, donate: '' };
+const CONFIG = { subs: null, donate: 'https://midfielder.tv.br/asemtet0' };
 const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
 const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
 const HOST = window.location.hostname || 'localhost';
@@ -1733,9 +1783,13 @@ async function verificarStatusTwitch() {
     atualizarMeta('goalSeg', data.followers);
     atualizarMeta('goalDc', data.discord);
     if (CONFIG.subs != null) atualizarMeta('goalSub', CONFIG.subs, MARCOS_SUBS);
-    g('cSeg').textContent = g('mSeg').textContent = data.followers ?? '—';
-    g('cDc').textContent = g('mDc').textContent = data.discord ?? '—';
-    g('mStatus').textContent = data.stream ? '🔴 Ao vivo' : 'Offline';
+    const live = !!data.stream;
+    g('tmStatus').textContent = live ? 'AO VIVO' : 'OFFLINE';
+    g('tmStatus').style.color = live ? '#4ade80' : '#ff4d5f';
+    g('tmSub').textContent = live ? `Ao vivo com ${data.stream.viewer_count} espectadores` : 'Canal offline no momento.';
+    g('tmCat').textContent = live ? (data.stream.game_name || '—') : (data.game ? data.game.name : '—');
+    g('tmTitle').textContent = live ? data.stream.title : (data.video ? `Última live: ${data.video.title}` : 'Canal offline');
+    if (data.user && data.user.profile_image_url) g('tmAvatar').src = data.user.profile_image_url;
     atualizarFoco(data.game, !!data.stream);
     renderClips(data.clips);
     vodAtual = data.video;
@@ -1806,9 +1860,10 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-const JOGOS = [
+let JOGOS = [
   {
     nome:"Red Dead Redemption 2",
+    appid:1174180, // horas e progresso passam a vir da Steam automaticamente
     tier:"S",
     status:"Jogando",
     progresso:56,
@@ -1852,29 +1907,45 @@ const JOGOS = [
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
 const TIERS = ['S','A','B','C'];
-const STATUS = ['Todos','Jogando','Concluído','Na fila','Pretendo jogar','Dropado'];
-let filtro = 'Todos';
+// EDITE AQUI: lista de filmes. Pôster, ano, duração (horas) e sinopse vêm sozinhos do TMDB pelo nome.
+// Se o TMDB achar o filme errado, adicione tmdbId:123 (o número que aparece na URL do filme no themoviedb.org).
+const FILMES = [
+  { nome:"Interestelar", tier:"S", status:"Assistido", nota:9, comentario:"" },
+  { nome:"Duna", tier:"A", status:"Na fila", nota:0, comentario:"" }
+];
+const MODOS = {
+  jogos:  { get lista(){ return JOGOS; },  status:['Todos','Jogando','Jogado','Concluído','Na fila','Pretendo jogar','Dropado'], feito:'Concluído', plural:'jogos',  hrs:'horas jogadas',    hl:'horas jogadas',    l4:'jogos concluídos',  titulo:'Tier List de Jogos',  sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.', busca:'Buscar jogo...',  vazio:'Nenhum jogo aqui' },
+  filmes: { get lista(){ return FILMES; }, status:['Todos','Assistindo','Assistido','Na fila','Abandonado'], feito:'Assistido', plural:'filmes', hrs:'horas assistidas', hl:'horas assistidas', l4:'filmes assistidos', titulo:'Tier List de Filmes', sub:'Tudo o que eu já assisti ou pretendo assistir, do melhor ao pior. Clique em um filme para ver os detalhes.', busca:'Buscar filme...', vazio:'Nenhum filme aqui' }
+};
+let modo = 'jogos', filtro = 'Todos';
+const LISTA = () => MODOS[modo].lista;
+const fh = h => (Math.round(h * 10) / 10).toLocaleString('pt-BR') + 'h';
 
-const comNota = JOGOS.filter(j => j.nota > 0);
-const media = comNota.length ? comNota.reduce((a,j) => a + j.nota, 0) / comNota.length : 0;
-
-$('stats').innerHTML = [
-  [JOGOS.length, 'jogos na lista'],
-  [JOGOS.reduce((a,j) => a + (j.horas || 0), 0), 'horas jogadas'],
-  [media ? n1(media) : '—', 'média das notas'],
-  [JOGOS.filter(j => j.status === 'Concluído').length, 'jogos concluídos']
-].map(s => `<div class="stat"><b>${s[0]}</b><span>${s[1]}</span></div>`).join('');
+function desenharStats(){
+  const m = MODOS[modo], L = m.lista, cn = L.filter(j => j.nota > 0);
+  const media = cn.length ? cn.reduce((a,j) => a + j.nota, 0) / cn.length : 0;
+  const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
+  $('stats').innerHTML = [
+    [L.length, m.plural + ' na lista'],
+    [hs.toLocaleString('pt-BR'), m.hrs],
+    [media ? n1(media) : '—', 'média das notas'],
+    [L.filter(j => j.status === m.feito).length, m.l4]
+  ].map(x => `<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+}
+desenharStats();
 
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 
+let ultGame = null, ultVivo = false;
 function atualizarFoco(game, aoVivo){
+  ultGame = game; ultVivo = aoVivo;
   const j = game ? JOGOS.find(x => norm(x.nome) === norm(game.name)) : (JOGOS.find(x => x.status === 'Jogando') || JOGOS[0]);
   const nome = game ? game.name : (j && j.nome);
   if(!nome) return;
   const capa = (j && j.capa) || (game && game.box_art) || '';
   $('focoNome').textContent = nome;
   $('focoLabel').textContent = aoVivo ? '🔴 Jogando agora' : '🎮 Último jogo jogado';
-  $('focoHoras').textContent = j && j.horas > 0 ? `${j.horas}h jogadas` : '';
+  $('focoHoras').textContent = j && j.horas > 0 ? `${fh(j.horas)} jogadas` : '';
   const c = $('focoCover');
   if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
   else c.style.display = 'none';
@@ -1885,7 +1956,8 @@ let clipsOk = false;
 function renderClips(list){
   if(clipsOk || !list || !list.length) return;
   clipsOk = true;
-  $('clipsBox').style.display = '';$('clipsGrid').innerHTML = list.map(c => `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}"><img src="${esc(c.thumbnail)}" alt="" loading="lazy"><span class="play">▶</span><span class="ct">${esc(c.title)}</span></button>`).join('');
+  $('clipsBox').style.display = '';
+  $('clipsGrid').innerHTML = list.slice(0,3).map((c,i) => `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}"><img src="${esc(c.thumbnail)}" alt="" loading="lazy"><span class="play">▶</span>${i === 0 ? '<span class="tag">★ Mais assistido</span>' : ''}<span class="vw">👁 ${Number(c.views || 0).toLocaleString('pt-BR')}</span><span class="ct">${esc(c.title)}</span></button>`).join('');
 }
 $('clipsGrid').addEventListener('click', e => {
   const b = e.target.closest('.clip');
@@ -1893,16 +1965,28 @@ $('clipsGrid').addEventListener('click', e => {
   b.innerHTML = `<iframe src="https://clips.twitch.tv/embed?clip=${encodeURIComponent(b.dataset.id)}&parent=${HOST}&autoplay=true" allowfullscreen title="Clipe"></iframe>`;
 });
 
-if (CONFIG.subs == null) { $('cSubsBox').style.display = 'none'; document.querySelector('.com-stats').style.gridTemplateColumns = 'repeat(2,1fr)';$('goalSubBox').style.display = 'none'; }
-else $('cSubs').textContent = CONFIG.subs;
+// Comunidade
+if (CONFIG.subs == null) { $('goalSubBox').style.display = 'none'; $('goals3').style.gridTemplateColumns = 'repeat(2,1fr)'; }
 if (CONFIG.donate) { const d = $('donateLink'); d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
-else $('donateLink').addEventListener('click', e => { e.preventDefault(); alert('Coloque o link do Donate em CONFIG.donate!'); });$('cTabs').addEventListener('click', e => {
-  const b = e.target.closest('button'); if(!b) return;
-  document.querySelectorAll('#cTabs button').forEach(x => x.classList.toggle('on', x === b));
-  document.querySelectorAll('.cpane').forEach(p => p.classList.toggle('ativo', p.id === 'c-' + b.dataset.t));
-});
+document.querySelectorAll('.cmd').forEach(b => b.addEventListener('click', async () => {
+  const tag = b.querySelector('em');
+  try { await navigator.clipboard.writeText(b.dataset.c); tag.textContent = 'copiado ✓'; } catch (e) { tag.textContent = 'copie: ' + b.dataset.c; }
+  setTimeout(() => { tag.textContent = 'copiar'; }, 1600);
+}));
 
-$('chips').innerHTML = STATUS.map(s => `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}">${s}</button>`).join('');
+function renderChips(){
+  $('chips').innerHTML = MODOS[modo].status.map(s => `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}">${s}</button>`).join('');
+}
+renderChips();
+$('modo').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b || b.dataset.m === modo) return;
+  modo = b.dataset.m; filtro = 'Todos'; $('q').value = '';
+  document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x === b));
+  const m = MODOS[modo];
+  $('tlTitulo').textContent = m.titulo; $('tlSub').textContent = m.sub; $('q').placeholder = m.busca;
+  renderChips(); desenharStats(); desenhar();
+  $('tmdbNote').style.display = modo === 'filmes' ? '' : 'none';
+});
 
 $('chips').addEventListener('click', e => {
   const b = e.target.closest('.chip');
@@ -1926,18 +2010,19 @@ function cartao(j,i){
       </div>
       <div class="cap">
         <span class="cn">${esc(j.nome)}</span>
-        ${j.horas > 0 ? `<span class="ch">${j.horas}h</span>` : ''}
+        ${j.horas > 0 ? `<span class="ch">${fh(j.horas)}</span>` : ''}
       </div>
     </button>
   `;
 }
 
 function linha(cls, rotulo, lista){
+  const L = LISTA();
   return `
     <div class="tier t-${cls}">
       <div class="label"><div>${rotulo}</div></div>
       <div class="games">
-        ${lista.length ? lista.map(j => cartao(j, JOGOS.indexOf(j))).join('') : '<span class="empty">Nenhum jogo aqui</span>'}
+        ${lista.length ? lista.map(j => cartao(j, L.indexOf(j))).join('') : `<span class="empty">${MODOS[modo].vazio}</span>`}
       </div>
     </div>
   `;
@@ -1945,8 +2030,12 @@ function linha(cls, rotulo, lista){
 
 function desenhar(){
   const q = $('q').value.trim().toLowerCase();
-  const lista = JOGOS.filter(j => (filtro === 'Todos' || j.status === filtro) && j.nome.toLowerCase().includes(q));
-  $('tiers').innerHTML = TIERS.map(t => linha(t, t, lista.filter(j => j.tier === t))).join('');
+  const lista = LISTA().filter(j => (filtro === 'Todos' || j.status === filtro) && j.nome.toLowerCase().includes(q))
+    .sort((a,b) => (b.nota || 0) - (a.nota || 0) || (b.horas || 0) - (a.horas || 0));
+  const tiers = TIERS.map(t => linha(t, t, lista.filter(j => j.tier === t)));
+  const nr = lista.filter(j => j.tier === 'NR');
+  if(nr.length) tiers.push(linha('NR', '?', nr));
+  $('tiers').innerHTML = tiers.join('');
 }
 
 desenhar();
@@ -1956,23 +2045,26 @@ const dlg = $('dlg');
 $('tiers').addEventListener('click', e => {
   const b = e.target.closest('.g');
   if(!b) return;
-  const j = JOGOS[+b.dataset.i];
-
+  const m = MODOS[modo];
+  const j = LISTA()[+b.dataset.i];
   $('dTitle').textContent = j.nome;
+  const terceiro = modo === 'jogos'
+    ? (j.progresso != null ? `<div><b>${j.progresso}%</b><span>progresso</span></div>` : '')
+    : (j.ano ? `<div><b>${j.ano}</b><span>ano</span></div>` : '');
   $('dBody').innerHTML = `
     <div class="mrow">
       ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
       <div class="mside">
         <div class="badges">
-          <span class="bd">Tier ${j.tier}</span>
+          <span class="bd">${j.tier === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
           <span class="bd">${esc(j.status)}</span>
         </div>
         <div class="kv">
-          <div><b>${j.horas || '—'}</b><span>horas</span></div>
+          <div><b>${j.horas ? fh(j.horas) : '—'}</b><span>${m.hl}</span></div>
           <div><b>${j.nota > 0 ? n1(j.nota) : '—'}</b><span>nota</span></div>
-          <div><b>${j.progresso}%</b><span>progresso</span></div>
+          ${terceiro}
         </div>
-        ${j.comentario ? `<p>${esc(j.comentario)}</p>` : ''}
+        ${(j.comentario || j.sinopse) ? `<p>${esc(j.comentario || j.sinopse)}</p>` : ''}
       </div>
     </div>
   `;
@@ -2047,6 +2139,12 @@ async function carregarVotos(corpo){
     const d = await r.json();
     if(!d.opcoes) throw new Error('sem dados');
     const total = d.opcoes.reduce((a,o) => a + o.votos, 0);
+    const topo = d.opcoes.slice().sort((a,b) => b.votos - a.votos)[0];
+    if(topo && topo.votos > 0){
+      $('proxNome').textContent = topo.nome;
+      $('proxInfo').textContent = `${topo.votos} voto${topo.votos === 1 ? '' : 's'} • ${Math.round(topo.votos / total * 100)}% da votação`;
+      $('proximoBox').style.display = '';
+    }
     $('votoLista').innerHTML = d.opcoes.slice().sort((a,b) => b.votos - a.votos).map(o => {
       const p = total ? Math.round(o.votos / total * 100) : 0;
       const meu = d.meuVoto === o.id;
@@ -2071,6 +2169,47 @@ $('votoLista').addEventListener('click', e => {
   if(b && !b.disabled){ b.disabled = true; carregarVotos({ id:b.dataset.v }); }
 });
 carregarVotos();
+
+// ---------- TMDB (pôster, ano, duração e sinopse automáticos) ----------
+async function carregarFilmes(){
+  await Promise.allSettled(FILMES.map(async f => {
+    const qs = f.tmdbId ? `id=${f.tmdbId}` : `q=${encodeURIComponent(f.nome)}${f.ano ? '&ano=' + f.ano : ''}`;
+    const r = await fetch('/api/tmdb?' + qs);
+    if(!r.ok) return;
+    const d = await r.json();
+    if(!d.id) return;
+    f.capa = f.capa || d.poster || '';
+    f.ano = f.ano || d.ano;
+    f.sinopse = d.sinopse || '';
+    if(f.horas == null && f.status === 'Assistido' && d.horas) f.horas = d.horas;
+  }));
+  if(modo === 'filmes'){ desenharStats(); desenhar(); }
+}
+carregarFilmes();
+
+// ---------- STEAM (horas e progresso automáticos) ----------
+async function carregarSteam(){
+  try {
+    const r = await fetch('/api/steam');
+    if(!r.ok) throw new Error('steam');
+    const d = await r.json();
+    if(!d.jogos || !d.jogos.length) return;
+    const porId = new Map(d.jogos.map(x => [x.appid, x]));
+    const usados = new Set();
+    JOGOS = JOGOS.map(j => {
+      const st = j.appid && porId.get(j.appid);
+      if(!st) return j;
+      usados.add(st.appid);
+      return { ...j, nome: j.nome || st.nome, horas: st.horas, progresso: st.progresso != null ? st.progresso : j.progresso, capa: j.capa || st.capa };
+    });
+    d.jogos.filter(x => !usados.has(x.appid) && x.horas >= 1).slice(0, 40).forEach(x => JOGOS.push({
+      nome: x.nome, appid: x.appid, tier: 'NR', nota: 0, comentario: '', horas: x.horas, progresso: x.progresso, capa: x.capa,
+      status: x.recente ? 'Jogando' : (x.progresso === 100 ? 'Concluído' : 'Jogado')
+    }));
+    desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
+  } catch (e) { console.error('Steam indisponível, usando só a lista manual', e); }
+}
+carregarSteam();
 
 async function enviarSugestao(){
   const status = $('sugStatus'), btn =$('sugBtn');
