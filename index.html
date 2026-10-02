@@ -570,24 +570,6 @@ nav ul button.on{
 }
 
 /* =========================
-   FOCO
-========================= */
-
-.focus-box{
-  position:relative;
-  overflow:hidden;
-}
-
-.focus-box::after{
-  content:'🎮';
-  position:absolute;
-  right:16px;
-  top:12px;
-  font-size:2rem;
-  opacity:.08;
-}
-
-/* =========================
    SEÇÕES GERAIS
 ========================= */
 
@@ -1147,7 +1129,6 @@ nav ul button.on{
   box-shadow:0 0 5px var(--purple);
 }
 
-/* Badge de Horas no Card (substituindo progresso) */
 .g .ghoras{
   position:absolute;
   bottom:20px;
@@ -1299,92 +1280,6 @@ footer{
 }
 
 /* =========================
-   RESPONSIVO
-========================= */
-
-@media(max-width:1100px){
-  .hero-grid{
-    grid-template-columns:1fr;
-  }
-  .cards-grid{
-    grid-template-columns:repeat(2,1fr);
-  }
-  nav ul{
-    gap:14px;
-  }
-  .logo-text{
-    display:none;
-  }
-}
-
-@media(max-width:700px){
-  nav .wrapper{
-    flex-direction:column;
-    padding-top:10px;
-    padding-bottom:10px;
-  }
-  nav ul{
-    justify-content:center;
-    gap:8px 12px;
-  }
-  nav ul button{
-    font-size:.78rem;
-  }
-  .page-section{
-    padding-top:15px;
-  }
-  .cards-grid,
-  .setup-grid{
-    grid-template-columns:1fr;
-  }
-  .benefits-grid,
-  .commands-list{
-    grid-template-columns:1fr;
-  }
-  .stats{
-    grid-template-columns:repeat(2,1fr);
-  }
-  .tier{
-    grid-template-columns:60px 1fr;
-  }
-  .label{
-    font-size:1.6rem;
-  }
-  .setup-box,
-  .commands-box,
-  .sub-box,
-  .goals-box{
-    padding:18px;
-  }
-  .sub-header{
-    flex-direction:column;
-  }
-}
-
-@media(max-width:450px){
-  .wrapper{
-    padding:0 14px;
-  }
-  .profile-avatar-container{
-    width:80px;
-    height:80px;
-  }
-  .stats{
-    grid-template-columns:1fr 1fr;
-    gap:6px;
-  }
-  .stat{
-    padding:10px;
-  }
-  .stat b{
-    font-size:1.3rem;
-  }
-  .g{
-    width:72px;
-  }
-}
-
-/* =========================
    AJUSTES v2
 ========================= */
 .hero-grid{align-items:stretch}
@@ -1404,7 +1299,6 @@ footer{
 .clip .play{position:absolute;inset:0;display:grid;place-items:center;font-size:1.6rem;background:rgba(11,7,19,.25)}
 .clip .ct{position:absolute;left:0;right:0;bottom:0;padding:16px 8px 6px;font-size:.72rem;font-weight:600;text-align:left;background:linear-gradient(transparent,rgba(8,4,16,.95))}
 .clip:hover{border-color:var(--purple)}
-/* Tier list */
 .g{width:104px;aspect-ratio:auto;display:flex;flex-direction:column;overflow:hidden;text-align:left}
 .g .cv{position:relative;width:100%;aspect-ratio:2/3;background:#1d1433}
 .g .cap{padding:6px 6px 7px;display:flex;flex-direction:column;gap:2px}
@@ -1417,8 +1311,6 @@ dialog{width:min(520px,92vw)}
 .mrow img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
 .mrow .kv{grid-template-columns:repeat(3,1fr)}
 .mrow .mside{display:grid;gap:12px}
-@media(max-width:450px){.g{width:92px}.mrow{grid-template-columns:100px 1fr}}
-/* Comunidade */
 .com-stats{grid-template-columns:repeat(3,1fr);margin:0 0 18px}
 .subtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .subtabs button{background:var(--card-bg);border:1px solid var(--line);color:var(--mute);padding:8px 16px;border-radius:99px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer}
@@ -1427,7 +1319,6 @@ dialog{width:min(520px,92vw)}
 .apoio-grid{display:grid;grid-template-columns:1fr 1.7fr;gap:14px}
 .apoio-grid .card{height:100%}
 .rules-box{border:0;padding:0;background:none}
-/* Setup */
 .setup-foto{margin-bottom:14px;border-radius:16px;overflow:hidden;border:1px solid var(--line);max-height:340px}
 .setup-foto img{display:block;width:100%;height:100%;max-height:340px;object-fit:cover}
 .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
@@ -1446,16 +1337,26 @@ a.si-btn:hover{background:var(--purple-dark)}
 .cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 .cfg div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .cfg b{display:block;font-size:1.05rem}.cfg span{font-size:.72rem;color:var(--mute)}
-/* Votação */
-.vt{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
-.vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9rem}
+
+/* Estilos refinados da Votação */
+.vt{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px}
+.vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;position:relative;z-index:2}
 .vt-top b{color:var(--purple-light);font-size:.8rem}
-.vt .goal-bar{grid-column:1}
-.vt .btn{grid-column:2;grid-row:1/3;padding:7px 14px;font-size:.8rem}
-.vt.meu .vt-top span{color:var(--purple-light)}
-.vt-total{font-size:.75rem;color:var(--mute);margin-top:6px}
-@media(max-width:1100px){.clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.apoio-grid{grid-template-columns:1fr}}
-@media(max-width:700px){.clips-grid,.monitor{grid-template-columns:1fr}.foco{align-items:flex-start}}
+.vt .goal-bar{grid-column:1;position:relative;z-index:2;margin-top:4px}
+.vt .goal-bar i{background:linear-gradient(90deg,#7c3aed,#c084fc)}
+.vt .btn{grid-column:2;grid-row:1/3;padding:7px 14px;font-size:.8rem;position:relative;z-index:2}
+.vt.meu .vt-top span{color:var(--purple-light);font-weight:bold}
+.vt-total{font-size:.75rem;color:var(--mute);margin-top:10px;text-align:right}
+
+@media(max-width:1100px){
+  .clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.apoio-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .clips-grid,.monitor{grid-template-columns:1fr}.foco{align-items:flex-start}
+}
+@media(max-width:450px){
+  .g{width:92px}.mrow{grid-template-columns:100px 1fr}
+}
 </style>
 </head>
 
@@ -1491,7 +1392,6 @@ a.si-btn:hover{background:var(--purple-dark)}
     </div>
 
     <div class="hero-grid">
-      <!-- Coluna da Esquerda: Perfil e Foco Atual embaixinho -->
       <div class="coluna-esquerda">
         <div class="profile-card-mini">
           <div class="profile-avatar-container">
@@ -1540,7 +1440,6 @@ a.si-btn:hover{background:var(--purple-dark)}
         </div>
       </div>
 
-      <!-- Coluna da Direita: Twitch Monitor -->
       <div class="coluna-direita">
         <div class="twitch-player-box">
           <div class="twitch-player-header">
@@ -1618,21 +1517,21 @@ a.si-btn:hover{background:var(--purple-dark)}
         <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
       </a>
       <div class="sub-box">
-    <div class="sub-header">
-      <div>
-        <h3>👑 Seja Sub & Benefícios</h3>
-        <p class="subtitle">Apoie a Soso e faça parte ainda mais do cantinho.</p>
+        <div class="sub-header">
+          <div>
+            <h3>👑 Seja Sub & Benefícios</h3>
+            <p class="subtitle">Apoie a Soso e faça parte ainda mais do cantinho.</p>
+          </div>
+          <div class="sub-crown">👑</div>
+        </div>
+        <div class="benefits-grid">
+          <div class="benefit">✨ Cargos exclusivos no Discord da comunidade</div>
+          <div class="benefit">🎁 Emotes personalizados para usar no chat</div>
+          <div class="benefit">💜 Apoio direto ao canal e às lives</div>
+          <div class="benefit">🎮 Participação nas vantagens destinadas aos subs</div>
+        </div>
+        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch</a>
       </div>
-      <div class="sub-crown">👑</div>
-    </div>
-    <div class="benefits-grid">
-      <div class="benefit">✨ Cargos exclusivos no Discord da comunidade</div>
-      <div class="benefit">🎁 Emotes personalizados para usar no chat</div>
-      <div class="benefit">💜 Apoio direto ao canal e às lives</div>
-      <div class="benefit">🎮 Participação nas vantagens destinadas aos subs</div>
-    </div>
-    <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch</a>
-  </div>
     </div>
   </div>
 
@@ -1648,59 +1547,59 @@ a.si-btn:hover{background:var(--purple-dark)}
 
   <div class="cpane" id="c-comandos">
     <div class="commands-box">
-    <h3>🤖 Comandos Principais</h3>
-    <p style="color:var(--mute);font-size:.9rem;margin-top:5px;">Alguns dos comandos mais úteis do chat. A lista completa está no StreamElements.</p>
-    <div class="commands-list">
-      <div class="command"><strong>!discord</strong> — Link do Discord</div>
-      <div class="command"><strong>!insta</strong> — Instagram da Soso</div>
-      <div class="command"><strong>!social</strong> — Redes sociais</div>
-      <div class="command"><strong>!lurk</strong> — Avisar que vai ficar de lurk</div>
-      <div class="command"><strong>!uptime</strong> — Tempo de live</div>
-      <div class="command"><strong>!commands</strong> — Lista de comandos</div>
+      <h3>🤖 Comandos Principais</h3>
+      <p style="color:var(--mute);font-size:.9rem;margin-top:5px;">Alguns dos comandos mais úteis do chat. A lista completa está no StreamElements.</p>
+      <div class="commands-list">
+        <div class="command"><strong>!discord</strong> — Link do Discord</div>
+        <div class="command"><strong>!insta</strong> — Instagram da Soso</div>
+        <div class="command"><strong>!social</strong> — Redes sociais</div>
+        <div class="command"><strong>!lurk</strong> — Avisar que vai ficar de lurk</div>
+        <div class="command"><strong>!uptime</strong> — Tempo de live</div>
+        <div class="command"><strong>!commands</strong> — Lista de comandos</div>
+      </div>
+      <a href="https://streamelements.com/asemtet0/commands" target="_blank" rel="noopener" class="full-commands">Ver todos os comandos no StreamElements →</a>
     </div>
-    <a href="https://streamelements.com/asemtet0/commands" target="_blank" rel="noopener" class="full-commands">Ver todos os comandos no StreamElements →</a>
-  </div>
   </div>
 
   <div class="cpane" id="c-regras">
     <div class="setup-box rules-box">
       <ul class="rules-list">
-      <li class="rule">
-        <span class="rule-icon">✨</span>
-        <div>
-          <strong>Respeito em primeiro lugar</strong>
-          <span>Qualquer tipo de preconceito, racismo, homofobia ou assédio não será tolerado.</span>
-        </div>
-      </li>
-      <li class="rule">
-        <span class="rule-icon">🚫</span>
-        <div>
-          <strong>Sem spoilers ou dicas não solicitadas</strong>
-          <span>A menos que a Soso peça ajuda expressamente, evite spoilers e dicas durante os jogos.</span>
-        </div>
-      </li>
-      <li class="rule">
-        <span class="rule-icon">💬</span>
-        <div>
-          <strong>Sem spam ou flood</strong>
-          <span>Evite repetir mensagens ou encher o chat com símbolos para não atrapalhar a leitura.</span>
-        </div>
-      </li>
-      <li class="rule">
-        <span class="rule-icon">💜</span>
-        <div>
-          <strong>Mantenha a vibe leve</strong>
-          <span>O objetivo é conversar, jogar, dar risada e aproveitar o cantinho da Soso.</span>
-        </div>
-      </li>
-      <li class="rule">
-        <span class="rule-icon">👑</span>
-        <div>
-          <strong>Respeite a moderação</strong>
-          <span>As decisões da moderação devem ser respeitadas para manter a comunidade organizada.</span>
-        </div>
-      </li>
-    </ul>
+        <li class="rule">
+          <span class="rule-icon">✨</span>
+          <div>
+            <strong>Respeito em primeiro lugar</strong>
+            <span>Qualquer tipo de preconceito, racismo, homofobia ou assédio não será tolerado.</span>
+          </div>
+        </li>
+        <li class="rule">
+          <span class="rule-icon">🚫</span>
+          <div>
+            <strong>Sem spoilers ou dicas não solicitadas</strong>
+            <span>A menos que a Soso peça ajuda expressamente, evite spoilers e dicas durante os jogos.</span>
+          </div>
+        </li>
+        <li class="rule">
+          <span class="rule-icon">💬</span>
+          <div>
+            <strong>Sem spam ou flood</strong>
+            <span>Evite repetir mensagens ou encher o chat com símbolos para não atrapalhar a leitura.</span>
+          </div>
+        </li>
+        <li class="rule">
+          <span class="rule-icon">💜</span>
+          <div>
+            <strong>Mantenha a vibe leve</strong>
+            <span>O objetivo é conversar, jogar, dar risada e aproveitar o cantinho da Soso.</span>
+          </div>
+        </li>
+        <li class="rule">
+          <span class="rule-icon">👑</span>
+          <div>
+            <strong>Respeite a moderação</strong>
+            <span>As decisões da moderação devem ser respeitadas para manter a comunidade organizada.</span>
+          </div>
+        </li>
+      </ul>
     </div>
   </div>
 </section>
@@ -1719,11 +1618,14 @@ a.si-btn:hover{background:var(--purple-dark)}
     <h2>Sugestões de Jogos & Ideias</h2>
     <p>Quer sugerir um jogo para eu testar em live ou mandar um feedback? Deixe sua ideia anotada aqui!</p>
   </div>
+  
+  <!-- Caixa de Votação Dinâmica conectada ao Redis -->
   <div class="setup-box" id="votoBox" style="max-width:700px;margin:0 auto 20px;">
     <h3>🗳️ Qual o próximo jogo?</h3>
-    <p style="color:var(--mute);font-size:.88rem;margin:4px 0 8px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
-    <div id="votoLista">Carregando…</div>
+    <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
+    <div id="votoLista">Carregando votação...</div>
   </div>
+
   <div class="setup-box" style="max-width:700px;margin:0 auto;">
     <div style="display:grid;gap:15px;">
       <div>
@@ -1764,7 +1666,6 @@ a.si-btn:hover{background:var(--purple-dark)}
 </dialog>
 
 <script>
-// EDITE AQUI: subs não vêm da API pública da Twitch, então coloque o número na mão (ou null para esconder)
 const CONFIG = { subs: null, donate: '' };
 const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
 const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
@@ -1870,7 +1771,7 @@ const JOGOS = [
     progresso:56,
     horas:50,
     nota:8,
-    capa:"https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg", // capa vertical 2:3 (pode usar img/rdr2.jpg se for vertical)
+    capa:"https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg",
     comentario:"Um dos mundos mais vivos e detalhados dos games."
   },
   {
@@ -1941,8 +1842,7 @@ let clipsOk = false;
 function renderClips(list){
   if(clipsOk || !list || !list.length) return;
   clipsOk = true;
-  $('clipsBox').style.display = '';
-  $('clipsGrid').innerHTML = list.map(c => `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}"><img src="${esc(c.thumbnail)}" alt="" loading="lazy"><span class="play">▶</span><span class="ct">${esc(c.title)}</span></button>`).join('');
+  $('clipsBox').style.display = '';$('clipsGrid').innerHTML = list.map(c => `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}"><img src="${esc(c.thumbnail)}" alt="" loading="lazy"><span class="play">▶</span><span class="ct">${esc(c.title)}</span></button>`).join('');
 }
 $('clipsGrid').addEventListener('click', e => {
   const b = e.target.closest('.clip');
@@ -1950,12 +1850,10 @@ $('clipsGrid').addEventListener('click', e => {
   b.innerHTML = `<iframe src="https://clips.twitch.tv/embed?clip=${encodeURIComponent(b.dataset.id)}&parent=${HOST}&autoplay=true" allowfullscreen title="Clipe"></iframe>`;
 });
 
-// Comunidade: números, abas e donate
-if (CONFIG.subs == null) { $('cSubsBox').style.display = 'none'; document.querySelector('.com-stats').style.gridTemplateColumns = 'repeat(2,1fr)'; $('goalSubBox').style.display = 'none'; }
+if (CONFIG.subs == null) { $('cSubsBox').style.display = 'none'; document.querySelector('.com-stats').style.gridTemplateColumns = 'repeat(2,1fr)';$('goalSubBox').style.display = 'none'; }
 else $('cSubs').textContent = CONFIG.subs;
 if (CONFIG.donate) { const d = $('donateLink'); d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
-else $('donateLink').addEventListener('click', e => { e.preventDefault(); alert('Coloque o link do Donate em CONFIG.donate!'); });
-$('cTabs').addEventListener('click', e => {
+else $('donateLink').addEventListener('click', e => { e.preventDefault(); alert('Coloque o link do Donate em CONFIG.donate!'); });$('cTabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#cTabs button').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.cpane').forEach(p => p.classList.toggle('ativo', p.id === 'c-' + b.dataset.t));
@@ -2041,7 +1939,6 @@ $('tiers').addEventListener('click', e => {
 $('dClose').addEventListener('click', () => dlg.close());
 dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
 
-// ---------- SETUP (edite os dados e os links aqui) ----------
 const SETUP = [
   { t:'🖥️ PC Gamer', i:[
     ['🗄️','Gabinete','Risemode Aquarium branco',''],
@@ -2057,7 +1954,7 @@ const SETUP = [
     ['⌨️','Teclado','AULA H88',''],
     ['🖱️','Mouse','Logitech G502X Superlight RGB',''],
     ['🎧','Headset','Astro A50',''],
-    ['🎙️','Microfone','FIFINE AM8 Branco',''],
+    ['🎙️️','Microfone','FIFINE AM8 Branco',''],
     ['🖥️','Monitor','AOC 240Hz',''],
     ['📷','Webcam','iPhone 11',''],
     ['🪑','Cadeira','XT Racer','']
@@ -2077,7 +1974,7 @@ $('setupGrid').innerHTML =
   `<div class="sbox"><h3>🛒 Wishlist de upgrades</h3><ul>${UPGRADES.map(([ic,nome,st,l]) =>
     `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(st)}</small><b>${esc(nome)}</b></div>${btnProd(l)}</li>`).join('')}</ul></div>`;
 
-// ---------- VOTAÇÃO ----------
+// ---------- LÓGICA DE VOTAÇÃO (CONECTADA AO REDIS) ----------
 async function carregarVotos(corpo){
   try {
     const r = await fetch('/api/votos', corpo ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(corpo) } : undefined);
@@ -2087,12 +1984,22 @@ async function carregarVotos(corpo){
     $('votoLista').innerHTML = d.opcoes.slice().sort((a,b) => b.votos - a.votos).map(o => {
       const p = total ? Math.round(o.votos / total * 100) : 0;
       const meu = d.meuVoto === o.id;
-      return `<div class="vt${meu ? ' meu' : ''}"><div class="vt-top"><span>${esc(o.nome)}</span><b>${o.votos} voto${o.votos === 1 ? '' : 's'} • ${p}%</b></div><div class="goal-bar"><i style="width:${p}%"></i></div><button class="btn" data-v="${esc(o.id)}" ${d.meuVoto ? 'disabled' : ''}>${meu ? '✓ Seu voto' : 'Votar'}</button></div>`;
+      return `
+        <div class="vt${meu ? ' meu' : ''}">
+          <div class="vt-top">
+            <span>${esc(o.nome)}</span>
+            <b>${o.votos} voto${o.votos === 1 ? '' : 's'} • ${p}%</b>
+          </div>
+          <div class="goal-bar"><i style="width:${p}%"></i></div>
+          <button class="btn" data-v="${esc(o.id)}" ${d.jaVotou ? 'disabled' : ''}>${meu ? '✓ Seu voto' : 'Votar'}</button>
+        </div>
+      `;
     }).join('') + `<p class="vt-total">${total} voto${total === 1 ? '' : 's'} no total</p>`;
   } catch (e) {
     $('votoBox').style.display = 'none';
   }
 }
+
 $('votoLista').addEventListener('click', e => {
   const b = e.target.closest('[data-v]');
   if(b && !b.disabled){ b.disabled = true; carregarVotos({ id:b.dataset.v }); }
