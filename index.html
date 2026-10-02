@@ -1562,6 +1562,16 @@ dialog{width:min(520px,92vw)}
   padding:9px 16px;
 }
 
+/* =========================
+   CARD "PRÓXIMO NA VOTAÇÃO" (Início)
+========================= */
+.proximo{justify-content:center}
+.proximo h3{font-size:1.15rem}
+.proximo.foco{align-items:center}
+.proximo.foco .foco-info{gap:6px}
+.proximo .foco-btns{margin-top:4px}
+.proximo .foco-label{color:var(--purple-light)}
+
 @media(max-width:1100px){
   .clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.apoio-grid,.sugestoes-grid{grid-template-columns:1fr}
 }
@@ -1630,8 +1640,6 @@ dialog{width:min(520px,92vw)}
 @media(max-width:900px){.goals3,.com-grid{grid-template-columns:1fr}}
 .tmdb-note{font-size:.72rem;color:var(--mute);margin-top:14px;text-align:center}
 .coluna-esquerda .foco{flex:1}
-.proximo{justify-content:center}
-.proximo h3{font-size:1.15rem}
 
 /* ---- v2 ---- */
 .rules-wrap{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
@@ -1757,11 +1765,17 @@ dialog{width:min(520px,92vw)}
             </div>
           </div>
         </div>
-        <div class="box proximo" id="proximoBox">
-          <span class="foco-label">🗳️ Próximo na votação</span>
-          <h3 id="proxNome">Votação aberta</h3>
-          <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
-          <button class="btn" onclick="mudarAba('sugestoes')">Votar →</button>
+
+        <div class="box proximo foco" id="proximoBox">
+          <img class="foco-cover" id="proxCover" alt="" style="display:none">
+          <div class="foco-info">
+            <span class="foco-label">🗳️ Próximo na votação</span>
+            <h3 id="proxNome">Votação aberta</h3>
+            <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
+            <div class="foco-btns">
+              <button class="btn" onclick="mudarAba('sugestoes')">Votar →</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2399,6 +2413,8 @@ function renderVotacao(){
   const totalVotos = VOTOS_DADOS.reduce((acc, item) => acc + (item.votos || 0), 0);
   const ordenados = [...VOTOS_DADOS].sort((a,b) => (b.votos || 0) - (a.votos || 0));
 
+  const proxCover = $('proxCover');
+
   if (!ordenados.length || totalVotos === 0) {
     destBox.innerHTML = '';
     listaBox.innerHTML = `
@@ -2407,6 +2423,7 @@ function renderVotacao(){
         Seja a primeira pessoa a escolher o próximo jogo!
       </div>
     `;
+    if (proxCover) proxCover.style.display = 'none';
     if ($('proxNome')) $('proxNome').textContent = 'Votação aberta';
     if ($('proxInfo')) $('proxInfo').textContent = 'Ainda sem votos. Seja a primeira pessoa a escolher!';
     return;
@@ -2434,8 +2451,18 @@ function renderVotacao(){
     </div>
   `;
 
+  // Atualiza o card "Próximo na votação" na aba Início (com capa e texto limpo)
+  if (proxCover) {
+    if (lider.capa) {
+      proxCover.onerror = () => { proxCover.style.display = 'none'; };
+      proxCover.src = lider.capa;
+      proxCover.style.display = '';
+    } else {
+      proxCover.style.display = 'none';
+    }
+  }
   if ($('proxNome')) $('proxNome').textContent = lider.nome;
-  if ($('proxInfo')) $('proxInfo').textContent = `Liderando com ${pctLider}% (${lider.votos}/${totalVotos} votos). Faltam ${totalVotos - lider.votos} para garantir!`;
+  if ($('proxInfo')) $('proxInfo').textContent = `Liderando com ${pctLider}% dos votos`;
 
   const demais = ordenados.slice(1);
   if (!demais.length) {
