@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const [s, f, v, ch, cl, dc] = await Promise.all([
       api(`streams?user_id=${user.id}`),
       api(`channels/followers?broadcaster_id=${user.id}&first=1`).catch(() => ({})),
-      api(`videos?user_id=${user.id}&type=archive&first=1`).catch(() => ({})),
+      api(`videos?user_id=${user.id}&type=archive&first=10`).catch(() => ({})),
       api(`channels?broadcaster_id=${user.id}`).catch(() => ({})),
       api(`clips?broadcaster_id=${user.id}&first=6`).catch(() => ({})),
       fetch(`https://discord.com/api/v10/invites/${DISCORD_INVITE}?with_counts=true`)
@@ -41,7 +41,12 @@ export default async function handler(req, res) {
     ]);
 
     const stream = s.data && s.data[0] ? s.data[0] : null;
-    const video = v.data && v.data[0] ? { id: v.data[0].id, title: v.data[0].title } : null;
+    const mapVideo = x => ({
+      id: x.id, title: x.title, created_at: x.created_at, duration: x.duration, views: x.view_count,
+      thumbnail: x.thumbnail_url ? x.thumbnail_url.replace('%{width}', '320').replace('%{height}', '180') : null
+    });
+    const videos = (v.data || []).map(mapVideo);
+    const video = videos[0] || null;
 
     // Último jogo (a categoria do canal fica salva mesmo offline)
     const c = ch.data && ch.data[0];
@@ -62,7 +67,7 @@ export default async function handler(req, res) {
       stream: stream && { title: stream.title, game_name: stream.game_name, viewer_count: stream.viewer_count },
       followers: typeof f.total === 'number' ? f.total : null,
       discord: typeof dc.approximate_member_count === 'number' ? dc.approximate_member_count : null,
-      video, game, clips
+      video, videos, game, clips
     });
   } catch (e) {
     return res.status(500).json({ error: 'Erro ao consultar a Twitch' });

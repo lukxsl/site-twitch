@@ -15,6 +15,9 @@ export default async function handler(req, res) {
 
   try {
     const r = await fetch(`${BASE}/IPlayerService/GetOwnedGames/v1/?key=${key}&steamid=${steamid}&include_appinfo=1&include_played_free_games=1&format=json`);
+    if (!r.ok) {
+      return res.status(200).json({ jogos: [], aviso: `A Steam respondeu HTTP ${r.status}. ${r.status === 403 ? 'A chave de API parece inválida.' : ''}` });
+    }
     const d = await r.json();
     const lista = (d.response && d.response.games) || [];
     

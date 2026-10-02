@@ -371,7 +371,7 @@ nav ul button.on{
 
 .profile-socials{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:repeat(3,1fr);
   gap:8px;
   margin-top:12px;
 }
@@ -1439,6 +1439,46 @@ dialog{width:min(520px,92vw)}
 .coluna-esquerda .foco{flex:1}
 .proximo{justify-content:center}
 .proximo h3{font-size:1.15rem}
+
+/* ---- v2 ---- */
+.rules-wrap{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
+.rules-wrap>h3{color:var(--white);margin-bottom:14px}
+.rules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.rule-card{position:relative;display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:14px;overflow:hidden}
+.rule-card i{position:absolute;right:10px;top:6px;font-style:normal;font-weight:800;font-size:1.3rem;color:rgba(168,85,247,.16)}
+.rc-ic{font-size:1.4rem;flex:none}
+.rule-card strong{display:block;color:var(--white);font-size:.9rem;margin-bottom:3px}
+.rule-card p{color:var(--mute);font-size:.8rem;line-height:1.4}
+.rules-foot{margin-top:12px;font-size:.78rem;color:var(--mute);text-align:center}
+@media(max-width:900px){.rules-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.rules-grid{grid-template-columns:1fr}}
+.profile-social-btn{padding:8px 6px}
+.foco-meta{display:flex;flex-wrap:wrap;gap:6px}
+.foco-chip{font-size:.7rem;font-weight:700;padding:4px 9px;border-radius:99px;background:rgba(168,85,247,.14);border:1px solid var(--line);color:var(--purple-light)}
+.foco-chip.tr{background:var(--purple);color:#fff;border-color:transparent}
+.foco-bar{width:100%;max-width:240px}
+.foco-bar small{display:flex;justify-content:space-between;font-size:.68rem;color:var(--mute);margin-bottom:4px}
+.foco-last{font-size:.78rem;color:var(--mute)}
+.foco-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.foco-btns .btn.ghost{background:transparent;border:1px solid var(--purple);color:var(--purple-light);box-shadow:none}
+.tm-three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tm-three .tm-t b{font-size:1.15rem;font-family:'Bricolage Grotesque',sans-serif;color:var(--purple-light)}
+.tm-vods{display:grid;gap:6px}
+.tm-vod{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:6px 10px 6px 6px;cursor:pointer;font-family:inherit;color:var(--ink);text-align:left;width:100%;transition:border-color .2s}
+.tm-vod:hover{border-color:var(--purple)}
+.tm-vod img{width:64px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;flex:none;background:#1d1433}
+.tm-vod div{flex:1;min-width:0;display:flex;flex-direction:column}
+.tm-vod b{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm-vod span{font-size:.68rem;color:var(--mute)}
+.tm-vod em{font-style:normal;color:var(--purple-light);font-size:.8rem}
+.tm-h4{font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-top:2px}
+.destaque{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,rgba(168,85,247,.22),rgba(168,85,247,.04));border:1px solid var(--purple);border-radius:14px;padding:12px;margin-bottom:14px}
+.destaque img,.destaque .ph2{width:64px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;flex:none;background:#1d1433}
+.destaque .ph2{display:grid;place-items:center;font-size:1.6rem}
+.destaque small{font-size:.65rem;font-weight:800;letter-spacing:.5px;color:var(--purple-light);text-transform:uppercase}
+.destaque b{display:block;font-size:1.15rem;color:var(--white);margin:2px 0}
+.destaque span{font-size:.8rem;color:var(--mute)}
+.vt.lider .vt-top span::before{content:'👑 '}
 </style>
 </head>
 
@@ -1508,6 +1548,10 @@ dialog{width:min(520px,92vw)}
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
               Discord
             </a>
+            <a class="profile-social-btn" href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 2h-3.3v13.2a2.9 2.9 0 1 1-2-2.8V9a6.2 6.2 0 1 0 5.3 6.2V8.6a7.5 7.5 0 0 0 4.4 1.4V6.7a4.4 4.4 0 0 1-4.4-4.7Z"/></svg>
+              TikTok
+            </a>
           </div>
         </div>
 
@@ -1516,14 +1560,19 @@ dialog{width:min(520px,92vw)}
           <div class="foco-info">
             <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
             <h3 id="focoNome">Carregando…</h3>
-            <p id="focoHoras"></p>
-            <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
+            <div class="foco-meta" id="focoMeta"></div>
+            <div class="foco-bar" id="focoBar" style="display:none"><small><span>Conquistas</span><b id="focoPct"></b></small><div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div></div>
+            <p class="foco-last" id="focoHoras"></p>
+            <div class="foco-btns">
+              <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
+              <button class="btn ghost" id="btnFocoVod" onclick="assistirVod(null,true)" style="display:none">▶ Rever a live</button>
+            </div>
           </div>
         </div>
-        <div class="box proximo" id="proximoBox" style="display:none">
+        <div class="box proximo" id="proximoBox">
           <span class="foco-label">🗳️ Próximo na votação</span>
-          <h3 id="proxNome">—</h3>
-          <p id="proxInfo"></p>
+          <h3 id="proxNome">Votação aberta</h3>
+          <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
           <button class="btn" onclick="mudarAba('sugestoes')">Votar →</button>
         </div>
       </div>
@@ -1552,18 +1601,16 @@ dialog{width:min(520px,92vw)}
           <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
         </div>
         <div class="tmon">
-          <div class="tmon-h"><span class="live-indicator"></span><b>TWITCH MONITOR</b><span class="pill">TWITCH.TV</span></div>
+          <div class="tmon-h"><span class="live-indicator"></span><b>PAINEL DO CANAL</b><span class="pill" id="tmStatus">OFFLINE</span></div>
           <div class="tmon-b">
-            <div class="tm-id">
-              <img id="tmAvatar" src="img/avatar.png" alt="" onerror="this.style.display='none'">
-              <div><b>Sophs <small>(@asemtet0)</small></b><span id="tmSub">Canal offline no momento.</span></div>
-              <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Abrir Twitch</a>
+            <div class="tm-three">
+              <div class="tm-t"><small>SEGUIDORES</small><b id="tmSeg">—</b></div>
+              <div class="tm-t"><small>DISCORD</small><b id="tmDc">—</b></div>
+              <div class="tm-t"><small>LIVES / 14 DIAS</small><b id="tmLives">—</b></div>
             </div>
-            <div class="tm-two">
-              <div class="tm-t"><small>STATUS</small><b id="tmStatus" style="color:#ff4d5f">OFFLINE</b></div>
-              <div class="tm-t"><small>CATEGORIA</small><b id="tmCat">—</b></div>
-            </div>
-            <div class="tm-t"><small>TÍTULO DA LIVE</small><p id="tmTitle">Canal offline</p></div>
+            <div class="tm-t"><small id="tmLbl">ÚLTIMA LIVE</small><p id="tmSub">Carregando…</p></div>
+            <div class="tm-h4">ÚLTIMAS LIVES · CLIQUE PARA REVER</div>
+            <div class="tm-vods" id="tmVods"></div>
           </div>
         </div>
       </div>
@@ -1624,7 +1671,7 @@ dialog{width:min(520px,92vw)}
       <div class="commands-list">
         <button class="command cmd" data-c="!discord"><span><strong>!discord</strong> — Link do Discord</span><em>copiar</em></button>
         <button class="command cmd" data-c="!insta"><span><strong>!insta</strong> — Instagram da Soso</span><em>copiar</em></button>
-        <button class="command cmd" data-c="!social"><span><strong>!social</strong> — Redes sociais</span><em>copiar</em></button>
+        <button class="command cmd" data-c="!social"><span><strong>!social</strong> — Instagram, Discord e TikTok</span><em>copiar</em></button>
         <button class="command cmd" data-c="!lurk"><span><strong>!lurk</strong> — Avisar que vai ficar de lurk</span><em>copiar</em></button>
         <button class="command cmd" data-c="!uptime"><span><strong>!uptime</strong> — Tempo de live</span><em>copiar</em></button>
         <button class="command cmd" data-c="!commands"><span><strong>!commands</strong> — Lista de comandos</span><em>copiar</em></button>
@@ -1633,46 +1680,18 @@ dialog{width:min(520px,92vw)}
     </div>
   </div>
 
-  <details class="rules-acc">
-    <summary>📜 Regras da comunidade</summary>
-    <ul class="rules-list">
-        <li class="rule">
-          <span class="rule-icon">✨</span>
-          <div>
-            <strong>Respeito em primeiro lugar</strong>
-            <span>Qualquer tipo de preconceito, racismo, homofobia ou assédio não será tolerado.</span>
-          </div>
-        </li>
-        <li class="rule">
-          <span class="rule-icon">🚫</span>
-          <div>
-            <strong>Sem spoilers ou dicas não solicitadas</strong>
-            <span>A menos que a Soso peça ajuda expressamente, evite spoilers e dicas durante os jogos.</span>
-          </div>
-        </li>
-        <li class="rule">
-          <span class="rule-icon">💬</span>
-          <div>
-            <strong>Sem spam ou flood</strong>
-            <span>Evite repetir mensagens ou encher o chat com símbolos para não atrapalhar a leitura.</span>
-          </div>
-        </li>
-        <li class="rule">
-          <span class="rule-icon">💜</span>
-          <div>
-            <strong>Mantenha a vibe leve</strong>
-            <span>O objetivo é conversar, jogar, dar risada e aproveitar o cantinho da Soso.</span>
-          </div>
-        </li>
-        <li class="rule">
-          <span class="rule-icon">👑</span>
-          <div>
-            <strong>Respeite a moderação</strong>
-            <span>As decisões da moderação devem ser respeitadas para manter a comunidade organizada.</span>
-          </div>
-        </li>
-      </ul>
-  </details>
+  <div class="rules-wrap">
+    <h3>📜 Regras da comunidade</h3>
+    <div class="rules-grid">
+      <div class="rule-card"><i>01</i><span class="rc-ic">💜</span><div><strong>Respeito em primeiro lugar</strong><p>Nada de discurso de ódio, preconceito, racismo, homofobia ou assédio contra a Soso ou qualquer pessoa no chat.</p></div></div>
+      <div class="rule-card"><i>02</i><span class="rc-ic">🚫</span><div><strong>Sem spoilers nem dicas</strong><p>Não dê dicas ou spoilers de jogos e filmes, a não ser que eu peça. Muitas das minhas perguntas são retóricas!</p></div></div>
+      <div class="rule-card"><i>03</i><span class="rc-ic">🕊️</span><div><strong>Cuide do clima do chat</strong><p>Evite discussões desnecessárias, brigas ou comentários que gerem conflito.</p></div></div>
+      <div class="rule-card"><i>04</i><span class="rc-ic">💬</span><div><strong>Sem spam ou flood</strong><p>Não repita mensagens nem encha o chat de símbolos, pra não atrapalhar a leitura.</p></div></div>
+      <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organizado.</p></div></div>
+      <div class="rule-card"><i>06</i><span class="rc-ic">🎮</span><div><strong>Divirta-se!</strong><p>O objetivo é jogar, conversar e dar risada junto. Caos bom é bem-vindo.</p></div></div>
+    </div>
+    <p class="rules-foot">Vale a mesma regra na Twitch e no Discord. 💜</p>
+  </div>
 </section>
 
 <section id="sec-setup" class="page-section">
@@ -1696,6 +1715,7 @@ dialog{width:min(520px,92vw)}
       <div>
         <h3>🗳️ Qual o próximo jogo ou filme?</h3>
         <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
+        <div id="destaqueBox"></div>
         <div id="votoLista">Carregando votação...</div>
       </div>
     </div>
@@ -1734,6 +1754,7 @@ dialog{width:min(520px,92vw)}
       <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Twitch</a>
       <a href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener">Instagram</a>
       <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Discord</a>
+      <a href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener">TikTok</a>
       <a href="https://streamelements.com/asemtet0/commands" target="_blank" rel="noopener">Comandos</a>
     </div>
   </div>
@@ -1762,14 +1783,25 @@ function atualizarMeta(pre, atual, marcos = MARCOS){
   document.getElementById(pre+'Desc').textContent = `Faltam ${alvo - atual} para alcançar a próxima meta!`;
 }
 
-function assistirVod(){
-  if (!vodAtual) return;
+let videosTw = [];
+const tempoAtras = iso => {
+  const m = (Date.now() - new Date(iso)) / 60000;
+  if (m < 60) return 'há ' + Math.max(1, Math.round(m)) + ' min';
+  if (m < 1440) return 'há ' + Math.round(m / 60) + 'h';
+  const d = Math.round(m / 1440); return d === 1 ? 'ontem' : 'há ' + d + ' dias';
+};
+const durTw = d => { const h = /(\d+)h/.exec(d || ''), mi = /(\d+)m/.exec(d || ''); return h ? h[1] + 'h' + (mi ? mi[1].padStart(2, '0') : '00') : (mi ? mi[1] + ' min' : ''); };
+function assistirVod(v, rolar){
+  v = v || vodAtual;
+  if (!v) return;
+  vodAtual = v;
   assistindoVod = true;
   document.getElementById('offlinePanel').style.display = 'none';
   const f = document.getElementById('twitchIframe');
   f.style.display = 'block';
   f.src = `https://player.twitch.tv/?video=v${vodAtual.id}&parent=${HOST}&autoplay=false`;
   document.getElementById('playerNoteText').textContent = `Reprise: ${vodAtual.title}`;
+  document.querySelector('.twitch-player-box').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function verificarStatusTwitch() {
@@ -1784,15 +1816,19 @@ async function verificarStatusTwitch() {
     atualizarMeta('goalDc', data.discord);
     if (CONFIG.subs != null) atualizarMeta('goalSub', CONFIG.subs, MARCOS_SUBS);
     const live = !!data.stream;
-    g('tmStatus').textContent = live ? 'AO VIVO' : 'OFFLINE';
-    g('tmStatus').style.color = live ? '#4ade80' : '#ff4d5f';
-    g('tmSub').textContent = live ? `Ao vivo com ${data.stream.viewer_count} espectadores` : 'Canal offline no momento.';
-    g('tmCat').textContent = live ? (data.stream.game_name || '—') : (data.game ? data.game.name : '—');
-    g('tmTitle').textContent = live ? data.stream.title : (data.video ? `Última live: ${data.video.title}` : 'Canal offline');
-    if (data.user && data.user.profile_image_url) g('tmAvatar').src = data.user.profile_image_url;
+    vodAtual = data.video; videosTw = data.videos || (data.video ? [data.video] : []);
+    g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
+    g('tmSeg').textContent = data.followers != null ? data.followers.toLocaleString('pt-BR') : '—';
+    g('tmDc').textContent = data.discord != null ? data.discord.toLocaleString('pt-BR') : '—';
+    const rec = videosTw.filter(x => x.created_at && Date.now() - new Date(x.created_at) < 14 * 864e5).length;
+    g('tmLives').textContent = videosTw.length ? rec : '—';
+    g('tmLbl').textContent = live ? 'AO VIVO AGORA' : 'ÚLTIMA LIVE';
+    g('tmSub').textContent = live
+      ? `${data.stream.title} · ${data.stream.game_name || ''} · ${data.stream.viewer_count} assistindo`
+      : (videosTw[0] && videosTw[0].created_at ? `${tempoAtras(videosTw[0].created_at)} · ${videosTw[0].title}` : 'Canal offline no momento.');
+    g('tmVods').innerHTML = videosTw.slice(0, 3).map((v, i) => `<button class="tm-vod" data-i="${i}">${v.thumbnail ? `<img src="${esc(v.thumbnail)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div><b>${esc(v.title || 'Live')}</b><span>${v.created_at ? tempoAtras(v.created_at) : ''}${v.duration ? ' · ' + durTw(v.duration) : ''}${v.views != null ? ' · 👁 ' + v.views : ''}</span></div><em>▶</em></button>`).join('') || '<span class="tm-h4">Nenhuma live gravada ainda.</span>';
     atualizarFoco(data.game, !!data.stream);
     renderClips(data.clips);
-    vodAtual = data.video;
     g('btnVod').style.display = vodAtual ? '' : 'none';
 
     if (data.user) {
@@ -1831,6 +1867,7 @@ async function verificarStatusTwitch() {
   }
 }
 
+document.addEventListener('click', e => { const b = e.target.closest('.tm-vod'); if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]); });
 verificarStatusTwitch();
 setInterval(verificarStatusTwitch, 60000);
 
@@ -1916,7 +1953,7 @@ const FILMES = [
 ];
 const MODOS = {
   jogos:  { get lista(){ return JOGOS; },  status:['Todos','Jogando','Jogado','Concluído','Na fila','Pretendo jogar','Dropado'], feito:'Concluído', plural:'jogos',  hrs:'horas jogadas',    hl:'horas jogadas',    l4:'jogos concluídos',  titulo:'Tier List de Jogos',  sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.', busca:'Buscar jogo...',  vazio:'Nenhum jogo aqui' },
-  filmes: { get lista(){ return FILMES; }, status:['Todos','Assistindo','Assistido','Na fila','Abandonado'], feito:'Assistido', plural:'filmes', hrs:'horas assistidas', hl:'horas assistidas', l4:'filmes assistidos', titulo:'Tier List de Filmes', sub:'Tudo o que eu já assisti ou pretendo assistir, do melhor ao pior. Clique em um filme para ver os detalhes.', busca:'Buscar filme...', vazio:'Nenhum filme aqui' }
+  filmes: { get lista(){ return FILMES; }, status:['Todos','Assistindo','Assistido','Na fila'], feito:'Assistido', plural:'filmes', hrs:'horas assistidas', hl:'horas assistidas', l4:'filmes assistidos', titulo:'Tier List de Filmes', sub:'Tudo o que eu já assisti ou pretendo assistir, do melhor ao pior. Clique em um filme para ver os detalhes.', busca:'Buscar filme...', vazio:'Nenhum filme aqui' }
 };
 let modo = 'jogos', filtro = 'Todos';
 const LISTA = () => MODOS[modo].lista;
@@ -1946,7 +1983,19 @@ function atualizarFoco(game, aoVivo){
   const capa = (j && j.capa) || (game && game.box_art) || '';
   $('focoNome').textContent = nome;
   $('focoLabel').textContent = aoVivo ? '🔴 Jogando agora' : '🎮 Último jogo jogado';
-  $('focoHoras').textContent = j && j.horas > 0 ? `${fh(j.horas)} jogadas` : '';
+  const chips = [];
+  if(j && j.tier && j.tier !== 'NR') chips.push(`<span class="foco-chip tr">Tier ${esc(j.tier)}</span>`);
+  if(j && j.nota > 0) chips.push(`<span class="foco-chip">⭐ ${n1(j.nota)}</span>`);
+  if(j && j.horas > 0) chips.push(`<span class="foco-chip">⏱ ${fh(j.horas)}</span>`);
+  if(j && j.status) chips.push(`<span class="foco-chip">${esc(j.status)}</span>`);
+  if(!chips.length) chips.push('<span class="foco-chip">Ainda sem nota na tier list</span>');
+  $('focoMeta').innerHTML = chips.join('');
+  const pr = j && j.progresso != null && j.progresso > 0;
+  $('focoBar').style.display = pr ? '' : 'none';
+  if(pr){ $('focoPct').textContent = j.progresso + '%'; $('focoBarI').style.width = j.progresso + '%'; }
+  const v = (typeof vodAtual !== 'undefined') && vodAtual;
+  $('focoHoras').textContent = aoVivo ? 'Entra no chat e vem jogar junto! 💜' : (v && v.created_at ? `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}` : '');
+  $('btnFocoVod').style.display = (!aoVivo && v) ? '' : 'none';
   const c = $('focoCover');
   if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
   else c.style.display = 'none';
@@ -1978,14 +2027,19 @@ function renderChips(){
   $('chips').innerHTML = MODOS[modo].status.map(s => `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}">${s}</button>`).join('');
 }
 renderChips();
-$('modo').addEventListener('click', e => {
-  const b = e.target.closest('button'); if(!b || b.dataset.m === modo) return;
-  modo = b.dataset.m; filtro = 'Todos'; $('q').value = '';
-  document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x === b));
+function aplicarModo(novo, salvar = true){
+  if(!MODOS[novo]) novo = 'jogos';
+  modo = novo; filtro = 'Todos'; $('q').value = '';
+  document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x.dataset.m === modo));
   const m = MODOS[modo];
   $('tlTitulo').textContent = m.titulo; $('tlSub').textContent = m.sub; $('q').placeholder = m.busca;
   renderChips(); desenharStats(); desenhar();
   $('tmdbNote').style.display = modo === 'filmes' ? '' : 'none';
+  if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
+}
+$('modo').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b || b.dataset.m === modo) return;
+  aplicarModo(b.dataset.m);
 });
 
 $('chips').addEventListener('click', e => {
@@ -2039,6 +2093,7 @@ function desenhar(){
 }
 
 desenhar();
+try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
 
 const dlg = $('dlg');
 
@@ -2124,21 +2179,28 @@ $('setupGrid').innerHTML =
 
 async function carregarVotos(corpo){
   try {
-    const r = await fetch('/api/votos', corpo ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(corpo) } : undefined);
-    const d = await r.json();
+    const DEMO = /[?&]demo/.test(location.search);
+    const d = DEMO
+      ? { opcoes:[{id:'a',nome:'Hollow Knight',votos:14},{id:'b',nome:'Phasmophobia',votos:9},{id:'c',nome:'Stardew Valley',votos:5}], meuVoto:null, jaVotou:false }
+      : await (await fetch('/api/votos', corpo ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(corpo) } : undefined)).json();
     if(!d.opcoes) throw new Error('sem dados');
     const total = d.opcoes.reduce((a,o) => a + o.votos, 0);
     const topo = d.opcoes.slice().sort((a,b) => b.votos - a.votos)[0];
-    if(topo && topo.votos > 0){
-      $('proxNome').textContent = topo.nome;
+    const temLider = topo && topo.votos > 0;
+    if(temLider){
+      $('proxNome').textContent = '👑 ' + topo.nome;
       $('proxInfo').textContent = `${topo.votos} voto${topo.votos === 1 ? '' : 's'} • ${Math.round(topo.votos / total * 100)}% da votação`;
-      $('proximoBox').style.display = '';
+      const jg = JOGOS.find(x => norm(x.nome) === norm(topo.nome));
+      const cv = jg && jg.capa;
+      $('destaqueBox').innerHTML = `<div class="destaque">${cv ? `<img src="${esc(cv)}" alt="" onerror="this.outerHTML='<div class=ph2>🎮</div>'">` : '<div class="ph2">🎮</div>'}<div><small>🏆 Em destaque na votação</small><b>${esc(topo.nome)}</b><span>${topo.votos} voto${topo.votos === 1 ? '' : 's'} • ${Math.round(topo.votos / total * 100)}% • ${total} no total</span></div></div>`;
+    } else {
+      $('destaqueBox').innerHTML = '<div class="destaque"><div class="ph2">🗳️</div><div><small>Votação aberta</small><b>Ninguém votou ainda</b><span>O jogo mais votado aparece aqui em destaque.</span></div></div>';
     }
     $('votoLista').innerHTML = d.opcoes.slice().sort((a,b) => b.votos - a.votos).map(o => {
       const p = total ? Math.round(o.votos / total * 100) : 0;
       const meu = d.meuVoto === o.id;
       return `
-        <div class="vt${meu ? ' meu' : ''}">
+        <div class="vt${meu ? ' meu' : ''}${temLider && o.id === topo.id ? ' lider' : ''}">
           <div class="vt-top">
             <span>${esc(o.nome)}</span>
             <b>${o.votos} voto${o.votos === 1 ? '' : 's'} • ${p}%</b>
@@ -2162,7 +2224,7 @@ carregarVotos();
 // ---------- TMDB (Corrigido para puxar os detalhes corretamente) ----------
 async function carregarFilmes(){
   await Promise.allSettled(FILMES.map(async f => {
-    const qs = f.tmdbId ? `id=${f.tmdbId}` : `query=${encodeURIComponent(f.nome)}`;
+    const qs = f.tmdbId ? `id=${f.tmdbId}` : `q=${encodeURIComponent(f.nome)}` + (f.ano ? `&ano=${f.ano}` : '');
     const r = await fetch('/api/tmdb?' + qs);
     if(!r.ok) return;
     const d = await r.json();
@@ -2181,9 +2243,9 @@ carregarFilmes();
 async function carregarSteam(){
   try {
     const r = await fetch('/api/steam');
-    if(!r.ok) throw new Error('steam');
+    if(!r.ok) throw new Error('steam HTTP ' + r.status);
     const d = await r.json();
-    if(!d.jogos || !d.jogos.length) return;
+    if(!d.jogos || !d.jogos.length){ console.warn('Steam sem jogos:', d.aviso || d.error || 'resposta vazia'); return; }
     const porId = new Map(d.jogos.map(x => [x.appid, x]));
     const usados = new Set();
     JOGOS = JOGOS.map(j => {
