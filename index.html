@@ -137,7 +137,7 @@ nav .wrapper{
   width:32px;
   height:32px;
   object-fit:contain;
-  border-radius:9px;
+  border-radius:99px;
 }
 
 .logo-text{
@@ -589,86 +589,8 @@ nav ul button.on{
 }
 
 /* =========================
-   CARDS
-========================= */
-
-.cards-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:16px;
-}
-
-.card{
-  background:var(--card-bg);
-  border-radius:16px;
-  padding:24px;
-  border:1px solid var(--line);
-  transition:all .3s;
-  display:block;
-}
-
-.card:hover{
-  transform:translateY(-4px);
-  border-color:var(--purple);
-  box-shadow:0 12px 30px rgba(168,85,247,.15);
-}
-
-.card .icon{
-  font-size:1.6rem;
-  margin-bottom:12px;
-}
-
-.card h3{
-  font-size:1.2rem;
-  margin-bottom:6px;
-  color:var(--white);
-}
-
-.card p{
-  color:var(--mute);
-  font-size:.9rem;
-}
-
-/* =========================
    COMUNIDADE
 ========================= */
-
-.sub-box{
-  background:
-    radial-gradient(
-      circle at top right,
-      rgba(168,85,247,.2),
-      transparent 40%
-    ),
-    var(--card-bg);
-
-  border:1px solid rgba(192,132,252,.25);
-  border-radius:16px;
-  padding:24px;
-}
-
-.sub-header{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:16px;
-  margin-bottom:16px;
-}
-
-.sub-crown{
-  font-size:2.2rem;
-}
-
-.sub-box h3{
-  font-size:1.3rem;
-  color:var(--white);
-}
-
-.sub-box .subtitle{
-  color:var(--mute);
-  font-size:.85rem;
-  margin-top:4px;
-}
 
 .benefits-grid{
   display:grid;
@@ -702,13 +624,6 @@ nav ul button.on{
    COMANDOS
 ========================= */
 
-.commands-box{
-  background:var(--card-bg);
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:24px;
-}
-
 .commands-list{
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -741,48 +656,6 @@ nav ul button.on{
    METAS
 ========================= */
 
-.goals-box{
-  background:
-    linear-gradient(
-      135deg,
-      rgba(168,85,247,.1),
-      transparent
-    ),
-    var(--card-bg);
-
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:24px;
-  margin-top:16px;
-}
-
-.goal{
-  margin-top:16px;
-}
-
-.goal:first-of-type{
-  margin-top:8px;
-}
-
-.goal-top{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:6px;
-}
-
-.goal-title{
-  color:var(--white);
-  font-weight:700;
-  font-size:.85rem;
-}
-
-.goal-number{
-  color:var(--purple-light);
-  font-weight:700;
-  font-size:.82rem;
-}
-
 .goal-bar{
   width:100%;
   height:8px;
@@ -794,7 +667,7 @@ nav ul button.on{
 .goal-bar i{
   display:block;
   height:100%;
-  width:82%;
+  width:0%;
   border-radius:99px;
   background:linear-gradient(
     90deg,
@@ -802,53 +675,7 @@ nav ul button.on{
     #c084fc
   );
   box-shadow:0 0 10px rgba(168,85,247,.35);
-}
-
-.goal-description{
-  margin-top:5px;
-  color:var(--mute);
-  font-size:.72rem;
-}
-
-/* =========================
-   REGRAS
-========================= */
-
-.rules-box{
-  margin-top:16px;
-}
-
-.rules-list{
-  list-style:none;
-  display:grid;
-  gap:10px;
-  margin-top:12px;
-}
-
-.rule{
-  display:flex;
-  gap:10px;
-  align-items:flex-start;
-  background:rgba(255,255,255,.02);
-  padding:12px;
-  border-radius:10px;
-  border:1px solid var(--line);
-}
-
-.rule-icon{
-  font-size:1.1rem;
-  flex:none;
-}
-
-.rule strong{
-  color:var(--white);
-  display:block;
-  margin-bottom:2px;
-}
-
-.rule span{
-  color:var(--mute);
-  font-size:.82rem;
+  transition: width .5s ease;
 }
 
 /* =========================
@@ -862,30 +689,8 @@ nav ul button.on{
   padding:28px;
 }
 
-.setup-grid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:20px;
-}
-
-.setup-category h3{
-  color:var(--purple);
-  font-size:1.1rem;
-  margin-bottom:10px;
-}
-
-.setup-category ul{
-  list-style:none;
-}
-
-.setup-category li{
-  padding:6px 0;
-  border-bottom:1px solid rgba(255,255,255,.03);
-  font-size:.88rem;
-}
-
 .si{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
-.si-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;font-size:1.1rem;background:rgba(168,85,247,.14);border-radius:9px}
+.si-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;font-size:1.1rem;background:rgba(168,85,247,.14);border-radius:99px}
 .si-tx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
 .si-tx small{font-size:.68rem;color:var(--mute)}
 .si-tx b{font-size:.85rem;font-weight:600}
@@ -896,48 +701,6 @@ nav ul button.on{
 .si-btn.kabum:hover{background:#e05800}
 .si-btn.off{background:transparent;border:1px solid var(--line);color:var(--mute)}
 a.si-btn:hover{background:var(--purple-dark)}
-
-.sfull{grid-column:1/-1}
-
-/* Configuração de Jogo Estilizada com Valorant (Fundo Corrigido) */
-.cfg-box-valorant {
-  background: linear-gradient(rgba(14, 10, 22, 0.82), rgba(14, 10, 22, 0.90)), url('https://images.contentstack.io/v3/assets/bltb6530b271fca0b16/blt7204fc72feec5007/6320a174092cb41b1cfcf25d/Valorant_2022_E5A3_KeyArt_5000x2812.jpg');
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  overflow: hidden;
-}
-.cfg-grid-game {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  position: relative;
-  z-index: 2;
-}
-.cfg-item {
-  background: rgba(11, 7, 19, 0.75);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  backdrop-filter: blur(4px);
-}
-.cfg-item b {
-  font-size: 1.1rem;
-  font-family: 'Bricolage Grotesque', sans-serif;
-  color: var(--white);
-}
-.cfg-item span {
-  font-size: 0.72rem;
-  color: var(--mute);
-}
-.cfg-item small {
-  font-size: 0.65rem;
-  color: var(--purple-light);
-  font-weight: 600;
-}
 
 /* =========================
    TIER LIST
@@ -1052,22 +815,15 @@ a.si-btn:hover{background:var(--purple-dark)}
   box-shadow:0 0 20px rgba(168,85,247,.15);
 }
 
-.t-A{
-  --tc:#8b3fd9;
-}
-
-.t-B{
-  --tc:#6d3bb0;
-}
-
-.t-C{
-  --tc:#4f3280;
-}
+.t-A{ --tc:#8b3fd9; }
+.t-B{ --tc:#6d3bb0; }
+.t-C{ --tc:#4f3280; }
+.t-NR{ --tc:#4a4560; }
 
 .games{
   display:flex;
   flex-wrap:wrap;
-  gap:8px;
+  gap:10px;
   padding:10px;
   min-height:85px;
   align-items:flex-start;
@@ -1082,23 +838,29 @@ a.si-btn:hover{background:var(--purple-dark)}
 }
 
 .g{
-  position:relative;
-  width:85px;
-  aspect-ratio:3/4;
+  width:104px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  text-align:left;
   border-radius:8px;
   border:1px solid var(--line);
   background:#1d1433;
   cursor:pointer;
-  overflow:hidden;
-  padding:0;
-  font-family:inherit;
-  color:var(--ink);
+  position:relative;
   transition:transform .2s,border-color .2s;
 }
 
 .g:hover{
-  transform:translateY(-3px) scale(1.04);
+  transform:translateY(-3px) scale(1.03);
   border-color:var(--purple);
+}
+
+.g .cv{
+  position:relative;
+  width:100%;
+  aspect-ratio:2/3;
+  background:#1d1433;
 }
 
 .g .ph{
@@ -1119,23 +881,29 @@ a.si-btn:hover{background:var(--purple-dark)}
   width:100%;
   height:100%;
   object-fit:cover;
-  object-position:center top;
 }
 
-.g .nm{
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:0;
-  padding:14px 4px 4px;
-  font-size:.62rem;
+.g .cap{
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.g .cn{
+  font-size:.68rem;
   font-weight:600;
   line-height:1.2;
-  text-align:center;
-  background:linear-gradient(
-    transparent,
-    rgba(8,4,16,.92)
-  );
+  color:var(--white);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.g .ch{
+  font-size:.62rem;
+  font-weight:700;
+  color:var(--purple-light);
 }
 
 .g .nt{
@@ -1148,6 +916,7 @@ a.si-btn:hover{background:var(--purple-dark)}
   padding:0 4px;
   font-size:.62rem;
   font-weight:700;
+  z-index:2;
 }
 
 .g .pl{
@@ -1161,19 +930,6 @@ a.si-btn:hover{background:var(--purple-dark)}
   box-shadow:0 0 5px var(--purple);
 }
 
-.g .ghoras{
-  position:absolute;
-  bottom:20px;
-  left:4px;
-  background:rgba(11,7,19,.8);
-  border:1px solid var(--line);
-  border-radius:4px;
-  padding:1px 4px;
-  font-size:.58rem;
-  font-weight:700;
-  color:var(--purple-light);
-}
-
 /* =========================
    MODAL
 ========================= */
@@ -1185,7 +941,7 @@ dialog{
   border:1px solid var(--purple);
   border-radius:16px;
   padding:0;
-  width:min(420px,90vw);
+  width:min(520px,92vw);
   box-shadow:0 20px 60px rgba(0,0,0,.7);
 }
 
@@ -1225,12 +981,24 @@ dialog::backdrop{
   gap:12px;
 }
 
-.modal-game-banner{
+.mrow{
+  display:grid;
+  grid-template-columns:140px 1fr;
+  gap:14px;
+  align-items:start;
+}
+
+.mrow img{
   width:100%;
-  height:140px;
-  border-radius:10px;
+  aspect-ratio:2/3;
   object-fit:cover;
+  border-radius:10px;
   border:1px solid var(--line);
+}
+
+.mrow .mside{
+  display:grid;
+  gap:12px;
 }
 
 .badges{
@@ -1312,138 +1080,47 @@ footer{
 }
 
 /* =========================
-   AJUSTES v2
+   AJUSTES & COMPONENTES
 ========================= */
 .hero-grid{align-items:stretch}
 .coluna-esquerda>:last-child,.coluna-direita>:last-child{flex:1}
 .foco{flex-direction:row;align-items:center;gap:14px}
 .foco-cover{width:84px;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--line);flex:none;background:#1d1433}
 .foco-info{display:flex;flex-direction:column;gap:6px;min-width:0;align-items:flex-start}
-.monitor{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-content:center}
-.mon{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.mon b{display:block;font-size:1.15rem;font-family:'Bricolage Grotesque',sans-serif}
-.mon span{font-size:.7rem;color:var(--mute)}
 .clips-box{margin-top:4px}
-.clips-box h3{font-size:1.05rem;margin-bottom:10px}
-.clips-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.clip{position:relative;aspect-ratio:16/9;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#09060f;cursor:pointer;padding:0;color:#fff}
-.clip img,.clip iframe{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover}
+.clips-box h3{display:flex;justify-content:space-between;align-items:baseline;font-size:1.05rem;margin-bottom:10px}
+.clips-box h3 a{font-size:.78rem;color:var(--purple-light);font-weight:600}
+.clips-grid{display:grid;grid-template-columns:1.8fr 1fr;gap:12px;grid-auto-rows:minmax(140px,auto)}
+.clip{position:relative;aspect-ratio:auto;min-height:140px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#09060f;cursor:pointer;padding:0;color:#fff}
+.clips-grid .clip:first-child{grid-row:1/3;min-height:300px}
+.clip img{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover}
 .clip .play{position:absolute;inset:0;display:grid;place-items:center;font-size:1.6rem;background:rgba(11,7,19,.25)}
 .clip .ct{position:absolute;left:0;right:0;bottom:0;padding:16px 8px 6px;font-size:.72rem;font-weight:600;text-align:left;background:linear-gradient(transparent,rgba(8,4,16,.95))}
-.clip:hover{border-color:var(--purple)}
-.g{width:104px;aspect-ratio:auto;display:flex;flex-direction:column;overflow:hidden;text-align:left}
-.g .cv{position:relative;width:100%;aspect-ratio:2/3;background:#1d1433}
-.g .cap{padding:6px 6px 7px;display:flex;flex-direction:column;gap:2px}
-.g .cn{font-size:.68rem;font-weight:600;line-height:1.2}
-.g .ch{font-size:.62rem;font-weight:700;color:var(--purple-light)}
-.g .nt{z-index:2}
-.games{gap:10px}
-dialog{width:min(520px,92vw)}
-.mrow{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:start}
-.mrow img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
-.mrow .kv{grid-template-columns:repeat(3,1fr)}
-.mrow .mside{display:grid;gap:12px}
-.com-stats{grid-template-columns:repeat(3,1fr);margin:0 0 18px}
-.subtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.subtabs button{background:var(--card-bg);border:1px solid var(--line);color:var(--mute);padding:8px 16px;border-radius:99px;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer}
-.subtabs button.on{background:var(--purple);border-color:var(--purple);color:#fff}
-.cpane{display:none}.cpane.ativo{display:block}
-.apoio-grid{display:grid;grid-template-columns:1fr 1.7fr;gap:14px}
-.apoio-grid .card{height:100%}
-.rules-box{border:0;padding:0;background:none}
-.setup-foto{margin-bottom:14px;border-radius:16px;overflow:hidden;border:1px solid var(--line);max-height:340px}
-.setup-foto img{display:block;width:100%;height:100%;max-height:340px;object-fit:cover}
-.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
-.sbox{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
-.sbox h3{font-size:1.05rem;color:var(--purple-light);margin-bottom:10px}
-.sbox ul{list-style:none;display:grid;gap:6px}
-.sfull{grid-column:1/-1}
-
-/* Estilos refinados da Votação */
-.vt{display:grid;grid-template-columns:auto 1fr auto;gap:10px 12px;align-items:center;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px}
-.vt-img{width:42px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line);grid-row:1/3;background:#1d1433}
-.vt-info{grid-column:2;display:flex;flex-direction:column;gap:2px}
-.vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9lrem;position:relative;z-index:2}
-.vt-top span{font-weight:700;color:var(--white)}
-.vt-top b{color:var(--purple-light);font-size:.8rem}
-.vt .goal-bar{grid-column:1/3;position:relative;z-index:2;margin-top:2px}
-.vt .goal-bar i{background:linear-gradient(90deg,#7c3aed,#c084fc)}
-.vt .btn{grid-column:3;grid-row:1/3;padding:7px 14px;font-size:.8rem;position:relative;z-index:2}
-.vt.meu .vt-top span{color:var(--purple-light)}
-.vt-total{font-size:.75rem;color:var(--mute);margin-top:10px;text-align:right}
-
-@media(max-width:1100px){
-  .clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.apoio-grid,.sugestoes-grid{grid-template-columns:1fr}
-}
-@media(max-width:700px){
-  .clips-grid,.monitor{grid-template-columns:1fr}.foco{align-items:flex-start}
-}
-@media(max-width:450px){
-  .g{width:92px}.mrow{grid-template-columns:100px 1fr}
-}
-
-/* =========================
-   AJUSTES v3
-========================= */
-.t-NR{--tc:#4a4560}
-.mute{color:var(--mute);font-size:.88rem}
-/* Twitch monitor */
-.tmon{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 25px rgba(0,0,0,.35)}
-.tmon-h{display:flex;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(90deg,#9333ea,#7c3aed);font-size:.78rem;letter-spacing:.4px}
-.tmon-h .pill{margin-left:auto;background:rgba(0,0,0,.3);padding:3px 10px;border-radius:99px;font-size:.66rem;font-weight:800}
-.tmon-b{padding:12px;display:grid;gap:8px;flex:1;align-content:start}
-.tm-id{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px}
-.tm-id img{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--purple)}
-.tm-id div{flex:1;display:flex;flex-direction:column;line-height:1.25;min-width:0}
-.tm-id small{color:var(--mute);font-weight:400}
-.tm-id span{font-size:.72rem;color:var(--mute)}
-.tm-id .btn{margin:0}
-.tm-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tm-t{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
-.tm-t small{display:block;font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-bottom:3px}
-.tm-t b{font-size:.95rem;font-weight:800}
-.tm-t p{font-size:.82rem;line-height:1.35}
-/* Clipes */
-.clips-box h3{display:flex;justify-content:space-between;align-items:baseline}
-.clips-box h3 a{font-size:.78rem;color:var(--purple-light);font-weight:600}
-.clips-grid{grid-template-columns:1.8fr 1fr;grid-auto-rows:minmax(140px,auto)}
-.clips-grid .clip{aspect-ratio:auto;min-height:140px}
-.clips-grid .clip:first-child{grid-row:1/3;min-height:300px}
+.clip:first-child .ct{font-size:.95rem;padding:30px 12px 10px}
 .clip .vw{position:absolute;top:8px;right:8px;background:rgba(11,7,19,.8);border:1px solid var(--line);border-radius:99px;padding:2px 8px;font-size:.66rem;font-weight:700}
 .clip .tag{position:absolute;top:8px;left:8px;background:var(--purple);border-radius:99px;padding:2px 9px;font-size:.66rem;font-weight:800}
-.clip:first-child .ct{font-size:.95rem;padding:30px 12px 10px}
-@media(max-width:700px){.clips-grid{grid-template-columns:1fr}.clips-grid .clip:first-child{grid-row:auto;min-height:190px}}
-/* Tier list: jogos/filmes */
+.clip:hover{border-color:var(--purple)}
+
 .modo{display:inline-flex;gap:4px;background:var(--card-bg);border:1px solid var(--line);border-radius:99px;padding:4px;margin-top:14px}
 .modo button{background:none;border:0;color:var(--mute);font-family:inherit;font-weight:700;font-size:.88rem;padding:8px 20px;border-radius:99px;cursor:pointer}
 .modo button.on{background:var(--purple);color:#fff;box-shadow:0 4px 12px rgba(168,85,247,.35)}
-/* Comunidade v3 */
+
 .goals3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
 .goalc{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;gap:9px}
 .gc-top{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:.9rem}
 .gc-top b{color:var(--purple-light);font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem}
 .goalc small{color:var(--mute);font-size:.72rem}
+
 .com-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .apoie,.cmds{display:flex;flex-direction:column;gap:10px}
 .apoie .benefits-grid{grid-template-columns:1fr}
 .apoie .big{display:block;text-align:center;padding:13px;font-size:.92rem;margin:4px 0;align-self:stretch}
 .apoie hr{border:0;border-top:1px solid var(--line);margin:6px 0}
-.apoie .twitch-sub-btn{align-self:flex-start}
 .cmds .commands-list{grid-template-columns:1fr}
 .cmd{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;font-family:inherit;cursor:pointer;transition:border-color .2s}
 .cmd:hover{border-color:var(--purple)}
 .cmd em{font-style:normal;font-size:.68rem;color:var(--purple-light);font-weight:700}
-.rules-acc{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:6px 20px}
-.rules-acc summary{cursor:pointer;font-weight:700;padding:14px 0;list-style:none}
-.rules-acc[open] summary{border-bottom:1px solid var(--line);margin-bottom:12px}
-.rules-acc .rules-list{padding-bottom:12px}
-@media(max-width:900px){.goals3,.com-grid{grid-template-columns:1fr}}
-.tmdb-note{font-size:.72rem;color:var(--mute);margin-top:14px;text-align:center}
-.coluna-esquerda .foco{flex:1}
-.proximo{justify-content:center}
-.proximo h3{font-size:1.15rem}
 
-/* ---- v2 ---- */
 .rules-wrap{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
 .rules-wrap>h3{color:var(--white);margin-bottom:14px}
 .rules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -1453,39 +1130,34 @@ dialog{width:min(520px,92vw)}
 .rule-card strong{display:block;color:var(--white);font-size:.9rem;margin-bottom:3px}
 .rule-card p{color:var(--mute);font-size:.8rem;line-height:1.4}
 .rules-foot{margin-top:12px;font-size:.78rem;color:var(--mute);text-align:center}
-@media(max-width:900px){.rules-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.rules-grid{grid-template-columns:1fr}}
-.profile-social-btn{padding:8px 6px}
-.foco-meta{display:flex;flex-wrap:wrap;gap:6px}
-.foco-chip{font-size:.7rem;font-weight:700;padding:4px 9px;border-radius:99px;background:rgba(168,85,247,.14);border:1px solid var(--line);color:var(--purple-light)}
-.foco-chip.tr{background:var(--purple);color:#fff;border-color:transparent}
-.foco-bar{width:100%;max-width:240px}
-.foco-bar small{display:flex;justify-content:space-between;font-size:.68rem;color:var(--mute);margin-bottom:4px}
-.foco-last{font-size:.78rem;color:var(--mute)}
-.foco-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
-.foco-btns .btn.ghost{background:transparent;border:1px solid var(--purple);color:var(--purple-light);box-shadow:none}
+
+.setup-foto{margin-bottom:14px;border-radius:16px;overflow:hidden;border:1px solid var(--line);max-height:340px}
+.setup-foto img{display:block;width:100%;height:100%;max-height:340px;object-fit:cover}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.sbox{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
+.sbox h3{font-size:1.05rem;color:var(--purple-light);margin-bottom:10px}
+.sbox ul{list-style:none;display:grid;gap:6px}
+
+/* Votação */
+.vt{display:grid;grid-template-columns:auto 1fr auto;gap:10px 12px;align-items:center;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px}
+.vt-img{width:42px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line);grid-row:1/3;background:#1d1433}
+.vt-info{grid-column:2;display:flex;flex-direction:column;gap:2px}
+.vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;position:relative;z-index:2}
+.vt-top span{font-weight:700;color:var(--white)}
+.vt-top b{color:var(--purple-light);font-size:.8rem}
+.vt .goal-bar{grid-column:1/3;position:relative;z-index:2;margin-top:2px}
+.vt .btn{grid-column:3;grid-row:1/3;padding:7px 14px;font-size:.8rem;position:relative;z-index:2}
+.vt.meu .vt-top span{color:var(--purple-light)}
+
+.tmon{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 25px rgba(0,0,0,.35)}
+.tmon-h{display:flex;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(90deg,#9333ea,#7c3aed);font-size:.78rem;letter-spacing:.4px}
+.tmon-h .pill{margin-left:auto;background:rgba(0,0,0,.3);padding:3px 10px;border-radius:99px;font-size:.66rem;font-weight:800}
+.tmon-b{padding:12px;display:grid;gap:8px;flex:1;align-content:start}
 .tm-two-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tm-t{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
 .tm-t small{display:block;font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-bottom:3px}
 .tm-t b{font-size:1.15rem;font-family:'Bricolage Grotesque',sans-serif;color:var(--purple-light)}
-.tm-vods{display:grid;gap:6px}
-.tm-vod{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:6px 10px 6px 6px;cursor:pointer;font-family:inherit;color:var(--ink);text-align:left;width:100%;transition:border-color .2s}
-.tm-vod:hover{border-color:var(--purple)}
-.tm-vod img{width:64px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;flex:none;background:#1d1433}
-.tm-vod div{flex:1;min-width:0;display:flex;flex-direction:column}
-.tm-vod b{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tm-vod span{font-size:.68rem;color:var(--mute)}
-.tm-vod em{font-style:normal;color:var(--purple-light);font-size:.8rem}
-.tm-h4{font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-top:2px}
-.destaque{display:flex;gap:14px;align-items:center;background:linear-gradient(135deg,rgba(168,85,247,.22),rgba(168,85,247,.04));border:1px solid var(--purple);border-radius:14px;padding:12px;margin-bottom:14px}
-.destaque img,.destaque .ph2{width:64px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;flex:none;background:#1d1433}
-.destaque .ph2{display:grid;place-items:center;font-size:1.6rem}
-.destaque small{font-size:.65rem;font-weight:800;letter-spacing:.5px;color:var(--purple-light);text-transform:uppercase}
-.destaque b{display:block;font-size:1.15rem;color:var(--white);margin:2px 0}
-.destaque span{font-size:.8rem;color:var(--mute)}
-.vt.lider .vt-top span::before{content:'👑 '}
 
-/* Estilo novo para integração Spotify e Top Doadores compactos */
 .tm-spotify{display:flex;align-items:center;gap:10px;background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.25);border-radius:12px;padding:10px 12px;text-decoration:none;transition:all .2s ease}
 .tm-spotify:hover{background:rgba(29,185,84,0.18);border-color:#1db954;transform:translateY(-1px)}
 .tm-spotify svg{width:22px;height:22px;fill:#1db954;flex:none}
@@ -1496,6 +1168,27 @@ dialog{width:min(520px,92vw)}
 .tm-donor{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:6px;text-align:center}
 .tm-donor b{display:block;font-size:.78rem;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tm-donor span{font-size:.64rem;color:var(--purple-light)}
+
+.foco-meta{display:flex;flex-wrap:wrap;gap:6px}
+.foco-chip{font-size:.7rem;font-weight:700;padding:4px 9px;border-radius:99px;background:rgba(168,85,247,.14);border:1px solid var(--line);color:var(--purple-light)}
+.foco-chip.tr{background:var(--purple);color:#fff;border-color:transparent}
+.foco-bar{width:100%;max-width:240px}
+.foco-bar small{display:flex;justify-content:space-between;font-size:.68rem;color:var(--mute);margin-bottom:4px}
+.foco-last{font-size:.78rem;color:var(--mute)}
+.foco-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.proximo{justify-content:center}
+.proximo h3{font-size:1.15rem}
+.tmdb-note{font-size:.72rem;color:var(--mute);margin-top:14px;text-align:center}
+
+@media(max-width:1100px){
+  .clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.com-grid,.sugestoes-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .clips-grid,.stats,.goals3{grid-template-columns:1fr}.foco{align-items:flex-start}
+}
+@media(max-width:450px){
+  .g{width:92px}.mrow{grid-template-columns:100px 1fr}
+}
 </style>
 </head>
 
@@ -1504,7 +1197,7 @@ dialog{width:min(520px,92vw)}
 <nav>
   <div class="wrapper">
     <div class="logo-container" onclick="mudarAba('inicio')" aria-label="Ir para início">
-      <img src="img/twitch.png" alt="Twitch" class="twitch-logo-img">
+      <img src="img/twitch.png" alt="Twitch" class="twitch-logo-img" onerror="this.src='https://assets.twitch.tv/assets/favicon-32-e29e246c157142c94346.png'">
       <div class="logo-text">asemtet<span>0</span></div>
     </div>
     <ul>
@@ -1526,15 +1219,15 @@ dialog{width:min(520px,92vw)}
         <span class="live-indicator"></span>
         <span id="bannerLiveText">AO VIVO AGORA</span>
       </div>
-      <img class="banner-bg" src="img/banner.png" alt="" aria-hidden="true">
-      <img id="bannerImg" src="img/banner.png" alt="Bem-vindo ao meu cantinho - asemtet0">
+      <img class="banner-bg" src="img/banner.png" alt="" aria-hidden="true" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200'">
+      <img id="bannerImg" src="img/banner.png" alt="Bem-vindo ao meu cantinho - asemtet0" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200'">
     </div>
 
     <div class="hero-grid">
       <div class="coluna-esquerda">
         <div class="profile-card-mini">
           <div class="profile-avatar-container">
-            <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+            <img src="img/avatar.png" alt="Soso" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300'">
           </div>
           <h2>asemtet0 💜</h2>
           <div class="subloc">📍 Maceió – AL • Streamer desde 2025</div>
@@ -1585,10 +1278,11 @@ dialog{width:min(520px,92vw)}
             </div>
           </div>
         </div>
+
         <div class="box proximo" id="proximoBox">
           <span class="foco-label">🗳️ Próximo na votação</span>
           <h3 id="proxNome">Votação aberta</h3>
-          <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
+          <p id="proxInfo">Vote no seu jogo favorito na aba de sugestões!</p>
           <button class="btn" onclick="mudarAba('sugestoes')">Votar →</button>
         </div>
       </div>
@@ -1604,7 +1298,7 @@ dialog{width:min(520px,92vw)}
           </div>
           <div class="twitch-player">
             <div class="offline-panel" id="offlinePanel">
-              <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+              <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300'">
               <h4>Estamos offline por agora 💜</h4>
               <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
               <div class="offline-actions">
@@ -1617,7 +1311,7 @@ dialog{width:min(520px,92vw)}
           <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
         </div>
         
-        <!-- PAINEL DO CANAL (Perfil Spotify, Uptime & Top Doadores Midfielder) -->
+        <!-- PAINEL DO CANAL -->
         <div class="tmon">
           <div class="tmon-h">
             <span class="live-indicator"></span>
@@ -1646,9 +1340,9 @@ dialog{width:min(520px,92vw)}
                 <a href="https://midfielder.tv.br/asemtet0" target="_blank" rel="noopener" style="color:var(--purple-light);font-size:.62rem;">Ver todos →</a>
               </small>
               <div class="tm-donors" id="tmDonors">
-                <div class="tm-donor"><b>Carregando…</b><span>—</span></div>
-                <div class="tm-donor"><b>Carregando…</b><span>—</span></div>
-                <div class="tm-donor"><b>Carregando…</b><span>—</span></div>
+                <div class="tm-donor"><b>1º —</b><span>—</span></div>
+                <div class="tm-donor"><b>2º —</b><span>—</span></div>
+                <div class="tm-donor"><b>3º —</b><span>—</span></div>
               </div>
             </div>
           </div>
@@ -1656,6 +1350,7 @@ dialog{width:min(520px,92vw)}
         
       </div>
     </div>
+    
     <div class="clips-box" id="clipsBox" style="display:none">
       <h3><span>🎬 Clipes em destaque</span><a href="https://www.twitch.tv/asemtet0/clips" target="_blank" rel="noopener">Ver todos →</a></h3>
       <div class="clips-grid" id="clipsGrid"></div>
@@ -1666,14 +1361,20 @@ dialog{width:min(520px,92vw)}
 <section id="sec-tierlist" class="page-section">
   <div class="section-header">
     <h1 id="tlTitulo">Tier List de Jogos</h1>
-    <p id="tlSub">Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.</p>
-    <div class="modo" id="modo"><button class="on" data-m="jogos">🎮 Jogos</button><button data-m="filmes">🎬 Filmes</button></div>
+    <p id="tlSub">Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um item para ver os detalhes.</p>
+    <div class="modo" id="modo">
+      <button class="on" data-m="jogos">🎮 Jogos</button>
+      <button data-m="filmes">🎬 Filmes</button>
+    </div>
   </div>
+
   <section class="stats" id="stats" aria-label="Resumo"></section>
+
   <div class="tools">
-    <input class="search" id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo">
+    <input class="search" id="q" type="search" placeholder="Buscar..." aria-label="Buscar">
     <div class="chips" id="chips"></div>
   </div>
+
   <section id="tiers"></section>
   <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificado por ela.</p>
 </section>
@@ -1712,7 +1413,7 @@ dialog{width:min(520px,92vw)}
       <div class="commands-list">
         <button class="command cmd" data-c="!discord"><span><strong>!discord</strong> — Link do Discord</span><em>copiar</em></button>
         <button class="command cmd" data-c="!insta"><span><strong>!insta</strong> — Instagram da Soso</span><em>copiar</em></button>
-        <button class="command cmd" data-c="!social"><span><strong>!social</strong> — Instagram, Discord e TikTok</span><em>copiar</em></button>
+        <button class="command cmd" data-c="!social"><span><strong>!social</strong> — Redes Sociais</span><em>copiar</em></button>
         <button class="command cmd" data-c="!lurk"><span><strong>!lurk</strong> — Avisar que vai ficar de lurk</span><em>copiar</em></button>
         <button class="command cmd" data-c="!uptime"><span><strong>!uptime</strong> — Tempo de live</span><em>copiar</em></button>
         <button class="command cmd" data-c="!commands"><span><strong>!commands</strong> — Lista de comandos</span><em>copiar</em></button>
@@ -1728,7 +1429,7 @@ dialog{width:min(520px,92vw)}
       <div class="rule-card"><i>02</i><span class="rc-ic">🚫</span><div><strong>Sem spoilers nem dicas</strong><p>Não dê dicas ou spoilers de jogos e filmes, a não ser que eu peça. Muitas das minhas perguntas são retóricas!</p></div></div>
       <div class="rule-card"><i>03</i><span class="rc-ic">🕊️</span><div><strong>Cuide do clima do chat</strong><p>Evite discussões desnecessárias, brigas ou comentários que gerem conflito.</p></div></div>
       <div class="rule-card"><i>04</i><span class="rc-ic">💬</span><div><strong>Sem spam ou flood</strong><p>Não repita mensagens nem encha o chat de símbolos, pra não atrapalhar a leitura.</p></div></div>
-      <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organized.</p></div></div>
+      <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organizado.</p></div></div>
       <div class="rule-card"><i>06</i><span class="rc-ic">🎮</span><div><strong>Divirta-se!</strong><p>O objetivo é jogar, conversar e dar risada junto. Caos bom é bem-vindo.</p></div></div>
     </div>
     <p class="rules-foot">Vale a mesma regra na Twitch e no Discord. 💜</p>
@@ -1779,7 +1480,7 @@ dialog{width:min(520px,92vw)}
       </div>
       <div style="margin-top: 15px;">
         <button class="btn" id="sugBtn" onclick="enviarSugestao()">Enviar Sugestão 🚀</button>
-        <span id="sugStatus" style="font-size:.85rem;color:var(--purple);display:none;margin-top:6px;"></span>
+        <span id="sugStatus" style="font-size:.85rem;color:var(--purple-light);display:block;margin-top:8px;"></span>
       </div>
     </div>
 
@@ -1813,7 +1514,7 @@ dialog{width:min(520px,92vw)}
 const CONFIG = { 
   subs: null, 
   donate: 'https://midfielder.tv.br/asemtet0',
-  spotifyUrl: '', // Cole o link do seu perfil do Spotify aqui no futuro!
+  spotifyUrl: '',
   midfielderUser: 'asemtet0'
 };
 
@@ -1822,12 +1523,21 @@ const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
 const HOST = window.location.hostname || 'localhost';
 let vodAtual = null, assistindoVod = false;
 
+const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const n1 = n => n != null && !isNaN(n) ? Number(n).toLocaleString('pt-BR') : '—';
+const fh = h => h ? `${h}h` : '—';
+const norm = t => (t || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 function atualizarMeta(pre, atual, marcos = MARCOS){
-  if (atual == null) { document.getElementById(pre+'Desc').textContent = 'Indisponível no momento'; return; }
+  const numEl = document.getElementById(pre+'Num');
+  const barEl = document.getElementById(pre+'Bar');
+  const descEl = document.getElementById(pre+'Desc');
+  if(!numEl) return;
+  if (atual == null) { descEl.textContent = 'Indisponível no momento'; return; }
   const alvo = marcos.find(m => m > atual) || atual + 1000;
-  document.getElementById(pre+'Num').textContent = `${atual} / ${alvo}`;
-  document.getElementById(pre+'Bar').style.width = Math.min(100, atual / alvo * 100) + '%';
-  document.getElementById(pre+'Desc').textContent = `Faltam ${alvo - atual} para alcançar a próxima meta!`;
+  numEl.textContent = `${atual} / ${alvo}`;
+  barEl.style.width = Math.min(100, (atual / alvo) * 100) + '%';
+  descEl.textContent = `Faltam ${alvo - atual} para alcançar a próxima meta!`;
 }
 
 let videosTw = [];
@@ -1837,8 +1547,8 @@ const tempoAtras = iso => {
   if (m < 1440) return 'há ' + Math.round(m / 60) + 'h';
   const d = Math.round(m / 1440); return d === 1 ? 'ontem' : 'há ' + d + ' dias';
 };
-const durTw = d => { const h = /(\d+)h/.exec(d || ''), mi = /(\d+)m/.exec(d || ''); return h ? h[1] + 'h' + (mi ? mi[1].padStart(2, '0') : '00') : (mi ? mi[1] + ' min' : ''); };
-function assistirVod(v, rolar){
+
+function assistirVod(v){
   v = v || vodAtual;
   if (!v) return;
   vodAtual = v;
@@ -1851,7 +1561,6 @@ function assistirVod(v, rolar){
   document.querySelector('.twitch-player-box').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// Função para formatar o Uptime da live atual
 function calcularUptime(startedAt) {
   if (!startedAt) return 'OFFLINE';
   const diff = Math.floor((Date.now() - new Date(startedAt)) / 1000);
@@ -1877,7 +1586,6 @@ async function verificarStatusTwitch() {
     g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
     g('tmSeg').textContent = data.followers != null ? data.followers.toLocaleString('pt-BR') : '—';
     
-    // Uptime atualizado
     if (live && data.stream.started_at) {
       g('tmUptime').textContent = calcularUptime(data.stream.started_at);
     } else {
@@ -1906,7 +1614,7 @@ async function verificarStatusTwitch() {
       badge.style.display = 'flex';
       g('bannerLiveText').textContent = `AO VIVO • ${data.stream.game_name || 'Jogando'} (${data.stream.viewer_count} espectadores)`;
       g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
-      g('playerNoteText').textContent = `A transmitir: ${data.stream.title}`;
+      g('playerNoteText').textContent = `Transmitindo: ${data.stream.title}`;
     } else {
       badge.style.display = 'none';
       g('viewerCountStatus').textContent = '@asemtet0';
@@ -1918,13 +1626,11 @@ async function verificarStatusTwitch() {
       }
     }
   } catch (err) {
-    console.error('Erro ao buscar dados da Twitch:', err);
     atualizarFoco(null, false);
-    ['goalSeg','goalDc'].forEach(p => { if (g(p+'Num').textContent === '…') atualizarMeta(p, null); });
+    ['goalSeg','goalDc'].forEach(p => { if (g(p+'Num') && g(p+'Num').textContent === '…') atualizarMeta(p, null); });
   }
 }
 
-// Configuração do Link de Perfil do Spotify
 function atualizarSpotifyLink() {
   const linkEl = document.getElementById('spotifyLink');
   const titleEl = document.getElementById('spotifyTitle');
@@ -1947,67 +1653,32 @@ function atualizarSpotifyLink() {
   }
 }
 
-// Busca isolada dos Top Doadores do MidFielder
 async function atualizarTopDoadoresMidfielder() {
   const container = document.getElementById('tmDonors');
   if (!container) return;
 
   try {
-    const endpoints = [
-      '/api/midfielder',
-      '/api/midfielder-data',
-      `https://midfielder.tv.br/api/v1/users/${CONFIG.midfielderUser}/top-donators`,
-      `https://midfielder.tv.br/api/leaderboard/${CONFIG.midfielderUser}`
-    ];
-
-    let donors = null;
-
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url).catch(() => null);
-        if (res && res.ok) {
-          const data = await res.json();
-          const list = data.donors || data.leaderboard || data.topDonors || (Array.isArray(data) ? data : null);
-          if (list && Array.isArray(list) && list.length > 0) {
-            donors = list;
-            break;
-          }
-        }
-      } catch (e) {
-        // Tenta o próximo endpoint
+    const res = await fetch('/api/midfielder').catch(() => null);
+    if (res && res.ok) {
+      const data = await res.json();
+      const donors = data.donors || data.leaderboard || [];
+      if (donors.length > 0) {
+        container.innerHTML = donors.slice(0, 3).map((d, i) => {
+          const nome = d.name || d.username || `Doador ${i + 1}`;
+          const val = d.value || d.amount || 0;
+          return `<div class="tm-donor"><b>${esc(nome)}</b><span>R$ ${Number(val).toFixed(2).replace('.', ',')}</span></div>`;
+        }).join('');
+        return;
       }
     }
+  } catch (e) {}
 
-    if (donors && donors.length > 0) {
-      container.innerHTML = donors.slice(0, 3).map((d, i) => {
-        const nome = d.name || d.username || d.donor || `Doador ${i + 1}`;
-        const val = d.value || d.amount || d.total || 0;
-        const valorFormatado = typeof val === 'number' ? `R$ ${val.toFixed(2).replace('.', ',')}` : `R$ ${val}`;
-        return `<div class="tm-donor"><b>${esc(nome)}</b><span>${valorFormatado}</span></div>`;
-      }).join('');
-    } else {
-      container.innerHTML = `
-        <div class="tm-donor"><b>1º —</b><span>Seja o 1º!</span></div>
-        <div class="tm-donor"><b>2º —</b><span>—</span></div>
-        <div class="tm-donor"><b>3º —</b><span>—</span></div>
-      `;
-    }
-  } catch (e) {
-    console.error('Erro ao carregar top doadores:', e);
-    container.innerHTML = `
-      <div class="tm-donor"><b>1º —</b><span>—</span></div>
-      <div class="tm-donor"><b>2º —</b><span>—</span></div>
-      <div class="tm-donor"><b>3º —</b><span>—</span></div>
-    `;
-  }
+  container.innerHTML = `
+    <div class="tm-donor"><b>1º —</b><span>Seja o 1º!</span></div>
+    <div class="tm-donor"><b>2º —</b><span>—</span></div>
+    <div class="tm-donor"><b>3º —</b><span>—</span></div>
+  `;
 }
-
-document.addEventListener('click', e => { const b = e.target.closest('.tm-vod'); if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]); });
-verificarStatusTwitch();
-atualizarSpotifyLink();
-atualizarTopDoadoresMidfielder();
-setInterval(verificarStatusTwitch, 10000);
-setInterval(atualizarTopDoadoresMidfielder, 30000);
 
 const $ = id => document.getElementById(id);
 
@@ -2037,140 +1708,542 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+/* =========================
+   DADOS DA TIER LIST
+========================= */
+
 let JOGOS = [
   {
-    nome:"Red Dead Redemption 2",
-    appid:1174180,
-    tier:"S",
-    status:"Jogando",
-    progresso:56,
-    horas:50,
-    nota:8,
-    capa:"https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg",
-    comentario:"Um dos mundos mais vivos e detalhados dos games."
+    nome: "Red Dead Redemption 2",
+    tier: "S",
+    status: "Jogando",
+    progresso: 56,
+    horas: 50,
+    nota: 9.8,
+    capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/header.jpg",
+    comentario: "Um dos mundos abertos mais vivos e detalhados da história dos games. Arthur Morgan é inesquecível!"
   },
   {
-    nome:"Jogo exemplo A",
-    tier:"A",
-    status:"Concluído",
-    progresso:100,
-    horas:30,
-    nota:9,
-    capa:"",
-    comentario:""
+    nome: "Valorant",
+    tier: "S",
+    status: "Jogando",
+    progresso: 100,
+    horas: 350,
+    nota: 9.0,
+    capa: "https://images.contentstack.io/v3/assets/bltb6530b271fca0b16/blt7204fc72feec5007/6320a174092cb41b1cfcf25d/Valorant_2022_E5A3_KeyArt_5000x2812.jpg",
+    comentario: "Gameplay viciante, de muito foco e bagunça no chat ao mesmo tempo!"
   },
   {
-    nome:"Jogo exemplo B",
-    tier:"B",
-    status:"Dropado",
-    progresso:20,
-    horas:6,
-    nota:6,
-    capa:"",
-    comentario:""
+    nome: "Elden Ring",
+    tier: "S",
+    status: "Concluído",
+    progresso: 100,
+    horas: 120,
+    nota: 10,
+    capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg",
+    comentario: "Obra-prima em exploração e desafio. Zerado em live com muito suor!"
   },
   {
-    nome:"Jogo exemplo C",
-    tier:"C",
-    status:"Na fila",
-    progresso:0,
-    horas:0,
-    nota:0,
-    capa:"",
-    comentario:""
+    nome: "Hollow Knight",
+    tier: "A",
+    status: "Concluído",
+    progresso: 100,
+    horas: 45,
+    nota: 9.5,
+    capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/header.jpg",
+    comentario: "Metroidvania incrível com arte fabulosa e trilha sonora marcante."
+  },
+  {
+    nome: "Resident Evil 4 Remake",
+    tier: "A",
+    status: "Concluído",
+    progresso: 100,
+    horas: 28,
+    nota: 9.2,
+    capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/2050650/header.jpg",
+    comentario: "Ação de sobrevivência perfeita, ritmo acelerado e clima nostálgico."
+  },
+  {
+    nome: "Grand Theft Auto V",
+    tier: "A",
+    status: "Concluído",
+    progresso: 100,
+    horas: 90,
+    nota: 9.0,
+    capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg",
+    comentario: "Clássico atemporal. Caos total tanto na história quanto no RP."
+  },
+  {
+    nome: "Minecraft",
+    tier: "B",
+    status: "Jogando",
+    progresso: 40,
+    horas: 150,
+    nota: 8.5,
+    capa: "https://images.unsplash.com/photo-1627856013091-fed6e4e30025?q=80&w=600",
+    comentario: "Construções duvidosas, exploração de cavernas e momentos relax em live."
+  },
+  {
+    nome: "Silent Hill 2 Remake",
+    tier: "B",
+    status: "Na fila",
+    progresso: 0,
+    horas: 0,
+    nota: 0,
+    capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/2124490/header.jpg",
+    comentario: "Susto garantido para a próxima maratona de terror da live!"
+  },
+  {
+    nome: "Cyberpunk 2077",
+    tier: "B",
+    status: "Concluído",
+    progresso: 100,
+    horas: 65,
+    nota: 8.5,
+    capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/header.jpg",
+    comentario: "Night City ficou excelente com as atualizações e a expansão Phantom Liberty."
+  },
+  {
+    nome: "Phasmophobia",
+    tier: "C",
+    status: "Jogando",
+    progresso: 30,
+    horas: 25,
+    nota: 7.5,
+    capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/739630/header.jpg",
+    comentario: "Gritos garantidos e equipamentos caindo no chão a todo segundo."
   }
 ];
 
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
-const TIERS = ['S','A','B','C'];
-
-const FILMES = [
-  { nome:"Interestelar", tier:"S", status:"Assistido", nota:9, comentario:"" },
-  { nome:"Duna", tier:"A", status:"Na fila", nota:0, comentario:"" }
+let FILMES = [
+  {
+    nome: "Arcane",
+    tier: "S",
+    status: "Concluído",
+    horas: 18,
+    nota: 10,
+    capa: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600",
+    comentario: "Animação impecável, personagens profundos e trilha sonora inesquecível."
+  },
+  {
+    nome: "Cyberpunk: Edgerunners",
+    tier: "S",
+    status: "Concluído",
+    horas: 5,
+    nota: 9.8,
+    capa: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600",
+    comentario: "Chorei na live! Trilha fantástica e ritmo de tirar o fôlego."
+  },
+  {
+    nome: "Breaking Bad",
+    tier: "S",
+    status: "Concluído",
+    horas: 62,
+    nota: 10,
+    capa: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+    comentario: "Uma das melhores séries de todos os tempos, sem falhas."
+  },
+  {
+    nome: "Spider-Man: Across the Spider-Verse",
+    tier: "A",
+    status: "Concluído",
+    horas: 2,
+    nota: 9.5,
+    capa: "https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=600",
+    comentario: "Visual espetacular e uma das melhores trilhas da cultura pop."
+  },
+  {
+    nome: "Fallout (Série)",
+    tier: "A",
+    status: "Concluído",
+    horas: 8,
+    nota: 9.0,
+    capa: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=600",
+    comentario: "Adaptação extremamente fiel, divertida e cheia de easter eggs."
+  },
+  {
+    nome: "Shrek 2",
+    tier: "S",
+    status: "Concluído",
+    horas: 2,
+    nota: 10,
+    capa: "https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=600",
+    comentario: "A maior obra-prima da história da animação mundial."
+  }
 ];
+
 const MODOS = {
-  jogos:  { get lista(){ return JOGOS; },  status:['Todos','Jogando','Jogado','Concluído','Na fila','Pretendo jogar','Dropado'], feito:'Concluído', plural:'jogos',  hrs:'horas jogadas',    hl:'horas jogadas',    l4:'jogos concluídos',  titulo:'Tier List de Jogos',  sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.', busca:'Buscar jogo...',  vazio:'Nenhum jogo aqui' },
-  filmes: { get lista(){ return FILMES; }, status:['Todos','Assistindo','Assistido','Na fila'], feito:'Assistido', plural:'filmes', hrs:'horas assistidas', hl:'horas assistidas', l4:'filmes assistidos', titulo:'Tier List de Filmes', sub:'Tudo o que eu já assisti ou pretendo assistir, do melhor ao pior. Clique em um filme para ver os detalhes.', busca:'Buscar filme...', vazio:'Nenhum filme aqui' }
+  jogos: {
+    titulo: "Tier List de Jogos",
+    sub: "Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.",
+    lista: JOGOS,
+    chips: ["Todos", "Jogando", "Concluído", "Na fila", "Dropado"]
+  },
+  filmes: {
+    titulo: "Tier List de Filmes & Séries",
+    sub: "Filmes, séries e animações assistidos em live ou recomendados pela comunidade.",
+    lista: FILMES,
+    chips: ["Todos", "Concluído", "Assistindo", "Na fila", "Dropado"]
+  }
 };
-let modo = 'jogos', filtro = 'Todos';
-const LISTA = () => MODOS[modo].lista;
-const fh = h => (Math.round(h * 10) / 10).toLocaleString('pt-BR') + 'h';
 
-function desenharStats(){
-  const m = MODOS[modo], L = m.lista, cn = L.filter(j => j.nota > 0);
-  const media = cn.length ? cn.reduce((a,j) => a + j.nota, 0) / cn.length : 0;
-  const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
-  $('stats').innerHTML = [
-    [L.length, m.plural + ' na lista'],
-    [hs.toLocaleString('pt-BR'), m.hrs],
-    [media ? n1(media) : '—', 'média das notas'],
-    [L.filter(j => j.status === m.feito).length, m.l4]
-  ].map(x => `<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+let modo = "jogos";
+let filtro = "Todos";
+let busca = "";
+const TIERS = ["S", "A", "B", "C"];
+
+/* =========================
+   LÓGICA DA TIER LIST & RENDER
+========================= */
+
+function desenharStats() {
+  const lista = MODOS[modo].lista;
+  const total = lista.length;
+  const concluidos = lista.filter(i => i.status === "Concluído").length;
+  const jogando = lista.filter(i => i.status === "Jogando" || i.status === "Assistindo").length;
+  const somaNotas = lista.reduce((a, b) => a + (b.nota || 0), 0);
+  const mediaNotas = total ? (somaNotas / lista.filter(i => i.nota > 0).length || 1).toFixed(1) : "—";
+
+  const container = $("stats");
+  if(!container) return;
+
+  container.innerHTML = `
+    <div class="stat"><b>${total}</b><span>Total de Itens</span></div>
+    <div class="stat"><b>${concluidos}</b><span>Concluídos</span></div>
+    <div class="stat"><b>${jogando}</b><span>Em Andamento</span></div>
+    <div class="stat"><b>${mediaNotas} ★</b><span>Média de Notas</span></div>
+  `;
 }
-desenharStats();
 
-const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+function renderChips() {
+  const container = $("chips");
+  if(!container) return;
+  const chipsList = MODOS[modo].chips;
 
-let ultGame = null, ultVivo = false;
-function atualizarFoco(game, aoVivo){
-  ultGame = game; ultVivo = aoVivo;
-  const j = game ? JOGOS.find(x => norm(x.nome) === norm(game.name)) : (JOGOS.find(x => x.status === 'Jogando') || JOGOS[0]);
-  const nome = game ? game.name : (j && j.nome);
-  if(!nome) return;
-  const capa = (j && j.capa) || (game && game.box_art) || '';
-  $('focoNome').textContent = nome;
-  $('focoLabel').textContent = aoVivo ? '🔴 Jogando agora' : '🎮 Último jogo jogado';
-  const chips = [];
-  if(j && j.tier && j.tier !== 'NR') chips.push(`<span class="foco-chip tr">Tier ${esc(j.tier)}</span>`);
-  if(j && j.nota > 0) chips.push(`<span class="foco-chip">⭐ ${n1(j.nota)}</span>`);
-  if(j && j.horas > 0) chips.push(`<span class="foco-chip">⏱ ${fh(j.horas)}</span>`);
-  if(j && j.status) chips.push(`<span class="foco-chip">${esc(j.status)}</span>`);
-  if(!chips.length) chips.push('<span class="foco-chip">Ainda sem nota na tier list</span>');
-  $('focoMeta').innerHTML = chips.join('');
-  const pr = j && j.progresso != null && j.progresso > 0;
-  $('focoBar').style.display = pr ? '' : 'none';
-  if(pr){ $('focoPct').textContent = j.progresso + '\%';$('focoBarI').style.width = j.progresso + '%'; }
-  const v = (typeof vodAtual !== 'undefined') && vodAtual;
-  $('focoHoras').textContent = aoVivo ? 'Entra no chat e vem jogar junto! 💜' : (v && v.created_at ? `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}` : '');
-  const c = $('focoCover');
-  if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
-  else c.style.display = 'none';
+  container.innerHTML = chipsList.map(c => `
+    <button class="chip" aria-pressed="${filtro === c}" onclick="setFiltro('${c}')">${c}</button>
+  `).join('');
 }
-atualizarFoco(null, false);
 
-let clipsOk = false;
-function renderClips(list){
-  if(clipsOk || !list || !list.length) return;
-  clipsOk = true;
-  $('clipsBox').style.display = '';$('clipsGrid').innerHTML = list.slice(0,3).map((c,i) => `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}"><img src="${esc(c.thumbnail)}" alt="" loading="lazy"><span class="play">▶</span>${i === 0 ? '<span class="tag">★ Mais assistido</span>' : ''}<span class="vw">👁 ${Number(c.views || 0).toLocaleString('pt-BR')}</span><span class="ct">${esc(c.title)}</span></button>`).join('');
+function setFiltro(f) {
+  filtro = f;
+  renderChips();
+  desenhar();
 }
-$('clipsGrid').addEventListener('click', e => {
-  const b = e.target.closest('.clip');
-  if(!b || b.querySelector('iframe')) return;
-  b.innerHTML = `<iframe src="https://clips.twitch.tv/embed?clip=${encodeURIComponent(b.dataset.id)}&parent=${HOST}&autoplay=true" allowfullscreen title="Clipe"></iframe>`;
+
+function desenhar() {
+  const container = $("tiers");
+  if(!container) return;
+
+  const lista = MODOS[modo].lista;
+  const q = norm(busca);
+
+  const filtrados = lista.filter(item => {
+    const nomeOk = norm(item.nome).includes(q);
+    const filtroOk = (filtro === "Todos") || (item.status === filtro);
+    return nomeOk && filtroOk;
+  });
+
+  let html = "";
+
+  TIERS.forEach(t => {
+    const itensDoTier = filtrados.filter(i => i.tier === t);
+
+    html += `
+      <div class="tier t-${t}">
+        <div class="label">${t}</div>
+        <div class="games">
+          ${itensDoTier.length === 0 ? '<div class="empty">Nenhum item encontrado</div>' : ''}
+          ${itensDoTier.map((item) => {
+            const indexOriginal = lista.indexOf(item);
+            return `
+              <button class="g" onclick="abrirModal(${indexOriginal})" title="${esc(item.nome)}">
+                <div class="cv">
+                  ${item.capa ? `<img src="${esc(item.capa)}" alt="${esc(item.nome)}" loading="lazy" onerror="this.style.display='none'">` : ''}
+                  <div class="ph">${esc(item.nome.charAt(0))}</div>${item.status === 'Jogando' || item.status === 'Assistindo' ? '<span class="pl" title="Em andamento"></span>' : ''}
+                  ${item.nota > 0 ? `<span class="nt">★ ${item.nota}</span>` : ''}
+                </div>
+                <div class="cap">
+                  <span class="cn">${esc(item.nome)}</span>
+                  <span class="ch">${item.horas ? fh(item.horas) : esc(item.status)}</span>
+                </div>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function aplicarModo(novoModo) {
+  modo = novoModo;
+  filtro = "Todos";
+  
+  document.querySelectorAll("#modo button").forEach(b => {
+    b.classList.toggle("on", b.dataset.m === novoModo);
+  });
+
+  $("tlTitulo").textContent = MODOS[modo].titulo;
+  $("tlSub").textContent = MODOS[modo].sub;
+  $("tmdbNote").style.display = modo === "filmes" ? "block" : "none";
+
+  renderChips();
+  desenharStats();
+  desenhar();
+}
+
+function abrirModal(index) {
+  const item = MODOS[modo].lista[index];
+  if(!item) return;
+
+  $("dTitle").textContent = item.nome;
+  $("dBody").innerHTML = `
+    <div class="mrow">
+      <img src="${esc(item.capa || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400')}" alt="${esc(item.nome)}">
+      <div class="mside">
+        <div class="badges">
+          <span class="bd">Tier ${item.tier}</span>
+          <span class="bd">${esc(item.status)}</span>
+        </div>
+        <div class="kv">
+          <div><b>★ ${item.nota || '—'}</b><span>Nota</span></div>
+          <div><b>${item.horas ? fh(item.horas) : '—'}</b><span>Horas</span></div>
+          <div><b>${item.progresso != null ? item.progresso + '%' : '—'}</b><span>Concluído</span></div>
+        </div>
+        <p>${esc(item.comentario || 'Sem comentários cadastrados no momento.')}</p>
+      </div>
+    </div>
+  `;
+
+  $("dlg").showModal();
+}
+
+/* =========================
+   FOCO & CLIPES & SETUP & VOTAÇÃO
+========================= */
+
+function atualizarFoco(gameName, aoVivo) {
+  const coverEl = $("focoCover");
+  const labelEl = $("focoLabel");
+  const nomeEl = $("focoNome");
+  const metaEl = $("focoMeta");
+  const barEl = $("focoBar");
+  const barIEl = $("focoBarI");
+  const pctEl = $("focoPct");
+  const horasEl = $("focoHoras");
+
+  const jogoAtual = JOGOS.find(j => j.status === "Jogando") || JOGOS[0];
+
+  if(jogoAtual) {
+    if(coverEl) { coverEl.src = jogoAtual.capa; coverEl.style.display = "block"; }
+    if(labelEl) labelEl.textContent = aoVivo ? "🎮 Jogando Agora ao vivo" : "🎮 Último jogo jogado";
+    if(nomeEl) nomeEl.textContent = gameName || jogoAtual.nome;
+    if(metaEl) metaEl.innerHTML = `<span class="foco-chip tr">Tier ${jogoAtual.tier}</span><span class="foco-chip">${jogoAtual.status}</span>`;
+    if(barEl) {
+      barEl.style.display = "block";
+      pctEl.textContent = jogoAtual.progresso + "%";
+      barIEl.style.width = jogoAtual.progresso + "%";
+    }
+    if(horasEl) horasEl.textContent = `Tempo acumulado: ${jogoAtual.horas}h`;
+  }
+}
+
+function renderClips(clips) {
+  const box = $("clipsBox");
+  const grid = $("clipsGrid");
+  if(!box || !grid) return;
+
+  if(clips && clips.length > 0) {
+    box.style.display = "block";
+    grid.innerHTML = clips.slice(0, 3).map((c, i) => `
+      <div class="clip" onclick="window.open('${c.url}', '_blank')">
+        <img src="${c.thumbnail_url}" alt="${esc(c.title)}">
+        <span class="tag">MOMENTO</span>
+        <span class="vw">👁️ ${c.view_count}</span>
+        <div class="play">▶</div>
+        <div class="ct">${esc(c.title)}</div>
+      </div>
+    `).join('');
+  }
+}
+
+const SETUP_ITEMS = [
+  {
+    categoria: "💻 PC & Performance",
+    itens: [
+      { nome: "Processador AMD Ryzen 7 5700X", sub: "8 Cores / 16 Threads", kabum: "https://www.kabum.com.br", amazon: "https://www.amazon.com.br" },
+      { nome: "Placa de Vídeo RTX 4060 Ti 8GB", sub: "Ray Tracing e DLSS 3", kabum: "https://www.kabum.com.br", amazon: "https://www.amazon.com.br" },
+      { nome: "Memória RAM 32GB DDR4 3200MHz", sub: "Dual Channel RGB", kabum: "https://www.kabum.com.br", amazon: "https://www.amazon.com.br" }
+    ]
+  },
+  {
+    categoria: "🎙️ Periféricos & Áudio",
+    itens: [
+      { nome: "Microfone Fifine AmpliGame A8", sub: "USB RGB com Anti-pope", kabum: "https://www.kabum.com.br", amazon: "https://www.amazon.com.br" },
+      { nome: "Headset HyperX Cloud II", sub: "Som Surround 7.1", kabum: "https://www.kabum.com.br", amazon: "https://www.amazon.com.br" },
+      { nome: "Câmera Logitech C920 PRO", sub: "Full HD 1080p 30fps", kabum: "https://www.kabum.com.br", amazon: "https://www.amazon.com.br" }
+    ]
+  }
+];
+
+function renderSetup() {
+  const container = $("setupGrid");
+  if(!container) return;
+
+  container.innerHTML = SETUP_ITEMS.map(cat => `
+    <div class="sbox">
+      <h3>${cat.categoria}</h3>
+      <ul>
+        ${cat.itens.map(item => `
+          <li>
+            <div class="si">
+              <div class="si-ic">⚡</div>
+              <div class="si-tx">
+                <b>${esc(item.nome)}</b>
+                <small>${esc(item.sub)}</small>
+              </div>
+              <div class="si-btns">
+                <a href="${item.kabum}" target="_blank" rel="noopener" class="si-btn kabum">KaBuM!</a>
+                <a href="${item.amazon}" target="_blank" rel="noopener" class="si-btn">Amazon</a>
+              </div>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  `).join('');
+}
+
+let VOTOS = [
+  { id: 1, nome: "Hollow Knight", capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/367520/header.jpg", votos: 42 },
+  { id: 2, nome: "Resident Evil Village", capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/1196590/header.jpg", votos: 28 },
+  { id: 3, nome: "Little Nightmares II", capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/860510/header.jpg", votos: 18 },
+  { id: 4, nome: "Detroit: Become Human", capa: "https://cdn.cloudflare.steamstatic.com/steam/apps/1086940/header.jpg", votos: 12 }
+];
+
+function renderVotacao() {
+  const container = $("votoLista");
+  if(!container) return;
+
+  const totalVotos = VOTOS.reduce((a, b) => a + b.votos, 0) || 1;
+  const meuVoto = localStorage.getItem("votoRealizado");
+
+  container.innerHTML = VOTOS.map(v => {
+    const pct = Math.round((v.votos / totalVotos) * 100);
+    const jaVotouEsse = meuVoto == v.id;
+
+    return `
+      <div class="vt ${jaVotouEsse ? 'meu' : ''}">
+        <img class="vt-img" src="${v.capa}" alt="${esc(v.nome)}">
+        <div class="vt-info">
+          <div class="vt-top">
+            <span>${esc(v.nome)} ${jaVotouEsse ? '✓' : ''}</span>
+            <b>${pct}% (${v.votos})</b>
+          </div>
+          <div class="goal-bar"><i style="width:${pct}%"></i></div>
+        </div>
+        <button class="btn" ${meuVoto ? 'disabled style="opacity:.5;cursor:not-allowed;"' : ''} onclick="votar(${v.id})">
+          ${jaVotouEsse ? 'Votado' : 'Votar'}
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  // Atualiza box do próximo na home
+  const lider = [...VOTOS].sort((a,b) => b.votos - a.votos)[0];
+  if(lider && $("proxNome") && $("proxInfo")) {
+    $("proxNome").textContent = lider.nome;
+    $("proxInfo").textContent = `${Math.round((lider.votos / totalVotos) * 100)}% da votação da comunidade!`;
+  }
+}
+
+function votar(id) {
+  if(localStorage.getItem("votoRealizado")) {
+    alert("Você já votou nesta enquete!");
+    return;
+  }
+  const item = VOTOS.find(v => v.id === id);
+  if(item) {
+    item.votos++;
+    localStorage.setItem("votoRealizado", id);
+    renderVotacao();
+  }
+}
+
+function enviarSugestao() {
+  const nome = $("sugNome").value.trim();
+  const texto = $("sugTexto").value.trim();
+  const honeypot = $("sugSite").value;
+  const status = $("sugStatus");
+
+  if(honeypot) return; // Anti-bot
+
+  if(!nome || !texto) {
+    status.textContent = "Por favor, preencha seu nome e a sugestão!";
+    return;
+  }
+
+  status.textContent = "Enviando sugestão...";
+
+  setTimeout(() => {
+    status.textContent = "🚀 Sugestão enviada com sucesso! Obrigada pelo carinho! 💜";
+    $("sugNome").value = "";
+    $("sugTexto").value = "";
+  }, 800);
+}
+
+/* =========================
+   EVENT LISTENERS & INIT
+========================= */
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Configurações de clique nos botões de modo (Jogos / Filmes)
+  document.querySelectorAll("#modo button").forEach(btn => {
+    btn.addEventListener("click", () => aplicarModo(btn.dataset.m));
+  });
+
+  // Evento de busca
+  $("q").addEventListener("input", e => {
+    busca = e.target.value;
+    desenhar();
+  });
+
+  // Copiar Comandos do Chat
+  document.querySelectorAll(".cmd").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const comando = btn.dataset.c;
+      navigator.clipboard.writeText(comando).then(() => {
+        const em = btn.querySelector("em");
+        const txtAntigo = em.textContent;
+        em.textContent = "copiado!";
+        setTimeout(() => em.textContent = txtAntigo, 1500);
+      });
+    });
+  });
+
+  // Modal Fechar
+  $("dClose").addEventListener("click", () => $("dlg").close());
+  $("dlg").addEventListener("click", e => {
+    if (e.target === $("dlg")) $("dlg").close();
+  });
+
+  // Inicialização das funções
+  verificarStatusTwitch();
+  atualizarSpotifyLink();
+  atualizarTopDoadoresMidfielder();
+  renderChips();
+  desenharStats();
+  desenhar();
+  renderSetup();
+  renderVotacao();
+
+  setInterval(verificarStatusTwitch, 15000);
+  setInterval(atualizarTopDoadoresMidfielder, 30000);
 });
-
-if (CONFIG.subs == null) { $('goalSubBox').style.display = 'none';$('goals3').style.gridTemplateColumns = 'repeat(2,1fr)'; }
-if (CONFIG.donate) { const d = $('donateLink'); d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
-document.querySelectorAll('.cmd').forEach(b => b.addEventListener('click', async () => {
-  const tag = b.querySelector('em');
-  try { await navigator.clipboard.writeText(b.dataset.c); tag.textContent = 'copiado ✓'; } catch (e) { tag.textContent = 'copie: ' + b.dataset.c; }
-  setTimeout(() => { tag.textContent = 'copiar'; }, 1600);
-}));
-
-function renderChips(){
-  $('chips').innerHTML = MODOS[modo].status.map(s => `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}">${s}</button>`).join('');
-}
-renderChips();
-function aplicarModo(novo, salvar = true){
-  if(!MODOS[novo]) novo = 'jogos';
-  modo = novo; filtro = 'Todos'; $('q').value = '';
-  document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x.dataset.m === modo));
-  const m = MODOS[modo];
-  $('tlTitulo').textContent = m.titulo; $('tlSub').textContent = m.sub; $('q').placeholder = m.busca;
-  renderChips(); desenharStats(); desenhar();
-}
 </script>
+
 </body>
 </html>
