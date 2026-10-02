@@ -1360,13 +1360,16 @@ dialog{width:min(520px,92vw)}
 .sfull{grid-column:1/-1}
 
 /* Estilos refinados da Votação */
-.vt{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px}
-.vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;position:relative;z-index:2}
+.vt{display:grid;grid-template-columns:auto 1fr auto;gap:10px 12px;align-items:center;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px}
+.vt-img{width:42px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--line);grid-row:1/3;background:#1d1433}
+.vt-info{grid-column:2;display:flex;flex-direction:column;gap:2px}
+.vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9lrem;position:relative;z-index:2}
+.vt-top span{font-weight:700;color:var(--white)}
 .vt-top b{color:var(--purple-light);font-size:.8rem}
-.vt .goal-bar{grid-column:1;position:relative;z-index:2;margin-top:4px}
+.vt .goal-bar{grid-column:1/3;position:relative;z-index:2;margin-top:2px}
 .vt .goal-bar i{background:linear-gradient(90deg,#7c3aed,#c084fc)}
-.vt .btn{grid-column:2;grid-row:1/3;padding:7px 14px;font-size:.8rem;position:relative;z-index:2}
-.vt.meu .vt-top span{color:var(--purple-light);font-weight:bold}
+.vt .btn{grid-column:3;grid-row:1/3;padding:7px 14px;font-size:.8rem;position:relative;z-index:2}
+.vt.meu .vt-top span{color:var(--purple-light)}
 .vt-total{font-size:.75rem;color:var(--mute);margin-top:10px;text-align:right}
 
 @media(max-width:1100px){
@@ -1461,8 +1464,10 @@ dialog{width:min(520px,92vw)}
 .foco-last{font-size:.78rem;color:var(--mute)}
 .foco-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
 .foco-btns .btn.ghost{background:transparent;border:1px solid var(--purple);color:var(--purple-light);box-shadow:none}
-.tm-three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.tm-three .tm-t b{font-size:1.15rem;font-family:'Bricolage Grotesque',sans-serif;color:var(--purple-light)}
+.tm-two-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tm-t{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+.tm-t small{display:block;font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-bottom:3px}
+.tm-t b{font-size:1.15rem;font-family:'Bricolage Grotesque',sans-serif;color:var(--purple-light)}
 .tm-vods{display:grid;gap:6px}
 .tm-vod{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:6px 10px 6px 6px;cursor:pointer;font-family:inherit;color:var(--ink);text-align:left;width:100%;transition:border-color .2s}
 .tm-vod:hover{border-color:var(--purple)}
@@ -1479,6 +1484,18 @@ dialog{width:min(520px,92vw)}
 .destaque b{display:block;font-size:1.15rem;color:var(--white);margin:2px 0}
 .destaque span{font-size:.8rem;color:var(--mute)}
 .vt.lider .vt-top span::before{content:'👑 '}
+
+/* PAINEL v4 */
+.tm-live-summary{display:grid;gap:9px}
+.tm-dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.tm-panel-card{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:13px;padding:11px}
+.tm-card-title{display:flex;justify-content:space-between;align-items:center;font-size:.78rem;font-weight:800;margin-bottom:9px;color:var(--white)}
+.tm-card-title span{font-size:.62rem;color:var(--mute);font-weight:600}
+.mini-goal{display:grid;gap:4px;margin-bottom:8px}.mini-goal:last-child{margin-bottom:0}.mini-goal>div:first-child{display:flex;justify-content:space-between;font-size:.7rem}.mini-goal b{color:var(--purple-light)}.mini-goal small{font-size:.58rem;color:var(--mute)}.mini-goal .goal-bar{height:6px}
+.spotify-now{display:flex;gap:10px;align-items:center;min-height:58px}.spotify-cover{width:58px;height:58px;border-radius:8px;background:linear-gradient(135deg,#1db954,#0f6);display:grid;place-items:center;font-size:1.5rem;overflow:hidden;flex:none}.spotify-cover img{width:100%;height:100%;object-fit:cover}.spotify-now>div:last-child{min-width:0}.spotify-now b,.spotify-now span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.spotify-now b{font-size:.8rem}.spotify-now span{font-size:.66rem;color:var(--mute);margin-top:2px}.spotify-open{font-size:.65rem;color:#8df7ae;margin-top:7px;display:inline-block}
+.donor-list{display:grid;gap:6px}.donor{display:grid;grid-template-columns:25px 1fr auto;gap:7px;align-items:center;background:rgba(255,255,255,.03);border-radius:8px;padding:6px 7px}.donor-rank{font-weight:800;color:var(--purple-light);font-size:.7rem}.donor-name{font-size:.72rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.donor-amount{font-size:.68rem;color:#b7ff00;font-weight:800}.tm-empty{font-size:.67rem;color:var(--mute)}
+.tm-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tm-action{border:1px solid var(--line);background:rgba(168,85,247,.08);color:var(--ink);border-radius:8px;padding:8px 6px;font:600 .67rem inherit;text-align:center;cursor:pointer}.tm-action:hover{border-color:var(--purple);background:rgba(168,85,247,.16)}
+@media(max-width:900px){.tm-dashboard-grid{grid-template-columns:1fr}}
 </style>
 </head>
 
@@ -1561,11 +1578,10 @@ dialog{width:min(520px,92vw)}
             <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
             <h3 id="focoNome">Carregando…</h3>
             <div class="foco-meta" id="focoMeta"></div>
-            <div class="foco-bar" id="focoBar" style="display:none"><small><span>Conquistas</span><b id="focoPct"></b></small><div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div></div>
+            <div class="foco-bar" id="focoBar" style="display:none"><small><span>Progresso</span><b id="focoPct"></b></small><div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div></div>
             <p class="foco-last" id="focoHoras"></p>
             <div class="foco-btns">
               <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
-              <button class="btn ghost" id="btnFocoVod" onclick="assistirVod(null,true)" style="display:none">▶ Rever a live</button>
             </div>
           </div>
         </div>
@@ -1601,16 +1617,53 @@ dialog{width:min(520px,92vw)}
           <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
         </div>
         <div class="tmon">
-          <div class="tmon-h"><span class="live-indicator"></span><b>PAINEL DO CANAL</b><span class="pill" id="tmStatus">OFFLINE</span></div>
+          <div class="tmon-h"><span class="live-indicator"></span><b>PAINEL DA COMUNIDADE</b><span class="pill" id="tmStatus">OFFLINE</span></div>
           <div class="tmon-b">
-            <div class="tm-three">
-              <div class="tm-t"><small>SEGUIDORES</small><b id="tmSeg">—</b></div>
-              <div class="tm-t"><small>DISCORD</small><b id="tmDc">—</b></div>
-              <div class="tm-t"><small>LIVES / 14 DIAS</small><b id="tmLives">—</b></div>
+            <div class="tm-live-summary">
+              <div class="tm-id">
+                <img id="tmAvatar" src="img/avatar.png" alt="Soso">
+                <div><small>CANAL</small><b>@asemtet0</b><span id="tmSub">Canal offline no momento.</span></div>
+              </div>
+              <div class="tm-two-cols">
+                <div class="tm-t"><small>👥 SEGUIDORES</small><b id="tmSeg">—</b></div>
+                <div class="tm-t"><small>👀 ESPECTADORES</small><b id="tmViewers">—</b></div>
+                <div class="tm-t"><small>⏱️ UPTIME</small><b id="tmUptime">—</b></div>
+                <div class="tm-t"><small>🎮 JOGO ATUAL</small><b id="tmGame">—</b></div>
+              </div>
             </div>
-            <div class="tm-t"><small id="tmLbl">ÚLTIMA LIVE</small><p id="tmSub">Carregando…</p></div>
-            <div class="tm-h4">ÚLTIMAS LIVES · CLIQUE PARA REVER</div>
-            <div class="tm-vods" id="tmVods"></div>
+
+            <div class="tm-dashboard-grid">
+              <div class="tm-panel-card">
+                <div class="tm-card-title">🎯 Metas da comunidade <span>progresso</span></div>
+                <div class="mini-goal"><div><span>💜 Seguidores</span><b id="goalSegNum">—</b></div><div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div><small id="goalSegDesc">Carregando…</small></div>
+                <div class="mini-goal"><div><span>🎮 Discord</span><b id="goalDcNum">—</b></div><div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div><small id="goalDcDesc">Carregando…</small></div>
+                <div class="mini-goal"><div><span>👑 Subs</span><b id="goalSubNum">—</b></div><div class="goal-bar"><i id="goalSubBar" style="width:0%"></i></div><small id="goalSubDesc">Carregando…</small></div>
+              </div>
+
+              <div class="tm-panel-card spotify-card" id="spotifyCard">
+                <div class="tm-card-title">🎵 Tocando agora <span id="spotifyStatus">Spotify</span></div>
+                <div class="spotify-now">
+                  <div class="spotify-cover" id="spotifyCover">🎵</div>
+                  <div><b id="spotifySong">Nenhuma música detectada</b><span id="spotifyArtist">Quando a Soso estiver ouvindo música, aparece aqui.</span></div>
+                </div>
+                <a id="spotifyLink" class="spotify-open" href="#" target="_blank" rel="noopener" style="display:none">Abrir no Spotify ↗</a>
+              </div>
+
+              <div class="tm-panel-card">
+                <div class="tm-card-title">🏆 Top apoiadores <span>doações</span></div>
+                <div id="tmDonors" class="donor-list"><span class="tm-empty">Configure a integração de doações.</span></div>
+              </div>
+
+              <div class="tm-panel-card tm-community-actions">
+                <div class="tm-card-title">💜 Cantinho da comunidade</div>
+                <div class="tm-action-grid">
+                  <button class="tm-action" onclick="mudarAba('comunidade')">🤝 Comunidade</button>
+                  <button class="tm-action" onclick="mudarAba('sugestoes')">💡 Sugestões / Bugs</button>
+                  <button class="tm-action" onclick="mudarAba('tierlist')">🎮 Tier List</button>
+                  <a class="tm-action" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">💬 Entrar no Discord</a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1640,13 +1693,7 @@ dialog{width:min(520px,92vw)}
 <section id="sec-comunidade" class="page-section">
   <div class="section-header">
     <h2>Comunidade & Vantagens</h2>
-    <p>Entre para o cantinho da Soso, confira os comandos e acompanhe as metas da comunidade.</p>
-  </div>
-
-  <div class="goals3" id="goals3">
-    <div class="goalc"><div class="gc-top"><span>💜 Seguidores</span><b id="goalSegNum">…</b></div><div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div><small id="goalSegDesc">Carregando…</small></div>
-    <div class="goalc"><div class="gc-top"><span>🎮 Discord</span><b id="goalDcNum">…</b></div><div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div><small id="goalDcDesc">Carregando…</small></div>
-    <div class="goalc" id="goalSubBox"><div class="gc-top"><span>👑 Subs</span><b id="goalSubNum">…</b></div><div class="goal-bar"><i id="goalSubBar" style="width:0%"></i></div><small id="goalSubDesc">Carregando…</small></div>
+    <p>Participe do cantinho da Soso, use os comandos, acompanhe as regras e encontre formas de apoiar a comunidade.</p>
   </div>
 
   <div class="com-grid">
@@ -1705,8 +1752,8 @@ dialog{width:min(520px,92vw)}
 
 <section id="sec-sugestoes" class="page-section">
   <div class="section-header">
-    <h2>Sugestões de Jogos & Ideias</h2>
-    <p>Quer sugerir um jogo para eu testar em live ou mandar um feedback? Deixe sua ideia anotada aqui!</p>
+    <h2>Central de Sugestões & Bugs</h2>
+    <p>Ajude a melhorar as lives e o site: envie jogos, ideias, feedbacks ou reporte um bug.</p>
   </div>
   
   <div class="sugestoes-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;">
@@ -1722,22 +1769,31 @@ dialog{width:min(520px,92vw)}
 
     <div class="setup-box" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
-        <h3>💡 Envie sua Sugestão</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Mande uma mensagem direta ou ideia de jogo!</p>
+        <h3>💡 Envie uma mensagem</h3>
+        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Sua mensagem pode virar uma nova ideia, jogo ou correção no site.</p>
         <div style="display:grid;gap:15px;">
           <div>
             <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Seu Nome / Apelido</label>
             <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
           </div>
           <div>
-            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Sugestão de Jogo ou Comentário</label>
-            <textarea id="sugTexto" rows="4" placeholder="Ex: Joga Hollow Knight na próxima live!" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
+            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Tipo</label>
+            <select id="sugTipo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
+              <option value="sugestao">💡 Sugestão / ideia</option>
+              <option value="jogo">🎮 Sugestão de jogo</option>
+              <option value="feedback">💬 Feedback</option>
+              <option value="bug">🐛 Reportar bug do site</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Mensagem</label>
+            <textarea id="sugTexto" rows="4" placeholder="Ex: O botão da Tier List não abre no celular ou joga Hollow Knight na próxima live!" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
           </div>
           <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
         </div>
       </div>
       <div style="margin-top: 15px;">
-        <button class="btn" id="sugBtn" onclick="enviarSugestao()">Enviar Sugestão 🚀</button>
+        <button class="btn" id="sugBtn" onclick="enviarSugestao()">Enviar para o Discord 🚀</button>
         <span id="sugStatus" style="font-size:.85rem;color:var(--purple);display:none;margin-top:6px;"></span>
       </div>
     </div>
@@ -1811,22 +1867,48 @@ async function verificarStatusTwitch() {
     const response = await fetch('/api/twitch');
     if (!response.ok) throw new Error('api');
     const data = await response.json();
+    // Mantém o uptime correndo no navegador entre as atualizações da API.
+    if (data.stream?.started_at) {
+      const started = new Date(data.stream.started_at).getTime();
+      const tickUptime = () => {
+        const d = Math.max(0, Date.now() - started);
+        const h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000), sec = Math.floor((d % 60000) / 1000);
+        const el = document.getElementById('tmUptime');
+        if (el) el.textContent = `${h}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
+      };
+      tickUptime(); clearInterval(window.__uptimeTicker); window.__uptimeTicker = setInterval(tickUptime, 1000);
+    } else { clearInterval(window.__uptimeTicker); }
 
-    atualizarMeta('goalSeg', data.followers);
-    atualizarMeta('goalDc', data.discord);
-    if (CONFIG.subs != null) atualizarMeta('goalSub', CONFIG.subs, MARCOS_SUBS);
+    const aplicarGoal = (pre, goal) => {
+      if (!goal || goal.current == null || goal.target == null) { atualizarMeta(pre, null); return; }
+      const cur = Number(goal.current), alvo = Number(goal.target);
+      document.getElementById(pre+'Num').textContent = `${cur.toLocaleString('pt-BR')} / ${alvo.toLocaleString('pt-BR')}`;
+      document.getElementById(pre+'Bar').style.width = Math.min(100, alvo > 0 ? cur / alvo * 100 : 0) + '%';
+      document.getElementById(pre+'Desc').textContent = cur >= alvo ? 'Meta alcançada! 💜' : `Faltam ${(alvo-cur).toLocaleString('pt-BR')} para alcançar a meta.`;
+    };
+    aplicarGoal('goalSeg', data.goals?.followers || (data.followers != null ? {current:data.followers,target:10000} : null));
+    aplicarGoal('goalDc', data.goals?.discord || (data.discord != null ? {current:data.discord,target:250} : null));
+    aplicarGoal('goalSub', data.goals?.subs || {current:CONFIG.subs,target:50});
     const live = !!data.stream;
     vodAtual = data.video; videosTw = data.videos || (data.video ? [data.video] : []);
     g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
     g('tmSeg').textContent = data.followers != null ? data.followers.toLocaleString('pt-BR') : '—';
-    g('tmDc').textContent = data.discord != null ? data.discord.toLocaleString('pt-BR') : '—';
-    const rec = videosTw.filter(x => x.created_at && Date.now() - new Date(x.created_at) < 14 * 864e5).length;
-    g('tmLives').textContent = videosTw.length ? rec : '—';
-    g('tmLbl').textContent = live ? 'AO VIVO AGORA' : 'ÚLTIMA LIVE';
-    g('tmSub').textContent = live
-      ? `${data.stream.title} · ${data.stream.game_name || ''} · ${data.stream.viewer_count} assistindo`
-      : (videosTw[0] && videosTw[0].created_at ? `${tempoAtras(videosTw[0].created_at)} · ${videosTw[0].title}` : 'Canal offline no momento.');
-    g('tmVods').innerHTML = videosTw.slice(0, 3).map((v, i) => `<button class="tm-vod" data-i="${i}">${v.thumbnail ? `<img src="${esc(v.thumbnail)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div><b>${esc(v.title || 'Live')}</b><span>${v.created_at ? tempoAtras(v.created_at) : ''}${v.duration ? ' · ' + durTw(v.duration) : ''}${v.views != null ? ' · 👁 ' + v.views : ''}</span></div><em>▶</em></button>`).join('') || '<span class="tm-h4">Nenhuma live gravada ainda.</span>';
+    g('tmViewers').textContent = live && data.stream.viewer_count != null ? data.stream.viewer_count.toLocaleString('pt-BR') : '—';
+    g('tmGame').textContent = live ? (data.stream.game_name || 'Categoria não definida') : (data.game?.name || '—');
+    g('tmSub').textContent = live ? (data.stream.title || 'Live ao vivo') : 'Canal offline no momento.';
+    g('tmUptime').textContent = live ? (data.stream.uptime || '0h 0m') : '—';
+    if (data.user?.profile_image_url) g('tmAvatar').src = data.user.profile_image_url;
+
+    const donors = data.topDonors || [];
+    g('tmDonors').innerHTML = donors.length ? donors.slice(0,5).map((d,i) => `<div class="donor"><span class="donor-rank">#${i+1}</span><span class="donor-name">${esc(d.name || 'Anônimo')}</span><span class="donor-amount">${esc(d.amount || '')}</span></div>`).join('') : '<span class="tm-empty">Nenhuma doação disponível ainda.</span>';
+    const sp = data.spotify || {};
+    g('spotifySong').textContent = sp.is_playing && sp.song ? sp.song : 'Nenhuma música detectada';
+    g('spotifyArtist').textContent = sp.is_playing && sp.artist ? sp.artist : 'Quando a Soso estiver ouvindo música, aparece aqui.';
+    g('spotifyStatus').textContent = sp.is_playing ? 'TOCANDO' : 'Spotify';
+    const cover = g('spotifyCover');
+    cover.innerHTML = sp.album_art ? `<img src="${esc(sp.album_art)}" alt="Capa do álbum">` : '🎵';
+    const sl = g('spotifyLink');
+    if (sp.url) { sl.href = sp.url; sl.style.display = 'inline-block'; } else sl.style.display = 'none';
     atualizarFoco(data.game, !!data.stream);
     renderClips(data.clips);
     g('btnVod').style.display = vodAtual ? '' : 'none';
@@ -1867,7 +1949,6 @@ async function verificarStatusTwitch() {
   }
 }
 
-document.addEventListener('click', e => { const b = e.target.closest('.tm-vod'); if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]); });
 verificarStatusTwitch();
 setInterval(verificarStatusTwitch, 60000);
 
@@ -1992,10 +2073,9 @@ function atualizarFoco(game, aoVivo){
   $('focoMeta').innerHTML = chips.join('');
   const pr = j && j.progresso != null && j.progresso > 0;
   $('focoBar').style.display = pr ? '' : 'none';
-  if(pr){ $('focoPct').textContent = j.progresso + '%'; $('focoBarI').style.width = j.progresso + '%'; }
+  if(pr){ $('focoPct').textContent = j.progresso + '\%';$('focoBarI').style.width = j.progresso + '%'; }
   const v = (typeof vodAtual !== 'undefined') && vodAtual;
   $('focoHoras').textContent = aoVivo ? 'Entra no chat e vem jogar junto! 💜' : (v && v.created_at ? `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}` : '');
-  $('btnFocoVod').style.display = (!aoVivo && v) ? '' : 'none';
   const c = $('focoCover');
   if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
   else c.style.display = 'none';
@@ -2199,11 +2279,16 @@ async function carregarVotos(corpo){
     $('votoLista').innerHTML = d.opcoes.slice().sort((a,b) => b.votos - a.votos).map(o => {
       const p = total ? Math.round(o.votos / total * 100) : 0;
       const meu = d.meuVoto === o.id;
+      const jg = JOGOS.find(x => norm(x.nome) === norm(o.nome)) || FILMES.find(x => norm(x.nome) === norm(o.nome));
+      const cv = jg && jg.capa;
       return `
         <div class="vt${meu ? ' meu' : ''}${temLider && o.id === topo.id ? ' lider' : ''}">
-          <div class="vt-top">
-            <span>${esc(o.nome)}</span>
-            <b>${o.votos} voto${o.votos === 1 ? '' : 's'} • ${p}%</b>
+          ${cv ? `<img class="vt-img" src="${esc(cv)}" alt="" onerror="this.remove()">` : ''}
+          <div class="vt-info">
+            <div class="vt-top">
+              <span>${esc(o.nome)}</span>
+              <b>${o.votos} voto${o.votos === 1 ? '' : 's'} • ${p}%</b>
+            </div>
           </div>
           <div class="goal-bar"><i style="width:${p}%"></i></div>
           <button class="btn" data-v="${esc(o.id)}" ${d.jaVotou ? 'disabled' : ''}>${meu ? '✓ Seu voto' : 'Votar'}</button>
@@ -2259,6 +2344,7 @@ async function carregarSteam(){
       status: x.recente ? 'Jogando' : (x.progresso === 100 ? 'Concluído' : 'Jogado')
     }));
     desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
+    carregarVotos(); // Atualiza a votação para exibir as capas dos jogos vindos da Steam se houver correspondência
   } catch (e) { console.error('Steam indisponível, usando só a lista manual', e); }
 }
 carregarSteam();
@@ -2276,7 +2362,7 @@ async function enviarSugestao(){
     const r = await fetch('/api/sugestao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, texto, site: $('sugSite').value })
+      body: JSON.stringify({ nome, texto, tipo: $('sugTipo').value, site: $('sugSite').value })
     });
     if (r.status === 429) msg('Calma! Espere alguns segundos para enviar outra. 💜');
     else if (!r.ok) msg('Não consegui enviar agora. Tente de novo mais tarde.');
