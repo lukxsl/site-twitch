@@ -852,7 +852,7 @@ nav ul button.on{
 }
 
 /* =========================
-   SETUP
+   SETUP (BOTÕES DUPLOS)
 ========================= */
 
 .setup-box{
@@ -884,26 +884,24 @@ nav ul button.on{
   font-size:.88rem;
 }
 
-.setup-category li a{
-  color:var(--mute);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  transition:color .2s;
-}
+/* Estilização dos botões duplos de lojas */
+.si{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.si-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;font-size:1.1rem;background:rgba(168,85,247,.14);border-radius:9px}
+.si-tx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.si-tx small{font-size:.68rem;color:var(--mute)}
+.si-tx b{font-size:.85rem;font-weight:600}
 
-.setup-category li a:hover{
-  color:var(--purple-light);
-}
+.si-btns{display:flex;gap:6px;flex:none}
+.si-btn{font-size:.68rem;font-weight:700;color:#fff;background:var(--purple);padding:5px 8px;border-radius:6px;text-align:center;transition:.2s}
+.si-btn.kabum{background:#ff6500}
+.si-btn.kabum:hover{background:#e05800}
+.si-btn.off{background:transparent;border:1px solid var(--line);color:var(--mute)}
+a.si-btn:hover{background:var(--purple-dark)}
 
-.setup-category li strong{
-  color:var(--white);
-}
-
-.setup-link-icon{
-  font-size:.75rem;
-  opacity:0.6;
-}
+.sfull{grid-column:1/-1}
+.cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.cfg div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.cfg b{display:block;font-size:1.05rem}.cfg span{font-size:.72rem;color:var(--mute)}
 
 /* =========================
    TIER LIST
@@ -1323,20 +1321,12 @@ dialog{width:min(520px,92vw)}
 .sbox{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
 .sbox h3{font-size:1.05rem;color:var(--purple-light);margin-bottom:10px}
 .sbox ul{list-style:none;display:grid;gap:6px}
-.si{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
-.si-ic{width:34px;height:34px;flex:none;display:grid;place-items:center;font-size:1.1rem;background:rgba(168,85,247,.14);border-radius:9px}
-.si-tx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
-.si-tx small{font-size:.68rem;color:var(--mute)}
-.si-tx b{font-size:.85rem;font-weight:600}
-.si-btn{flex:none;font-size:.72rem;font-weight:700;color:#fff;background:var(--purple);padding:5px 10px;border-radius:8px}
-.si-btn.off{background:transparent;border:1px solid var(--line);color:var(--mute)}
-a.si-btn:hover{background:var(--purple-dark)}
 .sfull{grid-column:1/-1}
 .cfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 .cfg div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .cfg b{display:block;font-size:1.05rem}.cfg span{font-size:.72rem;color:var(--mute)}
 
-/* Estilos refinados da Votação e Alinhamento das caixas */
+/* Estilos refinados da Votação */
 .vt{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px}
 .vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;position:relative;z-index:2}
 .vt-top b{color:var(--purple-light);font-size:.8rem}
@@ -1605,7 +1595,7 @@ a.si-btn:hover{background:var(--purple-dark)}
 <section id="sec-setup" class="page-section">
   <div class="section-header">
     <h2>Meu Setup</h2>
-    <p>As ferramentas que fazem a mágica (e os travamentos) acontecerem. Clique em "Ver produto" para conferir cada item.</p>
+    <p>As ferramentas que fazem a mágica (e os travamentos) acontecerem. Escolha a loja de sua preferência para conferir cada item.</p>
   </div>
   <div class="setup-foto"><img src="img/setup.jpg" alt="Setup da Soso" onerror="this.parentNode.remove()"></div>
   <div class="sgrid" id="setupGrid"></div>
@@ -1617,7 +1607,6 @@ a.si-btn:hover{background:var(--purple-dark)}
     <p>Quer sugerir um jogo para eu testar em live ou mandar um feedback? Deixe sua ideia anotada aqui!</p>
   </div>
   
-  <!-- Grid com alinhamento perfeito de altura nas duas caixas -->
   <div class="sugestoes-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;">
     
     <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
@@ -1777,7 +1766,6 @@ function mudarAba(nome, salvar = true){
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 
-// Ao carregar a página (ou após F5), restaura a última aba ativa
 window.addEventListener('DOMContentLoaded', () => {
   const abaSalva = localStorage.getItem('abaAtiva');
   if(abaSalva && document.getElementById('sec-' + abaSalva)){
@@ -1961,40 +1949,53 @@ $('tiers').addEventListener('click', e => {
 $('dClose').addEventListener('click', () => dlg.close());
 dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
 
+// ---------- SETUP COM BOTÕES DUPLOS (AMAZON / KABUM) ----------
 const SETUP = [
   { t:'🖥️ PC Gamer', i:[
-    ['🗄️','Gabinete','Risemode Aquarium branco',''],
-    ['🧠','Processador','Ryzen 9 5900x',''],
-    ['🧩','Memória RAM','48GB',''],
-    ['🔌','Placa Mãe','X570 TUF Gaming',''],
-    ['🎮','Placa de Vídeo','RX 9060 XT',''],
-    ['💧','Water cooler','Risemode Aura RGB',''],
-    ['💾','Armazenamento','SSD 2TB NVMe M2',''],
-    ['⚡','Fonte','Corsair RM800w','']
+    ['🗄️','Gabinete','Risemode Aquarium branco','https://www.kabum.com.br/produto/470870','https://www.amazon.com.br/s?k=Gabinete+Risemode+Aquarium'],
+    ['🧠','Processador','Ryzen 9 5900x','https://www.kabum.com.br/produto/158525','https://www.amazon.com.br/s?k=Ryzen+9+5900x'],
+    ['🧩','Memória RAM','48GB','https://www.kabum.com.br/produto/114798','https://www.amazon.com.br/s?k=Memoria+RAM+DDR4'],
+    ['🔌','Placa Mãe','X570 TUF Gaming','https://www.kabum.com.br/produto/108992','https://www.amazon.com.br/s?k=Placa+Mae+X570+TUF+Gaming'],
+    ['🎮','Placa de Vídeo','RX 6750 XT / RX 9060','https://www.kabum.com.br/produto/472412','https://www.amazon.com.br/s?k=Placa+de+Video+RX'],
+    ['💧','Water cooler','Risemode Aura RGB','https://www.kabum.com.br/produto/380295','https://www.amazon.com.br/s?k=Water+cooler+Risemode+Aura+RGB'],
+    ['💾','Armazenamento','SSD 2TB NVMe M2','https://www.kabum.com.br/produto/380745','https://www.amazon.com.br/s?k=SSD+2TB+NVMe+M2'],
+    ['⚡','Fonte','Corsair RM800w','https://www.kabum.com.br/produto/103282','https://www.amazon.com.br/s?k=Fonte+Corsair+800w']
   ]},
   { t:'🖱️ Periféricos & Outros', i:[
-    ['⌨️','Teclado','AULA H88',''],
-    ['🖱️️','Mouse','Logitech G502X Superlight RGB',''],
-    ['🎧','Headset','Astro A50',''],
-    ['🎙️','Microfone','FIFINE AM8 Branco',''],
-    ['🖥️','Monitor','AOC 240Hz',''],
-    ['📷','Webcam','iPhone 11',''],
-    ['🪑','Cadeira','XT Racer','']
+    ['⌨️','Teclado','AULA H88','https://www.kabum.com.br/produto/615891','https://www.amazon.com.br/s?k=Teclado+AULA+H88'],
+    ['🖱️','Mouse','Logitech G502X Superlight RGB','https://www.kabum.com.br/produto/380299','https://www.amazon.com.br/s?k=Logitech+G502X+Superlight'],
+    ['🎧','Headset','Astro A50','https://www.kabum.com.br/produto/103328','https://www.amazon.com.br/s?k=Headset+Astro+A50'],
+    ['🎙️','Microfone','FIFINE AM8 Branco','https://www.kabum.com.br/produto/472648','https://www.amazon.com.br/dp/B0C74G9RLH'],
+    ['🖥️','Monitor','AOC 240Hz','https://www.kabum.com.br/produto/470956','https://www.amazon.com.br/s?k=Monitor+AOC+240Hz'],
+    ['📷','Webcam','iPhone 11','','https://www.amazon.com.br/s?k=iPhone+11'],
+    ['🪑','Cadeira','XT Racer','https://www.kabum.com.br/produto/114250','https://www.amazon.com.br/s?k=Cadeira+Gamer+XT+Racer']
   ]}
 ];
-const CFG_JOGO = [['DPI','—'],['Sensibilidade','—'],['Resolução','—'],['Taxa de atualização','240Hz']];
+
+const CFG_JOGO = [['DPI','800'],['Sensibilidade','1.2'],['Resolução','1920x1080'],['Taxa de atualização','240Hz']];
+
 const UPGRADES = [
-  ['💡','Iluminação para a webcam (key light)','Desejado',''],
-  ['🎤','Braço articulado para o microfone','Desejado',''],
-  ['🖱️','Mousepad grande','Desejado','']
+  ['💡','Iluminação para a webcam (key light)','Desejado','https://www.amazon.com.br/s?k=Key+Light+Stream'],
+  ['🎤','Braço articulado para o microfone','Desejado','https://www.amazon.com.br/s?k=Braco+articulado+microfone'],
+  ['🖱️','Mousepad grande','Desejado','https://www.amazon.com.br/s?k=Mousepad+gamer+grande']
 ];
-const btnProd = l => l ? `<a class="si-btn" href="${esc(l)}" target="_blank" rel="noopener">Ver produto ↗</a>` : `<span class="si-btn off">Em breve</span>`;
+
+// Função inteligente que gera os dois botões (KaBuM e Amazon) se houver links
+const btnLoja = (kabum, amazon) => {
+  let html = '<div class="si-btns">';
+  if(kabum) html += `<a class="si-btn kabum" href="${esc(kabum)}" target="_blank" rel="noopener">KaBuM! ↗</a>`;
+  if(amazon) html += `<a class="si-btn" href="${esc(amazon)}" target="_blank" rel="noopener">Amazon ↗</a>`;
+  if(!kabum && !amazon) html = '<span class="si-btn off">Em breve</span>';
+  else html += '</div>';
+  return html;
+};
+
 $('setupGrid').innerHTML =
-  SETUP.map(c => `<div class="sbox"><h3>${c.t}</h3><ul>${c.i.map(([ic,lab,nome,l]) =>
-    `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(lab)}</small><b>${esc(nome)}</b></div>${btnProd(l)}</li>`).join('')}</ul></div>`).join('') +
+  SETUP.map(c => `<div class="sbox"><h3>${c.t}</h3><ul>${c.i.map(([ic,lab,nome,kb,am]) =>
+    `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(lab)}</small><b>${esc(nome)}</b></div>${btnLoja(kb, am)}</li>`).join('')}</ul></div>`).join('') +
   `<div class="sbox"><h3>🎯 Configurações de jogo</h3><div class="cfg">${CFG_JOGO.map(([k,v]) => `<div><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join('')}</div></div>` +
-  `<div class="sbox"><h3>🛒 Wishlist de upgrades</h3><ul>${UPGRADES.map(([ic,nome,st,l]) =>
-    `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(st)}</small><b>${esc(nome)}</b></div>${btnProd(l)}</li>`).join('')}</ul></div>`;
+  `<div class="sbox"><h3>🛒 Wishlist de upgrades</h3><ul>${UPGRADES.map(([ic,nome,st,am]) =>
+    `<li class="si"><span class="si-ic">${ic}</span><div class="si-tx"><small>${esc(st)}</small><b>${esc(nome)}</b></div>${btnLoja('', am)}</li>`).join('')}</ul></div>`;
 
 // ---------- LÓGICA DE VOTAÇÃO (CONECTADA AO REDIS) ----------
 async function carregarVotos(corpo){
