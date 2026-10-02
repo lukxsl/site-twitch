@@ -1336,7 +1336,7 @@ a.si-btn:hover{background:var(--purple-dark)}
 .cfg div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .cfg b{display:block;font-size:1.05rem}.cfg span{font-size:.72rem;color:var(--mute)}
 
-/* Estilos refinados da Votação */
+/* Estilos refinados da Votação e Alinhamento das caixas */
 .vt{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:8px}
 .vt-top{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;position:relative;z-index:2}
 .vt-top b{color:var(--purple-light);font-size:.8rem}
@@ -1617,30 +1617,36 @@ a.si-btn:hover{background:var(--purple-dark)}
     <p>Quer sugerir um jogo para eu testar em live ou mandar um feedback? Deixe sua ideia anotada aqui!</p>
   </div>
   
-  <!-- Grid de duas colunas: Votação à esquerda e Sugestão à direita -->
-  <div class="sugestoes-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+  <!-- Grid com alinhamento perfeito de altura nas duas caixas -->
+  <div class="sugestoes-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;">
     
-    <div class="setup-box" id="votoBox" style="margin:0;">
-      <h3>🗳️ Qual o próximo jogo?</h3>
-      <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
-      <div id="votoLista">Carregando votação...</div>
+    <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <h3>🗳️ Qual o próximo jogo?</h3>
+        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
+        <div id="votoLista">Carregando votação...</div>
+      </div>
     </div>
 
-    <div class="setup-box" style="margin:0;">
-      <h3>💡 Envie sua Sugestão</h3>
-      <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Mande uma mensagem direta ou ideia de jogo!</p>
-      <div style="display:grid;gap:15px;">
-        <div>
-          <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Seu Nome / Apelido</label>
-          <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
+    <div class="setup-box" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <h3>💡 Envie sua Sugestão</h3>
+        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Mande uma mensagem direta ou ideia de jogo!</p>
+        <div style="display:grid;gap:15px;">
+          <div>
+            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Seu Nome / Apelido</label>
+            <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
+          </div>
+          <div>
+            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Sugestão de Jogo ou Comentário</label>
+            <textarea id="sugTexto" rows="4" placeholder="Ex: Joga Hollow Knight na próxima live!" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
+          </div>
+          <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
         </div>
-        <div>
-          <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Sugestão de Jogo ou Comentário</label>
-          <textarea id="sugTexto" rows="4" placeholder="Ex: Joga Hollow Knight na próxima live!" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
-        </div>
-        <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+      </div>
+      <div style="margin-top: 15px;">
         <button class="btn" id="sugBtn" onclick="enviarSugestao()">Enviar Sugestão 🚀</button>
-        <span id="sugStatus" style="font-size:.85rem;color:var(--purple);display:none;"></span>
+        <span id="sugStatus" style="font-size:.85rem;color:var(--purple);display:none;margin-top:6px;"></span>
       </div>
     </div>
 
@@ -1754,7 +1760,7 @@ setInterval(verificarStatusTwitch, 60000);
 
 const $ = id => document.getElementById(id);
 
-function mudarAba(nome){
+function mudarAba(nome, salvar = true){
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
   document.querySelectorAll('nav ul button').forEach(b => b.classList.remove('on'));
 
@@ -1764,8 +1770,20 @@ function mudarAba(nome){
   if(section) section.classList.add('ativo');
   if(button) button.classList.add('on');
 
+  if(salvar){
+    localStorage.setItem('abaAtiva', nome);
+  }
+
   window.scrollTo({ top:0, behavior:'smooth' });
 }
+
+// Ao carregar a página (ou após F5), restaura a última aba ativa
+window.addEventListener('DOMContentLoaded', () => {
+  const abaSalva = localStorage.getItem('abaAtiva');
+  if(abaSalva && document.getElementById('sec-' + abaSalva)){
+    mudarAba(abaSalva, false);
+  }
+});
 
 const JOGOS = [
   {
@@ -1956,7 +1974,7 @@ const SETUP = [
   ]},
   { t:'🖱️ Periféricos & Outros', i:[
     ['⌨️','Teclado','AULA H88',''],
-    ['🖱️','Mouse','Logitech G502X Superlight RGB',''],
+    ['🖱️️','Mouse','Logitech G502X Superlight RGB',''],
     ['🎧','Headset','Astro A50',''],
     ['🎙️','Microfone','FIFINE AM8 Branco',''],
     ['🖥️','Monitor','AOC 240Hz',''],
