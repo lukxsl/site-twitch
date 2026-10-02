@@ -248,8 +248,6 @@ nav ul button.on{
   z-index: 2;
 }
 
-/* Grid principal alinhada */
-
 .hero-grid{
   display:grid;
   grid-template-columns:1fr 1.25fr;
@@ -1349,7 +1347,7 @@ a.si-btn:hover{background:var(--purple-dark)}
 .vt-total{font-size:.75rem;color:var(--mute);margin-top:10px;text-align:right}
 
 @media(max-width:1100px){
-  .clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.apoio-grid{grid-template-columns:1fr}
+  .clips-grid{grid-template-columns:repeat(2,1fr)}.sgrid,.apoio-grid,.sugestoes-grid{grid-template-columns:1fr}
 }
 @media(max-width:700px){
   .clips-grid,.monitor{grid-template-columns:1fr}.foco{align-items:flex-start}
@@ -1619,27 +1617,33 @@ a.si-btn:hover{background:var(--purple-dark)}
     <p>Quer sugerir um jogo para eu testar em live ou mandar um feedback? Deixe sua ideia anotada aqui!</p>
   </div>
   
-  <!-- Caixa de Votação Dinâmica conectada ao Redis -->
-  <div class="setup-box" id="votoBox" style="max-width:700px;margin:0 auto 20px;">
-    <h3>🗳️ Qual o próximo jogo?</h3>
-    <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
-    <div id="votoLista">Carregando votação...</div>
-  </div>
-
-  <div class="setup-box" style="max-width:700px;margin:0 auto;">
-    <div style="display:grid;gap:15px;">
-      <div>
-        <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Seu Nome / Apelido</label>
-        <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
-      </div>
-      <div>
-        <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Sugestão de Jogo ou Comentário</label>
-        <textarea id="sugTexto" rows="4" placeholder="Ex: Joga Hollow Knight na próxima live!" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
-      </div>
-      <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-      <button class="btn" id="sugBtn" onclick="enviarSugestao()">Enviar Sugestão 🚀</button>
-      <span id="sugStatus" style="font-size:.85rem;color:var(--purple);display:none;"></span>
+  <!-- Grid de duas colunas: Votação à esquerda e Sugestão à direita -->
+  <div class="sugestoes-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+    
+    <div class="setup-box" id="votoBox" style="margin:0;">
+      <h3>🗳️ Qual o próximo jogo?</h3>
+      <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo que você quer ver na live. Um voto por pessoa!</p>
+      <div id="votoLista">Carregando votação...</div>
     </div>
+
+    <div class="setup-box" style="margin:0;">
+      <h3>💡 Envie sua Sugestão</h3>
+      <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Mande uma mensagem direta ou ideia de jogo!</p>
+      <div style="display:grid;gap:15px;">
+        <div>
+          <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Seu Nome / Apelido</label>
+          <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
+        </div>
+        <div>
+          <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Sugestão de Jogo ou Comentário</label>
+          <textarea id="sugTexto" rows="4" placeholder="Ex: Joga Hollow Knight na próxima live!" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
+        </div>
+        <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+        <button class="btn" id="sugBtn" onclick="enviarSugestao()">Enviar Sugestão 🚀</button>
+        <span id="sugStatus" style="font-size:.85rem;color:var(--purple);display:none;"></span>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -1727,7 +1731,7 @@ async function verificarStatusTwitch() {
       badge.style.display = 'flex';
       g('bannerLiveText').textContent = `AO VIVO • ${data.stream.game_name || 'Jogando'} (${data.stream.viewer_count} espectadores)`;
       g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
-      g('playerNoteText').textContent = `Transmitindo: ${data.stream.title}`;
+      g('playerNoteText').textContent = `A transmitir: ${data.stream.title}`;
     } else {
       badge.style.display = 'none';
       g('viewerCountStatus').textContent = '@asemtet0';
@@ -1954,7 +1958,7 @@ const SETUP = [
     ['⌨️','Teclado','AULA H88',''],
     ['🖱️','Mouse','Logitech G502X Superlight RGB',''],
     ['🎧','Headset','Astro A50',''],
-    ['🎙️️','Microfone','FIFINE AM8 Branco',''],
+    ['🎙️','Microfone','FIFINE AM8 Branco',''],
     ['🖥️','Monitor','AOC 240Hz',''],
     ['📷','Webcam','iPhone 11',''],
     ['🪑','Cadeira','XT Racer','']

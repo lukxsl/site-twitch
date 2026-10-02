@@ -4,7 +4,7 @@
 import { createHash } from 'crypto';
 
 // EDITE AQUI: jogos em votação. Para zerar a votação, troque o CICLO.
-const CICLO = '1';
+const CICLO = '2';
 const OPCOES = [
   { id: 'hollow-knight', nome: 'Hollow Knight' },
   { id: 'phasmophobia', nome: 'Phasmophobia' },
