@@ -843,6 +843,20 @@ const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
 const HOST = window.location.hostname || 'localhost';
 let vodAtual = null, assistindoVod = false;
 
+/* ⚠️ IMPORTANTE: variáveis de estado globais devem ficar no topo pra evitar TDZ */
+let USUARIO = null;
+let JOGOS = [];
+let FILMES = [];
+let VOTOS_DADOS = [], meuVoto = null, votoStatus = 'carregando';
+let ultGame = null, ultVivo = false;
+let dragItem = null;
+let clipsOk = false, clipsCache = [], dlgClip = null;
+let ADMIN_PAGE = 'home';
+let ADMIN_TAB = 'votos';
+let ADMIN_DADOS = null;
+let ADMIN_TIER_TAB = 'jogos';
+let ADMIN_TIER = { jogos: [], filmes: [] };
+
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
@@ -1046,8 +1060,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ===== TIER LIST ===== */
-let JOGOS = [];
-let FILMES = [];
 const TIERS = ['S','A','B','C'];
 
 const JOGOS_FALLBACK = [
@@ -1120,7 +1132,8 @@ function desenharStats(){
     const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
     totalLabel = hs.toLocaleString('pt-BR');
   }
-  $('stats').innerHTML = [
+  const el = $('stats'); if(!el) return;
+  el.innerHTML = [
     [L.length, m.plural + ' na lista'],
     [totalLabel, m.hrs],
     [media ? n1(media) : '—', 'média das notas'],
@@ -1129,14 +1142,14 @@ function desenharStats(){
 }
 desenharStats();
 
-let ultGame = null, ultVivo = false;
 function atualizarFoco(game, aoVivo){
   ultGame = game; ultVivo = aoVivo;
   const j = game ? JOGOS.find(x => norm(x.nome) === norm(game.name)) : (JOGOS.find(x => x.status === 'Jogando') || JOGOS[0]);
   const nome = game ? game.name : (j && j.nome);
   if(!nome) return;
   const capa = (j && j.capa) || (game && game.box_art) || '';
-  $('focoNome').textContent = nome;
+  const elNome = $('focoNome'); if(!elNome) return;
+  elNome.textContent = nome;
   $('focoLabel').textContent = aoVivo ? '🔴 Jogando agora' : '🎮 Último jogo jogado';
   const chips = [];
   if(j && j.tier && j.tier !== 'NR') chips.push(`<span class="foco-chip tr">Tier ${esc(j.tier)}</span>`);
@@ -1155,7 +1168,6 @@ function atualizarFoco(game, aoVivo){
   else c.style.display = 'none';
 }
 
-let clipsOk = false, clipsCache = [], dlgClip = null;
 function renderClips(list){
   if(clipsOk || !list || !list.length) return;
   clipsOk = true;
@@ -1289,12 +1301,8 @@ function linha(cls, rotulo, lista){
   `;
 }
 
-/* ===== DRAG & DROP ===== */
-let dragItem = null;
-
 function setupDragDrop(){
   if(!USUARIO || !USUARIO.admin) return;
-
   document.querySelectorAll('.g').forEach(el => {
     el.addEventListener('dragstart', e => {
       const i = Number(el.dataset.i);
@@ -1309,7 +1317,6 @@ function setupDragDrop(){
       dragItem = null;
     });
   });
-
   document.querySelectorAll('.games').forEach(gEl => {
     gEl.addEventListener('dragover', e => {
       if(!dragItem) return;
@@ -1324,28 +1331,23 @@ function setupDragDrop(){
       e.preventDefault();
       gEl.classList.remove('drag-over');
       if(!dragItem) return;
-
       const tierEl = gEl.closest('.tier');
       if(!tierEl) return;
       const m = tierEl.className.match(/t-(\w+)/);
       if(!m) return;
       const novoTier = m[1];
-
       const item = LISTA()[dragItem.idx];
       if(!item || item.tier === novoTier){ dragItem = null; return; }
-
       const tierAntigo = item.tier;
       item.tier = novoTier;
       desenharStats();
       desenhar();
-
       const toast = document.createElement('div');
       toast.textContent = `✅ "${item.nome}" movido de ${tierAntigo} para ${novoTier}`;
       toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(168,85,247,.95);color:#fff;padding:10px 18px;border-radius:99px;font-family:inherit;font-size:.85rem;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:opacity .3s';
       document.body.appendChild(toast);
       setTimeout(() => { toast.style.opacity = '0'; }, 1500);
       setTimeout(() => toast.remove(), 1900);
-
       try {
         await fetch('/api/admin?action=tierlist', {
           method: 'POST',
@@ -1359,13 +1361,14 @@ function setupDragDrop(){
 }
 
 function desenhar(){
+  const el = $('tiers'); if(!el) return;
   const q = $('q').value.trim().toLowerCase();
   const lista = LISTA().filter(j => (filtro === 'Todos' || j.status === filtro) && j.nome.toLowerCase().includes(q))
     .sort((a,b) => (b.nota || 0) - (a.nota || 0) || (b.horas || 0) - (a.horas || 0));
   const tiers = TIERS.map(t => linha(t, t, lista.filter(j => j.tier === t)));
   const nr = lista.filter(j => j.tier === 'NR');
   if(nr.length) tiers.push(linha('NR', '?', nr));
-  $('tiers').innerHTML = tiers.join('');
+  el.innerHTML = tiers.join('');
   setupDragDrop();
 }
 desenhar();
@@ -1498,8 +1501,6 @@ document.addEventListener('click', e => {
 });
 
 /* ===== VOTAÇÃO ===== */
-let VOTOS_DADOS = [], meuVoto = null, votoStatus = 'carregando';
-let USUARIO = null;
 const RANKS = ['🥇','🥈','🥉'];
 
 async function checarLogin(){
@@ -1658,12 +1659,6 @@ async function votar(id){
 }
 
 /* ===== PAINEL ADMIN ===== */
-let ADMIN_PAGE = 'home';
-let ADMIN_TAB = 'votos';
-let ADMIN_DADOS = null;
-let ADMIN_TIER_TAB = 'jogos';
-let ADMIN_TIER = { jogos: [], filmes: [] };
-
 function adminIrPara(pagina){
   ADMIN_PAGE = pagina;
   if(pagina === 'votacao') ADMIN_TAB = 'votos';
@@ -1676,12 +1671,10 @@ function adminIrTierTab(tab){ ADMIN_TIER_TAB = tab; renderAdminTierList(); }
 async function carregarAdmin(){
   const area = $('adminArea'); if(!area) return;
   const sub = $('adminSub');
-
   if(USUARIO === null){
     area.innerHTML = `<p class="admin-vazio">Verificando login…</p>`;
     await checarLogin();
   }
-
   if(!USUARIO || !USUARIO.admin){
     if(sub) sub.textContent = 'Acesso restrito.';
     area.innerHTML = `<div class="admin-vazio">
@@ -1691,7 +1684,6 @@ async function carregarAdmin(){
     </div>`;
     return;
   }
-
   if(sub){
     sub.textContent = ADMIN_PAGE === 'home' ? 'Gerencie tudo do site pelo painel.'
                     : ADMIN_PAGE === 'votacao' ? 'Votos e opções da votação.'
@@ -1699,7 +1691,6 @@ async function carregarAdmin(){
                     : ADMIN_PAGE === 'admins' ? 'Quem pode acessar o painel.'
                     : '';
   }
-
   if(ADMIN_PAGE === 'home') renderAdminHome();
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
   else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
@@ -1741,7 +1732,6 @@ function adminVoltarHTML(titulo){
   `;
 }
 
-/* ---------- VOTAÇÃO ---------- */
 async function carregarAdminVotacao(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<p class="admin-vazio">Carregando dados…</p>`;
@@ -1862,7 +1852,6 @@ function editarOpcao(i){
   const opcoes = (ADMIN_DADOS.config || []).slice();
   while(opcoes.length < 3) opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
   const o = opcoes[i] || { nome:'', tipo:'jogo' };
-
   $('dTitle').textContent = 'Editar opção ' + (i+1);
   $('dBody').innerHTML = `
     <div class="admin-form">
@@ -1964,7 +1953,6 @@ async function restaurarPadraoVotacao(){
   ]);
 }
 
-/* ---------- TIER LIST ADMIN ---------- */
 async function carregarAdminTierList(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<p class="admin-vazio">Carregando…</p>`;
@@ -1983,7 +1971,6 @@ async function carregarAdminTierList(){
 function renderAdminTierList(){
   const area = $('adminArea'); if(!area) return;
   const lista = ADMIN_TIER[ADMIN_TIER_TAB] || [];
-
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `
     <div class="admin-tabs">
       <button class="${ADMIN_TIER_TAB === 'jogos' ? 'on' : ''}" onclick="adminIrTierTab('jogos')">🎮 Jogos (${ADMIN_TIER.jogos.length})</button>
@@ -2196,7 +2183,6 @@ async function salvarTierList(){
   }catch(e){ alert('Erro: ' + e.message); }
 }
 
-/* ---------- ADMINS ---------- */
 async function renderAdminAdmins(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('👥 Admins') + `<p class="admin-vazio">Carregando…</p>`;
@@ -2223,13 +2209,6 @@ async function renderAdminAdmins(){
       ` : `<p class="admin-vazio" style="padding:20px">Nenhum admin cadastrado</p>`}
       <div class="admin-actions">
         <button class="admin-btn ghost" onclick="carregarAdmin()">🔄 Atualizar</button>
-      </div>
-    </div>
-    <div class="admin-card">
-      <h3>➕ Adicionar admin</h3>
-      <div class="admin-vazio">
-        <b>🔨 Em breve</b>
-        Adicionar/remover admins pelo painel (sem mexer nas env vars da Vercel).
       </div>
     </div>
   `;
