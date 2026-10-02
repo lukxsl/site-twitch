@@ -9,7 +9,7 @@
 
 <style>
 :root{
-  --bg:#0b0713;--card-bg:#140e21;--card-bg-2:#181026;--ink:#f3f0ff;
+  --bg:#0b0713;--card-bg:#140e21;--ink:#f3f0ff;
   --purple:#a855f7;--purple-light:#c084fc;--purple-dark:#7c3aed;
   --mute:#a19bba;--white:#fff;--green:#b7ff00;
   --line:rgba(168,85,247,.18);
@@ -32,7 +32,6 @@ nav .wrapper{display:flex;align-items:center;justify-content:space-between;min-h
 .logo-text span{color:var(--purple)}
 .nav-right{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:flex-end}
 nav ul{display:flex;gap:18px;list-style:none;flex-wrap:wrap;justify-content:flex-end;align-items:center}
-nav ul li{display:list-item}
 nav ul button{background:none;border:none;font-family:inherit;font-size:.9rem;font-weight:500;color:var(--mute);cursor:pointer;transition:color .2s;padding:0}
 nav ul button:hover,nav ul button.on{color:var(--purple)}
 nav li.admin-nav{display:none}
@@ -234,7 +233,6 @@ footer{background:#050309;padding:25px 0;text-align:center;color:var(--mute);bor
 .tm-vod em{font-style:normal;color:var(--purple-light);font-size:.8rem}
 .tm-h4{font-size:.6rem;letter-spacing:.6px;color:var(--mute);margin-top:2px}
 
-/* Votação */
 .vt{display:grid;grid-template-columns:auto 1fr auto;gap:10px 14px;align-items:center;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;position:relative;overflow:hidden;margin-bottom:10px;transition:border-color .2s,background .2s}
 .vt:hover{border-color:rgba(168,85,247,.5);background:rgba(168,85,247,.04)}
 .vt-img{width:76px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--line);grid-row:1/3;background:#1d1433}
@@ -319,7 +317,7 @@ dialog{width:min(520px,92vw)}
 .aviso::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#c084fc,#7c3aed)}
 .aviso-ic{font-size:1.4rem;flex:none;margin-left:6px}
 .aviso-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-.aviso-tx b{font-family:'Bricolage Grotesque',sans-serif;color:var(--white);font-size:.9rem;letter-spacing:.2px}
+.aviso-tx b{font-family:'Bricolage Grotesque',sans-serif;color:var(--white);font-size:.9rem}
 .aviso-tx span{color:#ddd5eb;font-size:.85rem;line-height:1.4}
 .aviso.warn{background:linear-gradient(135deg,rgba(255,166,0,.15),rgba(255,166,0,.02));border-color:rgba(255,166,0,.5)}
 .aviso.warn::before{background:linear-gradient(180deg,#ffb547,#ff8c00)}
@@ -358,9 +356,6 @@ dialog{width:min(520px,92vw)}
 
 .setup-interativo{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line);margin-bottom:16px}
 .setup-interativo img{display:block;width:100%;height:auto}
-.hotspot{position:absolute;width:26px;height:26px;border-radius:50%;background:rgba(168,85,247,.9);border:2px solid #fff;box-shadow:0 0 0 0 rgba(168,85,247,.7);cursor:pointer;transform:translate(-50%,-50%);animation:hotspotPulse 2.2s infinite;transition:transform .2s}
-.hotspot:hover{transform:translate(-50%,-50%) scale(1.2);background:var(--purple-dark)}
-@keyframes hotspotPulse{0%{box-shadow:0 0 0 0 rgba(168,85,247,.6)}70%{box-shadow:0 0 0 14px rgba(168,85,247,0)}100%{box-shadow:0 0 0 0 rgba(168,85,247,0)}}
 
 .tm-three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tm-feed{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -384,12 +379,7 @@ dialog{width:min(520px,92vw)}
 
 /* ===== PAINEL ADMIN ===== */
 .admin-menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.admin-menu-card{
-  background:var(--card-bg);border:1px solid var(--line);border-radius:16px;
-  padding:22px;text-align:left;cursor:pointer;transition:.2s;
-  display:flex;flex-direction:column;gap:10px;
-  font-family:inherit;color:inherit;
-}
+.admin-menu-card{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:22px;text-align:left;cursor:pointer;transition:.2s;display:flex;flex-direction:column;gap:10px;font-family:inherit;color:inherit}
 .admin-menu-card:hover{border-color:var(--purple);transform:translateY(-3px);box-shadow:0 10px 30px rgba(168,85,247,.15)}
 .admin-menu-card .ic{font-size:2rem;line-height:1}
 .admin-menu-card h3{color:var(--white);font-size:1.05rem;margin:0}
@@ -397,11 +387,7 @@ dialog{width:min(520px,92vw)}
 .admin-menu-card .cta{color:var(--purple-light);font-weight:700;font-size:.82rem;margin-top:auto;padding-top:6px}
 
 .admin-top{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap}
-.admin-voltar{
-  background:transparent;border:1px solid var(--line);color:var(--mute);
-  padding:8px 14px;border-radius:8px;font-family:inherit;font-weight:700;
-  font-size:.8rem;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px;
-}
+.admin-voltar{background:transparent;border:1px solid var(--line);color:var(--mute);padding:8px 14px;border-radius:8px;font-family:inherit;font-weight:700;font-size:.8rem;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
 .admin-voltar:hover{border-color:var(--purple);color:var(--purple-light)}
 .admin-top h2{font-size:1.4rem;color:var(--white);margin:0;font-family:'Bricolage Grotesque',sans-serif}
 
@@ -413,38 +399,28 @@ dialog{width:min(520px,92vw)}
 .admin-card h3{color:var(--white);margin-bottom:14px;font-size:1.05rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .admin-card h3 .cont{color:var(--purple-light);font-size:.8rem;margin-left:auto;font-family:'DM Sans',sans-serif;font-weight:700}
 
-/* Votos: lista bonita */
 .admin-votos{display:grid;gap:8px}
-.admin-voto{
-  display:flex;align-items:center;gap:12px;padding:11px 14px;
-  background:rgba(255,255,255,.03);border:1px solid var(--line);
-  border-radius:12px;transition:.2s;
-}
+.admin-voto{display:flex;align-items:center;gap:12px;padding:11px 14px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;transition:.2s}
 .admin-voto:hover{border-color:rgba(168,85,247,.4);background:rgba(168,85,247,.04)}
-.admin-voto-avatar{
-  width:40px;height:40px;border-radius:50%;flex:none;
-  background:#1a102d;border:1.5px solid rgba(88,101,242,.5);object-fit:cover;
-}
-.admin-voto-ph{
-  width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;
-  background:#1a102d;border:1.5px solid rgba(88,101,242,.3);color:var(--mute);font-size:1rem;
-}
+.admin-voto-avatar{width:40px;height:40px;border-radius:50%;flex:none;background:#1a102d;border:1.5px solid rgba(88,101,242,.5);object-fit:cover}
+.admin-voto-ph{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;background:#1a102d;border:1.5px solid rgba(88,101,242,.3);color:var(--mute);font-size:1rem}
 .admin-voto-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .admin-voto-info b{color:var(--white);font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.admin-voto-info small{color:var(--mute);font-size:.66rem;font-family:'Bricolage Grotesque',monospace,sans-serif;letter-spacing:.2px}
+.admin-voto-info small{color:var(--mute);font-size:.66rem;font-family:monospace;letter-spacing:.2px}
 .admin-voto-opcao{flex:none;text-align:right;display:flex;flex-direction:column;gap:2px;align-items:flex-end}
 .admin-voto-opcao b{color:var(--purple-light);font-size:.84rem}
 .admin-voto-opcao small{color:var(--mute);font-size:.66rem}
 
-/* Opções no admin */
-.admin-opcao{display:flex;gap:12px;align-items:center;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
-.admin-opcao img,.admin-opcao .ph3{width:44px;height:58px;border-radius:6px;object-fit:cover;flex:none;background:#1d1433;border:1px solid var(--line)}
-.admin-opcao .ph3{display:grid;place-items:center;font-size:1.2rem}
-.admin-opcao-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.admin-opcao-info b{color:var(--white);font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.admin-opcao-info small{color:var(--mute);font-size:.68rem}
-.admin-opcao .btn-mini{background:transparent;border:1px solid var(--line);color:var(--mute);padding:5px 10px;border-radius:6px;font-family:inherit;font-size:.7rem;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
-.admin-opcao .btn-mini:hover{border-color:var(--purple);color:var(--purple-light)}
+/* Itens da tier list no admin */
+.admin-item{display:flex;gap:12px;align-items:center;padding:10px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+.admin-item img,.admin-item .ph3{width:44px;height:58px;border-radius:6px;object-fit:cover;flex:none;background:#1d1433;border:1px solid var(--line)}
+.admin-item .ph3{display:grid;place-items:center;font-size:1.2rem}
+.admin-item-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.admin-item-info b{color:var(--white);font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-item-info small{color:var(--mute);font-size:.68rem}
+.admin-item .btn-mini{background:transparent;border:1px solid var(--line);color:var(--mute);padding:5px 10px;border-radius:6px;font-family:inherit;font-size:.7rem;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap}
+.admin-item .btn-mini:hover{border-color:var(--purple);color:var(--purple-light)}
+.admin-item .btn-mini.danger:hover{border-color:#ff4d5f;color:#ff4d5f}
 
 .admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .admin-btn{background:var(--purple);color:#fff;border:0;padding:9px 16px;border-radius:8px;font-family:inherit;font-weight:700;font-size:.8rem;cursor:pointer;transition:.2s}
@@ -453,24 +429,38 @@ dialog{width:min(520px,92vw)}
 .admin-btn.ghost:hover{border-color:var(--purple);color:var(--purple-light);transform:none}
 .admin-btn.perigo{background:#ff4d5f;color:#fff}
 .admin-btn.perigo:hover{background:#e63946}
+.admin-btn:disabled{opacity:.5;cursor:wait;transform:none}
 
-.admin-form{display:grid;gap:10px}
+.admin-form{display:grid;gap:12px}
 .admin-form label{display:block;font-size:.72rem;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-.admin-form input,.admin-form select{width:100%;background:#1a102d;border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--ink);font-family:inherit;font-size:.85rem}
-.admin-form input:focus,.admin-form select:focus{border-color:var(--purple);outline:none}
+.admin-form input,.admin-form select,.admin-form textarea{width:100%;background:#1a102d;border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--ink);font-family:inherit;font-size:.85rem}
+.admin-form input:focus,.admin-form select:focus,.admin-form textarea:focus{border-color:var(--purple);outline:none}
+.admin-form textarea{resize:vertical;min-height:70px}
+.admin-form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.admin-form .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+.busca-row{display:flex;gap:8px;align-items:stretch}
+.busca-row input{flex:1}
+.busca-row button{background:var(--purple);color:#fff;border:0;padding:0 16px;border-radius:8px;font-family:inherit;font-weight:700;font-size:.78rem;cursor:pointer;transition:.2s;white-space:nowrap}
+.busca-row button:hover{background:var(--purple-dark)}
+.busca-row button:disabled{opacity:.5;cursor:wait}
 
 .admin-vazio{color:var(--mute);font-size:.85rem;text-align:center;padding:30px 14px;background:rgba(255,255,255,.02);border:1px dashed var(--line);border-radius:12px}
 .admin-vazio b{display:block;color:var(--white);font-size:1rem;margin-bottom:4px;font-family:'Bricolage Grotesque',sans-serif}
 .admin-vazio a{color:var(--purple-light);font-weight:700;text-decoration:underline}
 
+.mini-capa{width:60px;height:80px;border-radius:6px;object-fit:cover;background:#1d1433;border:1px solid var(--line);display:block}
+
+.aviso-box{padding:10px 12px;background:rgba(255,166,0,.1);border:1px solid rgba(255,166,0,.4);border-radius:10px;color:#ffd08a;font-size:.82rem;margin-bottom:14px}
+
 body.sou-admin nav li.admin-nav{display:list-item}
 
-@media(max-width:700px){
+@media(max-width:900px){
   .admin-menu{grid-template-columns:1fr}
   .admin-voto{flex-wrap:wrap}
   .admin-voto-opcao{width:100%;text-align:left;align-items:flex-start;margin-left:52px}
+  .admin-form .row,.admin-form .row-3{grid-template-columns:1fr}
 }
-
 @media(max-width:900px){
   nav .wrapper{flex-wrap:wrap}
   .nav-right{width:100%;justify-content:center}
@@ -844,6 +834,12 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
 
+function fmtDuracao(min){
+  if(!min) return null;
+  const h = Math.floor(min/60), m = min % 60;
+  return h ? `${h}h ${String(m).padStart(2,'0')}min` : `${m}min`;
+}
+
 function atualizarMeta(pre, atual, marcos = MARCOS){
   const elDesc = $(pre+'Desc'), elNum = $(pre+'Num'), elBar = $(pre+'Bar');
   if(!elDesc || !elNum || !elBar) return;
@@ -977,17 +973,11 @@ async function verificarStatusTwitch() {
     atualizarFoco(data.game, !!data.stream);
     renderClips(data.clips);
     g('btnVod').style.display = vodAtual ? '' : 'none';
-
     setLivePulse(live);
 
     if (data.user) {
-      if (data.user.profile_image_url) {
-        const avatarOffline = g('offlineAvatarImg');
-        if (avatarOffline) avatarOffline.src = data.user.profile_image_url;
-      }
-      if (data.user.offline_image_url) {
-        panel.style.backgroundImage = `linear-gradient(rgba(11,7,19,.7),rgba(11,7,19,.9)),url(${data.user.offline_image_url})`;
-      }
+      if (data.user.profile_image_url) { const av = g('offlineAvatarImg'); if(av) av.src = data.user.profile_image_url; }
+      if (data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(rgba(11,7,19,.7),rgba(11,7,19,.9)),url(${data.user.offline_image_url})`;
     }
 
     if (data.stream) {
@@ -1003,8 +993,7 @@ async function verificarStatusTwitch() {
       badge.style.display = 'none';
       g('viewerCountStatus').textContent = '@asemtet0';
       if (!assistindoVod) {
-        iframe.style.display = 'none';
-        iframe.src = '';
+        iframe.style.display = 'none'; iframe.src = '';
         panel.style.display = 'flex';
         g('playerNoteText').textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
       }
@@ -1032,7 +1021,6 @@ function mudarAba(nome, salvar = true){
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
   window.scrollTo({ top:0, behavior:'smooth' });
-
   if(nome === 'admin') adminIrPara('home');
 }
 
@@ -1043,56 +1031,22 @@ window.addEventListener('DOMContentLoaded', () => {
   renderAviso(); renderEmotes(); renderTopDoadores(); renderSiteUpdate();
 });
 
-const AVALIACOES = { 1174180: { tier:'S', nota:8, status:'Jogando', comentario:'Um dos mundos mais vivos e detalhados dos games.' } };
-const JOGOS_EXTRAS = [];
-let JOGOS = [
-  { nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando', progresso:56, horas:50, nota:8,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg', comentario:'Um dos mundos mais vivos e detalhados dos games.' },
-  ...JOGOS_EXTRAS
-];
+/* ===== TIER LIST (vem do Redis via /api/tierlist) ===== */
+let JOGOS = [];
+let FILMES = [];
+
+const AVALIACOES = {};   // legado, não usado mais
+const TIERS = ['S','A','B','C'];
 
 async function carregarBiblioteca(){
   try{
-    const r = await fetch('/api/jogos'); const d = await r.json();
-    if(d.aviso) console.warn('Jogos:', d.aviso);
-    if(!d.jogos || !d.jogos.length) return;
-    const steam = d.jogos.map(g => {
-      const a = AVALIACOES[g.appid] || AVALIACOES[g.nome] || {};
-      return { nome:g.nome, appid:g.appid, horas:g.horas, capa:g.capa,
-        nota: a.nota || g.nota || 0,
-        comentario: a.comentario || g.sinopse || '',
-        progresso: a.progresso != null ? a.progresso : null,
-        tier:a.tier || 'NR',
-        status:a.status || (g.recente ? 'Jogando' : 'Jogado') };
-    });
-    const ja = new Set(steam.map(j => norm(j.nome)));
-    JOGOS = [...steam, ...JOGOS_EXTRAS.filter(j => !ja.has(norm(j.nome)))];
+    const r = await fetch('/api/tierlist');
+    const d = await r.json();
+    JOGOS = Array.isArray(d.jogos) ? d.jogos : [];
+    FILMES = Array.isArray(d.filmes) ? d.filmes : [];
+    if (d.aviso) console.warn('Tierlist:', d.aviso);
     desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
-  }catch(e){ console.warn('Biblioteca indisponível', e); }
-}
-
-const TIERS = ['S','A','B','C'];
-const FILMES = [
-  { nome:"Interestelar", tier:"S", status:"Assistido", nota:9, comentario:"" },
-  { nome:"Duna", tier:"A", status:"Na fila", nota:0, comentario:"" }
-];
-async function carregarFilmes(){
-  await Promise.all(FILMES.map(async f => {
-    const key = 'tmdb:' + norm(f.nome) + (f.ano || '');
-    try{
-      let d = null;
-      try{ d = JSON.parse(sessionStorage.getItem(key)); }catch(e){}
-      if(!d){
-        const qs = f.tmdbId ? `id=${f.tmdbId}` : `q=${encodeURIComponent(f.nome)}${f.ano ? '&ano=' + f.ano : ''}`;
-        const r = await fetch('/api/tmdb?' + qs);
-        if(!r.ok) return;
-        d = await r.json();
-        try{ sessionStorage.setItem(key, JSON.stringify(d)); }catch(e){}
-      }
-      f.capa = d.poster || ''; f.horas = d.horas || 0; f.sinopse = d.sinopse || ''; f.ano = f.ano || d.ano; f.tmdbId = d.id;
-    }catch(e){ console.warn('TMDB falhou para', f.nome, e); }
-  }));
-  if(modo === 'filmes'){ desenharStats(); desenhar(); }
+  }catch(e){ console.warn('Tierlist indisponível', e); }
 }
 
 const MODOS = {
@@ -1107,7 +1061,7 @@ const MODOS = {
   filmes: {
     get lista(){ return FILMES; },
     status:['Todos','Assistindo','Assistido','Na fila'],
-    feito:'Assistido', plural:'filmes', hrs:'horas assistidas', hl:'horas assistidas',
+    feito:'Assistido', plural:'filmes', hrs:'duração total', hl:'duração',
     l4:'filmes assistidos', titulo:'Tier List de Filmes',
     sub:'Tudo o que eu já assisti ou pretendo assistir, do melhor ao pior. Clique em um filme para ver os detalhes.',
     busca:'Buscar filme...', vazio:'Nenhum filme aqui'
@@ -1120,10 +1074,17 @@ const fh = h => (Math.round(h * 10) / 10).toLocaleString('pt-BR') + 'h';
 function desenharStats(){
   const m = MODOS[modo], L = m.lista, cn = L.filter(j => j.nota > 0);
   const media = cn.length ? cn.reduce((a,j) => a + j.nota, 0) / cn.length : 0;
-  const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
+  let totalLabel;
+  if (modo === 'filmes') {
+    const totalMin = L.reduce((a,j) => a + (j.duracao || 0), 0);
+    totalLabel = fmtDuracao(totalMin) || '—';
+  } else {
+    const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
+    totalLabel = hs.toLocaleString('pt-BR');
+  }
   $('stats').innerHTML = [
     [L.length, m.plural + ' na lista'],
-    [hs.toLocaleString('pt-BR'), m.hrs],
+    [totalLabel, m.hrs],
     [media ? n1(media) : '—', 'média das notas'],
     [L.filter(j => j.status === m.feito).length, m.l4]
   ].map(x => `<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
@@ -1155,7 +1116,6 @@ function atualizarFoco(game, aoVivo){
   if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
   else c.style.display = 'none';
 }
-atualizarFoco(null, false);
 
 let clipsOk = false, clipsCache = [], dlgClip = null;
 function renderClips(list){
@@ -1273,6 +1233,7 @@ function cartao(j,i){
       <div class="cap">
         <span class="cn" style="font-size:.68rem;font-weight:600;line-height:1.2">${esc(j.nome)}</span>
         ${j.horas > 0 ? `<span class="ch">${fh(j.horas)}</span>` : ''}
+        ${j.duracao > 0 ? `<span class="ch">${fmtDuracao(j.duracao)}</span>` : ''}
       </div>
     </button>
   `;
@@ -1307,9 +1268,13 @@ $('tiers').addEventListener('click', e => {
   const m = MODOS[modo];
   const j = LISTA()[+b.dataset.i];
   $('dTitle').textContent = j.nome;
-  const terceiro = modo === 'jogos'
-    ? (j.progresso != null ? `<div><b>${j.progresso}%</b><span>progresso</span></div>` : '')
-    : (j.ano ? `<div><b>${j.ano}</b><span>ano</span></div>` : '');
+  let terceiro = '';
+  if (modo === 'jogos') {
+    if (j.progresso != null) terceiro = `<div><b>${j.progresso}%</b><span>progresso</span></div>`;
+  } else {
+    if (j.duracao) terceiro = `<div><b>${fmtDuracao(j.duracao)}</b><span>duração</span></div>`;
+    else if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
+  }
   $('dBody').innerHTML = `
     <div class="mrow">
       ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
@@ -1319,7 +1284,7 @@ $('tiers').addEventListener('click', e => {
           <span class="bd">${esc(j.status)}</span>
         </div>
         <div class="kv">
-          <div><b>${j.horas ? fh(j.horas) : '—'}</b><span>${m.hl}</span></div>
+          <div><b>${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '—')}</b><span>${m.hl}</span></div>
           <div><b>${j.nota > 0 ? n1(j.nota) : '—'}</b><span>nota</span></div>
           ${terceiro}
         </div>
@@ -1421,23 +1386,7 @@ document.addEventListener('click', e => {
   if(b) abrirBuscaItem(b.dataset.produto);
 });
 
-const HOTSPOTS = [];
-function renderHotspots(){
-  const wrap = $('setupInterativo'); if(!wrap) return;
-  wrap.querySelectorAll('.hotspot').forEach(h => h.remove());
-  HOTSPOTS.forEach(h => {
-    const b = document.createElement('button');
-    b.className = 'hotspot';
-    b.style.left = h.left; b.style.top = h.top;
-    b.dataset.item = h.item; b.title = h.item;
-    b.setAttribute('aria-label', 'Ver ' + h.item);
-    b.addEventListener('click', () => abrirBuscaItem(h.item));
-    wrap.appendChild(b);
-  });
-}
-renderHotspots();
-
-/* ===== VOTAÇÃO (com login Discord) ===== */
+/* ===== VOTAÇÃO ===== */
 let VOTOS_DADOS = [], meuVoto = null, votoStatus = 'carregando';
 let USUARIO = null;
 const RANKS = ['🥇','🥈','🥉'];
@@ -1489,13 +1438,7 @@ function aplicarVotos(d){
 }
 async function carregarVotosApi(){
   await checarLogin();
-
-  if(!USUARIO){
-    votoStatus = 'sem-login';
-    renderVotacao();
-    return;
-  }
-
+  if(!USUARIO){ votoStatus = 'sem-login'; renderVotacao(); return; }
   try{
     const r = await fetch('/api/votos');
     if(!r.ok) throw 0;
@@ -1509,7 +1452,6 @@ function renderVotacao(){
   const destBox = $('destaqueBox'), listaBox = $('votoLista');
   if(!destBox || !listaBox) return;
   const proxCover = $('proxCover');
-
   if(!USUARIO){
     destBox.innerHTML = '';
     listaBox.innerHTML = `
@@ -1525,13 +1467,11 @@ function renderVotacao(){
     if(proxCover) proxCover.style.display = 'none';
     return;
   }
-
   if(!VOTOS_DADOS.length){
     destBox.innerHTML = '';
     listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível no momento' : 'Carregando votação…'}</b>${votoStatus === 'erro' ? 'Tente de novo em instantes.' : ''}</div>`;
     return;
   }
-
   const total = VOTOS_DADOS.reduce((a, x) => a + (x.votos || 0), 0);
   const ord = [...VOTOS_DADOS].sort((a, b) => (b.votos || 0) - (a.votos || 0));
   const pct = v => total ? Math.round((v || 0) / total * 100) : 0;
@@ -1540,7 +1480,6 @@ function renderVotacao(){
     if(meu) return `<button class="btn ghost" disabled>Votado ✓</button>`;
     return `<button class="btn" onclick="votar('${it.id}')">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
   };
-
   if(total > 0){
     const l = ord[0], p = pct(l.votos);
     destBox.innerHTML = `
@@ -1565,7 +1504,6 @@ function renderVotacao(){
     $('proxNome').textContent = 'Votação aberta';
     $('proxInfo').textContent = 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
-
   const resto = total > 0 ? ord.slice(1) : ord;
   listaBox.innerHTML = resto.map((it, i) => {
     const p = pct(it.votos);
@@ -1574,13 +1512,11 @@ function renderVotacao(){
     const meu = meuVoto === it.id;
     const votos = it.votos || 0;
     const diff = (ord[0] ? ord[0].votos : 0) - votos;
-
     let statusTxt, statusCls;
     if (votos === 0) { statusTxt = 'Aguardando o primeiro voto'; statusCls = 'zero'; }
     else if (diff === 0) { statusTxt = 'Empatado com o 1º lugar 🔥'; statusCls = 'close'; }
     else if (diff === 1) { statusTxt = 'Apenas 1 voto atrás do líder'; statusCls = 'close'; }
     else { statusTxt = `${diff} votos atrás do líder`; statusCls = ''; }
-
     return `
       <div class="vt ${meu ? 'meu' : ''}">
         <span class="vt-rank" title="${posicao}º lugar">${medalha}</span>
@@ -1610,26 +1546,25 @@ async function votar(id){
 }
 
 /* ===== PAINEL ADMIN ===== */
-let ADMIN_PAGE = 'home';   // home | votacao | tierlist | admins
-let ADMIN_TAB = 'votos';   // votos | opcoes
+let ADMIN_PAGE = 'home';
+let ADMIN_TAB = 'votos';
 let ADMIN_DADOS = null;
+let ADMIN_TIER_TAB = 'jogos';
+let ADMIN_TIER = { jogos: [], filmes: [] };
 
 function adminIrPara(pagina){
   ADMIN_PAGE = pagina;
   if(pagina === 'votacao') ADMIN_TAB = 'votos';
+  if(pagina === 'tierlist') ADMIN_TIER_TAB = 'jogos';
   carregarAdmin();
 }
-
-function adminIrAba(aba){
-  ADMIN_TAB = aba;
-  renderAdminVotacao();
-}
+function adminIrAba(aba){ ADMIN_TAB = aba; renderAdminVotacao(); }
+function adminIrTierTab(tab){ ADMIN_TIER_TAB = tab; renderAdminTierList(); }
 
 async function carregarAdmin(){
   const area = $('adminArea'); if(!area) return;
   const sub = $('adminSub');
 
-  // Se ainda não sabemos se está logado, checa AGORA (antes de mostrar "restrito")
   if(USUARIO === null){
     area.innerHTML = `<p class="admin-vazio">Verificando login…</p>`;
     await checarLogin();
@@ -1655,11 +1590,10 @@ async function carregarAdmin(){
 
   if(ADMIN_PAGE === 'home') renderAdminHome();
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
-  else if(ADMIN_PAGE === 'tierlist') renderAdminTierList();
+  else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
   else if(ADMIN_PAGE === 'admins') renderAdminAdmins();
 }
 
-// ---------- HOME ----------
 function renderAdminHome(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = `
@@ -1673,7 +1607,7 @@ function renderAdminHome(){
       <button class="admin-menu-card" onclick="adminIrPara('tierlist')">
         <span class="ic">🎮</span>
         <h3>Tier List</h3>
-        <p>Adicionar, editar e remover jogos e filmes da tier list.</p>
+        <p>Adicionar, editar e remover jogos e filmes.</p>
         <span class="cta">Abrir →</span>
       </button>
       <button class="admin-menu-card" onclick="adminIrPara('admins')">
@@ -1686,7 +1620,6 @@ function renderAdminHome(){
   `;
 }
 
-// ---------- VOLTAR ----------
 function adminVoltarHTML(titulo){
   return `
     <div class="admin-top">
@@ -1696,7 +1629,7 @@ function adminVoltarHTML(titulo){
   `;
 }
 
-// ---------- VOTAÇÃO ----------
+/* ---------- VOTAÇÃO ---------- */
 async function carregarAdminVotacao(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<p class="admin-vazio">Carregando dados…</p>`;
@@ -1733,7 +1666,6 @@ function renderAdminVotacao(){
 
 function renderAdminVotos(usuarios, mapaOpcao){
   const el = $('adminConteudo'); if(!el) return;
-
   if(!usuarios.length){
     el.innerHTML = `<div class="admin-card">
       <h3>🗳️ Votos</h3>
@@ -1744,7 +1676,6 @@ function renderAdminVotos(usuarios, mapaOpcao){
     </div>`;
     return;
   }
-
   el.innerHTML = `
     <div class="admin-card">
       <h3>🗳️ Votos <span class="cont">Total: ${usuarios.length}</span></h3>
@@ -1780,50 +1711,380 @@ function renderAdminVotos(usuarios, mapaOpcao){
 
 function renderAdminOpcoes(opcoes, contagem){
   const el = $('adminConteudo'); if(!el) return;
-  const lista = opcoes.length ? opcoes : [
-    { id:'hollow-knight', nome:'Hollow Knight', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
-    { id:'phasmophobia', nome:'Phasmophobia', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/739630/library_600x900.jpg' },
-    { id:'stardew-valley', nome:'Stardew Valley', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
-  ];
-
+  const lista = opcoes.length ? opcoes : [];
   el.innerHTML = `
     <div class="admin-card">
       <h3>🎯 Opções da votação</h3>
       <div id="adminOpcoes">
         ${lista.map((o,i) => `
-          <div class="admin-opcao">
+          <div class="admin-item">
             ${o.capa ? `<img src="${esc(o.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
-            <div class="admin-opcao-info">
+            <div class="admin-item-info">
               <b>${esc(o.nome)}</b>
               <small>${o.tipo === 'filme' ? '🎬 Filme' : '🎮 Jogo'} · ${contagem[o.id] || 0} voto${(contagem[o.id]||0) === 1 ? '' : 's'}</small>
             </div>
             <button class="btn-mini" onclick="editarOpcao(${i})">Editar</button>
           </div>
-        `).join('')}
+        `).join('') || '<p class="admin-vazio" style="padding:20px">Nenhuma opção</p>'}
       </div>
       <div class="admin-actions">
         <button class="admin-btn" onclick="adicionarOpcao()">+ Adicionar opção</button>
-        <button class="admin-btn ghost" onclick="restaurarPadrao()">Restaurar padrão</button>
+        <button class="admin-btn ghost" onclick="restaurarPadraoVotacao()">Restaurar padrão</button>
       </div>
     </div>
   `;
 }
 
-// ---------- TIER LIST (placeholder) ----------
+async function resetarVotacao(){
+  if(!confirm('Tem certeza? TODOS os votos serão apagados e a votação começa do zero.')) return;
+  try{
+    const r = await fetch('/api/admin?action=reset', { method:'POST' });
+    if(!r.ok) throw new Error('Falha ao resetar');
+    alert('Votação resetada! ✅');
+    await carregarAdminVotacao();
+    await carregarVotosApi();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+function editarOpcao(i){
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  while(opcoes.length < 3) opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
+  const o = opcoes[i] || { nome:'', tipo:'jogo' };
+
+  $('dTitle').textContent = 'Editar opção ' + (i+1);
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div>
+        <label>Nome do jogo/filme</label>
+        <input id="editNome" type="text" value="${esc(o.nome || '')}" placeholder="Ex: Elden Ring">
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="editTipo">
+          <option value="jogo" ${o.tipo === 'jogo' ? 'selected' : ''}>🎮 Jogo</option>
+          <option value="filme" ${o.tipo === 'filme' ? 'selected' : ''}>🎬 Filme</option>
+        </select>
+      </div>
+      <div>
+        <label>URL da capa (opcional)</label>
+        <input id="editCapa" type="text" value="${esc(o.capa || '')}" placeholder="https://...">
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn ghost" onclick="removerOpcao(${i})">Remover</button>
+        <button class="admin-btn" onclick="salvarOpcao(${i})">Salvar</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+function adicionarOpcao(){
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
+  const i = opcoes.length - 1;
+  $('dTitle').textContent = 'Nova opção';
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div>
+        <label>Nome do jogo/filme</label>
+        <input id="editNome" type="text" placeholder="Ex: Elden Ring">
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="editTipo">
+          <option value="jogo" selected>🎮 Jogo</option>
+          <option value="filme">🎬 Filme</option>
+        </select>
+      </div>
+      <div>
+        <label>URL da capa (opcional)</label>
+        <input id="editCapa" type="text" placeholder="https://...">
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn" onclick="salvarOpcao(${i}, true)">Adicionar</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+async function salvarOpcao(i, ehNovo){
+  const nome = $('editNome').value.trim();
+  const tipo = $('editTipo').value;
+  const capa = $('editCapa').value.trim();
+  if(!nome){ alert('Digite um nome!'); return; }
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  while(opcoes.length <= i) opcoes.push({});
+  const id = opcoes[i].id ||
+    nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
+  opcoes[i] = { id, nome, tipo, capa: capa || null };
+  await salvarOpcoesVotacao(opcoes);
+}
+
+async function removerOpcao(i){
+  if(!confirm('Remover essa opção?')) return;
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  opcoes.splice(i, 1);
+  await salvarOpcoesVotacao(opcoes);
+}
+
+async function salvarOpcoesVotacao(opcoes){
+  try{
+    const r = await fetch('/api/admin?action=opcoes', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ opcoes })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha ao salvar');
+    dlg.close();
+    await carregarAdminVotacao();
+    await carregarVotosApi();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+async function restaurarPadraoVotacao(){
+  if(!confirm('Restaurar as opções padrão?')) return;
+  await salvarOpcoesVotacao([
+    { id:'hollow-knight', nome:'Hollow Knight', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
+    { id:'phasmophobia', nome:'Phasmophobia', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/739630/library_600x900.jpg' },
+    { id:'stardew-valley', nome:'Stardew Valley', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
+  ]);
+}
+
+/* ---------- TIER LIST ADMIN ---------- */
+async function carregarAdminTierList(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<p class="admin-vazio">Carregando…</p>`;
+  try{
+    const r = await fetch('/api/admin?action=tierlist');
+    if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
+    const d = await r.json();
+    ADMIN_TIER = { jogos: d.jogos || [], filmes: d.filmes || [] };
+  }catch(e){
+    area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+    return;
+  }
+  renderAdminTierList();
+}
+
 function renderAdminTierList(){
   const area = $('adminArea'); if(!area) return;
+  const lista = ADMIN_TIER[ADMIN_TIER_TAB] || [];
+
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `
+    <div class="admin-tabs">
+      <button class="${ADMIN_TIER_TAB === 'jogos' ? 'on' : ''}" onclick="adminIrTierTab('jogos')">🎮 Jogos (${ADMIN_TIER.jogos.length})</button>
+      <button class="${ADMIN_TIER_TAB === 'filmes' ? 'on' : ''}" onclick="adminIrTierTab('filmes')">🎬 Filmes (${ADMIN_TIER.filmes.length})</button>
+    </div>
     <div class="admin-card">
-      <h3>🎮 Editar Tier List</h3>
-      <div class="admin-vazio">
-        <b>🔨 Em breve</b>
-        Aqui você vai poder adicionar, editar e remover jogos e filmes direto pelo painel — sem mexer no código.
+      <h3>${ADMIN_TIER_TAB === 'jogos' ? '🎮 Jogos' : '🎬 Filmes'} <span class="cont">${lista.length} itens</span></h3>
+      <div>
+        ${lista.length ? lista.map((it, i) => `
+          <div class="admin-item">
+            ${it.capa ? `<img src="${esc(it.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
+            <div class="admin-item-info">
+              <b>${esc(it.nome)}</b>
+              <small>Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
+            </div>
+            <button class="btn-mini" onclick="editarItemTier(${i})">Editar</button>
+            <button class="btn-mini danger" onclick="removerItemTier(${i})">Remover</button>
+          </div>
+        `).join('') : '<p class="admin-vazio" style="padding:20px">Nenhum item ainda</p>'}
+      </div>
+      <div class="admin-actions">
+        <button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : 'filme'}</button>
+        <button class="admin-btn ghost" onclick="carregarAdminTierList()">🔄 Recarregar</button>
       </div>
     </div>
   `;
 }
 
-// ---------- ADMINS (placeholder) ----------
+function abrirModalItemTier(i){
+  const tipo = ADMIN_TIER_TAB;
+  const lista = ADMIN_TIER[tipo];
+  const ehNovo = (i === -1);
+  const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null } : lista[i];
+  const statusOpcoes = tipo === 'jogos'
+    ? ['Jogando','Jogado','Concluído','Na fila','Pretendo jogar','Dropado']
+    : ['Assistindo','Assistido','Na fila'];
+
+  $('dTitle').textContent = (ehNovo ? 'Adicionar ' : 'Editar ') + (tipo === 'jogos' ? 'jogo' : 'filme');
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div>
+        <label>Nome</label>
+        <div class="busca-row">
+          <input id="itemNome" type="text" value="${esc(it.nome || '')}" placeholder="Nome do ${tipo === 'jogos' ? 'jogo' : 'filme'}">
+          <button type="button" onclick="buscarItemAuto()">🔍 Buscar</button>
+        </div>
+        <div id="buscaStatus" style="font-size:.72rem;color:var(--mute);margin-top:6px"></div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Tier</label>
+          <select id="itemTier">
+            ${['S','A','B','C','NR'].map(t => `<option value="${t}" ${it.tier === t ? 'selected' : ''}>${t === 'NR' ? 'Sem tier' : t}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="itemStatus">
+            ${statusOpcoes.map(s => `<option value="${s}" ${it.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="row-3">
+        <div>
+          <label>Nota (0-10)</label>
+          <input id="itemNota" type="number" min="0" max="10" step="0.1" value="${it.nota || 0}">
+        </div>
+        ${tipo === 'jogos' ? `
+          <div>
+            <label>Horas</label>
+            <input id="itemHoras" type="number" min="0" step="0.1" value="${it.horas || 0}">
+          </div>
+          <div>
+            <label>Progresso (%)</label>
+            <input id="itemProgresso" type="number" min="0" max="100" value="${it.progresso || 0}">
+          </div>
+        ` : `
+          <div>
+            <label>Duração (min)</label>
+            <input id="itemDuracao" type="number" min="0" value="${it.duracao || ''}">
+          </div>
+          <div>
+            <label>Ano</label>
+            <input id="itemAno" type="number" min="1900" max="2100" value="${it.ano || ''}">
+          </div>
+        `}
+      </div>
+      <div>
+        <label>URL da capa</label>
+        <input id="itemCapa" type="text" value="${esc(it.capa || '')}" placeholder="https://...">
+        <div style="margin-top:8px">
+          ${it.capa ? `<img src="${esc(it.capa)}" class="mini-capa" id="itemCapaPreview" onerror="this.style.display='none'">` : `<img class="mini-capa" id="itemCapaPreview" style="display:none">`}
+        </div>
+      </div>
+      <div>
+        <label>Comentário / Sinopse</label>
+        <textarea id="itemComentario" placeholder="Escreva uma sinopse ou comentário...">${esc(it.comentario || it.sinopse || '')}</textarea>
+        <button type="button" class="admin-btn ghost" style="margin-top:6px;font-size:.72rem;padding:6px 12px" onclick="traduzirComentario()">🌐 Traduzir EN→PT</button>
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn ghost" onclick="dlg.close()">Cancelar</button>
+        <button class="admin-btn" onclick="salvarItemTier(${i})">${ehNovo ? 'Adicionar' : 'Salvar'}</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+function adicionarItemTier(){ abrirModalItemTier(-1); }
+function editarItemTier(i){ abrirModalItemTier(i); }
+
+async function buscarItemAuto(){
+  const nome = $('itemNome').value.trim();
+  if(!nome) return;
+  const status = $('buscaStatus');
+  const tipo = ADMIN_TIER_TAB;
+  status.textContent = '🔎 Buscando…';
+  try{
+    const action = tipo === 'jogos' ? 'buscar-jogo' : 'buscar-filme';
+    const r = await fetch(`/api/admin?action=${action}&nome=${encodeURIComponent(nome)}`);
+    const d = await r.json();
+    if(d.erro){ status.textContent = '⚠️ ' + d.erro; return; }
+    if(d.nome) $('itemNome').value = d.nome;
+    if(d.capa) { $('itemCapa').value = d.capa; const p = $('itemCapaPreview'); p.src = d.capa; p.style.display = 'block'; }
+    if(d.nota && !$('itemNota').value) $('itemNota').value = d.nota;
+    if(tipo === 'jogos'){
+      if(d.sinopse && !$('itemComentario').value) $('itemComentario').value = d.sinopse;
+    } else {
+      if(d.duracao && !$('itemDuracao').value) $('itemDuracao').value = d.duracao;
+      if(d.ano && !$('itemAno').value) $('itemAno').value = d.ano;
+      if(d.sinopse && !$('itemComentario').value) $('itemComentario').value = d.sinopse;
+    }
+    status.textContent = '✅ Dados encontrados!';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  }catch(e){
+    status.textContent = '⚠️ Erro na busca';
+  }
+}
+
+async function traduzirComentario(){
+  const ta = $('itemComentario');
+  const texto = ta.value.trim();
+  if(!texto){ alert('Nada para traduzir'); return; }
+  ta.disabled = true;
+  try{
+    const r = await fetch('/api/admin?action=traduzir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto })
+    });
+    const d = await r.json();
+    if(d.traduzido) ta.value = d.traduzido;
+    else alert('Não foi possível traduzir');
+  }catch(e){ alert('Erro ao traduzir'); }
+  finally { ta.disabled = false; }
+}
+
+async function salvarItemTier(i){
+  const tipo = ADMIN_TIER_TAB;
+  const nome = $('itemNome').value.trim();
+  if(!nome){ alert('Digite um nome!'); return; }
+
+  const item = {
+    id: (i >= 0 && ADMIN_TIER[tipo][i].id) || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
+    nome,
+    tier: $('itemTier').value,
+    status: $('itemStatus').value,
+    nota: Number($('itemNota').value) || 0,
+    capa: $('itemCapa').value.trim() || null,
+    comentario: $('itemComentario').value.trim()
+  };
+
+  if(tipo === 'jogos'){
+    item.horas = Number($('itemHoras').value) || 0;
+    item.progresso = Number($('itemProgresso').value) || 0;
+  } else {
+    item.duracao = Number($('itemDuracao').value) || null;
+    item.ano = Number($('itemAno').value) || null;
+  }
+
+  const nova = ADMIN_TIER[tipo].slice();
+  if(i >= 0) nova[i] = item;
+  else nova.push(item);
+  ADMIN_TIER[tipo] = nova;
+
+  await salvarTierList();
+}
+
+async function removerItemTier(i){
+  if(!confirm('Remover esse item?')) return;
+  const tipo = ADMIN_TIER_TAB;
+  ADMIN_TIER[tipo] = ADMIN_TIER[tipo].slice();
+  ADMIN_TIER[tipo].splice(i, 1);
+  await salvarTierList();
+}
+
+async function salvarTierList(){
+  try{
+    const r = await fetch('/api/admin?action=tierlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jogos: ADMIN_TIER.jogos, filmes: ADMIN_TIER.filmes })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha ao salvar');
+    dlg.close();
+    await carregarAdminTierList();
+    await carregarBiblioteca();
+    alert('Salvo! ✅');
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+/* ---------- ADMINS ---------- */
 async function renderAdminAdmins(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('👥 Admins') + `<p class="admin-vazio">Carregando…</p>`;
@@ -1856,131 +2117,10 @@ async function renderAdminAdmins(){
       <h3>➕ Adicionar admin</h3>
       <div class="admin-vazio">
         <b>🔨 Em breve</b>
-        Aqui você vai poder adicionar/remover admins pelo painel — sem precisar mexer nas variáveis de ambiente da Vercel.
+        Adicionar/remover admins pelo painel (sem mexer nas env vars da Vercel).
       </div>
     </div>
   `;
-}
-
-// ---------- Ações (opções) ----------
-async function resetarVotacao(){
-  if(!confirm('Tem certeza? TODOS os votos serão apagados e a votação começa do zero.')) return;
-  try{
-    const r = await fetch('/api/admin?action=reset', { method:'POST' });
-    if(!r.ok) throw new Error('Falha ao resetar');
-    alert('Votação resetada! ✅');
-    await carregarAdminVotacao();
-    await carregarVotosApi();
-  }catch(e){ alert('Erro: ' + e.message); }
-}
-
-function editarOpcao(i){
-  const opcoes = (ADMIN_DADOS.config || []).slice();
-  while(opcoes.length < 3) opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
-  const o = opcoes[i] || { nome:'', tipo:'jogo' };
-
-  $('dTitle').textContent = 'Editar opção ' + (i+1);
-  $('dBody').innerHTML = `
-    <div class="admin-form">
-      <div>
-        <label>Nome do jogo/filme</label>
-        <input id="editNome" type="text" value="${esc(o.nome || '')}" placeholder="Ex: Elden Ring">
-      </div>
-      <div>
-        <label>Tipo</label>
-        <select id="editTipo">
-          <option value="jogo" ${o.tipo === 'jogo' ? 'selected' : ''}>🎮 Jogo</option>
-          <option value="filme" ${o.tipo === 'filme' ? 'selected' : ''}>🎬 Filme</option>
-        </select>
-      </div>
-      <div>
-        <label>URL da capa (opcional — se deixar vazio, buscamos automaticamente)</label>
-        <input id="editCapa" type="text" value="${esc(o.capa || '')}" placeholder="https://...">
-      </div>
-      <div class="admin-actions" style="justify-content:flex-end">
-        <button class="admin-btn ghost" onclick="removerOpcao(${i})">Remover</button>
-        <button class="admin-btn" onclick="salvarOpcao(${i})">Salvar</button>
-      </div>
-    </div>
-  `;
-  dlg.showModal();
-}
-
-function adicionarOpcao(){
-  const opcoes = (ADMIN_DADOS.config || []).slice();
-  opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
-  const i = opcoes.length - 1;
-
-  $('dTitle').textContent = 'Nova opção';
-  $('dBody').innerHTML = `
-    <div class="admin-form">
-      <div>
-        <label>Nome do jogo/filme</label>
-        <input id="editNome" type="text" placeholder="Ex: Elden Ring">
-      </div>
-      <div>
-        <label>Tipo</label>
-        <select id="editTipo">
-          <option value="jogo" selected>🎮 Jogo</option>
-          <option value="filme">🎬 Filme</option>
-        </select>
-      </div>
-      <div>
-        <label>URL da capa (opcional)</label>
-        <input id="editCapa" type="text" placeholder="https://...">
-      </div>
-      <div class="admin-actions" style="justify-content:flex-end">
-        <button class="admin-btn" onclick="salvarOpcao(${i}, true)">Adicionar</button>
-      </div>
-    </div>
-  `;
-  dlg.showModal();
-}
-
-async function salvarOpcao(i, ehNovo){
-  const nome = $('editNome').value.trim();
-  const tipo = $('editTipo').value;
-  const capa = $('editCapa').value.trim();
-  if(!nome){ alert('Digite um nome!'); return; }
-
-  const opcoes = (ADMIN_DADOS.config || []).slice();
-  while(opcoes.length <= i) opcoes.push({});
-  const id = opcoes[i].id ||
-    nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
-
-  opcoes[i] = { id, nome, tipo, capa: capa || null };
-  await salvarOpcoes(opcoes);
-}
-
-async function removerOpcao(i){
-  if(!confirm('Remover essa opção?')) return;
-  const opcoes = (ADMIN_DADOS.config || []).slice();
-  opcoes.splice(i, 1);
-  await salvarOpcoes(opcoes);
-}
-
-async function salvarOpcoes(opcoes){
-  try{
-    const r = await fetch('/api/admin?action=opcoes', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ opcoes })
-    });
-    const d = await r.json();
-    if(!r.ok) throw new Error(d.error || 'Falha ao salvar');
-    dlg.close();
-    await carregarAdminVotacao();
-    await carregarVotosApi();
-  }catch(e){ alert('Erro: ' + e.message); }
-}
-
-async function restaurarPadrao(){
-  if(!confirm('Restaurar as opções padrão (Hollow Knight, Phasmophobia, Stardew Valley)?')) return;
-  await salvarOpcoes([
-    { id:'hollow-knight', nome:'Hollow Knight', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
-    { id:'phasmophobia', nome:'Phasmophobia', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/739630/library_600x900.jpg' },
-    { id:'stardew-valley', nome:'Stardew Valley', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
-  ]);
 }
 
 /* ===== SUGESTÕES ===== */
@@ -1992,7 +2132,6 @@ async function enviarSugestao(){
   const msg = (cor, t) => { status.style.display = 'block'; status.style.color = cor; status.textContent = t; };
   if($('sugSite').value) return;
   if(!texto) return msg('#ff4d5f', 'Por favor, escreva sua mensagem!');
-
   btn.disabled = true;
   msg('var(--purple-light)', 'Enviando...');
   try{
@@ -2024,9 +2163,8 @@ async function enviarSugestao(){
 
 /* ===== BOOT ===== */
 renderComandos();
-carregarVotosApi();
 carregarBiblioteca();
-carregarFilmes();
+carregarVotosApi();
 </script>
 </body>
 </html>
