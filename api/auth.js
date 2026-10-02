@@ -32,8 +32,7 @@ function lerToken(cookie) {
   } catch { return null; }
 }
 function setCookie(res, valor, maxAge) {
-  res.setHeader('Set-Cookie',
-    `${COOKIE_NAME}=${valor}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`);
+  res.setHeader('Set-Cookie', `${COOKIE_NAME}=${valor}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`);
 }
 function limparCookie(res) {
   res.setHeader('Set-Cookie', `${COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
@@ -54,23 +53,18 @@ async function redis(cmds){
   return (await r.json()).map(x => x.result);
 }
 
-// Lê o cargo do usuário no Redis. Se não existir e estiver na env var, cria como DEV.
 async function pegarCargo(userId, username, avatar){
   try {
     const [raw] = await redis([['HGET', 'admins', userId]]);
     if (raw) {
       const d = JSON.parse(raw);
-      // Atualiza nickname/avatar caso tenha mudado
       if (d.username !== username || d.avatar !== avatar) {
         await redis([['HSET', 'admins', userId, JSON.stringify({ ...d, username, avatar })]]);
       }
       return d.cargo || null;
     }
     if (ADMIN_IDS.includes(userId)) {
-      // Primeira vez: vira DEV automaticamente
-      await redis([['HSET', 'admins', userId, JSON.stringify({
-        cargo: 'dev', username, avatar
-      })]]);
+      await redis([['HSET', 'admins', userId, JSON.stringify({ cargo: 'dev', username, avatar })]]);
       return 'dev';
     }
   } catch(e){}
@@ -79,10 +73,8 @@ async function pegarCargo(userId, username, avatar){
 
 export default async function handler(req, res) {
   if (!CLIENT_ID || !CLIENT_SECRET) return res.status(500).json({ error: 'Discord OAuth não configurado' });
-
   const { action } = req.query || {};
 
-  // ============ LOGIN ============
   if (action === 'login') {
     const state = randomBytes(16).toString('hex');
     res.setHeader('Set-Cookie', `oauth_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
@@ -94,7 +86,6 @@ export default async function handler(req, res) {
     return res.end();
   }
 
-  // ============ CALLBACK ============
   if (action === 'callback' || (req.query && req.query.code)) {
     const code = req.query.code;
     const state = req.query.state;
@@ -124,17 +115,9 @@ export default async function handler(req, res) {
         ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
         : `https://cdn.discordapp.com/embed/avatars/${Number(me.discriminator || 0) % 5}.png`;
       const username = me.global_name || me.username;
-
-      // Pega cargo (e cria como dev se estiver na env var)
       const cargo = await pegarCargo(me.id, username, avatar);
 
-      const token = criarToken({
-        id: me.id,
-        username,
-        avatar,
-        admin: !!cargo,
-        cargo: cargo || null
-      });
+      const token = criarToken({ id: me.id, username, avatar, admin: !!cargo, cargo: cargo || null });
       setCookie(res, token, DIAS_SESSAO * 86400);
       res.writeHead(302, { Location: '/?login=ok' });
       return res.end();
@@ -143,16 +126,28 @@ export default async function handler(req, res) {
     }
   }
 
-  // ============ ME ============
   if (action === 'me') {
     const dados = lerToken(pegarCookie(req));
     if (!dados) return res.status(200).json({ logado: false });
 
-    // Recarrega cargo do Redis (pode ter mudado)
     let cargo = null;
     try {
       const [raw] = await redis([['HGET', 'admins', dados.id]]);
       if (raw) { const d = JSON.parse(raw); cargo = d.cargo; }
+    } catch(e){}
+
+    // Checa se está banido
+    let banido = false;
+    try {
+      const [b] = await redis([['HEXISTS', 'banidos', dados.id]]);
+      banido = b === 1;
+    } catch(e){}
+
+    // Checa manutenção
+    let manutencao = false;
+    try {
+      const [m] = await redis([['GET', 'config:manutencao']]);
+      manutencao = m === 'true';
     } catch(e){}
 
     return res.status(200).json({
@@ -161,11 +156,12 @@ export default async function handler(req, res) {
       username: dados.username,
       avatar: dados.avatar,
       admin: !!cargo,
-      cargo: cargo
+      cargo: cargo,
+      banido,
+      manutencao
     });
   }
 
-  // ============ LOGOUT ============
   if (action === 'logout') {
     limparCookie(res);
     return res.status(200).json({ ok: true });

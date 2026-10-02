@@ -1,6 +1,4 @@
 // Vercel serverless: /api/votos.js
-// Voto por conta Discord, opções editáveis pelo painel admin.
-// Agora salva nick + avatar + data junto com o voto.
 import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -55,7 +53,6 @@ async function pegarCiclo(){
   return String(raw || '1');
 }
 
-// Lê um voto (string antiga OU objeto novo)
 function lerVoto(raw){
   if(!raw) return null;
   try {
@@ -70,6 +67,12 @@ export default async function handler(req, res){
 
   const sessao = lerSessao(req);
   if(!sessao) return res.status(401).json({ error: 'Faça login com o Discord para votar' });
+
+  // Checa se está banido
+  try {
+    const [banido] = await redis([['HEXISTS', 'banidos', sessao.id]]);
+    if(banido === 1) return res.status(403).json({ error: 'Você foi banido de votar' });
+  } catch(e){}
 
   const CICLO = await pegarCiclo();
   const OPCOES = await pegarOpcoes();
@@ -90,14 +93,12 @@ export default async function handler(req, res){
       if(opcaoAnterior === id){
         jaVotou = true;
       } else {
-        // Salva o voto novo com nick/avatar/data
         const payload = JSON.stringify({
           opcao: id,
           username: sessao.username || 'Anônimo',
           avatar: sessao.avatar || null,
           ts: Date.now()
         });
-
         const cmds = [['HSET', kTodos, sessao.id, payload]];
         if(opcaoAnterior) cmds.push(['HINCRBY', kCont, opcaoAnterior, -1]);
         cmds.push(['HINCRBY', kCont, id, 1]);
@@ -115,8 +116,7 @@ export default async function handler(req, res){
     return res.status(200).json({
       opcoes: OPCOES.map(o => ({
         id: o.id, nome: o.nome, tipo: o.tipo || 'jogo',
-        votos: cont[o.id] || 0,
-        capa: o.capa || null
+        votos: cont[o.id] || 0, capa: o.capa || null
       })),
       meuVoto: meu ? meu.opcao : null,
       jaVotou,

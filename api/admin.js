@@ -11,14 +11,17 @@ const TMDB_TOKEN = process.env.TMDB_TOKEN;
 const TMDB_KEY = process.env.TMDB_API_KEY;
 const STEAM_KEY = process.env.STEAM_API_KEY || process.env.STEAM;
 const STEAM_ID = '76561199823015081';
+const SE_JWT = process.env.SE_JWT;
+const SE_CHANNEL_ID = process.env.SE_CHANNEL_ID;
 
-// Níveis: quanto maior, mais poder
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
-// Cada ação exige um nível mínimo
 const EXIGE = {
-  'votos': 1, 'admins-ver': 1,
-  'opcoes': 2, 'reset': 2, 'tierlist-get': 2, 'tierlist-set': 2, 'importar-steam': 2,
+  'votos': 1, 'admins-ver': 1, 'logs-ver': 2, 'sugestoes-ver': 2,
+  'opcoes': 2, 'reset': 3, 'tierlist-get': 2, 'tierlist-set': 2,
   'buscar-jogo': 2, 'buscar-filme': 2, 'traduzir': 2,
+  'config-get': 1, 'config-set': 3,
+  'importar-steam': 3,
+  'banidos-ver': 1, 'banidos-add': 2, 'banidos-remove': 2,
   'admins-add': 3, 'admins-remove': 3, 'admins-edit': 3
 };
 
@@ -47,7 +50,20 @@ async function redis(cmds){
   return (await r.json()).map(x => x.result);
 }
 
-// ---------- IGDB / TMDB ----------
+// Registra log de ação
+async function logarAcao(quem, cargo, o_que){
+  try {
+    const item = JSON.stringify({
+      quem, cargo, acao: o_que, ts: Date.now()
+    });
+    await redis([
+      ['LPUSH', 'logs', item],
+      ['LTRIM', 'logs', '0', '499']
+    ]);
+  } catch(e){}
+}
+
+// ---------- IGDB / TMDB / Steam ----------
 let igdbCache = { token: null, exp: 0 };
 async function igdbToken(){
   if(igdbCache.token && Date.now() < igdbCache.exp) return igdbCache.token;
@@ -74,8 +90,7 @@ async function buscarJogoIGDB(nome){
   if(!TWITCH_ID || !TWITCH_SECRET) return null;
   try{
     const d = await igdbRequest('games',
-      `search "${String(nome).replace(/"/g,'')}"; fields name, rating, cover.url, summary, first_release_date; limit 1;`
-    );
+      `search "${String(nome).replace(/"/g,'')}"; fields name, rating, cover.url, summary, first_release_date; limit 1;`);
     const g = Array.isArray(d) ? d[0] : null;
     if(!g) return null;
     const capa = g.cover && g.cover.url
@@ -129,7 +144,6 @@ async function traduzir(texto){
   }catch(e){ return null; }
 }
 
-// ---------- Importar da Steam ----------
 async function importarSteam(){
   if(!STEAM_KEY) throw new Error('STEAM_API_KEY não configurada');
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -205,13 +219,31 @@ async function listarAdmins(){
   return admins;
 }
 
+// ---------- Sugestões (lê do StreamElements) ----------
+async function listarSugestoes(){
+  if(!SE_JWT || !SE_CHANNEL_ID) return { itens: [], aviso: 'StreamElements não configurado' };
+  try {
+    const r = await fetch(`https://api.streamelements.com/kappa/v2/activities/${SE_CHANNEL_ID}?limit=100`, {
+      headers: { Authorization: `Bearer ${SE_JWT}`, Accept: 'application/json' }
+    });
+    if(!r.ok) return { itens: [], aviso: `SE HTTP ${r.status}` };
+    const lista = await r.json();
+    const itens = (Array.isArray(lista) ? lista : []).map(a => ({
+      tipo: a.type,
+      usuario: (a.data && (a.data.displayName || a.data.username)) || 'alguém',
+      valor: (a.data && a.data.amount) || null,
+      data: a.createdAt
+    }));
+    return { itens };
+  } catch(e){ return { itens: [], aviso: e.message }; }
+}
+
 // ---------- Handler ----------
 export default async function handler(req, res){
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
   const sessao = lerSessao(req);
   if(!sessao) return res.status(401).json({ error: 'Faça login' });
 
-  // Pega cargo atualizado do Redis
   let cargo = sessao.cargo;
   try {
     const [raw] = await redis([['HGET', 'admins', sessao.id]]);
@@ -224,7 +256,6 @@ export default async function handler(req, res){
   res.setHeader('Cache-Control', 'no-store');
   const action = (req.query && req.query.action) || '';
 
-  // Checa permissão
   const nivel = NIVEIS[cargo] || 0;
   const nivelNecessario = EXIGE[action] || 99;
   if(nivel < nivelNecessario) return res.status(403).json({ error: 'Sem permissão para esta ação' });
@@ -272,6 +303,7 @@ export default async function handler(req, res){
       }
       if(!processadas.length) return res.status(400).json({ error: 'Nenhuma opção válida' });
       await redis([['SET', 'votos:config', JSON.stringify(processadas)]]);
+      await logarAcao(sessao.username, cargo, 'Editou opções da votação');
       return res.status(200).json({ ok: true, opcoes: processadas });
     }
 
@@ -283,6 +315,7 @@ export default async function handler(req, res){
         ['DEL', `votos_usuarios:${cicloAtual}`],
         ['SET', 'votos:ciclo_atual', String(novo)]
       ]);
+      await logarAcao(sessao.username, cargo, 'Resetou a votação');
       return res.status(200).json({ ok: true, novoCiclo: novo });
     }
 
@@ -298,17 +331,19 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'tierlist-set'){
-      const { jogos, filmes } = req.body || {};
+      const { jogos, filmes, logAcao } = req.body || {};
       const cmds = [];
       if(Array.isArray(jogos)) cmds.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]);
       if(Array.isArray(filmes)) cmds.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada para salvar' });
       await redis(cmds);
+      if(logAcao) await logarAcao(sessao.username, cargo, logAcao);
       return res.status(200).json({ ok: true });
     }
 
     if(req.method === 'POST' && action === 'importar-steam'){
       const d = await importarSteam();
+      await logarAcao(sessao.username, cargo, `Importou da Steam (${d.adicionados} novos, ${d.pulados} pulados)`);
       return res.status(200).json({ ok: true, ...d });
     }
 
@@ -332,11 +367,98 @@ export default async function handler(req, res){
       return res.status(200).json({ traduzido: t });
     }
 
+    // ============ CONFIG ============
+    if(req.method === 'GET' && action === 'config-get'){
+      const [aviso, donate, manutencao] = await redis([
+        ['GET', 'config:aviso'],
+        ['GET', 'config:donate'],
+        ['GET', 'config:manutencao']
+      ]);
+      let avisoObj = null;
+      try { avisoObj = aviso ? JSON.parse(aviso) : null; } catch(e){}
+      return res.status(200).json({
+        aviso: avisoObj,
+        donate: donate || null,
+        manutencao: manutencao === 'true'
+      });
+    }
+
+    if(req.method === 'POST' && action === 'config-set'){
+      const { aviso, donate, manutencao } = req.body || {};
+      const cmds = [];
+      if(aviso !== undefined) cmds.push(['SET', 'config:aviso', JSON.stringify(aviso || {})]);
+      if(donate !== undefined) cmds.push(['SET', 'config:donate', String(donate || '')]);
+      if(manutencao !== undefined) cmds.push(['SET', 'config:manutencao', manutencao ? 'true' : 'false']);
+      if(!cmds.length) return res.status(400).json({ error: 'Nada para salvar' });
+      await redis(cmds);
+      await logarAcao(sessao.username, cargo,
+        manutencao !== undefined ? `Manutenção ${manutencao ? 'LIGADA' : 'desligada'}` : 'Editou config geral');
+      return res.status(200).json({ ok: true });
+    }
+
+    // ============ LOGS ============
+    if(req.method === 'GET' && action === 'logs-ver'){
+      const [flat] = await redis([['LRANGE', 'logs', '0', '99']]);
+      const logs = (flat || []).map(x => { try { return JSON.parse(x); } catch(e){ return null; } }).filter(Boolean);
+      return res.status(200).json({ logs });
+    }
+
+    // ============ SUGESTÕES ============
+    if(req.method === 'GET' && action === 'sugestoes-ver'){
+      const d = await listarSugestoes();
+      return res.status(200).json(d);
+    }
+
+    // ============ BANIDOS ============
+    if(req.method === 'GET' && action === 'banidos-ver'){
+      const [flat] = await redis([['HGETALL', 'banidos']]);
+      const banidos = [];
+      for(let i = 0; i < (flat||[]).length; i += 2){
+        try {
+          const d = JSON.parse(flat[i+1]);
+          banidos.push({ id: flat[i], username: d.username, avatar: d.avatar, motivo: d.motivo, ts: d.ts });
+        } catch(e){}
+      }
+      banidos.sort((a,b) => (b.ts||0) - (a.ts||0));
+      return res.status(200).json({ banidos });
+    }
+
+    if(req.method === 'POST' && action === 'banidos-add'){
+      const { userId, motivo, username, avatar } = req.body || {};
+      const id = String(userId||'').trim();
+      if(!id) return res.status(400).json({ error: 'ID inválido' });
+      if(id === sessao.id) return res.status(400).json({ error: 'Não pode se banir' });
+
+      // Admin não pode banir outro admin de cargo maior/igual
+      const [raw] = await redis([['HGET', 'admins', id]]);
+      if(raw && cargo !== 'dev'){
+        const alvo = JSON.parse(raw);
+        if((NIVEIS[alvo.cargo] || 0) >= nivel) return res.status(403).json({ error: 'Não pode banir alguém de cargo igual ou maior' });
+      }
+
+      const payload = JSON.stringify({
+        username: String(username||'').trim().slice(0,40) || null,
+        avatar: String(avatar||'').trim() || null,
+        motivo: String(motivo||'').trim().slice(0,200) || 'Sem motivo',
+        ts: Date.now()
+      });
+      await redis([['HSET', 'banidos', id, payload]]);
+      await logarAcao(sessao.username, cargo, `Baniu ${id} (${motivo || 'sem motivo'})`);
+      return res.status(200).json({ ok: true });
+    }
+
+    if(req.method === 'POST' && action === 'banidos-remove'){
+      const { userId } = req.body || {};
+      const id = String(userId||'').trim();
+      if(!id) return res.status(400).json({ error: 'ID inválido' });
+      await redis([['HDEL', 'banidos', id]]);
+      await logarAcao(sessao.username, cargo, `Desbaniu ${id}`);
+      return res.status(200).json({ ok: true });
+    }
+
     // ============ ADMINS ============
     if(req.method === 'GET' && action === 'admins-ver'){
       const admins = await listarAdmins();
-      // Se for dev, pode ver tudo. Se for dono, vê tudo também.
-      // Outros cargos veem a lista mas sem botões de edição (o front controla)
       return res.status(200).json({ admins, meuCargo: cargo });
     }
 
@@ -345,13 +467,8 @@ export default async function handler(req, res){
       const id = String(userId || '').trim();
       const cg = String(novoCargo || '').trim();
       if(!id || !NIVEIS[cg]) return res.status(400).json({ error: 'ID ou cargo inválido' });
-
-      // Só dev pode criar outro dev
       if(cg === 'dev' && cargo !== 'dev') return res.status(403).json({ error: 'Só Dev pode criar outro Dev' });
-      // Não pode criar cargo maior que o seu (exceto dev)
-      if(cargo !== 'dev' && NIVEIS[cg] >= NIVEIS[cargo]) {
-        return res.status(403).json({ error: 'Você não pode criar um cargo igual ou maior ao seu' });
-      }
+      if(cargo !== 'dev' && NIVEIS[cg] >= NIVEIS[cargo]) return res.status(403).json({ error: 'Cargo igual ou maior que o seu' });
 
       const payload = JSON.stringify({
         cargo: cg,
@@ -359,6 +476,7 @@ export default async function handler(req, res){
         avatar: String(avatar||'').trim() || null
       });
       await redis([['HSET', 'admins', id, payload]]);
+      await logarAcao(sessao.username, cargo, `Adicionou admin ${id} (${cg})`);
       return res.status(200).json({ ok: true });
     }
 
@@ -367,20 +485,14 @@ export default async function handler(req, res){
       const id = String(userId || '').trim();
       const cg = String(novoCargo || '').trim();
       if(!id || !NIVEIS[cg]) return res.status(400).json({ error: 'ID ou cargo inválido' });
-
-      // Não pode editar a si mesmo pra rebaixar (evita se trancar fora)
-      if(id === sessao.id && NIVEIS[cg] < NIVEIS[cargo]) {
-        return res.status(400).json({ error: 'Você não pode rebaixar a si mesmo' });
-      }
-
-      // Só dev pode promover a dev
+      if(id === sessao.id && NIVEIS[cg] < NIVEIS[cargo]) return res.status(400).json({ error: 'Você não pode se rebaixar' });
       if(cg === 'dev' && cargo !== 'dev') return res.status(403).json({ error: 'Só Dev pode promover a Dev' });
-      // Não pode editar quem é de cargo maior/igual (exceto dev)
+
       const [raw] = await redis([['HGET', 'admins', id]]);
       if(raw){
         const atual = JSON.parse(raw);
         if(cargo !== 'dev' && (NIVEIS[atual.cargo] || 0) >= NIVEIS[cargo]) {
-          return res.status(403).json({ error: 'Você não pode editar alguém de cargo igual ou maior' });
+          return res.status(403).json({ error: 'Cargo igual ou maior' });
         }
       }
 
@@ -390,6 +502,7 @@ export default async function handler(req, res){
         avatar: String(avatar||'').trim() || null
       });
       await redis([['HSET', 'admins', id, payload]]);
+      await logarAcao(sessao.username, cargo, `Editou admin ${id} pra ${cg}`);
       return res.status(200).json({ ok: true });
     }
 
@@ -402,11 +515,11 @@ export default async function handler(req, res){
       const [raw] = await redis([['HGET', 'admins', id]]);
       if(!raw) return res.status(200).json({ ok: true });
       const alvo = JSON.parse(raw);
-
       if(cargo !== 'dev' && (NIVEIS[alvo.cargo] || 0) >= NIVEIS[cargo]) {
-        return res.status(403).json({ error: 'Você não pode remover alguém de cargo igual ou maior' });
+        return res.status(403).json({ error: 'Cargo igual ou maior' });
       }
       await redis([['HDEL', 'admins', id]]);
+      await logarAcao(sessao.username, cargo, `Removeu admin ${id}`);
       return res.status(200).json({ ok: true });
     }
 

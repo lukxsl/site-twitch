@@ -59,6 +59,7 @@ let vodAtual = null, assistindoVod = false;
 let videosTw = [];
 let inicioLive = null;
 let modo = 'jogos', filtro = 'Todos';
+let CONFIG_GERAL = { aviso: null, donate: null, manutencao: false };
 
 /* ============================================================
    HELPERS
@@ -342,7 +343,7 @@ const FILMES_FALLBACK = [
   { id:'interestelar', nome:'Interestelar', tier:'S', status:'Assistido', nota:9,
     duracao:169, ano:2014,
     capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario:'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas para receberem a população mundial, possibilitando a continuação da espécie.' }
+    comentario:'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas para receberem a população mundial.' }
 ];
 
 async function carregarBiblioteca(){
@@ -527,7 +528,10 @@ function setupDragDrop(){
         await fetch('/api/admin?action=tierlist-set', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jogos: JOGOS, filmes: FILMES })
+          body: JSON.stringify({
+            jogos: JOGOS, filmes: FILMES,
+            logAcao: `Moveu "${item.nome}" de ${tierAntigo} pra ${novoTier}`
+          })
         });
       } catch(e){ console.warn('Erro ao salvar', e); }
       dragItem = null;
@@ -642,10 +646,33 @@ async function checarLogin(){
     const r = await fetch('/api/auth?action=me');
     const d = await r.json();
     USUARIO = d.logado ? d : null;
+    if (d.manutencao !== undefined) CONFIG_GERAL.manutencao = d.manutencao;
   }catch(e){ USUARIO = null; }
   renderLogin();
   document.body.classList.toggle('sou-admin', !!(USUARIO && USUARIO.admin));
   if(USUARIO && USUARIO.admin) desenhar();
+  aplicarManutencao();
+}
+
+function aplicarManutencao(){
+  const emManutencao = CONFIG_GERAL.manutencao && !(USUARIO && USUARIO.admin);
+  let overlay = document.getElementById('manutencaoOverlay');
+  if(emManutencao){
+    if(!overlay){
+      overlay = document.createElement('div');
+      overlay.id = 'manutencaoOverlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:radial-gradient(circle at 50% 30%,rgba(168,85,247,.25),#0b0713 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#f3f0ff;font-family:DM Sans,sans-serif';
+      overlay.innerHTML = `
+        <div style="font-size:4rem;line-height:1;margin-bottom:20px">🔧</div>
+        <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;margin-bottom:10px">Estamos em manutenção</h1>
+        <p style="max-width:400px;color:#a19bba;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
+        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="margin-top:20px;background:#a855f7;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;text-decoration:none">Ir pra Twitch 💜</a>
+      `;
+      document.body.appendChild(overlay);
+    }
+  } else if(overlay){
+    overlay.remove();
+  }
 }
 
 function renderLogin(){
@@ -672,8 +699,10 @@ async function sair(){
   try{ await fetch('/api/auth?action=logout'); }catch(e){}
   USUARIO = null; meuVoto = null;
   document.body.classList.remove('sou-admin');
+  const ov = document.getElementById('manutencaoOverlay'); if(ov) ov.remove();
   renderLogin(); renderVotacao(); desenhar();
   mudarAba('inicio', false);
+  location.reload();
 }
 
 function aplicarVotos(d){
@@ -787,6 +816,11 @@ async function votar(id){
       body:JSON.stringify({ id })
     });
     if(r.status === 401){ await checarLogin(); return; }
+    if(r.status === 403){
+      const d = await r.json();
+      alert(d.error || 'Você foi banido de votar');
+      return;
+    }
     if(r.ok) aplicarVotos(await r.json());
   }catch(e){}
   renderVotacao();
@@ -825,24 +859,33 @@ async function carregarAdmin(){
                     : ADMIN_PAGE === 'votacao' ? 'Votos e opções da votação.'
                     : ADMIN_PAGE === 'tierlist' ? 'Editar jogos e filmes.'
                     : ADMIN_PAGE === 'admins' ? 'Quem pode acessar o painel.'
+                    : ADMIN_PAGE === 'sugestoes' ? 'Mensagens e atividades recebidas.'
+                    : ADMIN_PAGE === 'banidos' ? 'Quem não pode votar.'
+                    : ADMIN_PAGE === 'config' ? 'Aviso, doação e manutenção.'
+                    : ADMIN_PAGE === 'logs' ? 'Histórico de ações.'
                     : '';
   }
   if(ADMIN_PAGE === 'home') renderAdminHome();
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
   else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
   else if(ADMIN_PAGE === 'admins') renderAdminAdmins();
+  else if(ADMIN_PAGE === 'sugestoes') await renderAdminSugestoes();
+  else if(ADMIN_PAGE === 'banidos') await renderAdminBanidos();
+  else if(ADMIN_PAGE === 'config') await renderAdminConfig();
+  else if(ADMIN_PAGE === 'logs') await renderAdminLogs();
 }
 
 function renderAdminHome(){
   const area = $('adminArea'); if(!area) return;
   const meu = USUARIO.cargo || 'moderador';
   const podeEditar = nivel(meu) >= 2;
+  const podeResetar = nivel(meu) >= 3;
   area.innerHTML = `
     <div class="admin-menu">
       <button class="admin-menu-card" onclick="adminIrPara('votacao')">
         <span class="ic">🗳️</span>
         <h3>Votação</h3>
-        <p>Ver quem votou${podeEditar ? ', editar as opções e resetar a votação' : ''}.</p>
+        <p>Ver quem votou${podeEditar ? ', editar opções' : ''}${podeResetar ? ' e resetar' : ''}.</p>
         <span class="cta">Abrir →</span>
       </button>
       ${podeEditar ? `
@@ -852,12 +895,38 @@ function renderAdminHome(){
         <p>Adicionar, editar e remover jogos e filmes.</p>
         <span class="cta">Abrir →</span>
       </button>` : ''}
+      <button class="admin-menu-card" onclick="adminIrPara('sugestoes')">
+        <span class="ic">💡</span>
+        <h3>Sugestões</h3>
+        <p>Ver mensagens e atividades recebidas.</p>
+        <span class="cta">Abrir →</span>
+      </button>
+      <button class="admin-menu-card" onclick="adminIrPara('banidos')">
+        <span class="ic">🚫</span>
+        <h3>Banidos</h3>
+        <p>${podeEditar ? 'Gerenciar quem não pode votar.' : 'Ver quem não pode votar.'}</p>
+        <span class="cta">Abrir →</span>
+      </button>
       <button class="admin-menu-card" onclick="adminIrPara('admins')">
         <span class="ic">👥</span>
         <h3>Admins</h3>
-        <p>${nivel(meu) >= 3 ? 'Gerenciar quem tem acesso ao painel.' : 'Ver quem tem acesso ao painel.'}</p>
+        <p>${podeResetar ? 'Gerenciar quem tem acesso.' : 'Ver quem tem acesso.'}</p>
         <span class="cta">Abrir →</span>
       </button>
+      ${podeResetar ? `
+      <button class="admin-menu-card" onclick="adminIrPara('config')">
+        <span class="ic">⚙️</span>
+        <h3>Config geral</h3>
+        <p>Aviso da home, link de doação, modo manutenção.</p>
+        <span class="cta">Abrir →</span>
+      </button>` : ''}
+      ${podeEditar ? `
+      <button class="admin-menu-card" onclick="adminIrPara('logs')">
+        <span class="ic">📋</span>
+        <h3>Logs</h3>
+        <p>Histórico do que foi feito no painel.</p>
+        <span class="cta">Abrir →</span>
+      </button>` : ''}
     </div>
   `;
 }
@@ -1287,30 +1356,30 @@ async function salvarItemTier(i){
   if(i >= 0) nova[i] = item;
   else nova.push(item);
   ADMIN_TIER[tipo] = nova;
-  await salvarTierList();
+  await salvarTierList(`Editou "${item.nome}" (tier ${item.tier})`);
 }
 
 async function removerItemTier(i){
   if(!confirm('Remover esse item?')) return;
   const tipo = ADMIN_TIER_TAB;
+  const removido = ADMIN_TIER[tipo][i].nome;
   ADMIN_TIER[tipo] = ADMIN_TIER[tipo].slice();
   ADMIN_TIER[tipo].splice(i, 1);
-  await salvarTierList();
+  await salvarTierList(`Removeu "${removido}"`);
 }
 
-async function salvarTierList(){
+async function salvarTierList(logAcao){
   try{
     const r = await fetch('/api/admin?action=tierlist-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jogos: ADMIN_TIER.jogos, filmes: ADMIN_TIER.filmes })
+      body: JSON.stringify({ jogos: ADMIN_TIER.jogos, filmes: ADMIN_TIER.filmes, logAcao })
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     dlg.close();
     await carregarAdminTierList();
     await carregarBiblioteca();
-    alert('Salvo! ✅');
   }catch(e){ alert('Erro: ' + e.message); }
 }
 
@@ -1371,8 +1440,8 @@ async function renderAdminAdmins(){
         <tbody>
           <tr><td>🛠️ Dev</td><td style="color:var(--mute)">Tudo, incluindo gerenciar outros Devs</td></tr>
           <tr><td>👑 Dono</td><td style="color:var(--mute)">Tudo, menos mexer em Devs</td></tr>
-          <tr><td>🛡️ Administrador</td><td style="color:var(--mute)">Votação, Tier List, ver admins</td></tr>
-          <tr><td>🔰 Moderador</td><td style="color:var(--mute)">Ver votos e opções</td></tr>
+          <tr><td>🛡️ Administrador</td><td style="color:var(--mute)">Votação, Tier List, banir, ver admins</td></tr>
+          <tr><td>🔰 Moderador</td><td style="color:var(--mute)">Ver votos, opções, banidos</td></tr>
         </tbody>
       </table>
     </div>
@@ -1468,8 +1537,250 @@ async function removerAdmin(id){
   }catch(e){ alert('Erro: ' + e.message); }
 }
 
+/* ---------- SUGESTÕES ADMIN ---------- */
+async function renderAdminSugestoes(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<p class="admin-vazio">Carregando…</p>`;
+  try {
+    const r = await fetch('/api/admin?action=sugestoes-ver');
+    const d = await r.json();
+    const { itens = [], aviso } = d;
+    if(aviso){
+      area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>⚠️ ${esc(aviso)}</b></div>`;
+      return;
+    }
+    area.innerHTML = adminVoltarHTML('💡 Sugestões') + `
+      <div class="admin-card">
+        <h3>💡 Atividades recentes <span class="cont">${itens.length}</span></h3>
+        ${itens.length ? `<div class="admin-votos">${itens.map(s => `
+          <div class="admin-voto">
+            <div class="admin-voto-ph">${s.tipo === 'tip' ? '💜' : s.tipo === 'subscriber' ? '👑' : s.tipo === 'follow' ? '✨' : s.tipo === 'raid' ? '🚀' : '⭐'}</div>
+            <div class="admin-voto-info">
+              <b>${esc(s.usuario)}</b>
+              <small>${esc(s.tipo)}${s.valor ? ' · R$ ' + Number(s.valor).toLocaleString('pt-BR') : ''}</small>
+            </div>
+            <div class="admin-voto-opcao">
+              <small>${s.data ? tempoAtras(s.data) : ''}</small>
+            </div>
+          </div>
+        `).join('')}</div>` : '<p class="admin-vazio" style="padding:20px">Nada recente</p>'}
+        <div class="admin-actions">
+          <button class="admin-btn ghost" onclick="renderAdminSugestoes()">🔄 Atualizar</button>
+        </div>
+      </div>
+    `;
+  } catch(e){
+    area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+  }
+}
+
+/* ---------- BANIDOS ADMIN ---------- */
+async function renderAdminBanidos(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('🚫 Banidos') + `<p class="admin-vazio">Carregando…</p>`;
+  let banidos = [];
+  try {
+    const r = await fetch('/api/admin?action=banidos-ver');
+    if(r.ok){ const d = await r.json(); banidos = d.banidos || []; }
+  } catch(e){}
+
+  const podeGerenciar = nivel(USUARIO.cargo || '') >= 2;
+
+  area.innerHTML = adminVoltarHTML('🚫 Banidos') + `
+    <div class="admin-card">
+      <h3>🚫 Banidos de votar <span class="cont">${banidos.length}</span></h3>
+      ${banidos.length ? `<div class="admin-votos">${banidos.map(b => `
+        <div class="admin-voto">
+          ${b.avatar
+            ? `<img class="admin-voto-avatar" src="${esc(b.avatar)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'admin-voto-ph',textContent:'👤'}))">`
+            : '<div class="admin-voto-ph">👤</div>'}
+          <div class="admin-voto-info">
+            <b>${b.username ? '@' + esc(b.username) : 'Sem nick'}</b>
+            <small>${esc(b.id)} · ${esc(b.motivo || 'Sem motivo')}</small>
+          </div>
+          <div class="admin-voto-opcao">
+            <small>${b.ts ? tempoAtras(new Date(b.ts).toISOString()) : ''}</small>
+            ${podeGerenciar ? `<button class="btn-mini danger" style="margin-top:6px" onclick="removerBanido('${b.id}')">Desbanir</button>` : ''}
+          </div>
+        </div>
+      `).join('')}</div>` : '<p class="admin-vazio" style="padding:20px">Ninguém banido</p>'}
+      <div class="admin-actions">
+        ${podeGerenciar ? `<button class="admin-btn" onclick="adicionarBanido()">+ Banir usuário</button>` : ''}
+        <button class="admin-btn ghost" onclick="renderAdminBanidos()">🔄 Atualizar</button>
+      </div>
+    </div>
+  `;
+}
+
+function adicionarBanido(){
+  $('dTitle').textContent = 'Banir usuário';
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div><label>ID do Discord</label><input id="banirId" type="text" placeholder="123456789012345678"></div>
+      <div><label>Motivo (opcional)</label><input id="banirMotivo" type="text" placeholder="Ex: votou com multis"></div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn perigo" onclick="salvarBanido()">Banir</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+async function salvarBanido(){
+  const userId = $('banirId').value.trim();
+  const motivo = $('banirMotivo').value.trim();
+  if(!userId) return alert('Digite o ID');
+  try{
+    const r = await fetch('/api/admin?action=banidos-add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, motivo })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    dlg.close();
+    await renderAdminBanidos();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+async function removerBanido(id){
+  if(!confirm('Desbanir esse usuário?')) return;
+  try{
+    const r = await fetch('/api/admin?action=banidos-remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: id })
+    });
+    if(!r.ok) throw new Error('Falha');
+    await renderAdminBanidos();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+/* ---------- CONFIG ADMIN ---------- */
+async function renderAdminConfig(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<p class="admin-vazio">Carregando…</p>`;
+  try {
+    const r = await fetch('/api/admin?action=config-get');
+    const d = await r.json();
+    const av = d.aviso || { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
+    area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `
+      <div class="admin-card">
+        <h3>📢 Aviso da home</h3>
+        <div class="admin-form">
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;text-transform:none">
+              <input type="checkbox" id="cfgAvisoAtivo" ${av.ativo ? 'checked' : ''} style="width:auto">
+              Mostrar aviso na home
+            </label>
+          </div>
+          <div class="row">
+            <div><label>Ícone</label><input id="cfgAvisoIcone" type="text" value="${esc(av.icone || '📢')}"></div>
+            <div><label>Tipo</label>
+              <select id="cfgAvisoTipo">
+                <option value="info" ${av.tipo === 'info' ? 'selected' : ''}>Info (roxo)</option>
+                <option value="warn" ${av.tipo === 'warn' ? 'selected' : ''}>Aviso (laranja)</option>
+              </select>
+            </div>
+          </div>
+          <div><label>Título</label><input id="cfgAvisoTitulo" type="text" value="${esc(av.titulo || '')}"></div>
+          <div><label>Texto</label><textarea id="cfgAvisoTexto" rows="3">${esc(av.texto || '')}</textarea></div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>💜 Link de doação</h3>
+        <div class="admin-form">
+          <div><label>URL</label><input id="cfgDonate" type="text" value="${esc(d.donate || CONFIG.donate || '')}"></div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>🔧 Modo manutenção</h3>
+        <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">
+          Quando ligado, quem <b>não é admin</b> vê uma tela de "Estamos em manutenção". Admins logados continuam vendo o site normal.
+        </p>
+        <label style="display:flex;align-items:center;gap:10px;font-weight:700">
+          <input type="checkbox" id="cfgManutencao" ${d.manutencao ? 'checked' : ''} style="width:auto">
+          Ligar modo manutenção
+        </label>
+      </div>
+
+      <div class="admin-actions">
+        <button class="admin-btn" onclick="salvarConfig()">💾 Salvar tudo</button>
+        <button class="admin-btn ghost" onclick="renderAdminConfig()">🔄 Recarregar</button>
+      </div>
+    `;
+  } catch(e){
+    area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+  }
+}
+
+async function salvarConfig(){
+  const aviso = {
+    ativo: $('cfgAvisoAtivo').checked,
+    tipo: $('cfgAvisoTipo').value,
+    icone: $('cfgAvisoIcone').value.trim() || '📢',
+    titulo: $('cfgAvisoTitulo').value.trim() || 'Aviso',
+    texto: $('cfgAvisoTexto').value.trim()
+  };
+  const donate = $('cfgDonate').value.trim();
+  const manutencao = $('cfgManutencao').checked;
+
+  try{
+    const r = await fetch('/api/admin?action=config-set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aviso, donate, manutencao })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    CONFIG_GERAL = { aviso, donate, manutencao };
+    if (aviso.ativo && aviso.texto) {
+      Object.assign(AVISO, aviso);
+    } else {
+      AVISO.ativo = false;
+    }
+    renderAviso();
+    alert('Salvo! ✅');
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+/* ---------- LOGS ADMIN ---------- */
+async function renderAdminLogs(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('📋 Logs') + `<p class="admin-vazio">Carregando…</p>`;
+  try {
+    const r = await fetch('/api/admin?action=logs-ver');
+    const d = await r.json();
+    const logs = d.logs || [];
+    area.innerHTML = adminVoltarHTML('📋 Logs') + `
+      <div class="admin-card">
+        <h3>📋 Últimas ações <span class="cont">${logs.length}</span></h3>
+        ${logs.length ? `<div class="admin-votos">${logs.map(l => `
+          <div class="admin-voto">
+            <div class="admin-voto-ph">${LABEL_CARGO[l.cargo] ? LABEL_CARGO[l.cargo].split(' ')[0] : '👤'}</div>
+            <div class="admin-voto-info">
+              <b>@${esc(l.quem || 'alguém')}</b>
+              <small>${esc(l.acao || '')}</small>
+            </div>
+            <div class="admin-voto-opcao">
+              <small>${l.ts ? tempoAtras(new Date(l.ts).toISOString()) : ''}</small>
+            </div>
+          </div>
+        `).join('')}</div>` : '<p class="admin-vazio" style="padding:20px">Nenhuma ação registrada</p>'}
+        <div class="admin-actions">
+          <button class="admin-btn ghost" onclick="renderAdminLogs()">🔄 Atualizar</button>
+        </div>
+      </div>
+    `;
+  } catch(e){
+    area.innerHTML = adminVoltarHTML('📋 Logs') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+  }
+}
+
 /* ============================================================
-   SUGESTÕES
+   SUGESTÕES PÚBLICAS
    ============================================================ */
 async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
@@ -1498,7 +1809,7 @@ async function enviarSugestao(){
     } else if(res.status === 502){
       msg('#ff4d5f', '⚠️ Discord recusou o envio.');
     } else {
-      msg('#ff4d5f', 'Não consegui enviar agora. Tente de novo em instantes.');
+      msg('#ff4d5f', 'Não consegui enviar agora.');
     }
   }catch(e){
     msg('#ff4d5f', 'Sem conexão com o servidor.');
