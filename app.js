@@ -1,0 +1,1534 @@
+/* ============================================================
+   CONFIGURAÇÕES
+   ============================================================ */
+const CONFIG = {
+  subs: null,
+  donate: 'https://midfielder.tv.br/asemtet0',
+  siteUpdated: '12/10/2026',
+  topDoadores: [],
+  atividadeManual: []
+};
+
+const AVISO = {
+  ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso',
+  texto: 'Sem live essa semana por conta de imprevistos. Volto logo! 💜'
+};
+
+const EMOTES = [
+  { emoji: '💜', nome: 'amor' }, { emoji: '😭', nome: 'chora' },
+  { emoji: '😂', nome: 'risada' }, { emoji: '😡', nome: 'raiva' },
+  { emoji: '😱', nome: 'pog' }, { emoji: '🎮', nome: 'gg' }
+];
+
+const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
+const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
+const HOST = window.location.hostname || 'localhost';
+const COMANDOS_LISTA = [
+  { c:'!discord', d:'Link do Discord' },
+  { c:'!insta',   d:'Instagram da Soso' },
+  { c:'!social',  d:'Instagram, Discord e TikTok' },
+  { c:'!lurk',    d:'Avisar que vai ficar de lurk' },
+  { c:'!uptime',  d:'Tempo de live' },
+  { c:'!commands',d:'Lista de comandos' }
+];
+
+/* ============================================================
+   ESTADO GLOBAL (tudo no topo pra evitar TDZ)
+   ============================================================ */
+let USUARIO = null;
+let JOGOS = [];
+let FILMES = [];
+let VOTOS_DADOS = [], meuVoto = null, votoStatus = 'carregando';
+let ultGame = null, ultVivo = false;
+let dragItem = null;
+let clipsOk = false, clipsCache = [], dlgClip = null;
+let ADMIN_PAGE = 'home';
+let ADMIN_TAB = 'votos';
+let ADMIN_DADOS = null;
+let ADMIN_TIER_TAB = 'jogos';
+let ADMIN_TIER = { jogos: [], filmes: [] };
+let vodAtual = null, assistindoVod = false;
+let videosTw = [];
+let inicioLive = null;
+let modo = 'jogos', filtro = 'Todos';
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
+
+function fmtDuracao(min){
+  if(!min) return null;
+  const h = Math.floor(min/60), m = min % 60;
+  return h ? `${h}h ${String(m).padStart(2,'0')}min` : `${m}min`;
+}
+
+const tempoAtras = iso => {
+  const m = (Date.now() - new Date(iso)) / 60000;
+  if (m < 60) return 'há ' + Math.max(1, Math.round(m)) + ' min';
+  if (m < 1440) return 'há ' + Math.round(m / 60) + 'h';
+  const d = Math.round(m / 1440); return d === 1 ? 'ontem' : 'há ' + d + ' dias';
+};
+const durTw = d => {
+  const h = /(\d+)h/.exec(d || ''), mi = /(\d+)m/.exec(d || '');
+  return h ? h[1] + 'h' + (mi ? mi[1].padStart(2, '0') : '00') : (mi ? mi[1] + ' min' : '');
+};
+
+function atualizarMeta(pre, atual, marcos = MARCOS){
+  const elDesc = $(pre+'Desc'), elNum = $(pre+'Num'), elBar = $(pre+'Bar');
+  if(!elDesc || !elNum || !elBar) return;
+  if (atual == null || isNaN(atual)) {
+    elDesc.textContent = 'Indisponível no momento';
+    elNum.textContent = '—';
+    elBar.style.width = '0%';
+    return;
+  }
+  const alvo = marcos.find(m => m > atual) || atual + 1000;
+  elNum.textContent = `${atual.toLocaleString('pt-BR')} / ${alvo.toLocaleString('pt-BR')}`;
+  elBar.style.width = Math.min(100, atual / alvo * 100) + '%';
+  elDesc.textContent = `Faltam ${(alvo - atual).toLocaleString('pt-BR')} para alcançar a próxima meta!`;
+}
+
+/* ============================================================
+   RENDERIZAÇÃO BÁSICA
+   ============================================================ */
+function renderAviso(){
+  const box = $('avisoBox'); if(!box) return;
+  if(AVISO && AVISO.ativo && AVISO.texto){
+    $('avisoTexto').textContent = AVISO.texto;
+    $('avisoTitulo').textContent = AVISO.titulo || 'Aviso';
+    $('avisoIcon').textContent = AVISO.icone || '📢';
+    box.className = 'aviso ' + (AVISO.tipo === 'warn' ? 'warn' : '');
+    box.style.display = 'flex';
+  } else box.style.display = 'none';
+}
+
+function renderEmotes(){
+  const g = $('emotesGrid'); if(!g || !EMOTES.length) return;
+  g.innerHTML = EMOTES.map(e => {
+    if(e.img) return `<div class="emote" title="${esc(e.nome || '')}"><img src="${esc(e.img)}" alt="${esc(e.nome || '')}" loading="lazy" onerror="this.replaceWith(document.createTextNode('💜'))"></div>`;
+    return `<div class="emote" title="${esc(e.nome || '')}">${e.emoji || '💜'}</div>`;
+  }).join('');
+}
+
+function renderSiteUpdate(){
+  const el = $('siteUpdated');
+  if(el) el.textContent = CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR');
+}
+
+function setLivePulse(isLive){
+  document.querySelectorAll('.live-indicator').forEach(el => el.classList.toggle('live', !!isLive));
+  const badge = $('bannerLiveBadge');
+  if(badge) badge.classList.toggle('live', !!isLive);
+}
+
+function renderTopDoadores(){
+  const box = $('topDoadores'); if(!box) return;
+  const t = (CONFIG.topDoadores || []).slice(0, 3);
+  box.innerHTML = t.length
+    ? t.map((d, i) => `<div class="podio-i"><span>${['🥇','🥈','🥉'][i]}</span><b>${esc(d.nome)}</b>${d.valor ? `<em>${esc(d.valor)}</em>` : ''}</div>`).join('')
+    : '<p class="podio-vazio">O pódio está vazio. Seja a primeira pessoa a aparecer aqui! 💜</p>';
+}
+
+/* ============================================================
+   ABAS
+   ============================================================ */
+function mudarAba(nome, salvar = true){
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
+  document.querySelectorAll('nav ul button').forEach(b => b.classList.remove('on'));
+  const section = $('sec-' + nome), button = $('btn-' + nome);
+  if(section) section.classList.add('ativo');
+  if(button) button.classList.add('on');
+  if(salvar) localStorage.setItem('abaAtiva', nome);
+  window.scrollTo({ top:0, behavior:'smooth' });
+  if(nome === 'admin') adminIrPara('home');
+}
+
+/* ============================================================
+   TWITCH
+   ============================================================ */
+function assistirVod(v){
+  v = v || vodAtual; if (!v) return;
+  vodAtual = v; assistindoVod = true;
+  const panel = document.getElementById('offlinePanel');
+  if(panel) panel.style.display = 'none';
+  const f = document.getElementById('twitchIframe');
+  if(!f) return;
+  f.style.display = 'block';
+  f.src = `https://player.twitch.tv/?video=v${vodAtual.id}&parent=${HOST}&autoplay=false`;
+  const noteEl = document.getElementById('playerNoteText');
+  if(noteEl) noteEl.textContent = `Reprise: ${vodAtual.title}`;
+  const box = document.querySelector('.twitch-player-box');
+  if(box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function tickUptime(){
+  const el = $('tmUp'); if(!el) return;
+  if(!inicioLive){ el.textContent = 'Offline'; return; }
+  const m = Math.max(0, Math.floor((Date.now() - inicioLive) / 60000));
+  el.textContent = `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+}
+setInterval(tickUptime, 30000);
+
+async function carregarAtividade(){
+  let itens = [];
+  const ROT_ATIV = { sub:['👑','Último sub'], raid:['🚀','Última raid'], tip:['💜','Última doação'], follow:['✨','Novo seguidor'], cheer:['💎','Últimos bits'] };
+  try {
+    const r = await fetch('/api/atividade');
+    if(r.ok) itens = ((await r.json()).itens || []).map(x => {
+      const [ic, rot] = ROT_ATIV[x.tipo] || ['⭐', 'Atividade'];
+      const extra = x.valor ? (x.tipo === 'tip' ? ` · R$ ${Number(x.valor).toLocaleString('pt-BR')}` : x.tipo === 'raid' ? ` · ${x.valor} viewers` : '') : '';
+      return { icone: ic, rotulo: rot, valor: '@' + x.usuario + extra };
+    });
+  } catch(e) {}
+  if(!itens.length) itens = CONFIG.atividadeManual || [];
+  const wrap = $('tmFeedWrap'), feed = $('tmFeed');
+  if(wrap) wrap.style.display = itens.length ? '' : 'none';
+  if(feed) feed.innerHTML = itens.slice(0, 4).map(a => `<div class="tm-fi"><small>${esc(a.icone)} ${esc(a.rotulo)}</small><b>${esc(a.valor)}</b></div>`).join('');
+}
+
+async function verificarStatusTwitch() {
+  const g = id => document.getElementById(id);
+  const iframe = g('twitchIframe'), panel = g('offlinePanel'), badge = g('bannerLiveBadge');
+  try {
+    const response = await fetch('/api/twitch');
+    if (!response.ok) throw new Error('api');
+    const data = await response.json();
+
+    atualizarMeta('goalSeg', data.followers);
+    atualizarMeta('goalDc', data.discord);
+    const subsCount = (data.subs != null) ? data.subs : CONFIG.subs;
+    atualizarMeta('goalSub', subsCount, MARCOS_SUBS);
+
+    const live = !!data.stream;
+    inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
+    tickUptime();
+    if (data.discord && $('dcMembros')) $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
+    vodAtual = data.video;
+    videosTw = data.videos || (data.video ? [data.video] : []);
+    g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
+    g('tmSeg').textContent = data.followers != null ? data.followers.toLocaleString('pt-BR') : '—';
+    const rec = videosTw.filter(x => x.created_at && Date.now() - new Date(x.created_at) < 14 * 864e5).length;
+    g('tmLives').textContent = videosTw.length ? rec : '—';
+    g('tmLbl').textContent = live ? 'AO VIVO AGORA' : 'ÚLTIMA LIVE';
+    g('tmSub').textContent = live
+      ? `${data.stream.title} · ${data.stream.game_name || ''} · ${data.stream.viewer_count} assistindo`
+      : (videosTw[0] && videosTw[0].created_at ? `${tempoAtras(videosTw[0].created_at)} · ${videosTw[0].title}` : 'Canal offline no momento.');
+    g('tmVods').innerHTML = videosTw.slice(0, 3).map((v, i) =>
+      `<button class="tm-vod" data-i="${i}">${v.thumbnail ? `<img src="${esc(v.thumbnail)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div><b>${esc(v.title || 'Live')}</b><span>${v.created_at ? tempoAtras(v.created_at) : ''}${v.duration ? ' · ' + durTw(v.duration) : ''}${v.views != null ? ' · 👁 ' + v.views : ''}</span></div><em>▶</em></button>`
+    ).join('') || '<span class="tm-h4">Nenhuma live gravada ainda.</span>';
+    atualizarFoco(data.game, !!data.stream);
+    renderClips(data.clips);
+    g('btnVod').style.display = vodAtual ? '' : 'none';
+    setLivePulse(live);
+
+    if (data.user) {
+      if (data.user.profile_image_url) { const av = g('offlineAvatarImg'); if(av) av.src = data.user.profile_image_url; }
+      if (data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(rgba(11,7,19,.7),rgba(11,7,19,.9)),url(${data.user.offline_image_url})`;
+    }
+
+    if (data.stream) {
+      assistindoVod = false;
+      panel.style.display = 'none';
+      iframe.style.display = 'block';
+      if (!iframe.src.includes('channel=')) iframe.src = `https://player.twitch.tv/?channel=asemtet0&parent=${HOST}`;
+      badge.style.display = 'flex';
+      g('bannerLiveText').textContent = `AO VIVO • ${data.stream.game_name || 'Jogando'} (${data.stream.viewer_count} espectadores)`;
+      g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
+      g('playerNoteText').textContent = `A transmitir: ${data.stream.title}`;
+    } else {
+      badge.style.display = 'none';
+      g('viewerCountStatus').textContent = '@asemtet0';
+      if (!assistindoVod) {
+        iframe.style.display = 'none'; iframe.src = '';
+        panel.style.display = 'flex';
+        g('playerNoteText').textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao buscar dados da Twitch:', err);
+    atualizarFoco(null, false);
+    ['goalSeg','goalDc','goalSub'].forEach(p => { if (g(p+'Num').textContent === '…') atualizarMeta(p, null); });
+    setLivePulse(false);
+  }
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('.tm-vod');
+  if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]);
+});
+
+/* ============================================================
+   CLIPES
+   ============================================================ */
+function renderClips(list){
+  if(clipsOk || !list || !list.length) return;
+  clipsOk = true;
+  clipsCache = list.slice(0, 4);
+  $('clipsBox').style.display = '';
+  $('clipsGrid').innerHTML = clipsCache.map(c =>
+    `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}">
+      <img src="${esc(c.thumbnail)}" alt="" loading="lazy">
+      <span class="play">▶</span>
+      <span class="vw">👁 ${Number(c.views || 0).toLocaleString('pt-BR')}</span>
+      <span class="ct">${esc(c.title)}</span>
+    </button>`
+  ).join('');
+}
+function getDlgClip(){
+  if(dlgClip) return dlgClip;
+  dlgClip = document.createElement('dialog');
+  dlgClip.className = 'clip-modal';
+  dlgClip.innerHTML = `<iframe id="clipIframe" allowfullscreen></iframe><div class="cm-foot"><b id="clipTitle"></b><span id="clipViews"></span></div>`;
+  document.body.appendChild(dlgClip);
+  dlgClip.addEventListener('click', e => { if(e.target === dlgClip) fecharClip(); });
+  return dlgClip;
+}
+function abrirClip(id){
+  const c = clipsCache.find(x => x.id === id); if(!c) return;
+  const d = getDlgClip();
+  d.querySelector('#clipIframe').src = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(id)}&parent=${HOST}&autoplay=true`;
+  d.querySelector('#clipTitle').textContent = c.title;
+  d.querySelector('#clipViews').textContent = `👁 ${Number(c.views || 0).toLocaleString('pt-BR')} views`;
+  d.showModal();
+}
+function fecharClip(){ if(dlgClip){ dlgClip.querySelector('#clipIframe').src = ''; dlgClip.close(); } }
+document.addEventListener('click', e => {
+  const b = e.target.closest('.clip');
+  if(b && b.dataset.id) abrirClip(b.dataset.id);
+});
+
+/* ============================================================
+   COMANDOS DO CHAT
+   ============================================================ */
+function renderComandos(filtroTxt = ''){
+  const q = filtroTxt.toLowerCase().trim();
+  const lista = COMANDOS_LISTA.filter(x => !q || x.c.toLowerCase().includes(q) || x.d.toLowerCase().includes(q));
+  const body = $('cmdsBody'); if(!body) return;
+  body.innerHTML = lista.map(x =>
+    `<tr><td>${esc(x.c)}</td><td>${esc(x.d)}</td><td style="text-align:right"><button data-c="${esc(x.c)}">Copiar</button></td></tr>`
+  ).join('');
+  const e = $('cmdsEmpty'); if(e) e.style.display = lista.length ? 'none' : '';
+}
+
+/* ============================================================
+   TIER LIST
+   ============================================================ */
+const TIERS = ['S','A','B','C'];
+
+const JOGOS_FALLBACK = [
+  { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando',
+    progresso:56, horas:50, nota:8,
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
+    comentario:'Um dos mundos mais vivos e detalhados dos games.' },
+  { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Jogado', nota:9,
+    horas:40,
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg',
+    comentario:'' },
+  { id:'stardew-valley', nome:'Stardew Valley', tier:'A', status:'Jogando', nota:8,
+    horas:120,
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg',
+    comentario:'' }
+];
+const FILMES_FALLBACK = [
+  { id:'interestelar', nome:'Interestelar', tier:'S', status:'Assistido', nota:9,
+    duracao:169, ano:2014,
+    capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
+    comentario:'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas para receberem a população mundial, possibilitando a continuação da espécie.' }
+];
+
+async function carregarBiblioteca(){
+  try{
+    const r = await fetch('/api/tierlist');
+    const d = r.ok ? await r.json() : {};
+    JOGOS = (Array.isArray(d.jogos) && d.jogos.length) ? d.jogos : JOGOS_FALLBACK;
+    FILMES = (Array.isArray(d.filmes) && d.filmes.length) ? d.filmes : FILMES_FALLBACK;
+    if (d.aviso) console.warn('Tierlist:', d.aviso);
+  }catch(e){
+    console.warn('Tierlist indisponível, usando padrão:', e.message);
+    JOGOS = JOGOS_FALLBACK;
+    FILMES = FILMES_FALLBACK;
+  }
+  desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
+}
+
+const MODOS = {
+  jogos:  {
+    get lista(){ return JOGOS; },
+    status:['Todos','Jogando','Jogado','Concluído','Na fila','Pretendo jogar','Dropado'],
+    feito:'Concluído', plural:'jogos', hrs:'horas jogadas', hl:'horas jogadas',
+    l4:'jogos concluídos', titulo:'Tier List de Jogos',
+    sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.',
+    busca:'Buscar jogo...', vazio:'Nenhum jogo aqui'
+  },
+  filmes: {
+    get lista(){ return FILMES; },
+    status:['Todos','Assistindo','Assistido','Na fila'],
+    feito:'Assistido', plural:'filmes', hrs:'duração total', hl:'duração',
+    l4:'filmes assistidos', titulo:'Tier List de Filmes',
+    sub:'Tudo o que eu já assisti ou pretendo assistir, do melhor ao pior. Clique em um filme para ver os detalhes.',
+    busca:'Buscar filme...', vazio:'Nenhum filme aqui'
+  }
+};
+const LISTA = () => MODOS[modo].lista;
+const fh = h => (Math.round(h * 10) / 10).toLocaleString('pt-BR') + 'h';
+
+function desenharStats(){
+  const m = MODOS[modo], L = m.lista, cn = L.filter(j => j.nota > 0);
+  const media = cn.length ? cn.reduce((a,j) => a + j.nota, 0) / cn.length : 0;
+  let totalLabel;
+  if (modo === 'filmes') {
+    const totalMin = L.reduce((a,j) => a + (j.duracao || 0), 0);
+    totalLabel = fmtDuracao(totalMin) || '—';
+  } else {
+    const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
+    totalLabel = hs.toLocaleString('pt-BR');
+  }
+  const el = $('stats'); if(!el) return;
+  el.innerHTML = [
+    [L.length, m.plural + ' na lista'],
+    [totalLabel, m.hrs],
+    [media ? n1(media) : '—', 'média das notas'],
+    [L.filter(j => j.status === m.feito).length, m.l4]
+  ].map(x => `<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+}
+
+function atualizarFoco(game, aoVivo){
+  ultGame = game; ultVivo = aoVivo;
+  const j = game ? JOGOS.find(x => norm(x.nome) === norm(game.name)) : (JOGOS.find(x => x.status === 'Jogando') || JOGOS[0]);
+  const nome = game ? game.name : (j && j.nome);
+  if(!nome) return;
+  const capa = (j && j.capa) || (game && game.box_art) || '';
+  const elNome = $('focoNome'); if(!elNome) return;
+  elNome.textContent = nome;
+  $('focoLabel').textContent = aoVivo ? '🔴 Jogando agora' : '🎮 Último jogo jogado';
+  const chips = [];
+  if(j && j.tier && j.tier !== 'NR') chips.push(`<span class="foco-chip tr">Tier ${esc(j.tier)}</span>`);
+  if(j && j.nota > 0) chips.push(`<span class="foco-chip">⭐ ${n1(j.nota)}</span>`);
+  if(j && j.horas > 0) chips.push(`<span class="foco-chip">⏱ ${fh(j.horas)}</span>`);
+  if(j && j.status) chips.push(`<span class="foco-chip">${esc(j.status)}</span>`);
+  if(!chips.length) chips.push('<span class="foco-chip">Ainda sem nota na tier list</span>');
+  $('focoMeta').innerHTML = chips.join('');
+  const pr = j && j.progresso != null && j.progresso > 0;
+  $('focoBar').style.display = pr ? '' : 'none';
+  if(pr){ $('focoPct').textContent = j.progresso + '%'; $('focoBarI').style.width = j.progresso + '%'; }
+  const v = (typeof vodAtual !== 'undefined') && vodAtual;
+  $('focoHoras').textContent = aoVivo ? 'Entra no chat e vem jogar junto! 💜' : (v && v.created_at ? `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}` : '');
+  const c = $('focoCover');
+  if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
+  else c.style.display = 'none';
+}
+
+function renderChips(){
+  $('chips').innerHTML = MODOS[modo].status.map(s => `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}">${s}</button>`).join('');
+}
+
+function aplicarModo(novo, salvar = true){
+  if(!MODOS[novo]) novo = 'jogos';
+  modo = novo; filtro = 'Todos';
+  $('q').value = '';
+  document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x.dataset.m === modo));
+  const m = MODOS[modo];
+  $('tlTitulo').textContent = m.titulo;
+  $('tlSub').textContent = m.sub;
+  $('q').placeholder = m.busca;
+  renderChips(); desenharStats(); desenhar();
+  $('tmdbNote').style.display = modo === 'filmes' ? '' : 'none';
+  if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
+}
+
+function cartao(j,i){
+  const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
+  const podeArrastar = !!(USUARIO && USUARIO.admin);
+  return `
+    <button class="g" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}">
+      <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
+        <div class="ph">${esc(ini)}</div>
+        ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
+        ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
+        ${j.nota > 0 ? `<span class="nt">${n1(j.nota)}</span>` : ''}
+      </div>
+      <div class="cap">
+        <span class="cn" style="font-size:.68rem;font-weight:600;line-height:1.2">${esc(j.nome)}</span>
+        ${j.horas > 0 ? `<span class="ch">${fh(j.horas)}</span>` : ''}
+        ${j.duracao > 0 ? `<span class="ch">${fmtDuracao(j.duracao)}</span>` : ''}
+      </div>
+    </button>
+  `;
+}
+function linha(cls, rotulo, lista){
+  const L = LISTA();
+  return `
+    <div class="tier t-${cls}">
+      <div class="label"><div>${rotulo}</div></div>
+      <div class="games">
+        ${lista.length ? lista.map(j => cartao(j, L.indexOf(j))).join('') : `<span class="empty">${MODOS[modo].vazio}</span>`}
+      </div>
+    </div>
+  `;
+}
+
+function setupDragDrop(){
+  if(!USUARIO || !USUARIO.admin) return;
+  document.querySelectorAll('.g').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      const i = Number(el.dataset.i);
+      dragItem = { idx: i, nome: LISTA()[i].nome };
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', dragItem.nome); } catch(err){}
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+      document.querySelectorAll('.games.drag-over').forEach(x => x.classList.remove('drag-over'));
+      dragItem = null;
+    });
+  });
+  document.querySelectorAll('.games').forEach(gEl => {
+    gEl.addEventListener('dragover', e => {
+      if(!dragItem) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      gEl.classList.add('drag-over');
+    });
+    gEl.addEventListener('dragleave', e => {
+      if(!gEl.contains(e.relatedTarget)) gEl.classList.remove('drag-over');
+    });
+    gEl.addEventListener('drop', async e => {
+      e.preventDefault();
+      gEl.classList.remove('drag-over');
+      if(!dragItem) return;
+      const tierEl = gEl.closest('.tier');
+      if(!tierEl) return;
+      const m = tierEl.className.match(/t-(\w+)/);
+      if(!m) return;
+      const novoTier = m[1];
+      const item = LISTA()[dragItem.idx];
+      if(!item || item.tier === novoTier){ dragItem = null; return; }
+      const tierAntigo = item.tier;
+      item.tier = novoTier;
+      desenharStats();
+      desenhar();
+      const toast = document.createElement('div');
+      toast.textContent = `✅ "${item.nome}" movido de ${tierAntigo} para ${novoTier}`;
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(168,85,247,.95);color:#fff;padding:10px 18px;border-radius:99px;font-family:inherit;font-size:.85rem;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:opacity .3s';
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; }, 1500);
+      setTimeout(() => toast.remove(), 1900);
+      try {
+        await fetch('/api/admin?action=tierlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jogos: JOGOS, filmes: FILMES })
+        });
+      } catch(e){ console.warn('Erro ao salvar', e); }
+      dragItem = null;
+    });
+  });
+}
+
+function desenhar(){
+  const el = $('tiers'); if(!el) return;
+  const q = $('q').value.trim().toLowerCase();
+  const lista = LISTA().filter(j => (filtro === 'Todos' || j.status === filtro) && j.nome.toLowerCase().includes(q))
+    .sort((a,b) => (b.nota || 0) - (a.nota || 0) || (b.horas || 0) - (a.horas || 0));
+  const tiers = TIERS.map(t => linha(t, t, lista.filter(j => j.tier === t)));
+  const nr = lista.filter(j => j.tier === 'NR');
+  if(nr.length) tiers.push(linha('NR', '?', nr));
+  el.innerHTML = tiers.join('');
+  setupDragDrop();
+}
+
+/* ============================================================
+   SETUP
+   ============================================================ */
+const SETUP = [
+  { t:'🖥️ PC Gamer', col:1, i:[
+    ['🗄️','Gabinete','Risemode Aquarium branco'],
+    ['🧠','Processador','Ryzen 9 5900x'],
+    ['🧩','Memória RAM','48GB DDR4'],
+    ['🔌','Placa Mãe','X570 TUF Gaming'],
+    ['🎮','Placa de Vídeo','RX 6750 XT'],
+    ['💧','Water cooler','Risemode Aura RGB']
+  ]},
+  { t:'💾 Armazenamento & Energia', col:1, i:[
+    ['💾','Armazenamento','SSD 2TB NVMe M2'],
+    ['⚡','Fonte','Corsair RM800w']
+  ]},
+  { t:'🖱️ Periféricos & Outros', col:2, i:[
+    ['⌨','Teclado','AULA H88'],
+    ['🖱','Mouse','Logitech G502X Superlight'],
+    ['🎧','Headset','Astro A50'],
+    ['🎙️','Microfone','FIFINE AM8 Branco'],
+    ['🖥️','Monitor','AOC 240Hz'],
+    ['📷','Webcam','Logitech C920']
+  ]},
+  { t:'✨ Wishlist / Sonhos de consumo', col:2, i:[
+    ['🎥','Câmera profissional','Sony ZV-E10'],
+    ['🎤','Microfone pro','Shure SM7B']
+  ]}
+];
+
+function renderCategoria(cat){
+  return `
+    <div class="sbox">
+      <h3>${cat.t}</h3>
+      <ul>
+        ${cat.i.map(item => `
+          <li>
+            <div class="si">
+              <div class="si-ic">${item[0]}</div>
+              <div class="si-tx"><small>${item[1]}</small><b>${item[2]}</b></div>
+              <div class="si-btns"><button class="si-btn" data-produto="${esc(item[2])}" aria-label="Buscar ${esc(item[2])}">🔍 Buscar</button></div>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  `;
+}
+
+function renderSetup(){
+  const g = $('setupGrid'); if(!g) return;
+  const col1 = SETUP.filter(c => c.col === 1);
+  const col2 = SETUP.filter(c => c.col !== 1);
+  g.innerHTML = `<div class="scol">${col1.map(renderCategoria).join('')}</div><div class="scol">${col2.map(renderCategoria).join('')}</div>`;
+}
+
+function abrirBuscaItem(produto){
+  $('dTitle').textContent = produto;
+  $('dBody').innerHTML = `
+    <p style="color:var(--mute);font-size:.85rem;margin-bottom:10px">Ajuste o termo se quiser e escolha a loja:</p>
+    <input id="buscaTermo" type="text" value="${esc(produto)}"
+      style="width:100%;background:#1a102d;border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.9rem;margin-bottom:12px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a class="busca-loja kb" id="lnkKabum" href="#" target="_blank" rel="noopener">🛒 KaBuM!</a>
+      <a class="busca-loja am" id="lnkAmazon" href="#" target="_blank" rel="noopener">🛒 Amazon</a>
+    </div>
+    <button class="busca-copiar" id="btnCopiar" type="button">📋 Copiar nome do produto</button>
+  `;
+  const input = $('buscaTermo');
+  const atualizar = () => {
+    const q = encodeURIComponent(input.value.trim() || produto);
+    $('lnkKabum').href = `https://www.kabum.com.br/busca/${q}`;
+    $('lnkAmazon').href = `https://www.amazon.com.br/s?k=${q}`;
+  };
+  input.addEventListener('input', atualizar);
+  atualizar();
+  $('btnCopiar').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(input.value); $('btnCopiar').textContent = '✓ Copiado!'; }
+    catch { $('btnCopiar').textContent = 'Erro ao copiar'; }
+    setTimeout(() => { $('btnCopiar').textContent = '📋 Copiar nome do produto'; }, 1600);
+  });
+  input.focus(); input.select();
+  $('dlg').showModal();
+}
+
+/* ============================================================
+   LOGIN / VOTAÇÃO
+   ============================================================ */
+const RANKS = ['🥇','🥈','🥉'];
+
+async function checarLogin(){
+  try{
+    const r = await fetch('/api/auth?action=me');
+    const d = await r.json();
+    USUARIO = d.logado ? d : null;
+  }catch(e){ USUARIO = null; }
+  renderLogin();
+  document.body.classList.toggle('sou-admin', !!(USUARIO && USUARIO.admin));
+  if(USUARIO && USUARIO.admin) desenhar();
+}
+
+function renderLogin(){
+  const area = $('navUser'); if(!area) return;
+  if(USUARIO){
+    area.innerHTML = `
+      <div class="nav-user-logado">
+        <img src="${esc(USUARIO.avatar)}" alt="" onerror="this.style.display='none'">
+        <span class="nick">@${esc(USUARIO.username)}</span>
+        <button class="nav-user-sair" onclick="sair()">Sair</button>
+      </div>
+    `;
+  } else {
+    area.innerHTML = `
+      <a class="nav-user-deslogado" href="/api/auth?action=login" title="Entrar com Discord para votar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
+        Entrar
+      </a>
+    `;
+  }
+}
+
+async function sair(){
+  try{ await fetch('/api/auth?action=logout'); }catch(e){}
+  USUARIO = null; meuVoto = null;
+  document.body.classList.remove('sou-admin');
+  renderLogin(); renderVotacao(); desenhar();
+  mudarAba('inicio', false);
+}
+
+function aplicarVotos(d){
+  if(d && Array.isArray(d.opcoes)){
+    VOTOS_DADOS = d.opcoes;
+    meuVoto = d.meuVoto || null;
+    if(d.usuario && !USUARIO) USUARIO = { ...d.usuario };
+  }
+}
+async function carregarVotosApi(){
+  await checarLogin();
+  if(!USUARIO){ votoStatus = 'sem-login'; renderVotacao(); return; }
+  try{
+    const r = await fetch('/api/votos');
+    if(!r.ok) throw 0;
+    aplicarVotos(await r.json());
+    votoStatus = 'ok';
+  }catch(e){ votoStatus = 'erro'; }
+  renderVotacao();
+}
+
+function renderVotacao(){
+  const destBox = $('destaqueBox'), listaBox = $('votoLista');
+  if(!destBox || !listaBox) return;
+  const proxCover = $('proxCover');
+  if(!USUARIO){
+    destBox.innerHTML = '';
+    listaBox.innerHTML = `
+      <div class="voto-bloqueado">
+        <span class="loot">🔒</span>
+        <b>Só falta você escolher!</b>
+        <p>Entra rapidinho com o Discord pra votar e ajudar a decidir o próximo jogo da live 💜</p>
+        <a class="btn-entrar" href="/api/auth?action=login">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
+          Entrar com Discord
+        </a>
+      </div>`;
+    if(proxCover) proxCover.style.display = 'none';
+    return;
+  }
+  if(!VOTOS_DADOS.length){
+    destBox.innerHTML = '';
+    listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível no momento' : 'Carregando votação…'}</b>${votoStatus === 'erro' ? 'Tente de novo em instantes.' : ''}</div>`;
+    return;
+  }
+  const total = VOTOS_DADOS.reduce((a, x) => a + (x.votos || 0), 0);
+  const ord = [...VOTOS_DADOS].sort((a, b) => (b.votos || 0) - (a.votos || 0));
+  const pct = v => total ? Math.round((v || 0) / total * 100) : 0;
+  const btn = (it) => {
+    const meu = meuVoto === it.id;
+    if(meu) return `<button class="btn ghost" disabled>Votado ✓</button>`;
+    return `<button class="btn" onclick="votar('${it.id}')">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
+  };
+  if(total > 0){
+    const l = ord[0], p = pct(l.votos);
+    destBox.innerHTML = `
+      <div class="destaque">
+        ${l.capa ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">` : '<div class="ph2">🎮</div>'}
+        <div class="d-info">
+          <small>👑 Líder da votação</small><b>${esc(l.nome)}</b>
+          <div class="d-bar"><i style="width:${p}%"></i></div>
+          <span class="d-meta"><b>${p}%</b> · ${l.votos}/${total} votos</span>
+        </div>
+        ${btn(l)}
+      </div>`;
+    if(proxCover){
+      if(l.capa){ proxCover.onerror = () => { proxCover.style.display = 'none'; }; proxCover.src = l.capa; proxCover.style.display = ''; }
+      else proxCover.style.display = 'none';
+    }
+    $('proxNome').textContent = l.nome;
+    $('proxInfo').textContent = `Liderando com ${p}% dos votos`;
+  } else {
+    destBox.innerHTML = '';
+    if(proxCover) proxCover.style.display = 'none';
+    $('proxNome').textContent = 'Votação aberta';
+    $('proxInfo').textContent = 'Ainda sem votos. Seja a primeira pessoa a escolher!';
+  }
+  const resto = total > 0 ? ord.slice(1) : ord;
+  listaBox.innerHTML = resto.map((it, i) => {
+    const p = pct(it.votos);
+    const posicao = i + 2;
+    const medalha = RANKS[i + 1] || `#${posicao}`;
+    const meu = meuVoto === it.id;
+    const votos = it.votos || 0;
+    const diff = (ord[0] ? ord[0].votos : 0) - votos;
+    let statusTxt, statusCls;
+    if (votos === 0) { statusTxt = 'Aguardando o primeiro voto'; statusCls = 'zero'; }
+    else if (diff === 0) { statusTxt = 'Empatado com o 1º lugar 🔥'; statusCls = 'close'; }
+    else if (diff === 1) { statusTxt = 'Apenas 1 voto atrás do líder'; statusCls = 'close'; }
+    else { statusTxt = `${diff} votos atrás do líder`; statusCls = ''; }
+    return `
+      <div class="vt ${meu ? 'meu' : ''}">
+        <span class="vt-rank" title="${posicao}º lugar">${medalha}</span>
+        ${it.capa ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" class="vt-img" onerror="this.style.display='none'">` : '<div class="vt-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>'}
+        <div class="vt-info">
+          <div class="vt-top"><span>${esc(it.nome)}</span><b>${posicao}º · ${p}%</b></div>
+          <span class="vt-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
+        </div>
+        <div class="goal-bar"><i style="width:${p}%"></i></div>
+        ${btn(it)}
+      </div>`;
+  }).join('') + `<div class="vt-total">Total: ${total} voto${total === 1 ? '' : 's'}</div>`;
+}
+
+async function votar(id){
+  if(!USUARIO) return;
+  try{
+    const r = await fetch('/api/votos', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({ id })
+    });
+    if(r.status === 401){ await checarLogin(); return; }
+    if(r.ok) aplicarVotos(await r.json());
+  }catch(e){}
+  renderVotacao();
+}
+
+/* ============================================================
+   PAINEL ADMIN
+   ============================================================ */
+function adminIrPara(pagina){
+  ADMIN_PAGE = pagina;
+  if(pagina === 'votacao') ADMIN_TAB = 'votos';
+  if(pagina === 'tierlist') ADMIN_TIER_TAB = 'jogos';
+  carregarAdmin();
+}
+function adminIrAba(aba){ ADMIN_TAB = aba; renderAdminVotacao(); }
+function adminIrTierTab(tab){ ADMIN_TIER_TAB = tab; renderAdminTierList(); }
+
+async function carregarAdmin(){
+  const area = $('adminArea'); if(!area) return;
+  const sub = $('adminSub');
+  if(USUARIO === null){
+    area.innerHTML = `<p class="admin-vazio">Verificando login…</p>`;
+    await checarLogin();
+  }
+  if(!USUARIO || !USUARIO.admin){
+    if(sub) sub.textContent = 'Acesso restrito.';
+    area.innerHTML = `<div class="admin-vazio">
+      <b>🔒 Acesso restrito</b>
+      Só administradores do site podem ver esta área.
+      ${!USUARIO ? '<br><a href="/api/auth?action=login">Entrar com Discord</a>' : ''}
+    </div>`;
+    return;
+  }
+  if(sub){
+    sub.textContent = ADMIN_PAGE === 'home' ? 'Gerencie tudo do site pelo painel.'
+                    : ADMIN_PAGE === 'votacao' ? 'Votos e opções da votação.'
+                    : ADMIN_PAGE === 'tierlist' ? 'Editar jogos e filmes.'
+                    : ADMIN_PAGE === 'admins' ? 'Quem pode acessar o painel.'
+                    : '';
+  }
+  if(ADMIN_PAGE === 'home') renderAdminHome();
+  else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
+  else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
+  else if(ADMIN_PAGE === 'admins') renderAdminAdmins();
+}
+
+function renderAdminHome(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = `
+    <div class="admin-menu">
+      <button class="admin-menu-card" onclick="adminIrPara('votacao')">
+        <span class="ic">🗳️</span>
+        <h3>Votação</h3>
+        <p>Ver quem votou, editar as opções e resetar a votação.</p>
+        <span class="cta">Abrir →</span>
+      </button>
+      <button class="admin-menu-card" onclick="adminIrPara('tierlist')">
+        <span class="ic">🎮</span>
+        <h3>Tier List</h3>
+        <p>Adicionar, editar e remover jogos e filmes.</p>
+        <span class="cta">Abrir →</span>
+      </button>
+      <button class="admin-menu-card" onclick="adminIrPara('admins')">
+        <span class="ic">👥</span>
+        <h3>Admins</h3>
+        <p>Ver quem tem acesso ao painel administrativo.</p>
+        <span class="cta">Abrir →</span>
+      </button>
+    </div>
+  `;
+}
+
+function adminVoltarHTML(titulo){
+  return `
+    <div class="admin-top">
+      <button class="admin-voltar" onclick="adminIrPara('home')">← Voltar</button>
+      <h2>${titulo}</h2>
+    </div>
+  `;
+}
+
+/* ---------- VOTAÇÃO ADMIN ---------- */
+async function carregarAdminVotacao(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<p class="admin-vazio">Carregando dados…</p>`;
+  try{
+    const r = await fetch('/api/admin?action=votos');
+    if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
+    ADMIN_DADOS = await r.json();
+  }catch(e){
+    area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+    return;
+  }
+  renderAdminVotacao();
+}
+
+function renderAdminVotacao(){
+  const area = $('adminArea'); if(!area) return;
+  if(!ADMIN_DADOS){ area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<div class="admin-vazio">Sem dados</div>`; return; }
+  const { usuarios = [], contagem = {}, config } = ADMIN_DADOS;
+  const totalVotos = Object.values(contagem).reduce((a,b)=>a+b,0);
+  const mapaOpcao = {};
+  (config || []).forEach(o => { mapaOpcao[o.id] = o; });
+
+  area.innerHTML = adminVoltarHTML('🗳️ Votação') + `
+    <div class="admin-tabs">
+      <button class="${ADMIN_TAB === 'votos' ? 'on' : ''}" onclick="adminIrAba('votos')">Votos (${totalVotos})</button>
+      <button class="${ADMIN_TAB === 'opcoes' ? 'on' : ''}" onclick="adminIrAba('opcoes')">Opções</button>
+    </div>
+    <div id="adminConteudo"></div>
+  `;
+
+  if(ADMIN_TAB === 'votos') renderAdminVotos(usuarios, mapaOpcao);
+  else renderAdminOpcoes(config || [], contagem);
+}
+
+function renderAdminVotos(usuarios, mapaOpcao){
+  const el = $('adminConteudo'); if(!el) return;
+  if(!usuarios.length){
+    el.innerHTML = `<div class="admin-card">
+      <h3>🗳️ Votos</h3>
+      <p class="admin-vazio" style="padding:20px">Nenhum voto ainda</p>
+      <div class="admin-actions">
+        <button class="admin-btn ghost" onclick="carregarAdminVotacao()">🔄 Atualizar</button>
+      </div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="admin-card">
+      <h3>🗳️ Votos <span class="cont">Total: ${usuarios.length}</span></h3>
+      <div class="admin-votos">
+        ${usuarios.map(u => {
+          const op = mapaOpcao[u.opcao];
+          const nomeOpcao = op ? op.nome : u.opcao;
+          const temDados = u.username;
+          return `
+            <div class="admin-voto">
+              ${temDados && u.avatar
+                ? `<img class="admin-voto-avatar" src="${esc(u.avatar)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'admin-voto-ph',textContent:'👤'}))">`
+                : '<div class="admin-voto-ph">👤</div>'}
+              <div class="admin-voto-info">
+                <b>${temDados ? '@' + esc(u.username) : 'Sem dados de nick'}</b>
+                <small>${esc(u.userId)}</small>
+              </div>
+              <div class="admin-voto-opcao">
+                <b>${esc(nomeOpcao)}</b>
+                <small>${u.ts ? tempoAtras(new Date(u.ts).toISOString()) : 'voto antigo'}</small>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="admin-actions">
+        <button class="admin-btn ghost" onclick="carregarAdminVotacao()">🔄 Atualizar</button>
+        <button class="admin-btn perigo" onclick="resetarVotacao()">🗑️ Resetar votação</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderAdminOpcoes(opcoes, contagem){
+  const el = $('adminConteudo'); if(!el) return;
+  const lista = opcoes.length ? opcoes : [];
+  el.innerHTML = `
+    <div class="admin-card">
+      <h3>🎯 Opções da votação</h3>
+      <div id="adminOpcoes">
+        ${lista.map((o,i) => `
+          <div class="admin-item">
+            ${o.capa ? `<img src="${esc(o.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
+            <div class="admin-item-info">
+              <b>${esc(o.nome)}</b>
+              <small>${o.tipo === 'filme' ? '🎬 Filme' : '🎮 Jogo'} · ${contagem[o.id] || 0} voto${(contagem[o.id]||0) === 1 ? '' : 's'}</small>
+            </div>
+            <button class="btn-mini" onclick="editarOpcao(${i})">Editar</button>
+          </div>
+        `).join('') || '<p class="admin-vazio" style="padding:20px">Nenhuma opção</p>'}
+      </div>
+      <div class="admin-actions">
+        <button class="admin-btn" onclick="adicionarOpcao()">+ Adicionar opção</button>
+        <button class="admin-btn ghost" onclick="restaurarPadraoVotacao()">Restaurar padrão</button>
+      </div>
+    </div>
+  `;
+}
+
+async function resetarVotacao(){
+  if(!confirm('Tem certeza? TODOS os votos serão apagados e a votação começa do zero.')) return;
+  try{
+    const r = await fetch('/api/admin?action=reset', { method:'POST' });
+    if(!r.ok) throw new Error('Falha ao resetar');
+    alert('Votação resetada! ✅');
+    await carregarAdminVotacao();
+    await carregarVotosApi();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+function editarOpcao(i){
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  while(opcoes.length < 3) opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
+  const o = opcoes[i] || { nome:'', tipo:'jogo' };
+  $('dTitle').textContent = 'Editar opção ' + (i+1);
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div>
+        <label>Nome do jogo/filme</label>
+        <input id="editNome" type="text" value="${esc(o.nome || '')}" placeholder="Ex: Elden Ring">
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="editTipo">
+          <option value="jogo" ${o.tipo === 'jogo' ? 'selected' : ''}>🎮 Jogo</option>
+          <option value="filme" ${o.tipo === 'filme' ? 'selected' : ''}>🎬 Filme</option>
+        </select>
+      </div>
+      <div>
+        <label>URL da capa (opcional)</label>
+        <input id="editCapa" type="text" value="${esc(o.capa || '')}" placeholder="https://...">
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn ghost" onclick="removerOpcao(${i})">Remover</button>
+        <button class="admin-btn" onclick="salvarOpcao(${i})">Salvar</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+function adicionarOpcao(){
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  opcoes.push({ id:'', nome:'', tipo:'jogo', capa:null });
+  const i = opcoes.length - 1;
+  $('dTitle').textContent = 'Nova opção';
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div>
+        <label>Nome do jogo/filme</label>
+        <input id="editNome" type="text" placeholder="Ex: Elden Ring">
+      </div>
+      <div>
+        <label>Tipo</label>
+        <select id="editTipo">
+          <option value="jogo" selected>🎮 Jogo</option>
+          <option value="filme">🎬 Filme</option>
+        </select>
+      </div>
+      <div>
+        <label>URL da capa (opcional)</label>
+        <input id="editCapa" type="text" placeholder="https://...">
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn" onclick="salvarOpcao(${i}, true)">Adicionar</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+async function salvarOpcao(i, ehNovo){
+  const nome = $('editNome').value.trim();
+  const tipo = $('editTipo').value;
+  const capa = $('editCapa').value.trim();
+  if(!nome){ alert('Digite um nome!'); return; }
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  while(opcoes.length <= i) opcoes.push({});
+  const id = opcoes[i].id ||
+    nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
+  opcoes[i] = { id, nome, tipo, capa: capa || null };
+  await salvarOpcoesVotacao(opcoes);
+}
+
+async function removerOpcao(i){
+  if(!confirm('Remover essa opção?')) return;
+  const opcoes = (ADMIN_DADOS.config || []).slice();
+  opcoes.splice(i, 1);
+  await salvarOpcoesVotacao(opcoes);
+}
+
+async function salvarOpcoesVotacao(opcoes){
+  try{
+    const r = await fetch('/api/admin?action=opcoes', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ opcoes })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha ao salvar');
+    dlg.close();
+    await carregarAdminVotacao();
+    await carregarVotosApi();
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+async function restaurarPadraoVotacao(){
+  if(!confirm('Restaurar as opções padrão?')) return;
+  await salvarOpcoesVotacao([
+    { id:'hollow-knight', nome:'Hollow Knight', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
+    { id:'phasmophobia', nome:'Phasmophobia', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/739630/library_600x900.jpg' },
+    { id:'stardew-valley', nome:'Stardew Valley', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
+  ]);
+}
+
+/* ---------- TIER LIST ADMIN ---------- */
+async function carregarAdminTierList(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<p class="admin-vazio">Carregando…</p>`;
+  try{
+    const r = await fetch('/api/admin?action=tierlist');
+    if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
+    const d = await r.json();
+    ADMIN_TIER = { jogos: d.jogos || [], filmes: d.filmes || [] };
+  }catch(e){
+    area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+    return;
+  }
+  renderAdminTierList();
+}
+
+function renderAdminTierList(){
+  const area = $('adminArea'); if(!area) return;
+  const lista = ADMIN_TIER[ADMIN_TIER_TAB] || [];
+  const botaoImport = ADMIN_TIER_TAB === 'jogos'
+    ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>`
+    : '';
+  area.innerHTML = adminVoltarHTML('🎮 Tier List') + `
+    <div class="admin-tabs">
+      <button class="${ADMIN_TIER_TAB === 'jogos' ? 'on' : ''}" onclick="adminIrTierTab('jogos')">🎮 Jogos (${ADMIN_TIER.jogos.length})</button>
+      <button class="${ADMIN_TIER_TAB === 'filmes' ? 'on' : ''}" onclick="adminIrTierTab('filmes')">🎬 Filmes (${ADMIN_TIER.filmes.length})</button>
+    </div>
+    <div class="admin-card">
+      <h3>${ADMIN_TIER_TAB === 'jogos' ? '🎮 Jogos' : '🎬 Filmes'} <span class="cont">${lista.length} itens</span></h3>
+      <div>
+        ${lista.length ? lista.map((it, i) => `
+          <div class="admin-item">
+            ${it.capa ? `<img src="${esc(it.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
+            <div class="admin-item-info">
+              <b>${esc(it.nome)}</b>
+              <small>Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
+            </div>
+            <button class="btn-mini" onclick="editarItemTier(${i})">Editar</button>
+            <button class="btn-mini danger" onclick="removerItemTier(${i})">Remover</button>
+          </div>
+        `).join('') : '<p class="admin-vazio" style="padding:20px">Nenhum item ainda</p>'}
+      </div>
+      <div class="admin-actions">
+        <button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : 'filme'}</button>
+        ${botaoImport}
+        <button class="admin-btn ghost" onclick="carregarAdminTierList()">🔄 Recarregar</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- IMPORTAR DA STEAM ---------- */
+async function importarSteam(){
+  const btn = $('btnImportarSteam');
+  if(!confirm('Buscar jogos na Steam e adicionar na tier list? Jogos que você já tem não serão duplicados.')) return;
+
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar 10-20s)'; }
+
+  try{
+    const r = await fetch('/api/admin?action=importar-steam', { method: 'POST' });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha na importação');
+
+    if(btn) btn.textContent = `✅ ${d.adicionados} adicionados · ${d.pulados} já existiam`;
+    setTimeout(() => {
+      if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; }
+    }, 4000);
+
+    // Recarrega tudo
+    await carregarAdminTierList();
+    await carregarBiblioteca();
+  }catch(e){
+    alert('Erro: ' + e.message);
+    if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; }
+  }
+}
+
+function abrirModalItemTier(i){
+  const tipo = ADMIN_TIER_TAB;
+  const lista = ADMIN_TIER[tipo];
+  const ehNovo = (i === -1);
+  const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null } : lista[i];
+  const statusOpcoes = tipo === 'jogos'
+    ? ['Jogando','Jogado','Concluído','Na fila','Pretendo jogar','Dropado']
+    : ['Assistindo','Assistido','Na fila'];
+
+  $('dTitle').textContent = (ehNovo ? 'Adicionar ' : 'Editar ') + (tipo === 'jogos' ? 'jogo' : 'filme');
+  $('dBody').innerHTML = `
+    <div class="admin-form">
+      <div>
+        <label>Nome</label>
+        <div class="busca-row">
+          <input id="itemNome" type="text" value="${esc(it.nome || '')}" placeholder="Nome do ${tipo === 'jogos' ? 'jogo' : 'filme'}">
+          <button type="button" onclick="buscarItemAuto()">🔍 Buscar</button>
+        </div>
+        <div id="buscaStatus" style="font-size:.72rem;color:var(--mute);margin-top:6px"></div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Tier</label>
+          <select id="itemTier">
+            ${['S','A','B','C','NR'].map(t => `<option value="${t}" ${it.tier === t ? 'selected' : ''}>${t === 'NR' ? 'Sem tier' : t}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="itemStatus">
+            ${statusOpcoes.map(s => `<option value="${s}" ${it.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="row-3">
+        <div>
+          <label>Nota (0-10)</label>
+          <input id="itemNota" type="number" min="0" max="10" step="0.1" value="${it.nota || 0}">
+        </div>
+        ${tipo === 'jogos' ? `
+          <div>
+            <label>Horas</label>
+            <input id="itemHoras" type="number" min="0" step="0.1" value="${it.horas || 0}">
+          </div>
+          <div>
+            <label>Progresso (%)</label>
+            <input id="itemProgresso" type="number" min="0" max="100" value="${it.progresso || 0}">
+          </div>
+        ` : `
+          <div>
+            <label>Duração (min)</label>
+            <input id="itemDuracao" type="number" min="0" value="${it.duracao || ''}">
+          </div>
+          <div>
+            <label>Ano</label>
+            <input id="itemAno" type="number" min="1900" max="2100" value="${it.ano || ''}">
+          </div>
+        `}
+      </div>
+      <div>
+        <label>URL da capa</label>
+        <input id="itemCapa" type="text" value="${esc(it.capa || '')}" placeholder="https://...">
+        <div style="margin-top:8px">
+          ${it.capa ? `<img src="${esc(it.capa)}" class="mini-capa" id="itemCapaPreview" onerror="this.style.display='none'">` : `<img class="mini-capa" id="itemCapaPreview" style="display:none">`}
+        </div>
+      </div>
+      <div>
+        <label>Comentário / Sinopse</label>
+        <textarea id="itemComentario" placeholder="Escreva uma sinopse ou comentário...">${esc(it.comentario || it.sinopse || '')}</textarea>
+        <button type="button" class="admin-btn ghost" style="margin-top:6px;font-size:.72rem;padding:6px 12px" onclick="traduzirComentario()">🌐 Traduzir EN→PT</button>
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end">
+        <button class="admin-btn ghost" onclick="dlg.close()">Cancelar</button>
+        <button class="admin-btn" onclick="salvarItemTier(${i})">${ehNovo ? 'Adicionar' : 'Salvar'}</button>
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+
+function adicionarItemTier(){ abrirModalItemTier(-1); }
+function editarItemTier(i){ abrirModalItemTier(i); }
+
+async function buscarItemAuto(){
+  const nome = $('itemNome').value.trim();
+  if(!nome) return;
+  const status = $('buscaStatus');
+  const tipo = ADMIN_TIER_TAB;
+  status.textContent = '🔎 Buscando…';
+  try{
+    const action = tipo === 'jogos' ? 'buscar-jogo' : 'buscar-filme';
+    const r = await fetch(`/api/admin?action=${action}&nome=${encodeURIComponent(nome)}`);
+    const d = await r.json();
+    if(d.erro){ status.textContent = '⚠️ ' + d.erro; return; }
+    if(d.nome) $('itemNome').value = d.nome;
+    if(d.capa) { $('itemCapa').value = d.capa; const p = $('itemCapaPreview'); p.src = d.capa; p.style.display = 'block'; }
+    if(d.nota && !$('itemNota').value) $('itemNota').value = d.nota;
+    if(tipo === 'jogos'){
+      if(d.sinopse && !$('itemComentario').value) $('itemComentario').value = d.sinopse;
+    } else {
+      if(d.duracao && !$('itemDuracao').value) $('itemDuracao').value = d.duracao;
+      if(d.ano && !$('itemAno').value) $('itemAno').value = d.ano;
+      if(d.sinopse && !$('itemComentario').value) $('itemComentario').value = d.sinopse;
+    }
+    status.textContent = '✅ Dados encontrados!';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  }catch(e){
+    status.textContent = '⚠️ Erro na busca';
+  }
+}
+
+async function traduzirComentario(){
+  const ta = $('itemComentario');
+  const texto = ta.value.trim();
+  if(!texto){ alert('Nada para traduzir'); return; }
+  ta.disabled = true;
+  try{
+    const r = await fetch('/api/admin?action=traduzir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto })
+    });
+    const d = await r.json();
+    if(d.traduzido) ta.value = d.traduzido;
+    else alert('Não foi possível traduzir');
+  }catch(e){ alert('Erro ao traduzir'); }
+  finally { ta.disabled = false; }
+}
+
+async function salvarItemTier(i){
+  const tipo = ADMIN_TIER_TAB;
+  const nome = $('itemNome').value.trim();
+  if(!nome){ alert('Digite um nome!'); return; }
+
+  const item = {
+    id: (i >= 0 && ADMIN_TIER[tipo][i].id) || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
+    nome,
+    tier: $('itemTier').value,
+    status: $('itemStatus').value,
+    nota: Number($('itemNota').value) || 0,
+    capa: $('itemCapa').value.trim() || null,
+    comentario: $('itemComentario').value.trim()
+  };
+
+  if(tipo === 'jogos'){
+    item.horas = Number($('itemHoras').value) || 0;
+    item.progresso = Number($('itemProgresso').value) || 0;
+  } else {
+    item.duracao = Number($('itemDuracao').value) || null;
+    item.ano = Number($('itemAno').value) || null;
+  }
+
+  const nova = ADMIN_TIER[tipo].slice();
+  if(i >= 0) nova[i] = item;
+  else nova.push(item);
+  ADMIN_TIER[tipo] = nova;
+
+  await salvarTierList();
+}
+
+async function removerItemTier(i){
+  if(!confirm('Remover esse item?')) return;
+  const tipo = ADMIN_TIER_TAB;
+  ADMIN_TIER[tipo] = ADMIN_TIER[tipo].slice();
+  ADMIN_TIER[tipo].splice(i, 1);
+  await salvarTierList();
+}
+
+async function salvarTierList(){
+  try{
+    const r = await fetch('/api/admin?action=tierlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jogos: ADMIN_TIER.jogos, filmes: ADMIN_TIER.filmes })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha ao salvar');
+    dlg.close();
+    await carregarAdminTierList();
+    await carregarBiblioteca();
+    alert('Salvo! ✅');
+  }catch(e){ alert('Erro: ' + e.message); }
+}
+
+/* ---------- ADMINS ---------- */
+async function renderAdminAdmins(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('👥 Admins') + `<p class="admin-vazio">Carregando…</p>`;
+  let admins = [];
+  try{
+    const r = await fetch('/api/admin?action=admins');
+    if(r.ok){ const d = await r.json(); admins = d.admins || []; }
+  }catch(e){}
+  area.innerHTML = adminVoltarHTML('👥 Admins') + `
+    <div class="admin-card">
+      <h3>👥 Administradores <span class="cont">${admins.length}</span></h3>
+      ${admins.length ? `
+        <div class="admin-votos">
+          ${admins.map(a => `
+            <div class="admin-voto">
+              <div class="admin-voto-ph">👤</div>
+              <div class="admin-voto-info">
+                <b>ID ${esc(a.id)}</b>
+                <small>Administrador</small>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : `<p class="admin-vazio" style="padding:20px">Nenhum admin cadastrado</p>`}
+      <div class="admin-actions">
+        <button class="admin-btn ghost" onclick="carregarAdmin()">🔄 Atualizar</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   SUGESTÕES
+   ============================================================ */
+async function enviarSugestao(){
+  const nome = $('sugNome').value.trim();
+  const tipo = $('sugTipo') ? $('sugTipo').value : '';
+  const texto = $('sugTexto').value.trim();
+  const status = $('sugStatus'), btn = $('sugBtn');
+  const msg = (cor, t) => { status.style.display = 'block'; status.style.color = cor; status.textContent = t; };
+  if($('sugSite').value) return;
+  if(!texto) return msg('#ff4d5f', 'Por favor, escreva sua mensagem!');
+  btn.disabled = true;
+  msg('var(--purple-light)', 'Enviando...');
+  try{
+    const res = await fetch('/api/sugestoes', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({ nome, tipo, texto, site:$('sugSite').value })
+    });
+    let dados = null;
+    try { dados = await res.json(); } catch(e){}
+    if(res.ok){
+      msg('#b7ff00', 'Mensagem enviada! Obrigado 💜');
+      $('sugNome').value = ''; $('sugTexto').value = '';
+    } else if(res.status === 429){
+      msg('#ff4d5f', 'Calma! Aguarde alguns segundos para enviar outra.');
+    } else if(res.status === 500 && dados && dados.error === 'Webhook não configurado'){
+      msg('#ff4d5f', '⚠️ Webhook do Discord não configurado (avise o admin).');
+    } else if(res.status === 502){
+      msg('#ff4d5f', '⚠️ Discord recusou o envio. Verifique o webhook.');
+    } else {
+      msg('#ff4d5f', 'Não consegui enviar agora. Tente de novo em instantes.');
+    }
+  }catch(e){
+    msg('#ff4d5f', 'Sem conexão com o servidor. Tente de novo.');
+  }finally{
+    btn.disabled = false;
+    setTimeout(() => { status.style.display = 'none'; }, 6000);
+  }
+}
+
+/* ============================================================
+   BOOT — TUDO RODA AQUI
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  // Abas
+  const abaSalva = localStorage.getItem('abaAtiva');
+  if(abaSalva && document.getElementById('sec-' + abaSalva)) mudarAba(abaSalva, false);
+  else mudarAba('inicio', false);
+
+  // Renderizadores independentes
+  renderAviso();
+  renderEmotes();
+  renderTopDoadores();
+  renderSiteUpdate();
+  renderSetup();
+  renderChips();
+  renderComandos();
+
+  // Comandos do chat — busca + copiar
+  const buscaCmd = $('buscaCmd');
+  if(buscaCmd){
+    buscaCmd.addEventListener('input', e => renderComandos(e.target.value));
+    document.addEventListener('click', async e => {
+      const b = e.target.closest('#tabelaCmds button');
+      if(!b) return;
+      try { await navigator.clipboard.writeText(b.dataset.c); b.textContent = 'Copiado ✓'; b.classList.add('copiado'); }
+      catch { b.textContent = 'Erro'; }
+      setTimeout(() => { b.textContent = 'Copiar'; b.classList.remove('copiado'); }, 1600);
+    });
+  }
+
+  // Donate link
+  if (CONFIG.donate) {
+    const d = $('donateLink');
+    if(d){ d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
+  }
+
+  // Listeners de filtro/busca da tier list
+  const modoEl = $('modo');
+  if(modoEl) modoEl.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if(!b || b.dataset.m === modo) return;
+    aplicarModo(b.dataset.m);
+  });
+  const chipsEl = $('chips');
+  if(chipsEl) chipsEl.addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if(!b) return;
+    filtro = b.dataset.s;
+    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.s === filtro));
+    desenhar();
+  });
+  const qEl = $('q');
+  if(qEl) qEl.addEventListener('input', desenhar);
+
+  // Restaurar modo salvo
+  try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
+
+  // Modal do setup (delegação)
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.si-btn[data-produto]');
+    if(b) abrirBuscaItem(b.dataset.produto);
+  });
+
+  // Modal de detalhes da tier list
+  const tiersEl = $('tiers');
+  if(tiersEl) tiersEl.addEventListener('click', e => {
+    const b = e.target.closest('.g'); if(!b) return;
+    if(b.classList.contains('dragging')) return;
+    const m = MODOS[modo];
+    const j = LISTA()[+b.dataset.i];
+    $('dTitle').textContent = j.nome;
+    let terceiro = '';
+    if (modo === 'jogos') {
+      if (j.progresso != null) terceiro = `<div><b>${j.progresso}%</b><span>progresso</span></div>`;
+    } else {
+      if (j.duracao) terceiro = `<div><b>${fmtDuracao(j.duracao)}</b><span>duração</span></div>`;
+      else if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
+    }
+    $('dBody').innerHTML = `
+      <div class="mrow">
+        ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
+        <div class="mside">
+          <div class="badges">
+            <span class="bd">${j.tier === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
+            <span class="bd">${esc(j.status)}</span>
+          </div>
+          <div class="kv">
+            <div><b>${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '—')}</b><span>${m.hl}</span></div>
+            <div><b>${j.nota > 0 ? n1(j.nota) : '—'}</b><span>nota</span></div>
+            ${terceiro}
+          </div>
+          ${(j.comentario || j.sinopse) ? `<p>${esc(j.comentario || j.sinopse)}</p>` : ''}
+        </div>
+      </div>
+    `;
+    $('dlg').showModal();
+  });
+
+  // Fechar modal
+  const dlgEl = $('dlg');
+  if(dlgEl){
+    $('dClose').addEventListener('click', () => dlgEl.close());
+    dlgEl.addEventListener('click', e => { if(e.target === dlgEl) dlgEl.close(); });
+  }
+
+  // Carrega dados
+  carregarAtividade();
+  setInterval(carregarAtividade, 300000);
+  verificarStatusTwitch();
+  setInterval(verificarStatusTwitch, 60000);
+
+  carregarBiblioteca();
+  carregarVotosApi();
+});
