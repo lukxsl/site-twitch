@@ -39,7 +39,7 @@
 
 <main class="wrapper">
 
-<!-- ============ INÍCIO ============ -->
+<!-- INÍCIO -->
 <section id="sec-inicio" class="page-section ativo">
   <div class="hero-container">
     <div class="banner">
@@ -197,13 +197,13 @@
           <small>Preview dos emotes de sub</small>
           <div class="emotes-grid" id="emotesGrid"></div>
         </div>
-        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">Assinar na Twitch</a>
+        <a href="#" onclick="abrirSejaSub();return false;" class="twitch-sub-btn">Ver todos os benefícios →</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ TIER LIST ============ -->
+<!-- TIER LIST -->
 <section id="sec-tierlist" class="page-section">
   <div class="section-header">
     <h1 id="tlTitulo">Tier List de Jogos</h1>
@@ -220,10 +220,10 @@
   </div>
   <div class="drag-hint">🖱️ Arraste os cards entre os tiers para reorganizar</div>
   <section id="tiers"></section>
-  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificado por ela.</p>
+  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificada por ela.</p>
 </section>
 
-<!-- ============ COMUNIDADE ============ -->
+<!-- COMUNIDADE -->
 <section id="sec-comunidade" class="page-section">
   <div class="section-header">
     <h2>Comunidade</h2>
@@ -234,11 +234,12 @@
     <button class="sub-tab on" data-tab="discord">💬 Discord</button>
     <button class="sub-tab" data-tab="clipes">🎬 Clipes</button>
     <button class="sub-tab" data-tab="musicas">🎵 Músicas</button>
+    <button class="sub-tab" data-tab="sub">👑 Seja Sub</button>
     <button class="sub-tab" data-tab="comandos">🤖 Comandos</button>
     <button class="sub-tab" data-tab="regras">📜 Regras</button>
   </div>
 
-  <!-- DISCORD (com metas da comunidade no fim) -->
+  <!-- DISCORD -->
   <div class="sub-panel on" data-panel="discord">
     <div class="dc-cta">
       <div>
@@ -256,7 +257,6 @@
         <li>🎬 Indicações de jogos e filmes da galera</li>
       </ul>
     </div>
-
     <div class="metas-comunidade">
       <span class="ap-h">🎯 Metas da comunidade</span>
       <div class="goals3" style="grid-template-columns:1fr 1fr;margin:0">
@@ -304,6 +304,40 @@
     </div>
   </div>
 
+  <!-- SEJA SUB -->
+  <div class="sub-panel" data-panel="sub">
+    <div class="sub-hero">
+      <span class="sub-hero-crown">👑</span>
+      <h2>Seja Sub</h2>
+      <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho. Toda ajuda mantém as lives rodando e o setup melhorando. 💜</p>
+      <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
+    </div>
+
+    <div class="sub-beneficios">
+      <h3>✨ Benefícios exclusivos</h3>
+      <div class="benefits-grid benefits-grid-2">
+        <div class="benefit"><b>🎖️ Cargos exclusivos no Discord</b><span>Apareça com destaque no servidor da comunidade.</span></div>
+        <div class="benefit"><b>🎁 Emotes personalizados pro chat</b><span>Use os emotes exclusivos dos subs em qualquer live.</span></div>
+        <div class="benefit"><b>💜 Sem anúncios</b><span>Assista as lives tranquilamente, sem interrupção.</span></div>
+        <div class="benefit"><b>🎮 Sorteios e eventos</b><span>Participação em sorteios e eventos exclusivos.</span></div>
+      </div>
+    </div>
+
+    <div class="sub-emotes">
+      <h3>🎨 Preview dos emotes</h3>
+      <p>Um gostinho do que você desbloqueia virando Sub. 💜</p>
+      <div class="emotes-grid" id="emotesGridComunidade"></div>
+    </div>
+
+    <div class="sub-cta">
+      <div>
+        <b>Pronto pra apoiar o cantinho?</b>
+        <span>Vira Sub na Twitch e vem fazer parte!</span>
+      </div>
+      <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch →</a>
+    </div>
+  </div>
+
   <!-- COMANDOS -->
   <div class="sub-panel" data-panel="comandos">
     <div class="cmds-wrap">
@@ -315,7 +349,6 @@
         <tbody id="cmdsBody"></tbody>
       </table>
       <p class="cmds-empty" id="cmdsEmpty" style="display:none">Nenhum comando encontrado.</p>
-      <a href="https://streamelements.com/asemtet0/commands" target="_blank" rel="noopener" class="full-commands" style="margin-top:14px;display:inline-flex">Ver todos no StreamElements →</a>
     </div>
   </div>
 
@@ -336,7 +369,7 @@
   </div>
 </section>
 
-<!-- ============ SETUP ============ -->
+<!-- SETUP -->
 <section id="sec-setup" class="page-section">
   <div class="section-header">
     <h2>Meu Setup</h2>
@@ -348,7 +381,7 @@
   <div class="sgrid" id="setupGrid"></div>
 </section>
 
-<!-- ============ SUGESTÕES ============ -->
+<!-- SUGESTÕES -->
 <section id="sec-sugestoes" class="page-section">
   <div class="section-header">
     <h2>Sugestões de Jogos & Ideias</h2>
@@ -398,7 +431,7 @@
   </div>
 </section>
 
-<!-- ============ ADMIN ============ -->
+<!-- ADMIN -->
 <section id="sec-admin" class="page-section">
   <div class="section-header">
     <h2>⚙️ Painel Admin</h2>
@@ -416,7 +449,6 @@
       <a href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener">Instagram</a>
       <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Discord</a>
       <a href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener">TikTok</a>
-      <a href="https://streamelements.com/asemtet0/commands" target="_blank" rel="noopener">Comandos</a>
     </div>
     <p class="footer-credit">© 2026 asemtet0 · Feito por <b>lukxsl</b> 💜</p>
     <div class="footer-updated">🔄 Atualizado em <b id="siteUpdated">—</b></div>

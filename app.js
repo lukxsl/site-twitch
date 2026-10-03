@@ -34,21 +34,19 @@ const COMANDOS_LISTA = [
 
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
 const LABEL_CARGO = {
-  dev: '🛠️ Dev',
-  dono: '👑 Dono',
-  administrador: '🛡️ Administrador',
-  moderador: '🔰 Moderador'
+  dev: '🛠️ Dev', dono: '👑 Dono',
+  administrador: '🛡️ Administrador', moderador: '🔰 Moderador'
 };
 
 const STATUS_TOOLTIP = {
-  'Todos':    'Ver todos os itens',
-  'Jogando':  'Estou jogando atualmente',
-  'Zerado':   'Terminei a história principal',
-  'Dropado':  'Comecei mas não vou continuar',
-  'Na fila':  'Vou jogar em breve, já escolhi',
+  'Todos': 'Ver todos os itens',
+  'Jogando': 'Estou jogando atualmente',
+  'Zerado': 'Terminei a história principal',
+  'Dropado': 'Comecei mas não vou continuar',
+  'Na fila': 'Vou jogar em breve, já escolhi',
   'Wishlist': 'Quero jogar algum dia, sem pressa',
   'Assistindo': 'Estou assistindo agora',
-  'Assistido':  'Já assisti'
+  'Assistido': 'Já assisti'
 };
 
 /* ============================================================
@@ -66,6 +64,7 @@ let ADMIN_TAB = 'votos';
 let ADMIN_DADOS = null;
 let ADMIN_TIER_TAB = 'jogos';
 let ADMIN_TIER = { jogos: [], filmes: [] };
+let ADMIN_MULTISEL = { ativo: false, ids: new Set() };
 let vodAtual = null, assistindoVod = false;
 let videosTw = [];
 let inicioLive = null;
@@ -110,7 +109,6 @@ function fmtDataHora(iso){
   return `${data} às ${hora}`;
 }
 
-/* B7 — Só é "novo" enquanto o jogo ainda não saiu do tier NR */
 function ehNovo(item){
   if(!item) return false;
   if(item.tier && item.tier !== 'NR') return false;
@@ -120,7 +118,7 @@ function ehNovo(item){
 }
 
 /* ============================================================
-   TOAST GLOBAL
+   TOAST
    ============================================================ */
 function toast(msg, tipo = 'ok'){
   const el = document.createElement('div');
@@ -136,7 +134,7 @@ function toast(msg, tipo = 'ok'){
 window.toast = toast;
 
 /* ============================================================
-   MODAL DE CONFIRMAÇÃO
+   CONFIRM MODAL
    ============================================================ */
 function confirmar(titulo = 'Confirmar?', texto = 'Tem certeza?', icone = '⚠️'){
   return new Promise(resolve => {
@@ -163,7 +161,7 @@ function confirmar(titulo = 'Confirmar?', texto = 'Tem certeza?', icone = '⚠�
 window.confirmar = confirmar;
 
 /* ============================================================
-   META / PROGRESSO
+   META
    ============================================================ */
 function atualizarMeta(pre, atual, marcos = MARCOS){
   const elDesc = $(pre+'Desc'), elNum = $(pre+'Num'), elBar = $(pre+'Bar');
@@ -195,19 +193,18 @@ function renderAviso(){
 }
 
 function renderEmotes(){
-  const g = $('emotesGrid'); if(!g || !EMOTES.length) return;
-  g.innerHTML = EMOTES.map(e => {
+  const html = EMOTES.map(e => {
     if(e.img) return `<div class="emote" title="${esc(e.nome || '')}"><img src="${esc(e.img)}" alt="${esc(e.nome || '')}" loading="lazy" onerror="this.replaceWith(document.createTextNode('💜'))"></div>`;
     return `<div class="emote" title="${esc(e.nome || '')}">${e.emoji || '💜'}</div>`;
   }).join('');
+  const g1 = $('emotesGrid'); if(g1) g1.innerHTML = html;
+  const g2 = $('emotesGridComunidade'); if(g2) g2.innerHTML = html;
 }
 
 function renderSiteUpdate(){
   const el = $('siteUpdated'); if(!el) return;
   const iso = CONFIG_GERAL.updatedAt;
-  if(iso){ el.textContent = fmtDataHora(iso); return; }
-  // Fallback: mostra a data estática do CONFIG
-  el.textContent = CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR');
+  el.textContent = iso ? fmtDataHora(iso) : (CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR'));
 }
 
 function renderHomeExtras(){
@@ -235,8 +232,7 @@ function renderPlaylist(){
     embed.innerHTML = `<p class="music-placeholder">🎧 Link da playlist inválido.</p>`;
     return;
   }
-  const id = m[1];
-  embed.innerHTML = `<iframe src="https://open.spotify.com/embed/playlist/${id}?theme=0"
+  embed.innerHTML = `<iframe src="https://open.spotify.com/embed/playlist/${m[1]}?theme=0"
     width="100%" height="380" frameborder="0" allowtransparency="true"
     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
     loading="lazy" title="Playlist do Spotify"></iframe>`;
@@ -259,22 +255,41 @@ function mudarAba(nome, salvar = true){
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
   window.scrollTo({ top:0, behavior:'smooth' });
-  if(nome === 'admin') adminIrPara(localStorage.getItem('admin:page') || 'home');
+  // NÃO força mais 'home' no admin — carrega de onde parou
+  if(nome === 'admin') carregarAdmin();
 }
 window.mudarAba = mudarAba;
 
+function abrirSejaSub(){
+  mudarAba('comunidade');
+  setTimeout(() => {
+    const tab = document.querySelector('.sub-tab[data-tab="sub"]');
+    if(tab) tab.click();
+  }, 100);
+}
+window.abrirSejaSub = abrirSejaSub;
+
 /* ============================================================
-   SUB-ABAS COMUNIDADE
+   SUB-ABAS COMUNIDADE (com persistência)
    ============================================================ */
 function setupComunidadeTabs(){
   const wrap = $('comunidadeTabs'); if(!wrap) return;
-  wrap.addEventListener('click', e => {
-    const b = e.target.closest('.sub-tab'); if(!b) return;
-    const tab = b.dataset.tab;
-    wrap.querySelectorAll('.sub-tab').forEach(x => x.classList.toggle('on', x === b));
+
+  const ativarTab = (tab) => {
+    localStorage.setItem('comunidade:tab', tab);
+    wrap.querySelectorAll('.sub-tab').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
     document.querySelectorAll('#sec-comunidade .sub-panel').forEach(p => {
       p.classList.toggle('on', p.dataset.panel === tab);
     });
+  };
+
+  // Restaura tab salva
+  const salva = localStorage.getItem('comunidade:tab') || 'discord';
+  ativarTab(salva);
+
+  wrap.addEventListener('click', e => {
+    const b = e.target.closest('.sub-tab'); if(!b) return;
+    ativarTab(b.dataset.tab);
   });
 }
 
@@ -305,12 +320,6 @@ function tickUptime(){
 }
 setInterval(tickUptime, 30000);
 
-async function carregarAtividade(){
-  // Sem SE_JWT, o bloco de atividade fica oculto
-  const wrap = $('tmFeedWrap'); if(!wrap) return;
-  wrap.style.display = 'none';
-}
-
 let toastLiveMostrado = false;
 async function verificarStatusTwitch() {
   const g = id => document.getElementById(id);
@@ -327,7 +336,6 @@ async function verificarStatusTwitch() {
     inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
     tickUptime();
 
-    // #21 — Toast "ao vivo" (só na primeira detecção por sessão)
     if (live && !toastLiveMostrado) {
       toastLiveMostrado = true;
       setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
@@ -451,7 +459,7 @@ document.addEventListener('click', e => {
 });
 
 /* ============================================================
-   COMANDOS DO CHAT (apenas os fixos)
+   COMANDOS
    ============================================================ */
 function renderComandos(filtroTxt = ''){
   const q = filtroTxt.toLowerCase().trim();
@@ -491,9 +499,7 @@ async function carregarBiblioteca(){
     const d = r.ok ? await r.json() : {};
     JOGOS = (Array.isArray(d.jogos) && d.jogos.length) ? d.jogos : JOGOS_FALLBACK;
     FILMES = (Array.isArray(d.filmes) && d.filmes.length) ? d.filmes : FILMES_FALLBACK;
-    if (d.aviso) console.warn('Tierlist:', d.aviso);
   }catch(e){
-    console.warn('Tierlist indisponível, usando padrão:', e.message);
     JOGOS = JOGOS_FALLBACK;
     FILMES = FILMES_FALLBACK;
   }
@@ -597,7 +603,7 @@ function aplicarModo(novo, salvar = true){
 
 function cartao(j,i){
   const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
-  const podeArrastar = !!(USUARIO && USUARIO.admin);
+  const podeArrastar = !!(USUARIO && USUARIO.admin) && !ADMIN_MULTISEL.ativo;
   const conq = j.conquistas && j.conquistas.total
     ? `<span class="conq">🏆 ${j.conquistas.obtidas}/${j.conquistas.total}</span>` : '';
   const novo = ehNovo(j) ? `<span class="novo">Novo</span>` : '';
@@ -632,7 +638,7 @@ function linha(cls, rotulo, lista){
 }
 
 function setupDragDrop(){
-  if(!USUARIO || !USUARIO.admin) return;
+  if(!USUARIO || !USUARIO.admin || ADMIN_MULTISEL.ativo) return;
   document.querySelectorAll('.g').forEach(el => {
     el.addEventListener('dragstart', e => {
       const i = Number(el.dataset.i);
@@ -800,7 +806,6 @@ async function checarLogin(){
   aplicarManutencao();
 }
 
-/* B1 — Aplica manutenção a cada checagem de estado */
 function aplicarManutencao(){
   const emManutencao = CONFIG_GERAL.manutencao && !(USUARIO && USUARIO.admin);
   let overlay = document.getElementById('manutencaoOverlay');
@@ -985,9 +990,7 @@ window.votar = votar;
    ============================================================ */
 function adminIrPara(pagina){
   ADMIN_PAGE = pagina;
-  if(pagina === 'votacao') ADMIN_TAB = 'votos';
-  if(pagina === 'tierlist') ADMIN_TIER_TAB = 'jogos';
-  localStorage.setItem('admin:page', pagina); // B3
+  localStorage.setItem('admin:page', pagina);
   carregarAdmin();
 }
 function adminIrAba(aba){ ADMIN_TAB = aba; localStorage.setItem('admin:tab', aba); renderAdminVotacao(); }
@@ -1012,9 +1015,10 @@ async function carregarAdmin(){
     </div>`;
     return;
   }
-  // B3 — restaura aba salva
+  // Restaura estado salvo
   ADMIN_PAGE = localStorage.getItem('admin:page') || 'home';
-  if(ADMIN_PAGE === 'sugestoes') ADMIN_PAGE = 'home'; // B5 — aba removida
+  ADMIN_TAB = localStorage.getItem('admin:tab') || 'votos';
+  ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
 
   if(sub){
     sub.textContent = ADMIN_PAGE === 'home' ? 'Gerencie tudo do site pelo painel.'
@@ -1117,7 +1121,6 @@ function renderAdminVotacao(){
   const totalVotos = Object.values(contagem).reduce((a,b)=>a+b,0);
   const mapaOpcao = {};
   (config || []).forEach(o => { mapaOpcao[o.id] = o; });
-
   const meu = USUARIO.cargo || 'moderador';
   const podeEditar = nivel(meu) >= 2;
   const podeResetar = nivel(meu) >= 3;
@@ -1381,6 +1384,8 @@ async function carregarAdminTierList(){
     return;
   }
   ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
+  ADMIN_MULTISEL = { ativo: false, ids: new Set() };
+  document.body.classList.remove('admin-multisel');
   renderAdminTierList();
 }
 
@@ -1391,27 +1396,57 @@ function renderAdminTierList(){
   const botaoImport = (ADMIN_TIER_TAB === 'jogos' && podeImportar)
     ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>`
     : '';
+
+  const barraSel = ADMIN_MULTISEL.ativo ? `
+    <div class="admin-bar">
+      <b>☑️ ${ADMIN_MULTISEL.ids.size} selecionado${ADMIN_MULTISEL.ids.size === 1 ? '' : 's'}</b>
+      <div class="admin-actions" style="margin:0">
+        <button class="admin-btn perigo" onclick="apagarSelecionados()" ${ADMIN_MULTISEL.ids.size ? '' : 'disabled'}>🗑️ Apagar selecionados</button>
+        <button class="admin-btn ghost" onclick="cancelarMultiSel()">Cancelar</button>
+      </div>
+    </div>
+  ` : '';
+
+  const itemHTML = (it, i) => {
+    if(ADMIN_MULTISEL.ativo){
+      const sel = ADMIN_MULTISEL.ids.has(it.id);
+      return `
+        <div class="admin-item-select ${sel ? 'sel' : ''}" onclick="toggleSelItem('${esc(it.id)}')">
+          <span class="cb"></span>
+          ${it.capa ? `<img src="${esc(it.capa)}" alt="" style="width:44px;height:58px;border-radius:6px;object-fit:cover;flex:none;background:#1d1433;border:1px solid var(--line)" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3" style="width:44px;height:58px;display:grid;place-items:center;background:#1d1433;border:1px solid var(--line);border-radius:6px">🎮</div>'}
+          <div class="admin-item-info" style="flex:1;min-width:0">
+            <b style="color:var(--white);font-size:.9rem">${esc(it.nome)}</b>
+            <small style="color:var(--mute);font-size:.68rem">Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="admin-item">
+        ${it.capa ? `<img src="${esc(it.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
+        <div class="admin-item-info">
+          <b>${esc(it.nome)}</b>
+          <small>Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
+        </div>
+        <button class="btn-mini" onclick="editarItemTier(${i})">Editar</button>
+        <button class="btn-mini danger" onclick="removerItemTier(${i})">Remover</button>
+      </div>
+    `;
+  };
+
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `
     <div class="admin-tabs">
       <button class="${ADMIN_TIER_TAB === 'jogos' ? 'on' : ''}" onclick="adminIrTierTab('jogos')">🎮 Jogos (${ADMIN_TIER.jogos.length})</button>
       <button class="${ADMIN_TIER_TAB === 'filmes' ? 'on' : ''}" onclick="adminIrTierTab('filmes')">🎬 Filmes (${ADMIN_TIER.filmes.length})</button>
     </div>
+    ${barraSel}
     <div class="admin-card">
       <h3>${ADMIN_TIER_TAB === 'jogos' ? '🎮 Jogos' : '🎬 Filmes'} <span class="cont">${lista.length} itens</span></h3>
       <div>
-        ${lista.length ? lista.map((it, i) => `
-          <div class="admin-item">
-            ${it.capa ? `<img src="${esc(it.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
-            <div class="admin-item-info">
-              <b>${esc(it.nome)}</b>
-              <small>Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
-            </div>
-            <button class="btn-mini" onclick="editarItemTier(${i})">Editar</button>
-            <button class="btn-mini danger" onclick="removerItemTier(${i})">Remover</button>
-          </div>
-        `).join('') : '<p class="admin-vazio" style="padding:20px">Nenhum item ainda</p>'}
+        ${lista.length ? lista.map(itemHTML).join('') : '<p class="admin-vazio" style="padding:20px">Nenhum item ainda</p>'}
       </div>
       <div class="admin-actions">
+        ${!ADMIN_MULTISEL.ativo && lista.length ? `<button class="admin-btn ghost" onclick="ativarMultiSel()">☑️ Selecionar vários</button>` : ''}
         <button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : 'filme'}</button>
         ${botaoImport}
         <button class="admin-btn ghost" onclick="carregarAdminTierList()">🔄 Recarregar</button>
@@ -1420,11 +1455,60 @@ function renderAdminTierList(){
   `;
 }
 
+function ativarMultiSel(){
+  ADMIN_MULTISEL = { ativo: true, ids: new Set() };
+  document.body.classList.add('admin-multisel');
+  renderAdminTierList();
+}
+function cancelarMultiSel(){
+  ADMIN_MULTISEL = { ativo: false, ids: new Set() };
+  document.body.classList.remove('admin-multisel');
+  renderAdminTierList();
+}
+function toggleSelItem(id){
+  if(ADMIN_MULTISEL.ids.has(id)) ADMIN_MULTISEL.ids.delete(id);
+  else ADMIN_MULTISEL.ids.add(id);
+  renderAdminTierList();
+}
+async function apagarSelecionados(){
+  const ids = Array.from(ADMIN_MULTISEL.ids);
+  if(!ids.length){ toast('Selecione algo primeiro', 'warn'); return; }
+  const tipo = ADMIN_TIER_TAB;
+  const nomes = ids.slice(0, 5).map(id => {
+    const it = ADMIN_TIER[tipo].find(x => x.id === id);
+    return it ? it.nome : id;
+  }).join(', ');
+  const extra = ids.length > 5 ? ` e mais ${ids.length - 5}` : '';
+  const ok = await confirmar(
+    `Apagar ${ids.length} itens?`,
+    `Vou apagar: ${nomes}${extra}. Essa ação não volta.`,
+    '🗑️'
+  );
+  if(!ok) return;
+  try{
+    const r = await fetch('/api/admin?action=tierlist-delete-many', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, tipo })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    toast(`✅ ${d.apagados} itens apagados`, 'ok');
+    cancelarMultiSel();
+    await carregarAdminTierList();
+    await carregarBiblioteca();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.ativarMultiSel = ativarMultiSel;
+window.cancelarMultiSel = cancelarMultiSel;
+window.toggleSelItem = toggleSelItem;
+window.apagarSelecionados = apagarSelecionados;
+
 async function importarSteam(){
   const btn = $('btnImportarSteam');
-  const ok = await confirmar('Importar da Steam?', 'Vou buscar seus jogos na Steam e adicionar na tier list. Pode demorar alguns segundos.', '📥');
+  const ok = await confirmar('Importar da Steam?', 'Vou buscar seus jogos na Steam e adicionar na tier list. Pode demorar alguns segundos (a sinopse é traduzida automaticamente).', '📥');
   if(!ok) return;
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando…'; }
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar)'; }
   try{
     const r = await fetch('/api/admin?action=importar-steam', { method: 'POST' });
     const d = await r.json();
@@ -1671,7 +1755,6 @@ async function renderAdminAdmins(){
         <button class="admin-btn ghost" onclick="renderAdminAdmins()">🔄 Atualizar</button>
       </div>
     </div>
-
     <div class="admin-card">
       <h3>📋 Cargos e permissões</h3>
       <table class="cmds-table" style="font-size:.82rem">
@@ -1880,7 +1963,7 @@ async function renderAdminConfig(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<p class="admin-vazio">Carregando…</p>`;
   try {
-    const r = await fetch('/api/admin?action=config-get');
+    const r = await fetch('/api/admin?action=config-get', { cache:'no-store' });
     const d = await r.json();
     const av = d.aviso || { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
     area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `
@@ -1906,14 +1989,12 @@ async function renderAdminConfig(){
           <div><label>Texto</label><textarea id="cfgAvisoTexto" rows="3">${esc(av.texto || '')}</textarea></div>
         </div>
       </div>
-
       <div class="admin-card">
         <h3>💜 Link de doação</h3>
         <div class="admin-form">
           <div><label>URL</label><input id="cfgDonate" type="text" value="${esc(d.donate || CONFIG.donate || '')}"></div>
         </div>
       </div>
-
       <div class="admin-card">
         <h3>💬 Recado da Soso</h3>
         <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Aparece na home, dentro do card "Apoie o cantinho".</p>
@@ -1921,17 +2002,15 @@ async function renderAdminConfig(){
           <div><label>Texto do recado</label><textarea id="cfgRecado" rows="3" placeholder="Ex: Essa semana tem live de terror! 💜">${esc(d.recado || '')}</textarea></div>
         </div>
       </div>
-
       <div class="admin-card">
         <h3>📺 Horas do mês</h3>
         <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">
-          Preenchido automaticamente pela Twitch (soma dos VODs do mês atual). Você pode sobrescrever manualmente se quiser.
+          Preenchido automaticamente pela Twitch. Você pode sobrescrever manualmente se quiser.
         </p>
         <div class="admin-form">
           <div><label>Horas (texto livre — deixe vazio pra usar Twitch)</label><input id="cfgHorasMes" type="text" placeholder="Ex: 32h" value="${esc(d.horasMes || '')}"></div>
         </div>
       </div>
-
       <div class="admin-card">
         <h3>🔧 Modo manutenção</h3>
         <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">
@@ -1942,7 +2021,6 @@ async function renderAdminConfig(){
           Ligar modo manutenção
         </label>
       </div>
-
       <div class="admin-actions">
         <button class="admin-btn" onclick="salvarConfig()">💾 Salvar tudo</button>
         <button class="admin-btn ghost" onclick="renderAdminConfig()">🔄 Recarregar</button>
@@ -1981,7 +2059,7 @@ async function salvarConfig(){
     renderAviso();
     renderHomeExtras();
     renderSiteUpdate();
-    aplicarManutencao(); // B1
+    aplicarManutencao();
     toast('Salvo! ✅', 'ok');
   }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
@@ -2022,7 +2100,7 @@ async function renderAdminLogs(){
 window.renderAdminLogs = renderAdminLogs;
 
 /* ============================================================
-   SUGESTÕES PÚBLICAS (formulário continua funcionando)
+   SUGESTÕES PÚBLICAS
    ============================================================ */
 async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
@@ -2075,7 +2153,7 @@ async function carregarConfigPublica(){
     renderAviso();
     renderHomeExtras();
     renderSiteUpdate();
-    aplicarManutencao(); // B1 — aplica manutenção pro visitante anônimo
+    aplicarManutencao();
   }catch(e){
     console.error('[config] erro:', e);
   }
@@ -2179,7 +2257,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     dlgEl.addEventListener('click', e => { if(e.target === dlgEl) dlgEl.close(); });
   }
 
-  // B2 — carrega config ANTES de tudo, garante que aviso/manutenção apareçam
   await carregarConfigPublica();
 
   verificarStatusTwitch();

@@ -1,5 +1,5 @@
 // Vercel serverless: /api/config.js
-// Devolve config pública. Não exige login.
+// Devolve config pública SEM CACHE (evita CDN entregar versão antiga).
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
@@ -13,6 +13,9 @@ async function redis(cmds) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido' });
   if (!URL_ || !TOKEN) return res.status(200).json({});
 
@@ -29,7 +32,6 @@ export default async function handler(req, res) {
     let aviso = null;
     try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
 
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=60');
     return res.status(200).json({
       aviso,
       donate: donateRaw || null,

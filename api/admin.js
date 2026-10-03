@@ -1,7 +1,5 @@
 // Vercel serverless: /api/admin.js
-// Painel admin completo: votação, admins, tier list, banidos, config, logs,
-// sugestões, buscar-jogo (IGDB + Wikipedia fallback), buscar-filme (TMDB),
-// conquistas Steam, traduzir (Google grátis) e importar-steam.
+// Painel admin completo.
 //
 // Env necessárias:
 //   UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN  (ou KV_REST_API_*)
@@ -27,7 +25,7 @@ const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.t
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
 
 /* ============================================================
-   HELPERS DE SESSÃO
+   SESSÃO
    ============================================================ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
@@ -194,7 +192,7 @@ async function igdbBuscar(nome){
       if(wikiPt) principal.sinopse = wikiPt;
       else {
         const wikiEn = await sinopseWikipedia(principal.nome, 'en');
-        if(wikiEn) principal.sinopse = wikiEn; // fica em EN, o botão traduzir resolve
+        if(wikiEn) principal.sinopse = wikiEn;
       }
     }
 
@@ -278,7 +276,6 @@ async function importarSteam(){
     .sort((a,b) => b.playtime_forever - a.playtime_forever)
     .slice(0, 60);
 
-  // Pega tier list atual
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
   try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
@@ -289,7 +286,6 @@ async function importarSteam(){
     if(existentes.has(g.name.toLowerCase())){ pulados++; continue; }
     const capaSteam = `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`;
 
-    // Enriquece com IGDB (nota, sinopse)
     let extra = {};
     try { extra = await igdbBuscar(g.name); } catch(e){}
 
@@ -302,7 +298,6 @@ async function importarSteam(){
       } catch(e){}
     }
 
-    // Puxa conquistas Steam
     let conquistas = null;
     try { conquistas = await buscarConquistasSteam(g.appid); } catch(e){}
 
@@ -343,9 +338,7 @@ export default async function handler(req, res){
   const quem = sessao.username || 'anônimo';
 
   try {
-    /* ============================================================
-       VOTAÇÃO
-       ============================================================ */
+    /* -------- VOTAÇÃO -------- */
     if(req.method === 'GET' && action === 'votos'){
       const ciclo = (await redis([['GET','votos:ciclo_atual']]))[0] || '1';
       const [usuariosRaw, contRaw, configRaw] = await redis([
@@ -404,9 +397,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, novoCiclo: novo });
     }
 
-    /* ============================================================
-       ADMINS (merge com perfis salvos no login)
-       ============================================================ */
+    /* -------- ADMINS -------- */
     if(req.method === 'GET' && (action === 'admins' || action === 'admins-ver')){
       const [flat, perfisFlat] = await redis([
         ['HGETALL', 'admins'],
@@ -504,9 +495,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* ============================================================
-       TIER LIST
-       ============================================================ */
+    /* -------- TIER LIST -------- */
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
       const [jogosRaw, filmesRaw] = await redis([['GET','tierlist:jogos'], ['GET','tierlist:filmes']]);
       let jogos = [], filmes = [];
@@ -527,9 +516,23 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* ============================================================
-       BUSCAS AUTOMÁTICAS
-       ============================================================ */
+    if(req.method === 'POST' && action === 'tierlist-delete-many'){
+      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      const { ids, tipo } = req.body || {};
+      if(!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'Nada pra apagar' });
+      const key = (tipo === 'filmes') ? 'tierlist:filmes' : 'tierlist:jogos';
+      const [raw] = await redis([['GET', key]]);
+      let lista = [];
+      try { lista = raw ? JSON.parse(raw) : []; } catch(e){}
+      const antes = lista.length;
+      lista = lista.filter(it => !ids.includes(it.id));
+      const apagados = antes - lista.length;
+      await redis([['SET', key, JSON.stringify(lista)]]);
+      await logAcao(quem, sessao.cargo, `Removeu ${apagados} itens de uma vez (${tipo})`);
+      return res.status(200).json({ ok: true, apagados, restantes: lista.length });
+    }
+
+    /* -------- BUSCAS AUTOMÁTICAS -------- */
     if(req.method === 'GET' && action === 'buscar-jogo'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const nome = String((req.query||{}).nome || '').trim();
@@ -565,9 +568,7 @@ export default async function handler(req, res){
       return res.status(200).json({ traduzido });
     }
 
-    /* ============================================================
-       IMPORTAR DA STEAM
-       ============================================================ */
+    /* -------- IMPORTAR STEAM -------- */
     if(req.method === 'POST' && action === 'importar-steam'){
       if(meNivel < 3) return res.status(403).json({ error: 'Precisa ser Dono ou Dev' });
       const r = await importarSteam();
@@ -576,44 +577,7 @@ export default async function handler(req, res){
       return res.status(200).json(r);
     }
 
-    /* ============================================================
-       SUGESTÕES / ATIVIDADE
-       ============================================================ */
-    if(req.method === 'GET' && action === 'sugestoes-ver'){
-      if(meNivel < 1) return res.status(403).json({ error: 'Sem permissão' });
-      const jwt = process.env.SE_JWT, canal = process.env.SE_CHANNEL_ID;
-      if(!jwt || !canal){
-        return res.status(200).json({ itens: [], aviso: 'StreamElements não configurado' });
-      }
-      try {
-        const r = await fetch(`https://api.streamelements.com/kappa/v2/activities/${canal}?limit=100`, {
-          headers: { Authorization: `Bearer ${jwt}`, Accept: 'application/json' }
-        });
-        if(!r.ok) return res.status(200).json({ itens: [], aviso: `StreamElements HTTP ${r.status}` });
-        const lista = await r.json();
-        const MAPA = { subscriber:'subscriber', tip:'tip', raid:'raid', host:'raid', follow:'follow', cheer:'cheer' };
-        const vistos = {}, itens = [];
-        for(const a of (Array.isArray(lista) ? lista : [])){
-          const tipo = MAPA[a.type];
-          if(!tipo || vistos[tipo]) continue;
-          vistos[tipo] = true;
-          const d = a.data || {};
-          itens.push({
-            tipo,
-            usuario: d.displayName || d.username || 'alguém',
-            valor: d.amount || null,
-            data: a.createdAt
-          });
-        }
-        return res.status(200).json({ itens });
-      } catch(e){
-        return res.status(200).json({ itens: [], aviso: 'Erro ao consultar StreamElements' });
-      }
-    }
-
-    /* ============================================================
-       BANIDOS
-       ============================================================ */
+    /* -------- BANIDOS -------- */
     if(req.method === 'GET' && action === 'banidos-ver'){
       const [flat] = await redis([['HGETALL', 'banidos']]);
       const banidos = [];
@@ -646,9 +610,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* ============================================================
-       CONFIG GERAL (com recado, horasMes e updatedAt)
-       ============================================================ */
+    /* -------- CONFIG (com recado, horasMes e updatedAt) -------- */
     if(req.method === 'GET' && action === 'config-get'){
       const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw] = await redis([
         ['GET', 'config:aviso'],
@@ -687,9 +649,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, updatedAt: agora });
     }
 
-    /* ============================================================
-       LOGS
-       ============================================================ */
+    /* -------- LOGS -------- */
     if(req.method === 'GET' && action === 'logs-ver'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const [flat] = await redis([['LRANGE', 'admin:logs', '0', '49']]);
