@@ -59,7 +59,7 @@ async function logAcao(quem, cargo, acao){
 }
 
 /* ============================================================
-   TRADUÇÃO EN→PT (Google grátis, sem chave)
+   TRADUÇÃO EN→PT (Google grátis)
    ============================================================ */
 async function traduzir(texto){
   if(!texto) return null;
@@ -107,7 +107,7 @@ async function sinopseWikipedia(nome, lang = 'pt'){
 }
 
 /* ============================================================
-   IGDB — busca de jogos (com fallback Wikipedia PT→EN)
+   IGDB
    ============================================================ */
 let igdbCache = { token: null, exp: 0 };
 async function igdbToken(){
@@ -141,19 +141,16 @@ async function igdbBuscar(nome){
 
     const campos = 'fields name, rating, aggregated_rating, total_rating_count, cover.url, summary, first_release_date, version_parent, category;';
 
-    // 1) match exato sem DLCs, ordenado por popularidade
     let lista = await post(
       `where name = "${limpo}" & version_parent = null & category = 0; ${campos} sort total_rating_count desc; limit 10;`
     );
 
-    // 2) match exato sem filtrar categoria
     if(!Array.isArray(lista) || !lista.length){
       lista = await post(
         `where name = "${limpo}" & version_parent = null; ${campos} sort total_rating_count desc; limit 10;`
       );
     }
 
-    // 3) fallback search
     if(!Array.isArray(lista) || !lista.length){
       lista = await post(
         `search "${limpo}"; ${campos} where version_parent = null; limit 15;`
@@ -186,7 +183,6 @@ async function igdbBuscar(nome){
     const resultados = lista.map(mapJogo);
     const principal = resultados[0];
 
-    // Fallback: se IGDB não trouxe sinopse, tenta Wikipedia PT e depois EN
     if(!principal.sinopse){
       const wikiPt = await sinopseWikipedia(principal.nome, 'pt');
       if(wikiPt) principal.sinopse = wikiPt;
@@ -203,7 +199,7 @@ async function igdbBuscar(nome){
 }
 
 /* ============================================================
-   TMDB — filmes (sinopse PT-BR nativa)
+   TMDB
    ============================================================ */
 async function tmdbBuscar(nome, ano){
   if(!TMDB_TOKEN && !TMDB_KEY) return { erro: 'TMDB não configurado' };
@@ -262,7 +258,7 @@ async function buscarConquistasSteam(appid){
 }
 
 /* ============================================================
-   Steam → importar jogos (com tradução automática da sinopse)
+   Importar Steam
    ============================================================ */
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
@@ -289,7 +285,6 @@ async function importarSteam(){
     let extra = {};
     try { extra = await igdbBuscar(g.name); } catch(e){}
 
-    // Traduz a sinopse se estiver em EN
     let comentario = extra.sinopse || '';
     if(comentario){
       try {
@@ -516,6 +511,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
+    /* -------- APAGAR MÚLTIPLOS -------- */
     if(req.method === 'POST' && action === 'tierlist-delete-many'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const { ids, tipo } = req.body || {};
@@ -532,7 +528,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, apagados, restantes: lista.length });
     }
 
-    /* -------- BUSCAS AUTOMÁTICAS -------- */
+    /* -------- BUSCAS -------- */
     if(req.method === 'GET' && action === 'buscar-jogo'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const nome = String((req.query||{}).nome || '').trim();
@@ -610,7 +606,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- CONFIG (com recado, horasMes e updatedAt) -------- */
+    /* -------- CONFIG -------- */
     if(req.method === 'GET' && action === 'config-get'){
       const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw] = await redis([
         ['GET', 'config:aviso'],

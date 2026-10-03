@@ -2,17 +2,6 @@
 const STREAMER = 'asemtet0';
 const DISCORD_INVITE = 'J4gGaKWFPZ';
 
-// ---- METAS ----
-const GOALS = {
-  followers: 10000,
-  subs: 50,
-  discord: 250
-};
-
-// A API da Twitch não expõe subs via client_credentials.
-// Configure TWITCH_SUBS_ATUAIS na Vercel se quiser.
-const SUBS_ATUAIS = Number(process.env.TWITCH_SUBS_ATUAIS) || 45;
-
 let cache = { token: null, exp: 0 };
 
 async function getToken(id, secret) {
@@ -50,7 +39,7 @@ function calcularHorasMes(videos) {
     if (d.getUTCFullYear() !== anoAtual || d.getUTCMonth() !== mesAtual) continue;
     totalMin += duracaoParaMin(v.duration);
   }
-  return Math.round(totalMin / 60); // retorna horas arredondadas
+  return Math.round(totalMin / 60);
 }
 
 export default async function handler(req, res) {
@@ -93,8 +82,6 @@ export default async function handler(req, res) {
     });
     const videos = (v.data || []).map(mapVideo);
     const video = videos[0] || null;
-
-    // Horas do mês atual (soma dos VODs publicados nesse mês)
     const horasMes = calcularHorasMes(videos);
 
     const c = ch.data && ch.data[0];
@@ -127,8 +114,7 @@ export default async function handler(req, res) {
       },
       followers: followersTotal || null,
       discord: discordTotal || null,
-      subs: SUBS_ATUAIS,
-      horasMes, // número (ex: 32) — frontend adiciona o "h"
+      horasMes,
       video, videos, game, clips
     });
   } catch (e) {

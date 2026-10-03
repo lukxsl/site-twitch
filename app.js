@@ -255,7 +255,6 @@ function mudarAba(nome, salvar = true){
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
   window.scrollTo({ top:0, behavior:'smooth' });
-  // NÃO força mais 'home' no admin — carrega de onde parou
   if(nome === 'admin') carregarAdmin();
 }
 window.mudarAba = mudarAba;
@@ -270,7 +269,7 @@ function abrirSejaSub(){
 window.abrirSejaSub = abrirSejaSub;
 
 /* ============================================================
-   SUB-ABAS COMUNIDADE (com persistência)
+   SUB-ABAS COMUNIDADE
    ============================================================ */
 function setupComunidadeTabs(){
   const wrap = $('comunidadeTabs'); if(!wrap) return;
@@ -283,7 +282,6 @@ function setupComunidadeTabs(){
     });
   };
 
-  // Restaura tab salva
   const salva = localStorage.getItem('comunidade:tab') || 'discord';
   ativarTab(salva);
 
@@ -341,7 +339,8 @@ async function verificarStatusTwitch() {
       setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
     }
 
-    if (data.horasMes != null) {
+    // FIX: se o admin já preencheu manualmente, mantém o valor dele
+    if (data.horasMes != null && !CONFIG_GERAL.horasMes) {
       CONFIG_GERAL.horasMes = typeof data.horasMes === 'number'
         ? data.horasMes.toLocaleString('pt-BR') + 'h'
         : String(data.horasMes);
@@ -405,6 +404,31 @@ document.addEventListener('click', e => {
   const b = e.target.closest('.tm-vod');
   if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]);
 });
+
+/* ============================================================
+   OUVINDO AGORA (Last.fm)
+   ============================================================ */
+async function carregarOuvindoAgora(){
+  const card = $('ouvindoCard'); if(!card) return;
+  try {
+    const r = await fetch('/api/lastfm', { cache: 'no-store' });
+    if(!r.ok) { card.style.display = 'none'; return; }
+    const d = await r.json();
+    if(!d || !d.tocando || !d.faixa){ card.style.display = 'none'; return; }
+
+    $('ouvindoFaixa').textContent = d.faixa;
+    $('ouvindoArtista').textContent = d.artista ? `${d.artista}${d.album ? ' · ' + d.album : ''}` : '';
+    const capa = $('ouvindoCapa');
+    if(d.capa){ capa.src = d.capa; capa.style.display = ''; capa.onerror = () => { capa.style.display = 'none'; }; }
+    else { capa.style.display = 'none'; }
+    const link = $('ouvindoLink');
+    if(d.url){ link.href = d.url; link.style.display = ''; }
+    else link.style.display = 'none';
+    card.style.display = '';
+  } catch(e) {
+    card.style.display = 'none';
+  }
+}
 
 /* ============================================================
    CLIPES
@@ -1015,7 +1039,6 @@ async function carregarAdmin(){
     </div>`;
     return;
   }
-  // Restaura estado salvo
   ADMIN_PAGE = localStorage.getItem('admin:page') || 'home';
   ADMIN_TAB = localStorage.getItem('admin:tab') || 'votos';
   ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
@@ -1028,6 +1051,7 @@ async function carregarAdmin(){
                     : ADMIN_PAGE === 'banidos' ? 'Quem não pode votar.'
                     : ADMIN_PAGE === 'config' ? 'Aviso, doação, recado, horas e manutenção.'
                     : ADMIN_PAGE === 'logs' ? 'Histórico de ações.'
+                    : ADMIN_PAGE === 'backup' ? 'Backup e restauração.'
                     : '';
   }
   if(ADMIN_PAGE === 'home') renderAdminHome();
@@ -1037,6 +1061,7 @@ async function carregarAdmin(){
   else if(ADMIN_PAGE === 'banidos') await renderAdminBanidos();
   else if(ADMIN_PAGE === 'config') await renderAdminConfig();
   else if(ADMIN_PAGE === 'logs') await renderAdminLogs();
+  else if(ADMIN_PAGE === 'backup') await renderAdminBackup();
 }
 
 function renderAdminHome(){
@@ -1056,7 +1081,7 @@ function renderAdminHome(){
       <button class="admin-menu-card" onclick="adminIrPara('tierlist')">
         <span class="ic">🎮</span>
         <h3>Tier List</h3>
-        <p>Adicionar, editar e remover jogos e filmes.</p>
+        <p>Adicionar, editar, remover e apagar em massa.</p>
         <span class="cta">Abrir →</span>
       </button>` : ''}
       <button class="admin-menu-card" onclick="adminIrPara('banidos')">
@@ -1076,6 +1101,12 @@ function renderAdminHome(){
         <span class="ic">⚙️</span>
         <h3>Config geral</h3>
         <p>Aviso, doação, recado, horas e manutenção.</p>
+        <span class="cta">Abrir →</span>
+      </button>
+      <button class="admin-menu-card" onclick="adminIrPara('backup')">
+        <span class="ic">💾</span>
+        <h3>Backup</h3>
+        <p>Criar, baixar e restaurar backups do site.</p>
         <span class="cta">Abrir →</span>
       </button>` : ''}
       ${podeEditar ? `
@@ -1397,10 +1428,12 @@ function renderAdminTierList(){
     ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>`
     : '';
 
+  const todosSel = lista.length > 0 && ADMIN_MULTISEL.ids.size === lista.length;
   const barraSel = ADMIN_MULTISEL.ativo ? `
     <div class="admin-bar">
-      <b>☑️ ${ADMIN_MULTISEL.ids.size} selecionado${ADMIN_MULTISEL.ids.size === 1 ? '' : 's'}</b>
+      <b>☑️ ${ADMIN_MULTISEL.ids.size} de ${lista.length} selecionado${ADMIN_MULTISEL.ids.size === 1 ? '' : 's'}</b>
       <div class="admin-actions" style="margin:0">
+        <button class="admin-btn ghost" onclick="toggleSelTodos()">${todosSel ? '☐ Desmarcar tudo' : '☑️ Selecionar tudo'}</button>
         <button class="admin-btn perigo" onclick="apagarSelecionados()" ${ADMIN_MULTISEL.ids.size ? '' : 'disabled'}>🗑️ Apagar selecionados</button>
         <button class="admin-btn ghost" onclick="cancelarMultiSel()">Cancelar</button>
       </div>
@@ -1454,7 +1487,6 @@ function renderAdminTierList(){
     </div>
   `;
 }
-
 function ativarMultiSel(){
   ADMIN_MULTISEL = { ativo: true, ids: new Set() };
   document.body.classList.add('admin-multisel');
@@ -1468,6 +1500,15 @@ function cancelarMultiSel(){
 function toggleSelItem(id){
   if(ADMIN_MULTISEL.ids.has(id)) ADMIN_MULTISEL.ids.delete(id);
   else ADMIN_MULTISEL.ids.add(id);
+  renderAdminTierList();
+}
+function toggleSelTodos(){
+  const lista = ADMIN_TIER[ADMIN_TIER_TAB] || [];
+  if(ADMIN_MULTISEL.ids.size === lista.length){
+    ADMIN_MULTISEL.ids = new Set();
+  } else {
+    ADMIN_MULTISEL.ids = new Set(lista.map(it => it.id));
+  }
   renderAdminTierList();
 }
 async function apagarSelecionados(){
@@ -1502,11 +1543,12 @@ async function apagarSelecionados(){
 window.ativarMultiSel = ativarMultiSel;
 window.cancelarMultiSel = cancelarMultiSel;
 window.toggleSelItem = toggleSelItem;
+window.toggleSelTodos = toggleSelTodos;
 window.apagarSelecionados = apagarSelecionados;
 
 async function importarSteam(){
   const btn = $('btnImportarSteam');
-  const ok = await confirmar('Importar da Steam?', 'Vou buscar seus jogos na Steam e adicionar na tier list. Pode demorar alguns segundos (a sinopse é traduzida automaticamente).', '📥');
+  const ok = await confirmar('Importar da Steam?', 'Vou buscar seus jogos na Steam e adicionar na tier list. A sinopse é traduzida automaticamente — pode demorar um pouco.', '📥');
   if(!ok) return;
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar)'; }
   try{
@@ -1528,7 +1570,7 @@ function abrirModalItemTier(i){
   const tipo = ADMIN_TIER_TAB;
   const lista = ADMIN_TIER[tipo];
   const ehNovo = (i === -1);
-  const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null } : lista[i];
+  const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null, appid:null } : lista[i];
   const statusOpcoes = tipo === 'jogos'
     ? ['Jogando','Zerado','Dropado','Na fila','Wishlist']
     : ['Assistindo','Assistido','Na fila'];
@@ -1560,7 +1602,11 @@ function abrirModalItemTier(i){
         <div><label>Nota (0-10)</label><input id="itemNota" type="number" min="0" max="10" step="0.1" value="${it.nota || 0}"></div>
         ${tipo === 'jogos' ? `
           <div><label>Horas</label><input id="itemHoras" type="number" min="0" step="0.1" value="${it.horas || 0}"></div>
-          <div><label>Conquistas (obtidas/total)</label>
+          <div>
+            <label style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+              <span>Conquistas (obtidas/total)</span>
+              ${it.appid ? `<button type="button" class="btn-mini" id="btnConqAuto" onclick="buscarConquistasAuto(${it.appid})" style="font-size:.65rem;padding:3px 8px;border:1px solid var(--line);background:transparent;color:var(--purple-light);border-radius:6px;cursor:pointer">🏆 Buscar</button>` : ''}
+            </label>
             <div style="display:flex;gap:6px">
               <input id="itemConqObt" type="number" min="0" value="${it.conquistas?.obtidas || 0}" placeholder="15">
               <input id="itemConqTot" type="number" min="0" value="${it.conquistas?.total || 0}" placeholder="50">
@@ -1626,6 +1672,30 @@ async function buscarItemAuto(){
 }
 window.buscarItemAuto = buscarItemAuto;
 
+async function buscarConquistasAuto(appid){
+  if(!appid) return;
+  const btn = $('btnConqAuto');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳'; }
+  try{
+    const r = await fetch(`/api/admin?action=buscar-conquistas&appid=${appid}`);
+    const d = await r.json();
+    if(d.erro){
+      toast('⚠️ ' + d.erro, 'warn');
+    } else if(d.total){
+      $('itemConqObt').value = d.obtidas;
+      $('itemConqTot').value = d.total;
+      toast(`🏆 ${d.obtidas}/${d.total} conquistas`, 'ok');
+    } else {
+      toast('Sem conquistas nesse jogo', 'warn');
+    }
+  }catch(e){
+    toast('Erro ao buscar conquistas', 'erro');
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = '🏆 Buscar'; }
+  }
+}
+window.buscarConquistasAuto = buscarConquistasAuto;
+
 async function traduzirComentario(){
   const ta = $('itemComentario');
   const texto = ta.value.trim();
@@ -1652,12 +1722,16 @@ async function salvarItemTier(i){
   const nome = $('itemNome').value.trim();
   if(!nome){ toast('Digite um nome!', 'warn'); return; }
 
+  const anterior = i >= 0 ? ADMIN_TIER[tipo][i] : {};
+
   const item = {
-    id: (i >= 0 && ADMIN_TIER[tipo][i].id) || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
+    id: anterior.id || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
     nome, tier: $('itemTier').value, status: $('itemStatus').value,
     nota: Number($('itemNota').value) || 0,
     capa: $('itemCapa').value.trim() || null,
-    comentario: $('itemComentario').value.trim()
+    comentario: $('itemComentario').value.trim(),
+    appid: anterior.appid || null,
+    adicionadoEm: anterior.adicionadoEm || new Date().toISOString()
   };
   if(tipo === 'jogos'){
     item.horas = Number($('itemHoras').value) || 0;
@@ -1668,8 +1742,6 @@ async function salvarItemTier(i){
     item.duracao = Number($('itemDuracao').value) || null;
     item.ano = Number($('itemAno').value) || null;
   }
-  if(i < 0) item.adicionadoEm = new Date().toISOString();
-  else if(ADMIN_TIER[tipo][i].adicionadoEm) item.adicionadoEm = ADMIN_TIER[tipo][i].adicionadoEm;
 
   const nova = ADMIN_TIER[tipo].slice();
   if(i >= 0) nova[i] = item;
@@ -1869,7 +1941,7 @@ async function removerAdmin(id){
 }
 window.removerAdmin = removerAdmin;
 
-/* ---------- BANIDOS ADMIN ---------- */
+/* ---------- BANIDOS ---------- */
 async function renderAdminBanidos(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🚫 Banidos') + `<p class="admin-vazio">Carregando…</p>`;
@@ -1958,7 +2030,7 @@ async function removerBanido(id){
 }
 window.removerBanido = removerBanido;
 
-/* ---------- CONFIG ADMIN ---------- */
+/* ---------- CONFIG ---------- */
 async function renderAdminConfig(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<p class="admin-vazio">Carregando…</p>`;
@@ -2005,7 +2077,7 @@ async function renderAdminConfig(){
       <div class="admin-card">
         <h3>📺 Horas do mês</h3>
         <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">
-          Preenchido automaticamente pela Twitch. Você pode sobrescrever manualmente se quiser.
+          Se você preencher aqui, esse valor sobrescreve o cálculo automático da Twitch. Se deixar vazio, o site usa as horas calculadas pela Twitch.
         </p>
         <div class="admin-form">
           <div><label>Horas (texto livre — deixe vazio pra usar Twitch)</label><input id="cfgHorasMes" type="text" placeholder="Ex: 32h" value="${esc(d.horasMes || '')}"></div>
@@ -2065,7 +2137,7 @@ async function salvarConfig(){
 }
 window.salvarConfig = salvarConfig;
 
-/* ---------- LOGS ADMIN ---------- */
+/* ---------- LOGS ---------- */
 async function renderAdminLogs(){
   const area = $('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('📋 Logs') + `<p class="admin-vazio">Carregando…</p>`;
@@ -2098,6 +2170,102 @@ async function renderAdminLogs(){
   }
 }
 window.renderAdminLogs = renderAdminLogs;
+
+/* ---------- BACKUP ---------- */
+async function renderAdminBackup(){
+  const area = $('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('💾 Backup') + `<p class="admin-vazio">Carregando…</p>`;
+  let backups = [];
+  try {
+    const r = await fetch('/api/backup?action=list');
+    if(r.ok){ const d = await r.json(); backups = d.backups || []; }
+  } catch(e){}
+
+  const fmtTamanho = b => b < 1024 ? b + ' B' : b < 1024*1024 ? (b/1024).toFixed(1) + ' KB' : (b/1024/1024).toFixed(1) + ' MB';
+
+  area.innerHTML = adminVoltarHTML('💾 Backup') + `
+    <div class="admin-card">
+      <h3>💾 Backups automáticos <span class="cont">${backups.length} / 5</span></h3>
+      <p style="color:var(--mute);font-size:.85rem;margin-bottom:14px">
+        Um backup automático é criado todo dia às 3h da manhã. Você também pode criar manualmente. Os 5 mais recentes são mantidos.
+      </p>
+      ${backups.length ? backups.map(b => `
+        <div class="backup-item">
+          <div class="bkp-ic">📦</div>
+          <div class="bkp-info">
+            <b>${esc(b.id)}</b>
+            <small>${fmtDataHora(b.criadoEm)} · ${fmtTamanho(b.tamanho || 0)} · por @${esc(b.criadoPor || 'sistema')}</small>
+          </div>
+          <div class="bkp-actions">
+            <a class="admin-btn ghost" href="/api/backup?action=download&id=${encodeURIComponent(b.id)}" download>⬇️ Baixar</a>
+            <button class="admin-btn ghost" onclick="restaurarBackup('${esc(b.id)}')">♻️ Restaurar</button>
+            <button class="admin-btn perigo" onclick="apagarBackup('${esc(b.id)}')">🗑️</button>
+          </div>
+        </div>
+      `).join('') : '<p class="admin-vazio" style="padding:20px">Nenhum backup ainda</p>'}
+      <div class="admin-actions">
+        <button class="admin-btn" onclick="criarBackupManual()">➕ Criar backup agora</button>
+        <button class="admin-btn ghost" onclick="renderAdminBackup()">🔄 Atualizar</button>
+      </div>
+    </div>
+  `;
+}
+window.renderAdminBackup = renderAdminBackup;
+
+async function criarBackupManual(){
+  try{
+    toast('Criando backup…', 'info');
+    const r = await fetch('/api/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'create' })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    toast('Backup criado! ✅', 'ok');
+    await renderAdminBackup();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.criarBackupManual = criarBackupManual;
+
+async function restaurarBackup(id){
+  const ok = await confirmar(
+    'Restaurar backup?',
+    'TODOS os dados atuais (tier list, votos, admins, config) serão substituídos pelos dados desse backup. Essa ação não volta.',
+    '⚠️'
+  );
+  if(!ok) return;
+  try{
+    const r = await fetch('/api/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'restore', id })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    toast(`✅ Restaurado (${d.total} chaves)`, 'ok');
+    await carregarBiblioteca();
+    await carregarConfigPublica();
+    await carregarVotosApi();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.restaurarBackup = restaurarBackup;
+
+async function apagarBackup(id){
+  const ok = await confirmar('Apagar backup?', 'O arquivo sai do histórico. Essa ação não volta.', '🗑️');
+  if(!ok) return;
+  try{
+    const r = await fetch('/api/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id })
+    });
+    if(!r.ok) throw new Error('Falha');
+    toast('Backup apagado ✅', 'ok');
+    await renderAdminBackup();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.apagarBackup = apagarBackup;
 
 /* ============================================================
    SUGESTÕES PÚBLICAS
@@ -2261,6 +2429,9 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   verificarStatusTwitch();
   setInterval(verificarStatusTwitch, 60000);
+
+  carregarOuvindoAgora();
+  setInterval(carregarOuvindoAgora, 30000);
 
   carregarBiblioteca();
   carregarVotosApi();

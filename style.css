@@ -17,7 +17,6 @@ a{color:inherit;text-decoration:none}
 a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--purple);outline-offset:3px}
 .wrapper{width:100%;max-width:1400px;margin:0 auto;padding:0 4vw;position:relative;z-index:1}
 
-/* Acessibilidade — respeita prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{
     animation-duration:.01ms !important;
@@ -59,7 +58,7 @@ nav li.admin-nav{display:none}
 .page-section.ativo{display:block}
 
 /* ============================================================
-   HOME — HERO
+   HOME
    ============================================================ */
 .hero-container{display:flex;flex-direction:column;gap:14px;width:100%;max-width:1150px;margin:0 auto}
 .banner{border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 10px 25px rgba(168,85,247,.12);background:#120c1f;position:relative;height:clamp(180px,22vw,290px)}
@@ -267,6 +266,30 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 @keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* ============================================================
+   OUVINDO AGORA (Last.fm)
+   ============================================================ */
+.ouvindo-card{
+  background:linear-gradient(135deg,rgba(30,215,96,.12),transparent),var(--card-bg);
+  border:1px solid rgba(30,215,96,.28);
+}
+.ouvindo-head{
+  display:flex;align-items:center;gap:8px;
+  font-size:.62rem;font-weight:800;letter-spacing:.6px;
+  color:#1ed760;text-transform:uppercase;
+}
+.ouvindo-head .ouvindo-ic{font-size:1rem;line-height:1}
+.ouvindo-body{display:flex;gap:12px;align-items:center;min-width:0}
+.ouvindo-capa{
+  width:56px;height:56px;border-radius:8px;flex:none;
+  background:#1d1433;object-fit:cover;border:1px solid var(--line);
+}
+.ouvindo-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.ouvindo-info b{color:var(--white);font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ouvindo-info span{color:var(--mute);font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ouvindo-link{color:#1ed760;font-size:.72rem;font-weight:700;margin-top:2px;transition:.2s}
+.ouvindo-link:hover{text-decoration:underline}
+
+/* ============================================================
    PAINEL CANAL
    ============================================================ */
 .tmon{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 10px 25px rgba(0,0,0,.35);flex:1}
@@ -292,7 +315,7 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .tm-fi b{color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ============================================================
-   APOIO / SUB — grid ajustado (1fr 1.2fr)
+   APOIO / SUB
    ============================================================ */
 .apoio-home{display:grid;grid-template-columns:1fr 1.2fr;gap:14px;margin-top:4px;align-items:stretch}
 .apoio-home .sbox{padding:18px;display:flex;flex-direction:column;gap:8px}
@@ -303,14 +326,7 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .apoio-home .benefits-grid{grid-template-columns:1fr;margin-bottom:0;gap:6px}
 .apoio-home .twitch-sub-btn{align-self:stretch;justify-content:center;padding:11px;font-size:.86rem;margin-top:auto}
 
-/* Coroa inline emoji puro */
-.crown-inline{
-  font-size:1.1rem;
-  line-height:1;
-  margin-left:2px;
-  filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));
-  transform:translateY(1px);
-}
+.crown-inline{font-size:1.1rem;line-height:1;margin-left:2px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));transform:translateY(1px)}
 
 .ap-sec{border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:6px}
 .ap-h{font-size:.66rem;letter-spacing:.06em;color:var(--mute);font-weight:700;text-transform:uppercase}
@@ -358,7 +374,7 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .aviso.warn .aviso-tx b{color:#ffd08a}
 
 /* ============================================================
-   COMUNIDADE — SUB-TABS
+   COMUNIDADE
    ============================================================ */
 .sub-tabs{display:inline-flex;gap:4px;background:var(--card-bg);border:1px solid var(--line);border-radius:99px;padding:4px;margin-bottom:22px;flex-wrap:wrap}
 .sub-tab{background:none;border:0;color:var(--mute);font-family:inherit;font-weight:700;font-size:.85rem;padding:8px 18px;border-radius:99px;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
@@ -375,17 +391,9 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .dc-perks{list-style:none;display:grid;gap:8px;grid-template-columns:1fr 1fr}
 .dc-perks li{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.85rem;color:#ddd5eb}
 
-.metas-comunidade{
-  background:var(--card-bg);
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:18px 20px;
-  display:grid;
-  gap:12px;
-}
+.metas-comunidade{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:grid;gap:12px}
 .metas-comunidade .goals3 .goalc{background:rgba(255,255,255,.02)}
 
-/* MÚSICAS */
 .music-box{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
 .music-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed var(--line)}
 .music-ic{width:56px;height:56px;display:grid;place-items:center;background:rgba(30,215,96,.1);border:1px solid rgba(30,215,96,.25);border-radius:14px;padding:10px}
@@ -396,7 +404,6 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .music-embed iframe{width:100%;border:0;display:block}
 .music-placeholder{padding:40px 20px;text-align:center;color:var(--mute);font-size:.9rem}
 
-/* SUB-ABA SEJA SUB */
 .sub-hero{
   background:
     radial-gradient(circle at 50% 0%, rgba(255,209,102,.14), transparent 60%),
@@ -414,34 +421,22 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .sub-hero p{color:var(--mute);font-size:.9rem;max-width:520px;line-height:1.5;margin-bottom:6px}
 .sub-hero .btn.block{width:100%;max-width:360px;margin-top:4px}
 
-.sub-beneficios{
-  background:var(--card-bg);border:1px solid var(--line);border-radius:16px;
-  padding:20px;margin-bottom:14px;
-}
+.sub-beneficios{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
 .sub-beneficios h3{color:var(--white);font-size:1.05rem;margin-bottom:14px}
 .benefits-grid-2{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0}
 .benefits-grid-2 .benefit{padding:14px;display:flex;flex-direction:column;gap:4px}
 .benefits-grid-2 .benefit b{color:var(--white);font-size:.88rem;font-weight:700}
 .benefits-grid-2 .benefit span{color:var(--mute);font-size:.78rem;line-height:1.4}
 
-.sub-emotes{
-  background:var(--card-bg);border:1px solid var(--line);border-radius:16px;
-  padding:20px;margin-bottom:14px;
-}
+.sub-emotes{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
 .sub-emotes h3{color:var(--white);font-size:1.05rem;margin-bottom:4px}
 .sub-emotes p{color:var(--mute);font-size:.85rem;margin-bottom:14px}
 
-.sub-cta{
-  display:flex;justify-content:space-between;align-items:center;gap:14px;
-  background:linear-gradient(135deg,rgba(145,70,255,.24),transparent),var(--card-bg);
-  border:1px solid rgba(145,70,255,.35);
-  border-radius:16px;padding:18px 22px;flex-wrap:wrap;
-}
+.sub-cta{display:flex;justify-content:space-between;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(145,70,255,.24),transparent),var(--card-bg);border:1px solid rgba(145,70,255,.35);border-radius:16px;padding:18px 22px;flex-wrap:wrap}
 .sub-cta b{color:var(--white);display:block;font-size:1.05rem}
 .sub-cta span{color:var(--mute);font-size:.85rem}
 .sub-cta .twitch-sub-btn{padding:12px 22px;font-size:.9rem}
 
-/* CLIPES */
 .clips-box{margin-top:4px}
 .clips-box h3{font-size:1.05rem;margin-bottom:10px;display:flex;justify-content:space-between;align-items:baseline;color:var(--white);gap:10px;flex-wrap:wrap}
 .clips-box h3 a{font-size:.78rem;color:var(--purple-light);font-weight:600}
@@ -457,7 +452,6 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .clip-modal .cm-foot b{color:var(--white);font-size:.95rem}
 .clip-modal .cm-foot span{color:var(--mute);font-size:.78rem}
 
-/* COMANDOS */
 .cmds-wrap{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
 .cmds-search{width:100%;background:#1a102d;border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.9rem;margin:10px 0 14px}
 .cmds-table{width:100%;border-collapse:collapse;font-size:.88rem}
@@ -471,7 +465,6 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .cmds-empty{padding:20px;text-align:center;color:var(--mute);font-size:.85rem}
 .full-commands{color:var(--purple-light);font-weight:700;font-size:.82rem}
 
-/* REGRAS */
 .rules-wrap{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px}
 .rules-wrap>h3{color:var(--white);margin-bottom:14px}
 .rules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -631,7 +624,22 @@ body.sou-admin nav li.admin-nav{display:list-item}
 body.admin-multisel .g{cursor:default}
 body.admin-multisel .g:hover{transform:none;border-color:var(--line)}
 
-/* Drag hint */
+/* Backup */
+.backup-item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:rgba(255,255,255,.03);border:1px solid var(--line);
+  border-radius:10px;margin-bottom:8px;
+}
+.backup-item .bkp-ic{
+  width:40px;height:40px;border-radius:10px;flex:none;
+  display:grid;place-items:center;font-size:1.2rem;
+  background:rgba(168,85,247,.14);border:1px solid var(--line);
+}
+.backup-item .bkp-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.backup-item .bkp-info b{color:var(--white);font-size:.92rem;font-family:monospace}
+.backup-item .bkp-info small{color:var(--mute);font-size:.7rem}
+.backup-item .bkp-actions{display:flex;gap:6px;flex-wrap:wrap}
+
 .drag-hint{display:none;align-items:center;gap:6px;font-size:.75rem;color:var(--purple-light);background:rgba(168,85,247,.1);border:1px dashed rgba(168,85,247,.4);padding:7px 12px;border-radius:8px;margin-bottom:14px;width:fit-content}
 body.sou-admin .drag-hint{display:inline-flex}
 body.sou-admin .g[draggable="true"]{cursor:grab}
@@ -640,7 +648,7 @@ body.sou-admin .g[draggable="true"]:active{cursor:grabbing}
 .games.drag-over{outline:2px dashed var(--purple);outline-offset:-6px;background:rgba(168,85,247,.08);border-radius:12px}
 
 /* ============================================================
-   TOAST GLOBAL
+   TOAST
    ============================================================ */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);color:#fff;padding:11px 20px;border-radius:99px;font-family:inherit;font-size:.85rem;font-weight:700;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;max-width:min(90vw,560px);text-align:center;line-height:1.3}
 .toast.toast-on{opacity:1;transform:translateX(-50%) translateY(0)}
