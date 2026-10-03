@@ -24,9 +24,7 @@ const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.t
 
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
 
-/* ============================================================
-   SESSÃO
-   ============================================================ */
+/* ============ SESSÃO ============ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
 function lerSessao(req){
@@ -58,57 +56,40 @@ async function logAcao(quem, cargo, acao){
   } catch(e){}
 }
 
-/* ============================================================
-   TRADUÇÃO EN→PT (Google grátis)
-   ============================================================ */
+/* ============ TRADUÇÃO EN→PT (Google grátis) ============ */
 async function traduzir(texto){
   if(!texto) return null;
   try {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(texto)}`;
-    const r = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; asemtet0-site/1.0)' }
-    });
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; asemtet0-site/1.0)' } });
     if(!r.ok) return null;
     const d = await r.json();
     if(Array.isArray(d) && Array.isArray(d[0])){
       const partes = d[0].map(seg => (Array.isArray(seg) ? seg[0] : '')).filter(Boolean);
-      const juntas = partes.join('');
-      return juntas || null;
+      return partes.join('') || null;
     }
     return null;
   } catch(e){ return null; }
 }
 
-/* ============================================================
-   Wikipedia — fallback de sinopse em PT
-   ============================================================ */
+/* ============ WIKIPEDIA (fallback sinopse) ============ */
 async function sinopseWikipedia(nome, lang = 'pt'){
   try {
     const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(nome)}&format=json&origin=*&srlimit=1`;
-    const r1 = await fetch(searchUrl, {
-      headers: { 'User-Agent': 'asemtet0-site/1.0 (https://asemtet0.vercel.app)' }
-    });
+    const r1 = await fetch(searchUrl, { headers: { 'User-Agent': 'asemtet0-site/1.0 (https://asemtet0.vercel.app)' } });
     const d1 = await r1.json();
-    const titulo = d1 && d1.query && d1.query.search && d1.query.search[0] && d1.query.search[0].title;
+    const titulo = d1?.query?.search?.[0]?.title;
     if(!titulo) return null;
-
     const extractUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(titulo)}&format=json&origin=*`;
-    const r2 = await fetch(extractUrl, {
-      headers: { 'User-Agent': 'asemtet0-site/1.0 (https://asemtet0.vercel.app)' }
-    });
+    const r2 = await fetch(extractUrl, { headers: { 'User-Agent': 'asemtet0-site/1.0 (https://asemtet0.vercel.app)' } });
     const d2 = await r2.json();
-    const pages = d2 && d2.query && d2.query.pages;
-    if(!pages) return null;
-    const page = Object.values(pages)[0];
-    const extract = page && page.extract;
+    const extract = d2?.query?.pages ? Object.values(d2.query.pages)[0]?.extract : null;
     if(!extract) return null;
     return extract.length > 800 ? extract.slice(0, 797) + '…' : extract;
   } catch(e){ return null; }
 }
 
-/* ============================================================
-   IGDB
-   ============================================================ */
+/* ============ IGDB ============ */
 let igdbCache = { token: null, exp: 0 };
 async function igdbToken(){
   if(igdbCache.token && Date.now() < igdbCache.exp) return igdbCache.token;
@@ -129,60 +110,29 @@ async function igdbBuscar(nome){
     const token = await igdbToken();
     const limpo = String(nome || '').replace(/["\\]/g, '').trim();
     if(!limpo) return { erro: 'Informe um nome' };
-
-    const post = async (body) => {
-      const r = await fetch('https://api.igdb.com/v4/games', {
-        method: 'POST',
-        headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
-        body
-      });
-      return r.json();
-    };
-
+    const post = async (body) => (await fetch('https://api.igdb.com/v4/games', {
+      method: 'POST',
+      headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
+      body
+    })).json();
     const campos = 'fields name, rating, aggregated_rating, total_rating_count, cover.url, summary, first_release_date, version_parent, category;';
-
-    let lista = await post(
-      `where name = "${limpo}" & version_parent = null & category = 0; ${campos} sort total_rating_count desc; limit 10;`
-    );
-
-    if(!Array.isArray(lista) || !lista.length){
-      lista = await post(
-        `where name = "${limpo}" & version_parent = null; ${campos} sort total_rating_count desc; limit 10;`
-      );
-    }
-
-    if(!Array.isArray(lista) || !lista.length){
-      lista = await post(
-        `search "${limpo}"; ${campos} where version_parent = null; limit 15;`
-      );
-    }
-
+    let lista = await post(`where name = "${limpo}" & version_parent = null & category = 0; ${campos} sort total_rating_count desc; limit 10;`);
+    if(!Array.isArray(lista) || !lista.length) lista = await post(`where name = "${limpo}" & version_parent = null; ${campos} sort total_rating_count desc; limit 10;`);
+    if(!Array.isArray(lista) || !lista.length) lista = await post(`search "${limpo}"; ${campos} where version_parent = null; limit 15;`);
     if(!Array.isArray(lista) || !lista.length) return { erro: 'Jogo não encontrado' };
-
     lista.sort((a, b) => (b.total_rating_count || 0) - (a.total_rating_count || 0));
-
     const mapJogo = g => {
-      const capa = g.cover && g.cover.url
-        ? 'https:' + g.cover.url
-            .replace('t_thumb', 't_1080p')
-            .replace('t_cover_small', 't_1080p')
-            .replace('t_cover_big', 't_1080p')
-            .replace('t_720p', 't_1080p')
-        : null;
+      const capa = g.cover?.url ? 'https:' + g.cover.url.replace(/t_(thumb|cover_small|cover_big|720p)/g, 't_1080p') : null;
       const rating = g.aggregated_rating || g.rating || null;
       return {
-        id: g.id,
-        nome: g.name,
-        capa,
+        id: g.id, nome: g.name, capa,
         nota: rating ? Math.round(rating) / 10 : null,
         sinopse: g.summary || '',
         ano: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null
       };
     };
-
     const resultados = lista.map(mapJogo);
     const principal = resultados[0];
-
     if(!principal.sinopse){
       const wikiPt = await sinopseWikipedia(principal.nome, 'pt');
       if(wikiPt) principal.sinopse = wikiPt;
@@ -191,16 +141,11 @@ async function igdbBuscar(nome){
         if(wikiEn) principal.sinopse = wikiEn;
       }
     }
-
     return { ...principal, resultados };
-  } catch(e){
-    return { erro: 'Erro ao buscar no IGDB: ' + e.message };
-  }
+  } catch(e){ return { erro: 'Erro ao buscar no IGDB: ' + e.message }; }
 }
 
-/* ============================================================
-   TMDB
-   ============================================================ */
+/* ============ TMDB ============ */
 async function tmdbBuscar(nome, ano){
   if(!TMDB_TOKEN && !TMDB_KEY) return { erro: 'TMDB não configurado' };
   const chamar = async (path, params = {}) => {
@@ -212,17 +157,10 @@ async function tmdbBuscar(nome, ano){
   };
   try {
     let d = await chamar('/search/movie', { query: nome, include_adult: 'false', ...(ano ? { year: String(ano) } : {}) });
-    let filme = d.results && d.results[0];
-    if(!filme){
-      d = await chamar('/search/movie', { query: nome, include_adult: 'false' });
-      filme = d.results && d.results[0];
-    }
-    if(!filme){
-      d = await chamar('/search/movie', { query: nome, include_adult: 'false', language: 'en-US' });
-      filme = d.results && d.results[0];
-    }
+    let filme = d.results?.[0];
+    if(!filme){ d = await chamar('/search/movie', { query: nome, include_adult: 'false' }); filme = d.results?.[0]; }
+    if(!filme){ d = await chamar('/search/movie', { query: nome, include_adult: 'false', language: 'en-US' }); filme = d.results?.[0]; }
     if(!filme) return { erro: 'Filme não encontrado' };
-
     const det = await chamar(`/movie/${filme.id}`);
     return {
       id: det.id,
@@ -232,14 +170,10 @@ async function tmdbBuscar(nome, ano){
       duracao: det.runtime || null,
       ano: det.release_date ? Number(det.release_date.slice(0,4)) : null
     };
-  } catch(e){
-    return { erro: 'Erro ao buscar no TMDB' };
-  }
+  } catch(e){ return { erro: 'Erro ao buscar no TMDB' }; }
 }
 
-/* ============================================================
-   Conquistas Steam
-   ============================================================ */
+/* ============ Conquistas Steam ============ */
 async function buscarConquistasSteam(appid){
   if(!STEAM_KEY || !appid) return null;
   try {
@@ -247,30 +181,22 @@ async function buscarConquistasSteam(appid){
     const r = await fetch(url);
     if(!r.ok) return null;
     const d = await r.json();
-    const lista = d && d.playerstats && d.playerstats.achievements;
+    const lista = d?.playerstats?.achievements;
     if(!Array.isArray(lista) || !lista.length) return null;
-    const total = lista.length;
-    const obtidas = lista.filter(a => a.achieved === 1).length;
-    return { obtidas, total };
-  } catch(e){
-    return null;
-  }
+    return { obtidas: lista.filter(a => a.achieved === 1).length, total: lista.length };
+  } catch(e){ return null; }
 }
 
-/* ============================================================
-   Importar Steam
-   ============================================================ */
+/* ============ Importar Steam ============ */
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
   const r = await fetch(url);
   if(!r.ok) return { error: `Steam HTTP ${r.status}` };
   const sd = await r.json();
-  const lista = (sd.response && sd.response.games) || [];
-  const jogados = lista
-    .filter(g => g.playtime_forever > 0)
-    .sort((a,b) => b.playtime_forever - a.playtime_forever)
-    .slice(0, 60);
+  const lista = sd?.response?.games || [];
+  const jogados = lista.filter(g => g.playtime_forever > 0)
+    .sort((a,b) => b.playtime_forever - a.playtime_forever).slice(0, 60);
 
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
@@ -281,45 +207,28 @@ async function importarSteam(){
   for(const g of jogados){
     if(existentes.has(g.name.toLowerCase())){ pulados++; continue; }
     const capaSteam = `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`;
-
     let extra = {};
     try { extra = await igdbBuscar(g.name); } catch(e){}
-
     let comentario = extra.sinopse || '';
-    if(comentario){
-      try {
-        const traduzido = await traduzir(comentario);
-        if(traduzido) comentario = traduzido;
-      } catch(e){}
-    }
-
+    if(comentario){ try { const t = await traduzir(comentario); if(t) comentario = t; } catch(e){} }
     let conquistas = null;
     try { conquistas = await buscarConquistasSteam(g.appid); } catch(e){}
-
     atuais.push({
       id: g.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
-      appid: g.appid,
-      nome: g.name,
-      tier: 'NR',
-      status: 'Jogando',
+      appid: g.appid, nome: g.name, tier: 'NR', status: 'Jogando',
       horas: Math.round(g.playtime_forever / 6) / 10,
-      conquistas,
-      nota: extra.nota || 0,
-      capa: extra.capa || capaSteam,
-      comentario,
+      conquistas, nota: extra.nota || 0,
+      capa: extra.capa || capaSteam, comentario,
       adicionadoEm: new Date().toISOString()
     });
     adicionados++;
     existentes.add(g.name.toLowerCase());
   }
-
   await redis([['SET', 'tierlist:jogos', JSON.stringify(atuais)]]);
   return { ok: true, adicionados, pulados, total: jogados.length };
 }
 
-/* ============================================================
-   HANDLER PRINCIPAL
-   ============================================================ */
+/* ============ HANDLER ============ */
 export default async function handler(req, res){
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
 
@@ -328,7 +237,7 @@ export default async function handler(req, res){
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
 
   res.setHeader('Cache-Control', 'no-store');
-  const action = (req.query && req.query.action) || '';
+  const action = req.query?.action || '';
   const meNivel = NIVEIS[sessao.cargo] || 0;
   const quem = sessao.username || 'anônimo';
 
@@ -356,9 +265,8 @@ export default async function handler(req, res){
 
     if(req.method === 'POST' && action === 'opcoes'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
-      const opcoes = Array.isArray((req.body||{}).opcoes) ? req.body.opcoes.slice(0,5) : [];
+      const opcoes = Array.isArray(req.body?.opcoes) ? req.body.opcoes.slice(0,5) : [];
       if(!opcoes.length) return res.status(400).json({ error: 'Nenhuma opção enviada' });
-
       const processadas = [];
       for(const o of opcoes){
         const nome = String(o.nome || '').trim().slice(0,80);
@@ -394,15 +302,11 @@ export default async function handler(req, res){
 
     /* -------- ADMINS -------- */
     if(req.method === 'GET' && (action === 'admins' || action === 'admins-ver')){
-      const [flat, perfisFlat] = await redis([
-        ['HGETALL', 'admins'],
-        ['HGETALL', 'user_profiles']
-      ]);
+      const [flat, perfisFlat] = await redis([['HGETALL', 'admins'], ['HGETALL', 'user_profiles']]);
       const perfis = {};
       for(let i = 0; i < (perfisFlat||[]).length; i += 2){
         try { perfis[perfisFlat[i]] = JSON.parse(perfisFlat[i+1]); } catch(e){}
       }
-
       const admins = [];
       const jaVistos = new Set();
       for(const id of ENV_ADMINS){
@@ -416,13 +320,7 @@ export default async function handler(req, res){
         let d = {};
         try { d = JSON.parse(flat[i+1]); } catch(e){}
         const p = perfis[id] || {};
-        admins.push({
-          id,
-          username: d.username || p.username || null,
-          avatar: d.avatar || p.avatar || null,
-          cargo: d.cargo || 'moderador',
-          fixo: false
-        });
+        admins.push({ id, username: d.username || p.username || null, avatar: d.avatar || p.avatar || null, cargo: d.cargo || 'moderador', fixo: false });
       }
       return res.status(200).json({ admins, meuCargo: sessao.cargo || null });
     }
@@ -434,16 +332,10 @@ export default async function handler(req, res){
       if(cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs criam Devs' });
       if(NIVEIS[cargo] > meNivel) return res.status(403).json({ error: 'Cargo maior que o seu' });
       if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'ID já é admin fixo' });
-
       const [perfilRaw] = await redis([['HGET', 'user_profiles', String(userId)]]);
       let perfil = {};
       try { perfil = perfilRaw ? JSON.parse(perfilRaw) : {}; } catch(e){}
-
-      const payload = JSON.stringify({
-        username: username || perfil.username || null,
-        avatar: avatar || perfil.avatar || null,
-        cargo, ts: Date.now()
-      });
+      const payload = JSON.stringify({ username: username || perfil.username || null, avatar: avatar || perfil.avatar || null, cargo, ts: Date.now() });
       await redis([['HSET', 'admins', String(userId), payload]]);
       await logAcao(quem, sessao.cargo, `Adicionou admin ${userId} (${cargo})`);
       return res.status(200).json({ ok: true });
@@ -460,11 +352,9 @@ export default async function handler(req, res){
       let atual = {};
       try { atual = atualRaw ? JSON.parse(atualRaw) : {}; } catch(e){}
       if(atual.cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs editam Devs' });
-
       const [perfilRaw] = await redis([['HGET', 'user_profiles', String(userId)]]);
       let perfil = {};
       try { perfil = perfilRaw ? JSON.parse(perfilRaw) : {}; } catch(e){}
-
       const payload = JSON.stringify({
         ...atual,
         username: username || atual.username || perfil.username || null,
@@ -511,7 +401,6 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- APAGAR MÚLTIPLOS -------- */
     if(req.method === 'POST' && action === 'tierlist-delete-many'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const { ids, tipo } = req.body || {};
@@ -531,24 +420,22 @@ export default async function handler(req, res){
     /* -------- BUSCAS -------- */
     if(req.method === 'GET' && action === 'buscar-jogo'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
-      const nome = String((req.query||{}).nome || '').trim();
+      const nome = String(req.query?.nome || '').trim();
       if(!nome) return res.status(400).json({ erro: 'Informe um nome' });
-      const d = await igdbBuscar(nome);
-      return res.status(200).json(d);
+      return res.status(200).json(await igdbBuscar(nome));
     }
 
     if(req.method === 'GET' && action === 'buscar-filme'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
-      const nome = String((req.query||{}).nome || '').trim();
-      const ano = (req.query||{}).ano;
+      const nome = String(req.query?.nome || '').trim();
+      const ano = req.query?.ano;
       if(!nome) return res.status(400).json({ erro: 'Informe um nome' });
-      const d = await tmdbBuscar(nome, ano);
-      return res.status(200).json(d);
+      return res.status(200).json(await tmdbBuscar(nome, ano));
     }
 
     if(req.method === 'GET' && action === 'buscar-conquistas'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
-      const appid = Number((req.query||{}).appid);
+      const appid = Number(req.query?.appid);
       if(!appid) return res.status(400).json({ erro: 'appid obrigatório' });
       const conq = await buscarConquistasSteam(appid);
       if(!conq) return res.status(200).json({ erro: 'Sem conquistas disponíveis' });
@@ -557,7 +444,7 @@ export default async function handler(req, res){
 
     if(req.method === 'POST' && action === 'traduzir'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
-      const texto = String((req.body||{}).texto || '').trim();
+      const texto = String(req.body?.texto || '').trim();
       if(!texto) return res.status(400).json({ error: 'Nada pra traduzir' });
       const traduzido = await traduzir(texto);
       if(!traduzido) return res.status(502).json({ error: 'Tradutor indisponível no momento' });
@@ -606,31 +493,36 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- CONFIG -------- */
+    /* -------- CONFIG (com top3 e hall) -------- */
     if(req.method === 'GET' && action === 'config-get'){
-      const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw] = await redis([
+      const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw] = await redis([
         ['GET', 'config:aviso'],
         ['GET', 'config:donate'],
         ['GET', 'config:manutencao'],
         ['GET', 'config:recado'],
         ['GET', 'config:horasMes'],
-        ['GET', 'config:updatedAt']
+        ['GET', 'config:updatedAt'],
+        ['GET', 'config:top3'],
+        ['GET', 'config:hall']
       ]);
-      let aviso = null;
+      let aviso = null, top3 = [], hall = [];
       try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
+      try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){}
+      try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){}
       return res.status(200).json({
         aviso,
         donate: donateRaw || null,
         manutencao: manutRaw === '1',
         recado: recadoRaw || '',
         horasMes: horasRaw || '',
-        updatedAt: updatedRaw || null
+        updatedAt: updatedRaw || null,
+        top3, hall
       });
     }
 
     if(req.method === 'POST' && action === 'config-set'){
       if(meNivel < 3) return res.status(403).json({ error: 'Sem permissão' });
-      const { aviso, donate, manutencao, recado, horasMes } = req.body || {};
+      const { aviso, donate, manutencao, recado, horasMes, top3, hall } = req.body || {};
       const agora = new Date().toISOString();
       const cmds = [];
       if(aviso !== undefined) cmds.push(['SET', 'config:aviso', JSON.stringify(aviso)]);
@@ -638,6 +530,8 @@ export default async function handler(req, res){
       if(manutencao !== undefined) cmds.push(['SET', 'config:manutencao', manutencao ? '1' : '0']);
       if(recado !== undefined) cmds.push(['SET', 'config:recado', String(recado || '')]);
       if(horasMes !== undefined) cmds.push(['SET', 'config:horasMes', String(horasMes || '')]);
+      if(top3 !== undefined) cmds.push(['SET', 'config:top3', JSON.stringify(top3)]);
+      if(hall !== undefined) cmds.push(['SET', 'config:hall', JSON.stringify(hall)]);
       cmds.push(['SET', 'config:updatedAt', agora]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
       await redis(cmds);

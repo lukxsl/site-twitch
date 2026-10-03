@@ -176,6 +176,7 @@
     </div>
 
     <div class="apoio-home">
+      <!-- APOIE O CANTINHO -->
       <div class="sbox apoie">
         <div class="apoie-head">
           <h3>💜 Apoie o cantinho</h3>
@@ -195,24 +196,35 @@
           <span class="ap-h">💌 Recado da Soso</span>
           <p id="recadoSoso" class="mini-recado">Sem recadinho no momento. Volte mais tarde! 💜</p>
         </div>
+
+        <div class="ap-sec ap-top3" id="apTop3">
+          <span class="ap-h">🏆 Top 3 apoiadores</span>
+          <div class="top3" id="top3Lista">
+            <p class="ap-vazio">O pódio ainda está vazio. 💜</p>
+          </div>
+        </div>
+
+        <div class="ap-sec ap-hall" id="apHall">
+          <span class="ap-h">👑 Hall da fama · maiores subs</span>
+          <div class="hall" id="hallLista">
+            <p class="ap-vazio">Em breve os maiores subs da história. 👑</p>
+          </div>
+        </div>
       </div>
 
-      <div class="sbox apoie">
-        <div class="apoie-head">
-          <h3>Seja Sub <span class="crown-inline" aria-hidden="true">👑</span></h3>
-          <p>Vire Sub e desbloqueie vantagens exclusivas no cantinho.</p>
-        </div>
-        <div class="benefits-grid">
-          <div class="benefit">✨ Cargos exclusivos no Discord</div>
-          <div class="benefit">🎁 Emotes personalizados pro chat</div>
-          <div class="benefit">💜 Apoio direto ao canal e às lives</div>
-          <div class="benefit">🎮 Vantagens destinadas aos subs</div>
+      <!-- SEJA SUB (HERO) -->
+      <div class="sbox sub-hero-box">
+        <span class="sub-hero-crown">👑</span>
+        <h3>Seja Sub</h3>
+        <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho.</p>
+        <div class="sub-hero-btns">
+          <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
+          <a href="#" onclick="abrirSejaSub();return false;" class="btn ghost block">Ver todos os benefícios →</a>
         </div>
         <div class="emotes-preview">
           <small>Preview dos emotes de sub</small>
           <div class="emotes-grid" id="emotesGrid"></div>
         </div>
-        <a href="#" onclick="abrirSejaSub();return false;" class="twitch-sub-btn">Ver todos os benefícios →</a>
       </div>
     </div>
   </div>
@@ -228,11 +240,14 @@
       <button data-m="filmes">🎬 Filmes</button>
     </div>
   </div>
-  <section class="stats" id="stats" aria-label="Resumo"></section>
+
   <div class="tools">
     <input class="search" id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo">
     <div class="chips" id="chips"></div>
   </div>
+
+  <section class="stats" id="stats" aria-label="Resumo"></section>
+
   <div class="drag-hint">🖱️ Arraste os cards entre os tiers para reorganizar</div>
   <section id="tiers"></section>
   <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificada por ela.</p>
@@ -319,15 +334,8 @@
     </div>
   </div>
 
-  <!-- SEJA SUB -->
+  <!-- SEJA SUB (COMPACTO) -->
   <div class="sub-panel" data-panel="sub">
-    <div class="sub-hero">
-      <span class="sub-hero-crown">👑</span>
-      <h2>Seja Sub</h2>
-      <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho. Toda ajuda mantém as lives rodando e o setup melhorando. 💜</p>
-      <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
-    </div>
-
     <div class="sub-beneficios">
       <h3>✨ Benefícios exclusivos</h3>
       <div class="benefits-grid benefits-grid-2">
@@ -491,5 +499,5 @@
 </dialog>
 
 <script src="app.js"></script>
+<script src="admin-ui.js"></script>
 </body>
-</html>

@@ -323,8 +323,6 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .apoie-head h3{font-size:1.12rem;color:var(--white);margin:0;display:flex;align-items:center;gap:8px}
 .apoie-head p{color:var(--mute);font-size:.82rem;margin:0;line-height:1.35}
 .apoio-home .btn.big{display:flex;text-align:center;padding:11px;font-size:.88rem;margin:0;align-self:stretch;justify-content:center;width:100%}
-.apoio-home .benefits-grid{grid-template-columns:1fr;margin-bottom:0;gap:6px}
-.apoio-home .twitch-sub-btn{align-self:stretch;justify-content:center;padding:11px;font-size:.86rem;margin-top:auto}
 
 .crown-inline{font-size:1.1rem;line-height:1;margin-left:2px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));transform:translateY(1px)}
 
@@ -336,6 +334,36 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .ap-mini-stat .mini-stat-line small{font-size:.68rem;color:var(--mute);letter-spacing:.3px;text-transform:uppercase;font-weight:700}
 
 .ap-recado .mini-recado{font-size:.82rem;color:#ddd5eb;line-height:1.45;font-style:italic;padding:8px 10px;background:rgba(168,85,247,.08);border-left:3px solid var(--purple);border-radius:6px;margin:0}
+
+/* Top 3 apoiadores — placeholder */
+.ap-top3 .top3-placeholder{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 12px;
+  background:rgba(255,209,102,.06);
+  border:1px dashed rgba(255,209,102,.3);
+  border-radius:8px;
+}
+.ap-top3 .t3-ic{font-size:1.4rem;line-height:1;opacity:.55;transition:.2s}
+.ap-top3 .top3-placeholder:hover .t3-ic{opacity:.9}
+.ap-top3 .top3-placeholder small{
+  flex:1;min-width:140px;
+  font-size:.75rem;color:var(--mute);line-height:1.35;font-style:italic;
+}
+
+/* Seja Sub (hero card da Home) */
+.sub-hero-box{
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,209,102,.16), transparent 60%),
+    linear-gradient(135deg, rgba(168,85,247,.18), rgba(255,209,102,.06)),
+    var(--card-bg);
+  border:1px solid rgba(255,209,102,.32);
+  display:flex;flex-direction:column;gap:10px;text-align:center;align-items:center;
+}
+.sub-hero-box .sub-hero-crown{font-size:2.6rem;line-height:1;margin-top:4px}
+.sub-hero-box h3{color:var(--white);font-size:1.25rem;margin:0}
+.sub-hero-box > p{color:var(--mute);font-size:.85rem;margin:0;max-width:420px}
+.sub-hero-btns{display:grid;gap:8px;width:100%;margin-top:4px}
+.sub-hero-btns .btn{width:100%}
 
 .benefits-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px}
 .benefit{background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:#ddd5eb;font-size:.8rem}
@@ -353,8 +381,8 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 /* ============================================================
    EMOTES
    ============================================================ */
-.emotes-preview{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
-.emotes-preview>small{display:block;font-size:.6rem;letter-spacing:.7px;color:var(--mute);font-weight:800;margin-bottom:8px;text-transform:uppercase}
+.emotes-preview{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);width:100%}
+.emotes-preview>small{display:block;font-size:.6rem;letter-spacing:.7px;color:var(--mute);font-weight:800;margin-bottom:8px;text-transform:uppercase;text-align:left}
 .emotes-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .emote{aspect-ratio:1;display:grid;place-items:center;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;font-size:1.4rem;transition:transform .2s,border-color .2s,background .2s;cursor:default;user-select:none}
 .emote:hover{transform:translateY(-3px) scale(1.08);border-color:var(--purple);background:rgba(168,85,247,.18);box-shadow:0 6px 14px rgba(168,85,247,.25)}
@@ -404,23 +432,7 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .music-embed iframe{width:100%;border:0;display:block}
 .music-placeholder{padding:40px 20px;text-align:center;color:var(--mute);font-size:.9rem}
 
-.sub-hero{
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255,209,102,.14), transparent 60%),
-    linear-gradient(135deg, rgba(168,85,247,.18), rgba(255,209,102,.06)),
-    var(--card-bg);
-  border:1px solid rgba(255,209,102,.28);
-  border-radius:16px;
-  padding:28px 24px;
-  text-align:center;
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  margin-bottom:14px;
-}
-.sub-hero-crown{font-size:3rem;line-height:1}
-.sub-hero h2{color:var(--white);font-size:1.7rem;margin:0}
-.sub-hero p{color:var(--mute);font-size:.9rem;max-width:520px;line-height:1.5;margin-bottom:6px}
-.sub-hero .btn.block{width:100%;max-width:360px;margin-top:4px}
-
+/* Seja Sub (compacto — na Comunidade) */
 .sub-beneficios{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
 .sub-beneficios h3{color:var(--white);font-size:1.05rem;margin-bottom:14px}
 .benefits-grid-2{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0}
@@ -695,3 +707,88 @@ body.sou-admin .g[draggable="true"]:active{cursor:grabbing}
 .banner-live-badge.live{animation:pulseBadge 2s ease-in-out infinite;border-color:rgba(255,77,95,.45)}
 
 .tmdb-note{font-size:.72rem;color:var(--mute);margin-top:14px;text-align:center}
+
+/* ============================================================
+   TOP 3 APOIADORES + HALL DA FAMA (dentro do Apoie)
+   ============================================================ */
+.ap-top3 .top3{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+}
+.top3-card{
+  background:linear-gradient(160deg,rgba(255,209,102,.10),rgba(168,85,247,.05));
+  border:1px solid rgba(255,209,102,.25);
+  border-radius:10px;
+  padding:10px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  text-align:center;
+  transition:.2s;
+}
+.top3-card:hover{transform:translateY(-2px);border-color:rgba(255,209,102,.5)}
+.top3-card .t3-medal{font-size:1.4rem;line-height:1}
+.top3-card .t3-av{
+  width:34px;height:34px;border-radius:50%;
+  background:#1a102d;border:1.5px solid rgba(255,209,102,.4);
+  object-fit:cover;
+}
+.top3-card .t3-ph{
+  width:34px;height:34px;border-radius:50%;
+  background:#1a102d;border:1.5px solid rgba(255,209,102,.4);
+  display:grid;place-items:center;font-size:.95rem;
+}
+.top3-card .t3-name{
+  color:var(--white);font-size:.74rem;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%;line-height:1.15;
+}
+.top3-card .t3-val{
+  color:var(--gold);font-size:.68rem;font-weight:800;letter-spacing:.2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+
+/* Hall da fama */
+.ap-hall .hall{
+  display:grid;gap:4px;
+}
+.hall-row{
+  display:grid;
+  grid-template-columns:24px 1fr auto;
+  gap:8px;align-items:center;
+  padding:7px 10px;
+  background:rgba(255,255,255,.025);
+  border:1px solid var(--line);
+  border-radius:8px;
+  font-size:.8rem;
+  transition:.2s;
+}
+.hall-row:hover{border-color:rgba(255,209,102,.35);background:rgba(255,209,102,.04)}
+.hall-row .hr-pos{
+  display:grid;place-items:center;
+  width:22px;height:22px;border-radius:6px;
+  background:rgba(255,209,102,.15);
+  color:var(--gold);font-weight:800;font-size:.7rem;
+}
+.hall-row .hr-name{
+  color:var(--white);font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.hall-row .hr-meta{
+  color:var(--mute);font-size:.72rem;font-weight:600;
+  white-space:nowrap;
+}
+
+.ap-vazio{
+  color:var(--mute);font-size:.78rem;text-align:center;
+  padding:10px;font-style:italic;opacity:.8;
+}
+
+/* Contador animado — brilho sutil quando sobe */
+@keyframes counterGlow{
+  0%{ text-shadow:0 0 0 transparent; }
+  50%{ text-shadow:0 0 14px rgba(168,85,247,.9); }
+  100%{ text-shadow:0 0 0 transparent; }
+}
+.counter-up{
+  animation:counterGlow 1.3s ease-out;
+}

@@ -20,17 +20,21 @@ export default async function handler(req, res) {
   if (!URL_ || !TOKEN) return res.status(200).json({});
 
   try {
-    const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw] = await redis([
+    const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw] = await redis([
       ['GET', 'config:aviso'],
       ['GET', 'config:donate'],
       ['GET', 'config:manutencao'],
       ['GET', 'config:recado'],
       ['GET', 'config:horasMes'],
-      ['GET', 'config:updatedAt']
+      ['GET', 'config:updatedAt'],
+      ['GET', 'config:top3'],
+      ['GET', 'config:hall']
     ]);
 
-    let aviso = null;
+    let aviso = null, top3 = [], hall = [];
     try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
+    try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){}
+    try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){}
 
     return res.status(200).json({
       aviso,
@@ -38,7 +42,8 @@ export default async function handler(req, res) {
       manutencao: manutRaw === '1',
       recado: recadoRaw || '',
       horasMes: horasRaw || '',
-      updatedAt: updatedRaw || null
+      updatedAt: updatedRaw || null,
+      top3, hall
     });
   } catch (e) {
     return res.status(200).json({});
