@@ -7,7 +7,7 @@ const CONFIG = {
   siteUpdated: '12/10/2026',
   topDoadores: [],
   atividadeManual: [],
-  spotifyPlaylist: ''
+  spotifyPlaylist: 'https://open.spotify.com/playlist/0OV32Qe5e7BJY33rL4tpXk'
 };
 
 const AVISO = { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
