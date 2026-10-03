@@ -3,7 +3,7 @@ import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'troque-isso-urgente';
+const SESSION_SECRET = process.env.SESSION_SECRET;
 const COOKIE_NAME = 'sessao_site';
 
 const OPCOES_PADRAO = [
@@ -18,6 +18,7 @@ const OPCOES_PADRAO = [
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
 function lerSessao(req){
+  if(!SESSION_SECRET) return null;
   const c = req.headers.cookie || '';
   const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
   if(!m) return null;
@@ -62,13 +63,13 @@ function lerVoto(raw){
 }
 
 export default async function handler(req, res){
+  if(!SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
   res.setHeader('Cache-Control', 'no-store');
 
   const sessao = lerSessao(req);
   if(!sessao) return res.status(401).json({ error: 'Faça login com o Discord para votar' });
 
-  // Checa se está banido
   try {
     const [banido] = await redis([['HEXISTS', 'banidos', sessao.id]]);
     if(banido === 1) return res.status(403).json({ error: 'Você foi banido de votar' });

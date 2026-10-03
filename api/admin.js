@@ -2,7 +2,7 @@ import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'troque-isso-urgente';
+const SESSION_SECRET = process.env.SESSION_SECRET;
 const COOKIE_NAME = 'sessao_site';
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
@@ -14,9 +14,6 @@ const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.t
 
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
 
-/* ============================================================
-   PERMISSÕES PADRÃO (4 cargos fixos)
-   ============================================================ */
 const PERMISSOES_PADRAO = {
   dev: ['ver_votos','editar_opcoes','resetar_votos','ver_tierlist','editar_tierlist','importar_steam','ver_admins','editar_admins','ver_banidos','editar_banidos','ver_config','editar_config','ver_logs','ver_sugestoes'],
   dono: ['ver_votos','editar_opcoes','resetar_votos','ver_tierlist','editar_tierlist','importar_steam','ver_admins','editar_admins','ver_banidos','editar_banidos','ver_config','editar_config','ver_logs','ver_sugestoes'],
@@ -33,10 +30,27 @@ const LABEL_PERM = {
   ver_logs: 'Ver logs', ver_sugestoes: 'Ver sugestões'
 };
 
+/* Dados padrão para fazer seed da tier list no primeiro acesso */
+const JOGOS_PADRAO = [
+  { id: 'red-dead-2', nome: 'Red Dead Redemption 2', appid: 1174180, tier: 'S', status: 'Jogando', nota: 8, horas: 50,
+    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
+    comentario: 'Um dos mundos mais vivos e detalhados dos games.' },
+  { id: 'hollow-knight', nome: 'Hollow Knight', tier: 'S', status: 'Zerado', nota: 9, horas: 40,
+    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario: '' },
+  { id: 'stardew-valley', nome: 'Stardew Valley', tier: 'A', status: 'Jogando', nota: 8, horas: 120,
+    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario: '' }
+];
+const FILMES_PADRAO = [
+  { id: 'interestelar', nome: 'Interestelar', tier: 'S', status: 'Assistido', nota: 9, duracao: 169, ano: 2014,
+    capa: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
+    comentario: 'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas.' }
+];
+
 /* ============ SESSÃO ============ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
 function lerSessao(req){
+  if(!SESSION_SECRET) return null;
   const c = req.headers.cookie || '';
   const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
   if(!m) return null;
@@ -248,6 +262,7 @@ async function importarSteam(){
 
 /* ============ HANDLER ============ */
 export default async function handler(req, res){
+  if(!SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
 
   const sessao = lerSessao(req);
@@ -427,13 +442,29 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- TIER LIST -------- */
+    /* -------- TIER LIST (com seed automático) -------- */
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
       if(!(await temPermissao(sessao, 'ver_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const [jogosRaw, filmesRaw] = await redis([['GET','tierlist:jogos'], ['GET','tierlist:filmes']]);
       let jogos = [], filmes = [];
-      try { jogos = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
-      try { filmes = filmesRaw ? JSON.parse(filmesRaw) : []; } catch(e){}
+      const cmdsSalvar = [];
+
+      if(jogosRaw === null || jogosRaw === undefined){
+        jogos = JOGOS_PADRAO;
+        cmdsSalvar.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]);
+      } else {
+        try { jogos = JSON.parse(jogosRaw); if(!Array.isArray(jogos)) jogos = []; } catch(e){ jogos = []; }
+      }
+
+      if(filmesRaw === null || filmesRaw === undefined){
+        filmes = FILMES_PADRAO;
+        cmdsSalvar.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]);
+      } else {
+        try { filmes = JSON.parse(filmesRaw); if(!Array.isArray(filmes)) filmes = []; } catch(e){ filmes = []; }
+      }
+
+      if(cmdsSalvar.length) await redis(cmdsSalvar);
+
       return res.status(200).json({ jogos, filmes });
     }
 

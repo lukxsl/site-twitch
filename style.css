@@ -230,7 +230,7 @@ dialog::backdrop{background:rgba(5,3,9,.75);backdrop-filter:blur(4px)}
 .busca-copiar:hover{border-color:var(--purple);color:var(--purple-light)}
 
 /* ============================================================
-   FOOTER (C3)
+   FOOTER
    ============================================================ */
 footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);border-top:1px solid var(--line);font-size:.85rem;position:relative;z-index:1}
 .footer-links{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:14px}
@@ -335,7 +335,6 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 
 .ap-recado .mini-recado{font-size:.82rem;color:#ddd5eb;line-height:1.45;font-style:italic;padding:8px 10px;background:rgba(168,85,247,.08);border-left:3px solid var(--purple);border-radius:6px;margin:0}
 
-/* Top 3 apoiadores — placeholder */
 .ap-top3 .top3-placeholder{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
   padding:10px 12px;
@@ -350,7 +349,6 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
   font-size:.75rem;color:var(--mute);line-height:1.35;font-style:italic;
 }
 
-/* Seja Sub (hero card da Home) */
 .sub-hero-box{
   background:
     radial-gradient(circle at 50% 0%, rgba(255,209,102,.16), transparent 60%),
@@ -432,7 +430,6 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .music-embed iframe{width:100%;border:0;display:block}
 .music-placeholder{padding:40px 20px;text-align:center;color:var(--mute);font-size:.9rem}
 
-/* Seja Sub (compacto — na Comunidade) */
 .sub-beneficios{background:var(--card-bg);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px}
 .sub-beneficios h3{color:var(--white);font-size:1.05rem;margin-bottom:14px}
 .benefits-grid-2{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0}
@@ -486,6 +483,31 @@ footer{background:#050309;padding:26px 0;text-align:center;color:var(--mute);bor
 .rule-card strong{display:block;color:var(--white);font-size:.9rem;margin-bottom:3px}
 .rule-card p{color:var(--mute);font-size:.8rem;line-height:1.4}
 .rules-foot{margin-top:12px;font-size:.78rem;color:var(--mute);text-align:center}
+
+/* ============================================================
+   INFO EM 2 COLUNAS (Comandos + Regras lado a lado)
+   ============================================================ */
+.info-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  align-items:start;
+}
+.info-grid .cmds-wrap,
+.info-grid .rules-wrap{margin-top:0}
+.info-grid .rules-grid{grid-template-columns:1fr;gap:10px}
+.info-grid .rules-wrap>h3{margin-bottom:14px}
+
+@media(max-width:900px){
+  .info-grid{grid-template-columns:1fr}
+  .info-grid .rules-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .info-grid .rules-grid{grid-template-columns:1fr}
+}
+
+/* Playlist da Home — sem margem extra */
+#musicBox{margin-top:0}
 
 /* ============================================================
    VOTAÇÃO
@@ -747,7 +769,6 @@ body.sou-admin .g[draggable="true"]:active{cursor:grabbing}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
 }
 
-/* Hall da fama */
 .ap-hall .hall{
   display:grid;gap:4px;
 }
@@ -783,7 +804,7 @@ body.sou-admin .g[draggable="true"]:active{cursor:grabbing}
   padding:10px;font-style:italic;opacity:.8;
 }
 
-/* Contador animado — brilho sutil quando sobe */
+/* Contador animado */
 @keyframes counterGlow{
   0%{ text-shadow:0 0 0 transparent; }
   50%{ text-shadow:0 0 14px rgba(168,85,247,.9); }
@@ -793,35 +814,16 @@ body.sou-admin .g[draggable="true"]:active{cursor:grabbing}
   animation:counterGlow 1.3s ease-out;
 }
 
-/* ============================================================
-   TOP 3 APOIADORES — cards "Em breve" clicáveis
-   ============================================================ */
-.ap-top3 .top3{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:6px;
-}
-.top3-card{
-  background:linear-gradient(160deg,rgba(255,209,102,.10),rgba(168,85,247,.05));
-  border:1px solid rgba(255,209,102,.25);
-  border-radius:10px;
-  padding:10px 6px;
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  text-align:center;
-  transition:.2s;
-  min-height:60px;justify-content:center;
-}
-.top3-card .t3-medal{font-size:1.4rem;line-height:1;opacity:.75}
-.top3-card .t3-name{
-  color:var(--mute);font-size:.72rem;font-weight:700;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
-  font-style:italic;letter-spacing:.2px;
-}
-.top3-card .t3-val{color:var(--gold);font-size:.68rem;font-weight:800}
-
+/* Cards "Em breve" clicáveis */
 .top3-card.top3-em-breve{
   cursor:pointer;
   opacity:.7;
+  min-height:60px;justify-content:center;
+}
+.top3-card.top3-em-breve .t3-medal{opacity:.75}
+.top3-card.top3-em-breve .t3-name{
+  color:var(--mute);font-size:.72rem;
+  font-style:italic;letter-spacing:.2px;
 }
 .top3-card.top3-em-breve:hover{
   opacity:1;

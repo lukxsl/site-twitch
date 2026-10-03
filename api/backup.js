@@ -4,15 +4,13 @@
 // POST    { action:'create' }    → cria backup novo
 // POST    { action:'restore', id } → restaura backup
 // POST    { action:'delete', id }  → apaga backup
-// GET     ?action=cron           → cria backup automático (sem login)
-//
-// Env: UPSTASH_REDIS_REST_URL/TOKEN, SESSION_SECRET, CRON_SECRET (opcional)
+// GET     ?action=cron           → cria backup automático (protegido por CRON_SECRET)
 import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'troque-isso-urgente';
-const CRON_SECRET = process.env.CRON_SECRET || '';
+const SESSION_SECRET = process.env.SESSION_SECRET;
+const CRON_SECRET = process.env.CRON_SECRET;
 const COOKIE_NAME = 'sessao_site';
 const LIST_KEY = 'backups:lista';
 const BACKUP_KEY = id => `backups:item:${id}`;
@@ -31,12 +29,16 @@ const KEYS_PARA_BACKUP = [
   'config:manutencao',
   'config:recado',
   'config:horasMes',
-  'config:updatedAt'
+  'config:updatedAt',
+  'config:top3',
+  'config:hall',
+  'config:permissoes'
 ];
 
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
 function lerSessao(req){
+  if(!SESSION_SECRET) return null;
   const c = req.headers.cookie || '';
   const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
   if(!m) return null;
@@ -114,17 +116,18 @@ async function restaurarBackup(id){
 export default async function handler(req, res){
   res.setHeader('Cache-Control', 'no-store');
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
+  if(!SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
 
   const action = (req.query && req.query.action) || '';
 
-  /* ---------- CRON — cria backup sem exigir login ---------- */
+  /* ---------- CRON — protegido obrigatoriamente por CRON_SECRET ---------- */
   if(req.method === 'GET' && action === 'cron'){
-    // Se CRON_SECRET está configurado, valida o header Authorization do Vercel Cron
-    if(CRON_SECRET){
-      const auth = req.headers.authorization || '';
-      if(auth !== `Bearer ${CRON_SECRET}`){
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
+    if(!CRON_SECRET){
+      return res.status(500).json({ error: 'CRON_SECRET não configurado' });
+    }
+    const auth = req.headers.authorization || '';
+    if(auth !== `Bearer ${CRON_SECRET}`){
+      return res.status(401).json({ error: 'Unauthorized' });
     }
     try{
       const r = await criarBackup('cron');
@@ -134,7 +137,7 @@ export default async function handler(req, res){
     }
   }
 
-  /* ---------- ROTAS PROTEGIDAS (precisam de login admin) ---------- */
+  /* ---------- ROTAS PROTEGIDAS ---------- */
   const sessao = lerSessao(req);
   if(!sessao) return res.status(401).json({ error: 'Faça login' });
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });

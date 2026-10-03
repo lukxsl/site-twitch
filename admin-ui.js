@@ -742,8 +742,8 @@ async function renderAdminAdmins(){
         <div class="admin-voto-opcao" style="gap:6px">
           <b>${LABEL_CARGO[a.cargo] || a.cargo}${a.fixo ? ' 🔒' : ''}</b>
           <div style="display:flex;gap:6px;margin-top:4px">
-            ${podeEditar ? `<button class="btn-mini" onclick="editarAdmin('${a.id}','${esc(a.username||'')}','${esc(a.avatar||'')}','${a.cargo}')">Editar</button>` : ''}
-            ${podeEditar ? `<button class="btn-mini danger" onclick="removerAdmin('${a.id}')">Remover</button>` : ''}
+            ${podeEditar ? `<button class="btn-mini" data-admin-editar data-id="${esc(a.id)}" data-nome="${esc(a.username||'')}" data-avatar="${esc(a.avatar||'')}" data-cargo="${esc(a.cargo)}">Editar</button>` : ''}
+            ${podeEditar ? `<button class="btn-mini danger" data-admin-remover data-id="${esc(a.id)}">Remover</button>` : ''}
           </div>
         </div>
       </div>`;
@@ -789,6 +789,17 @@ async function renderAdminAdmins(){
   if(podeEditarPerms) carregarPermissoes();
 }
 window.renderAdminAdmins = renderAdminAdmins;
+
+/* ====== Event delegation para ações de admins (evita XSS via inline onclick) ====== */
+document.addEventListener('click', e => {
+  const editar = e.target.closest('[data-admin-editar]');
+  if(editar){
+    editarAdmin(editar.dataset.id, editar.dataset.nome, editar.dataset.avatar, editar.dataset.cargo);
+    return;
+  }
+  const remover = e.target.closest('[data-admin-remover]');
+  if(remover){ removerAdmin(remover.dataset.id); }
+});
 
 /* ====== UI de permissões ====== */
 async function carregarPermissoes(){
@@ -905,9 +916,10 @@ function editarAdmin(id, username, avatar, cargoAtual){
         </select>
       </div>
       <div class="admin-actions" style="justify-content:flex-end">
-        <button class="admin-btn" onclick="salvarAdmin('${id}','${esc(username)}','${esc(avatar)}')">Salvar</button>
+        <button class="admin-btn" id="btnSalvarAdminEdit">Salvar</button>
       </div>
     </div>`;
+  $('btnSalvarAdminEdit').addEventListener('click', () => salvarAdmin(id, username, avatar));
   dlg.showModal();
 }
 window.editarAdmin = editarAdmin;
