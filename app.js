@@ -41,8 +41,7 @@ const STATUS_TOOLTIP = {
   'Jogando': 'Estou jogando atualmente',
   'Zerado': 'Terminei a história principal',
   'Dropado': 'Comecei mas não vou continuar',
-  'Na fila': 'Vou jogar em breve, já escolhi',
-  'Wishlist': 'Quero jogar algum dia, sem pressa',
+  'Na fila': 'Quero jogar/assistir em breve',
   'Assistindo': 'Estou assistindo agora',
   'Assistido': 'Já assisti'
 };
@@ -80,6 +79,14 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
 const nivel = cargo => NIVEIS[cargo] || 0;
+
+/* Permissões do usuário atual (carregadas junto com o login) */
+function temPerm(perm){
+  if(!USUARIO || !USUARIO.admin) return false;
+  if(USUARIO.cargo === 'dev') return true;
+  return (USUARIO.permissoes || []).includes(perm);
+}
+window.temPerm = temPerm;
 
 function fmtDuracao(min){
   if(!min) return null;
@@ -588,7 +595,7 @@ window.carregarBiblioteca = carregarBiblioteca;
 const MODOS = {
   jogos: {
     get lista(){ return JOGOS; },
-    status:['Todos','Jogando','Zerado','Dropado','Na fila','Wishlist'],
+    status:['Todos','Jogando','Zerado','Dropado','Na fila'],
     feito:'Zerado', plural:'jogos', hrs:'horas jogadas', hl:'horas jogadas',
     l4:'jogos zerados', titulo:'Tier List de Jogos',
     sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.',
@@ -870,6 +877,19 @@ async function checarLogin(){
     const d = await r.json();
     USUARIO = d.logado ? d : null;
   }catch(e){ USUARIO = null; }
+
+  if(USUARIO && USUARIO.admin){
+    try {
+      const pr = await fetch('/api/admin?action=permissoes-minhas');
+      if(pr.ok){
+        const pd = await pr.json();
+        USUARIO.permissoes = Array.isArray(pd.permissoes) ? pd.permissoes : [];
+      } else {
+        USUARIO.permissoes = [];
+      }
+    } catch(e){ USUARIO.permissoes = []; }
+  }
+
   renderLogin();
   document.body.classList.toggle('sou-admin', !!(USUARIO && USUARIO.admin));
   if(USUARIO && USUARIO.admin) desenhar();

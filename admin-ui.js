@@ -12,6 +12,21 @@ window.adminIrPara = adminIrPara;
 window.adminIrAba = adminIrAba;
 window.adminIrTierTab = adminIrTierTab;
 
+/* ============================================================
+   PERMISSÕES — constantes
+   ============================================================ */
+const PERM_GRUPOS = {
+  'Votação': ['ver_votos','editar_opcoes','resetar_votos'],
+  'Tier List': ['ver_tierlist','editar_tierlist','importar_steam'],
+  'Admins': ['ver_admins','editar_admins'],
+  'Banidos': ['ver_banidos','editar_banidos'],
+  'Config': ['ver_config','editar_config','ver_logs'],
+  'Comunidade': ['ver_sugestoes']
+};
+const CARGOS_ORDEM = ['dev','dono','administrador','moderador'];
+let PERMS_DADOS = null;
+let PERMS_LABELS = null;
+
 async function carregarAdmin(){
   const area = $('adminArea'); if(!area) return;
   const sub = $('adminSub');
@@ -54,53 +69,34 @@ async function carregarAdmin(){
 }
 window.carregarAdmin = carregarAdmin;
 
+function cardAdmin(ic, titulo, desc, pagina){
+  return `<button class="admin-menu-card" onclick="adminIrPara('${pagina}')">
+    <span class="ic">${ic}</span><h3>${titulo}</h3>
+    <p>${desc}</p><span class="cta">Abrir →</span>
+  </button>`;
+}
+
 function renderAdminHome(){
   const area = $('adminArea'); if(!area) return;
-  const meu = USUARIO.cargo || 'moderador';
-  const podeEditar = nivel(meu) >= 2;
-  const podeResetar = nivel(meu) >= 3;
-  area.innerHTML = `
-    <div class="admin-menu">
-      <button class="admin-menu-card" onclick="adminIrPara('votacao')">
-        <span class="ic">🗳️</span><h3>Votação</h3>
-        <p>Ver quem votou${podeEditar ? ', editar opções' : ''}${podeResetar ? ' e resetar' : ''}.</p>
-        <span class="cta">Abrir →</span>
-      </button>
-      ${podeEditar ? `
-      <button class="admin-menu-card" onclick="adminIrPara('tierlist')">
-        <span class="ic">🎮</span><h3>Tier List</h3>
-        <p>Adicionar, editar, remover e apagar em massa.</p>
-        <span class="cta">Abrir →</span>
-      </button>` : ''}
-      <button class="admin-menu-card" onclick="adminIrPara('banidos')">
-        <span class="ic">🚫</span><h3>Banidos</h3>
-        <p>${podeEditar ? 'Gerenciar quem não pode votar.' : 'Ver quem não pode votar.'}</p>
-        <span class="cta">Abrir →</span>
-      </button>
-      <button class="admin-menu-card" onclick="adminIrPara('admins')">
-        <span class="ic">👥</span><h3>Admins</h3>
-        <p>${podeResetar ? 'Gerenciar quem tem acesso.' : 'Ver quem tem acesso.'}</p>
-        <span class="cta">Abrir →</span>
-      </button>
-      ${podeResetar ? `
-      <button class="admin-menu-card" onclick="adminIrPara('config')">
-        <span class="ic">⚙️</span><h3>Config geral</h3>
-        <p>Aviso, doação, recado, horas, top 3 e hall.</p>
-        <span class="cta">Abrir →</span>
-      </button>
-      <button class="admin-menu-card" onclick="adminIrPara('backup')">
-        <span class="ic">💾</span><h3>Backup</h3>
-        <p>Criar, baixar e restaurar backups do site.</p>
-        <span class="cta">Abrir →</span>
-      </button>` : ''}
-      ${podeEditar ? `
-      <button class="admin-menu-card" onclick="adminIrPara('logs')">
-        <span class="ic">📋</span><h3>Logs</h3>
-        <p>Histórico do que foi feito no painel.</p>
-        <span class="cta">Abrir →</span>
-      </button>` : ''}
-    </div>
-  `;
+  const cards = [];
+  if(temPerm('ver_votos')) cards.push(cardAdmin('🗳️','Votação',
+    `Ver quem votou${temPerm('editar_opcoes') ? ', editar opções' : ''}${temPerm('resetar_votos') ? ' e resetar' : ''}.`,
+    'votacao'));
+  if(temPerm('ver_tierlist')) cards.push(cardAdmin('🎮','Tier List',
+    temPerm('editar_tierlist') ? 'Adicionar, editar, remover e apagar em massa.' : 'Ver os itens da tier list.',
+    'tierlist'));
+  if(temPerm('ver_banidos')) cards.push(cardAdmin('🚫','Banidos',
+    temPerm('editar_banidos') ? 'Gerenciar quem não pode votar.' : 'Ver quem não pode votar.',
+    'banidos'));
+  if(temPerm('ver_admins')) cards.push(cardAdmin('👥','Admins',
+    temPerm('editar_admins') ? 'Gerenciar quem tem acesso.' : 'Ver quem tem acesso.',
+    'admins'));
+  if(temPerm('ver_config')) cards.push(cardAdmin('⚙️','Config geral',
+    'Aviso, doação, recado, horas, top 3 e hall.',
+    'config'));
+  if(temPerm('ver_logs')) cards.push(cardAdmin('📋','Logs','Histórico do que foi feito no painel.','logs'));
+  if(temPerm('editar_config')) cards.push(cardAdmin('💾','Backup','Criar, baixar e restaurar backups do site.','backup'));
+  area.innerHTML = `<div class="admin-menu">${cards.join('') || '<p class="admin-vazio">Você não tem permissão pra nenhuma seção.</p>'}</div>`;
 }
 
 function adminVoltarHTML(titulo){
@@ -131,9 +127,8 @@ function renderAdminVotacao(){
   const totalVotos = Object.values(contagem).reduce((a,b)=>a+b,0);
   const mapaOpcao = {};
   (config || []).forEach(o => { mapaOpcao[o.id] = o; });
-  const meu = USUARIO.cargo || 'moderador';
-  const podeEditar = nivel(meu) >= 2;
-  const podeResetar = nivel(meu) >= 3;
+  const podeEditar = temPerm('editar_opcoes');
+  const podeResetar = temPerm('resetar_votos');
   area.innerHTML = adminVoltarHTML('🗳️ Votação') + `
     <div class="admin-tabs">
       <button class="${ADMIN_TAB === 'votos' ? 'on' : ''}" onclick="adminIrAba('votos')">Votos (${totalVotos})</button>
@@ -387,7 +382,8 @@ window.carregarAdminTierList = carregarAdminTierList;
 function renderAdminTierList(){
   const area = $('adminArea'); if(!area) return;
   const lista = ADMIN_TIER[ADMIN_TIER_TAB] || [];
-  const podeImportar = nivel(USUARIO.cargo || '') >= 3;
+  const podeEditar = temPerm('editar_tierlist');
+  const podeImportar = temPerm('importar_steam');
   const botaoImport = (ADMIN_TIER_TAB === 'jogos' && podeImportar)
     ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>`
     : '';
@@ -422,8 +418,8 @@ function renderAdminTierList(){
           <b>${esc(it.nome)}</b>
           <small>Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
         </div>
-        <button class="btn-mini" onclick="editarItemTier(${i})">Editar</button>
-        <button class="btn-mini danger" onclick="removerItemTier(${i})">Remover</button>
+        ${podeEditar ? `<button class="btn-mini" onclick="editarItemTier(${i})">Editar</button>` : ''}
+        ${podeEditar ? `<button class="btn-mini danger" onclick="removerItemTier(${i})">Remover</button>` : ''}
       </div>`;
   };
 
@@ -439,8 +435,8 @@ function renderAdminTierList(){
         ${lista.length ? lista.map(itemHTML).join('') : '<p class="admin-vazio" style="padding:20px">Nenhum item ainda</p>'}
       </div>
       <div class="admin-actions">
-        ${!ADMIN_MULTISEL.ativo && lista.length ? `<button class="admin-btn ghost" onclick="ativarMultiSel()">☑️ Selecionar vários</button>` : ''}
-        <button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : 'filme'}</button>
+        ${podeEditar && !ADMIN_MULTISEL.ativo && lista.length ? `<button class="admin-btn ghost" onclick="ativarMultiSel()">☑️ Selecionar vários</button>` : ''}
+        ${podeEditar ? `<button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : 'filme'}</button>` : ''}
         ${botaoImport}
         <button class="admin-btn ghost" onclick="carregarAdminTierList()">🔄 Recarregar</button>
       </div>
@@ -526,7 +522,7 @@ function abrirModalItemTier(i){
   const ehNovo = (i === -1);
   const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null, appid:null } : lista[i];
   const statusOpcoes = tipo === 'jogos'
-    ? ['Jogando','Zerado','Dropado','Na fila','Wishlist']
+    ? ['Jogando','Zerado','Dropado','Na fila']
     : ['Assistindo','Assistido','Na fila'];
   $('dTitle').textContent = (ehNovo ? 'Adicionar ' : 'Editar ') + (tipo === 'jogos' ? 'jogo' : 'filme');
   $('dBody').innerHTML = `
@@ -729,7 +725,7 @@ async function renderAdminAdmins(){
   }catch(e){}
   const meCargo = dados.meuCargo || (USUARIO && USUARIO.cargo) || 'moderador';
   const nivelMeu = NIVEIS[meCargo] || 0;
-  const podeGerenciar = nivelMeu >= 3;
+  const podeGerenciar = temPerm('editar_admins') && nivelMeu >= 3;
   const podeMexerDev = meCargo === 'dev';
   const adminsHTML = (dados.admins || []).map(a => {
     const nivelAlvo = NIVEIS[a.cargo] || 0;
@@ -744,7 +740,7 @@ async function renderAdminAdmins(){
           <small>${esc(a.id)}</small>
         </div>
         <div class="admin-voto-opcao" style="gap:6px">
-          <b>${LABEL_CARGO[a.cargo] || a.cargo}</b>
+          <b>${LABEL_CARGO[a.cargo] || a.cargo}${a.fixo ? ' 🔒' : ''}</b>
           <div style="display:flex;gap:6px;margin-top:4px">
             ${podeEditar ? `<button class="btn-mini" onclick="editarAdmin('${a.id}','${esc(a.username||'')}','${esc(a.avatar||'')}','${a.cargo}')">Editar</button>` : ''}
             ${podeEditar ? `<button class="btn-mini danger" onclick="removerAdmin('${a.id}')">Remover</button>` : ''}
@@ -752,6 +748,7 @@ async function renderAdminAdmins(){
         </div>
       </div>`;
   }).join('');
+  const podeEditarPerms = temPerm('editar_config');
   area.innerHTML = adminVoltarHTML('👥 Admins') + `
     <div class="admin-card">
       <h3>👥 Administradores <span class="cont">${(dados.admins||[]).length}</span></h3>
@@ -767,15 +764,131 @@ async function renderAdminAdmins(){
       <table class="cmds-table" style="font-size:.82rem">
         <thead><tr><th>Cargo</th><th>Pode fazer</th></tr></thead>
         <tbody>
-          <tr><td>🛠️ Dev</td><td style="color:var(--mute)">Tudo, incluindo gerenciar outros Devs</td></tr>
+          <tr><td>🛠️ Dev</td><td style="color:var(--mute)">Tudo, incluindo gerenciar Devs</td></tr>
           <tr><td>👑 Dono</td><td style="color:var(--mute)">Tudo, menos mexer em Devs</td></tr>
           <tr><td>🛡️ Administrador</td><td style="color:var(--mute)">Votação, Tier List, banir, ver admins</td></tr>
-          <tr><td>🔰 Moderador</td><td style="color:var(--mute)">Ver votos, opções, banidos</td></tr>
+          <tr><td>🔰 Moderador</td><td style="color:var(--mute)">Ver votos, tier list, banidos</td></tr>
         </tbody>
       </table>
-    </div>`;
+    </div>
+    ${podeEditarPerms ? `
+    <div class="admin-card">
+      <h3>🔐 Permissões por cargo</h3>
+      <p style="color:var(--mute);font-size:.82rem;margin-bottom:12px">
+        Marque o que cada cargo pode fazer. O cargo <b>Dev</b> sempre tem acesso total.
+      </p>
+      <div class="perms-grid" id="permsGrid">
+        <p class="admin-vazio">Carregando…</p>
+      </div>
+      <div class="admin-actions">
+        <button class="admin-btn" onclick="salvarPermissoes()">💾 Salvar permissões</button>
+        <button class="admin-btn ghost" onclick="carregarPermissoes()">🔄 Recarregar</button>
+        <button class="admin-btn ghost" onclick="restaurarPermissoesPadrao()">♻️ Restaurar padrão</button>
+      </div>
+    </div>` : ''}`;
+  if(podeEditarPerms) carregarPermissoes();
 }
 window.renderAdminAdmins = renderAdminAdmins;
+
+/* ====== UI de permissões ====== */
+async function carregarPermissoes(){
+  const grid = $('permsGrid'); if(!grid) return;
+  grid.innerHTML = '<p class="admin-vazio">Carregando…</p>';
+  try{
+    const r = await fetch('/api/admin?action=permissoes-get');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    PERMS_DADOS = d.permissoes;
+    PERMS_LABELS = d.labels || {};
+    renderPermissoes();
+  }catch(e){
+    grid.innerHTML = `<p class="admin-vazio">Erro: ${esc(e.message)}</p>`;
+  }
+}
+window.carregarPermissoes = carregarPermissoes;
+
+function renderPermissoes(){
+  const grid = $('permsGrid'); if(!grid || !PERMS_DADOS) return;
+  grid.innerHTML = CARGOS_ORDEM.map(cargo => {
+    const isDev = cargo === 'dev';
+    const perms = PERMS_DADOS[cargo] || [];
+    const icone = LABEL_CARGO[cargo].split(' ')[0];
+    const nomeCargo = LABEL_CARGO[cargo].split(' ').slice(1).join(' ');
+    return `
+      <div class="perm-cargo">
+        <div class="perm-cargo-head">
+          <span class="pc-ic">${icone}</span>
+          <b>${nomeCargo}</b>
+          <small>${isDev ? 'acesso total' : 'customizável'}</small>
+        </div>
+        ${Object.entries(PERM_GRUPOS).map(([grupo, lista]) => `
+          <div class="perm-grupo">
+            <span class="perm-grupo-titulo">${grupo}</span>
+            ${lista.map(p => isDev
+              ? `<div class="perm-fixo"><input type="checkbox" checked disabled><span>${PERMS_LABELS[p] || p}</span><span class="perm-fixo-lock">fixo</span></div>`
+              : `<label class="perm-item"><input type="checkbox" data-cargo="${cargo}" data-perm="${p}" ${perms.includes(p) ? 'checked' : ''}><span>${PERMS_LABELS[p] || p}</span></label>`
+            ).join('')}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+async function salvarPermissoes(){
+  if(!PERMS_DADOS){ toast('Nada pra salvar', 'warn'); return; }
+  const novo = {};
+  for(const cargo of CARGOS_ORDEM){
+    novo[cargo] = cargo === 'dev' ? (PERMS_DADOS.dev || []) : [];
+  }
+  document.querySelectorAll('#permsGrid input[type="checkbox"]').forEach(cb => {
+    if(cb.disabled) return;
+    const c = cb.dataset.cargo;
+    const p = cb.dataset.perm;
+    if(!c || !p) return;
+    if(cb.checked && !novo[c].includes(p)) novo[c].push(p);
+  });
+  try{
+    const r = await fetch('/api/admin?action=permissoes-set', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ permissoes: novo })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    PERMS_DADOS = d.permissoes;
+    if(USUARIO && USUARIO.cargo){
+      USUARIO.permissoes = PERMS_DADOS[USUARIO.cargo] || [];
+    }
+    toast('Permissões salvas! ✅', 'ok');
+    renderAdminAdmins();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.salvarPermissoes = salvarPermissoes;
+
+async function restaurarPermissoesPadrao(){
+  const ok = await confirmar('Restaurar padrão?', 'As permissões voltam ao padrão de fábrica. Isso sobrescreve as customizadas.', '♻️');
+  if(!ok) return;
+  try{
+    const r = await fetch('/api/admin?action=permissoes-get');
+    const d = await r.json();
+    if(!d.padrao) throw new Error('Padrão indisponível');
+    const r2 = await fetch('/api/admin?action=permissoes-set', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ permissoes: d.padrao })
+    });
+    const d2 = await r2.json();
+    if(!r2.ok) throw new Error(d2.error || 'Falha');
+    PERMS_DADOS = d2.permissoes;
+    if(USUARIO && USUARIO.cargo){
+      USUARIO.permissoes = PERMS_DADOS[USUARIO.cargo] || [];
+    }
+    toast('Permissões restauradas! ✅', 'ok');
+    renderAdminAdmins();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.restaurarPermissoesPadrao = restaurarPermissoesPadrao;
 
 function editarAdmin(id, username, avatar, cargoAtual){
   $('dTitle').textContent = 'Editar admin';
@@ -882,7 +995,7 @@ async function renderAdminBanidos(){
     const r = await fetch('/api/admin?action=banidos-ver');
     if(r.ok){ const d = await r.json(); banidos = d.banidos || []; }
   } catch(e){}
-  const podeGerenciar = nivel(USUARIO.cargo || '') >= 2;
+  const podeGerenciar = temPerm('editar_banidos');
   area.innerHTML = adminVoltarHTML('🚫 Banidos') + `
     <div class="admin-card">
       <h3>🚫 Banidos de votar <span class="cont">${banidos.length}</span></h3>

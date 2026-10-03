@@ -1,13 +1,3 @@
-// Vercel serverless: /api/admin.js
-// Painel admin completo.
-//
-// Env necessárias:
-//   UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN  (ou KV_REST_API_*)
-//   SESSION_SECRET
-//   DISCORD_ADMIN_IDS  (IDs separados por vírgula — viram "dev" fixos)
-//   TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET  (para IGDB)
-//   TMDB_TOKEN (ou TMDB_API_KEY)
-//   STEAM_API_KEY (ou STEAM)
 import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -23,6 +13,25 @@ const STEAM_ID = '76561199823015081';
 const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
+
+/* ============================================================
+   PERMISSÕES PADRÃO (4 cargos fixos)
+   ============================================================ */
+const PERMISSOES_PADRAO = {
+  dev: ['ver_votos','editar_opcoes','resetar_votos','ver_tierlist','editar_tierlist','importar_steam','ver_admins','editar_admins','ver_banidos','editar_banidos','ver_config','editar_config','ver_logs','ver_sugestoes'],
+  dono: ['ver_votos','editar_opcoes','resetar_votos','ver_tierlist','editar_tierlist','importar_steam','ver_admins','editar_admins','ver_banidos','editar_banidos','ver_config','editar_config','ver_logs','ver_sugestoes'],
+  administrador: ['ver_votos','editar_opcoes','ver_tierlist','editar_tierlist','ver_admins','editar_admins','ver_banidos','editar_banidos','ver_config','ver_logs','ver_sugestoes'],
+  moderador: ['ver_votos','ver_tierlist','ver_banidos','ver_sugestoes']
+};
+
+const LABEL_PERM = {
+  ver_votos: 'Ver votos', editar_opcoes: 'Editar opções', resetar_votos: 'Resetar votos',
+  ver_tierlist: 'Ver tier list', editar_tierlist: 'Editar tier list', importar_steam: 'Importar Steam',
+  ver_admins: 'Ver admins', editar_admins: 'Editar admins',
+  ver_banidos: 'Ver banidos', editar_banidos: 'Banir/desbanir',
+  ver_config: 'Ver config', editar_config: 'Editar config',
+  ver_logs: 'Ver logs', ver_sugestoes: 'Ver sugestões'
+};
 
 /* ============ SESSÃO ============ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
@@ -49,6 +58,23 @@ async function redis(cmds){
   return (await r.json()).map(x => x.result);
 }
 
+async function pegarPermissoes(){
+  try {
+    const [raw] = await redis([['GET', 'config:permissoes']]);
+    if(!raw) return { ...PERMISSOES_PADRAO };
+    const d = JSON.parse(raw);
+    if(!d || typeof d !== 'object') return { ...PERMISSOES_PADRAO };
+    return { ...PERMISSOES_PADRAO, ...d };
+  } catch(e){ return { ...PERMISSOES_PADRAO }; }
+}
+
+async function temPermissao(sessao, perm){
+  if(!sessao || !sessao.cargo) return false;
+  if(sessao.cargo === 'dev') return true;
+  const perms = await pegarPermissoes();
+  return (perms[sessao.cargo] || []).includes(perm);
+}
+
 async function logAcao(quem, cargo, acao){
   try {
     const item = JSON.stringify({ quem, cargo, acao, ts: Date.now() });
@@ -56,12 +82,12 @@ async function logAcao(quem, cargo, acao){
   } catch(e){}
 }
 
-/* ============ TRADUÇÃO EN→PT (Google grátis) ============ */
+/* ============ TRADUÇÃO ============ */
 async function traduzir(texto){
   if(!texto) return null;
   try {
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(texto)}`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; asemtet0-site/1.0)' } });
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     if(!r.ok) return null;
     const d = await r.json();
     if(Array.isArray(d) && Array.isArray(d[0])){
@@ -72,16 +98,16 @@ async function traduzir(texto){
   } catch(e){ return null; }
 }
 
-/* ============ WIKIPEDIA (fallback sinopse) ============ */
+/* ============ WIKIPEDIA ============ */
 async function sinopseWikipedia(nome, lang = 'pt'){
   try {
     const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(nome)}&format=json&origin=*&srlimit=1`;
-    const r1 = await fetch(searchUrl, { headers: { 'User-Agent': 'asemtet0-site/1.0 (https://asemtet0.vercel.app)' } });
+    const r1 = await fetch(searchUrl, { headers: { 'User-Agent': 'asemtet0-site/1.0' } });
     const d1 = await r1.json();
     const titulo = d1?.query?.search?.[0]?.title;
     if(!titulo) return null;
     const extractUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(titulo)}&format=json&origin=*`;
-    const r2 = await fetch(extractUrl, { headers: { 'User-Agent': 'asemtet0-site/1.0 (https://asemtet0.vercel.app)' } });
+    const r2 = await fetch(extractUrl, { headers: { 'User-Agent': 'asemtet0-site/1.0' } });
     const d2 = await r2.json();
     const extract = d2?.query?.pages ? Object.values(d2.query.pages)[0]?.extract : null;
     if(!extract) return null;
@@ -145,7 +171,6 @@ async function igdbBuscar(nome){
   } catch(e){ return { erro: 'Erro ao buscar no IGDB: ' + e.message }; }
 }
 
-/* ============ TMDB ============ */
 async function tmdbBuscar(nome, ano){
   if(!TMDB_TOKEN && !TMDB_KEY) return { erro: 'TMDB não configurado' };
   const chamar = async (path, params = {}) => {
@@ -163,17 +188,14 @@ async function tmdbBuscar(nome, ano){
     if(!filme) return { erro: 'Filme não encontrado' };
     const det = await chamar(`/movie/${filme.id}`);
     return {
-      id: det.id,
-      nome: det.title || filme.title,
+      id: det.id, nome: det.title || filme.title,
       capa: det.poster_path ? `https://image.tmdb.org/t/p/w500${det.poster_path}` : null,
-      sinopse: det.overview || '',
-      duracao: det.runtime || null,
+      sinopse: det.overview || '', duracao: det.runtime || null,
       ano: det.release_date ? Number(det.release_date.slice(0,4)) : null
     };
   } catch(e){ return { erro: 'Erro ao buscar no TMDB' }; }
 }
 
-/* ============ Conquistas Steam ============ */
 async function buscarConquistasSteam(appid){
   if(!STEAM_KEY || !appid) return null;
   try {
@@ -187,7 +209,6 @@ async function buscarConquistasSteam(appid){
   } catch(e){ return null; }
 }
 
-/* ============ Importar Steam ============ */
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -195,14 +216,11 @@ async function importarSteam(){
   if(!r.ok) return { error: `Steam HTTP ${r.status}` };
   const sd = await r.json();
   const lista = sd?.response?.games || [];
-  const jogados = lista.filter(g => g.playtime_forever > 0)
-    .sort((a,b) => b.playtime_forever - a.playtime_forever).slice(0, 60);
-
+  const jogados = lista.filter(g => g.playtime_forever > 0).sort((a,b) => b.playtime_forever - a.playtime_forever).slice(0, 60);
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
   try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
   const existentes = new Set(atuais.map(j => (j.nome || '').toLowerCase()));
-
   let adicionados = 0, pulados = 0;
   for(const g of jogados){
     if(existentes.has(g.name.toLowerCase())){ pulados++; continue; }
@@ -242,8 +260,37 @@ export default async function handler(req, res){
   const quem = sessao.username || 'anônimo';
 
   try {
+    /* -------- PERMISSÕES -------- */
+    if(req.method === 'GET' && action === 'permissoes-minhas'){
+      const perms = await pegarPermissoes();
+      return res.status(200).json({ permissoes: perms[sessao.cargo] || [], cargo: sessao.cargo });
+    }
+
+    if(req.method === 'GET' && action === 'permissoes-get'){
+      if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
+      const perms = await pegarPermissoes();
+      return res.status(200).json({ permissoes: perms, padrao: PERMISSOES_PADRAO, labels: LABEL_PERM });
+    }
+
+    if(req.method === 'POST' && action === 'permissoes-set'){
+      if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
+      const { permissoes } = req.body || {};
+      if(!permissoes || typeof permissoes !== 'object') return res.status(400).json({ error: 'Dados inválidos' });
+      const limpo = {};
+      for(const cargo of Object.keys(PERMISSOES_PADRAO)){
+        if(cargo === 'dev'){ limpo[cargo] = PERMISSOES_PADRAO.dev.slice(); continue; }
+        limpo[cargo] = Array.isArray(permissoes[cargo])
+          ? permissoes[cargo].filter(p => typeof p === 'string' && LABEL_PERM[p])
+          : PERMISSOES_PADRAO[cargo];
+      }
+      await redis([['SET', 'config:permissoes', JSON.stringify(limpo)]]);
+      await logAcao(quem, sessao.cargo, 'Editou permissões dos cargos');
+      return res.status(200).json({ ok: true, permissoes: limpo });
+    }
+
     /* -------- VOTAÇÃO -------- */
     if(req.method === 'GET' && action === 'votos'){
+      if(!(await temPermissao(sessao, 'ver_votos'))) return res.status(403).json({ error: 'Sem permissão' });
       const ciclo = (await redis([['GET','votos:ciclo_atual']]))[0] || '1';
       const [usuariosRaw, contRaw, configRaw] = await redis([
         ['HGETALL', `votos_usuarios:${ciclo}`],
@@ -264,7 +311,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'opcoes'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_opcoes'))) return res.status(403).json({ error: 'Sem permissão' });
       const opcoes = Array.isArray(req.body?.opcoes) ? req.body.opcoes.slice(0,5) : [];
       if(!opcoes.length) return res.status(400).json({ error: 'Nenhuma opção enviada' });
       const processadas = [];
@@ -272,8 +319,7 @@ export default async function handler(req, res){
         const nome = String(o.nome || '').trim().slice(0,80);
         if(!nome) continue;
         const tipo = (o.tipo === 'filme') ? 'filme' : 'jogo';
-        const id = String(o.id || '').trim().slice(0,40) ||
-          nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
+        const id = String(o.id || '').trim().slice(0,40) || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
         let capa = String(o.capa || '').trim();
         if(!capa){
           const busca = tipo === 'filme' ? await tmdbBuscar(nome) : await igdbBuscar(nome);
@@ -288,7 +334,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'reset'){
-      if(meNivel < 3) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'resetar_votos'))) return res.status(403).json({ error: 'Sem permissão' });
       const cicloAtual = Number((await redis([['GET','votos:ciclo_atual']]))[0]) || 1;
       const novo = cicloAtual + 1;
       await redis([
@@ -302,6 +348,7 @@ export default async function handler(req, res){
 
     /* -------- ADMINS -------- */
     if(req.method === 'GET' && (action === 'admins' || action === 'admins-ver')){
+      if(!(await temPermissao(sessao, 'ver_admins'))) return res.status(403).json({ error: 'Sem permissão' });
       const [flat, perfisFlat] = await redis([['HGETALL', 'admins'], ['HGETALL', 'user_profiles']]);
       const perfis = {};
       for(let i = 0; i < (perfisFlat||[]).length; i += 2){
@@ -326,11 +373,11 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'admins-add'){
-      if(meNivel < 3) return res.status(403).json({ error: 'Precisa ser Dono ou Dev' });
+      if(!(await temPermissao(sessao, 'editar_admins'))) return res.status(403).json({ error: 'Sem permissão' });
       const { userId, cargo, username, avatar } = req.body || {};
       if(!userId || !NIVEIS[cargo]) return res.status(400).json({ error: 'Dados inválidos' });
       if(cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs criam Devs' });
-      if(NIVEIS[cargo] > meNivel) return res.status(403).json({ error: 'Cargo maior que o seu' });
+      if(NIVEIS[cargo] >= meNivel && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Cargo maior ou igual ao seu' });
       if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'ID já é admin fixo' });
       const [perfilRaw] = await redis([['HGET', 'user_profiles', String(userId)]]);
       let perfil = {};
@@ -342,7 +389,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'admins-edit'){
-      if(meNivel < 3) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_admins'))) return res.status(403).json({ error: 'Sem permissão' });
       const { userId, cargo, username, avatar } = req.body || {};
       if(!userId || !NIVEIS[cargo]) return res.status(400).json({ error: 'Dados inválidos' });
       if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'Admin fixo não pode ser editado' });
@@ -367,7 +414,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'admins-remove'){
-      if(meNivel < 3) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_admins'))) return res.status(403).json({ error: 'Sem permissão' });
       const { userId } = req.body || {};
       if(!userId) return res.status(400).json({ error: 'ID obrigatório' });
       if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'Admin fixo não pode ser removido' });
@@ -382,6 +429,7 @@ export default async function handler(req, res){
 
     /* -------- TIER LIST -------- */
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
+      if(!(await temPermissao(sessao, 'ver_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const [jogosRaw, filmesRaw] = await redis([['GET','tierlist:jogos'], ['GET','tierlist:filmes']]);
       let jogos = [], filmes = [];
       try { jogos = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
@@ -390,7 +438,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && (action === 'tierlist' || action === 'tierlist-set')){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const { jogos, filmes, logAcao: acao } = req.body || {};
       const cmds = [];
       if(Array.isArray(jogos)) cmds.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]);
@@ -402,7 +450,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'tierlist-delete-many'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const { ids, tipo } = req.body || {};
       if(!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'Nada pra apagar' });
       const key = (tipo === 'filmes') ? 'tierlist:filmes' : 'tierlist:jogos';
@@ -419,14 +467,14 @@ export default async function handler(req, res){
 
     /* -------- BUSCAS -------- */
     if(req.method === 'GET' && action === 'buscar-jogo'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const nome = String(req.query?.nome || '').trim();
       if(!nome) return res.status(400).json({ erro: 'Informe um nome' });
       return res.status(200).json(await igdbBuscar(nome));
     }
 
     if(req.method === 'GET' && action === 'buscar-filme'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const nome = String(req.query?.nome || '').trim();
       const ano = req.query?.ano;
       if(!nome) return res.status(400).json({ erro: 'Informe um nome' });
@@ -434,7 +482,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'GET' && action === 'buscar-conquistas'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const appid = Number(req.query?.appid);
       if(!appid) return res.status(400).json({ erro: 'appid obrigatório' });
       const conq = await buscarConquistasSteam(appid);
@@ -443,17 +491,17 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'traduzir'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const texto = String(req.body?.texto || '').trim();
       if(!texto) return res.status(400).json({ error: 'Nada pra traduzir' });
       const traduzido = await traduzir(texto);
-      if(!traduzido) return res.status(502).json({ error: 'Tradutor indisponível no momento' });
+      if(!traduzido) return res.status(502).json({ error: 'Tradutor indisponível' });
       return res.status(200).json({ traduzido });
     }
 
     /* -------- IMPORTAR STEAM -------- */
     if(req.method === 'POST' && action === 'importar-steam'){
-      if(meNivel < 3) return res.status(403).json({ error: 'Precisa ser Dono ou Dev' });
+      if(!(await temPermissao(sessao, 'importar_steam'))) return res.status(403).json({ error: 'Sem permissão' });
       const r = await importarSteam();
       if(r.error) return res.status(400).json(r);
       await logAcao(quem, sessao.cargo, `Importou ${r.adicionados} jogos da Steam (${r.pulados} já existiam)`);
@@ -462,6 +510,7 @@ export default async function handler(req, res){
 
     /* -------- BANIDOS -------- */
     if(req.method === 'GET' && action === 'banidos-ver'){
+      if(!(await temPermissao(sessao, 'ver_banidos'))) return res.status(403).json({ error: 'Sem permissão' });
       const [flat] = await redis([['HGETALL', 'banidos']]);
       const banidos = [];
       for(let i = 0; i < (flat||[]).length; i += 2){
@@ -475,7 +524,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'banidos-add'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_banidos'))) return res.status(403).json({ error: 'Sem permissão' });
       const { userId, motivo, username, avatar } = req.body || {};
       if(!userId) return res.status(400).json({ error: 'ID obrigatório' });
       const payload = JSON.stringify({ username: username || null, avatar: avatar || null, motivo: motivo || null, ts: Date.now() });
@@ -485,7 +534,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'POST' && action === 'banidos-remove'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_banidos'))) return res.status(403).json({ error: 'Sem permissão' });
       const { userId } = req.body || {};
       if(!userId) return res.status(400).json({ error: 'ID obrigatório' });
       await redis([['HDEL', 'banidos', String(userId)]]);
@@ -493,35 +542,30 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- CONFIG (com top3 e hall) -------- */
+    /* -------- CONFIG -------- */
     if(req.method === 'GET' && action === 'config-get'){
+      if(!(await temPermissao(sessao, 'ver_config'))) return res.status(403).json({ error: 'Sem permissão' });
       const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw] = await redis([
-        ['GET', 'config:aviso'],
-        ['GET', 'config:donate'],
-        ['GET', 'config:manutencao'],
-        ['GET', 'config:recado'],
-        ['GET', 'config:horasMes'],
-        ['GET', 'config:updatedAt'],
-        ['GET', 'config:top3'],
-        ['GET', 'config:hall']
+        ['GET', 'config:aviso'],['GET', 'config:donate'],['GET', 'config:manutencao'],
+        ['GET', 'config:recado'],['GET', 'config:horasMes'],['GET', 'config:updatedAt'],
+        ['GET', 'config:top3'],['GET', 'config:hall']
       ]);
       let aviso = null, top3 = [], hall = [];
       try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
-      try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){}
-      try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){}
+      try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){ top3 = []; }
+      try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){ hall = []; }
       return res.status(200).json({
-        aviso,
-        donate: donateRaw || null,
+        aviso, donate: donateRaw || null,
         manutencao: manutRaw === '1',
-        recado: recadoRaw || '',
-        horasMes: horasRaw || '',
+        recado: recadoRaw || '', horasMes: horasRaw || '',
         updatedAt: updatedRaw || null,
-        top3, hall
+        top3: Array.isArray(top3) ? top3 : [],
+        hall: Array.isArray(hall) ? hall : []
       });
     }
 
     if(req.method === 'POST' && action === 'config-set'){
-      if(meNivel < 3) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
       const { aviso, donate, manutencao, recado, horasMes, top3, hall } = req.body || {};
       const agora = new Date().toISOString();
       const cmds = [];
@@ -530,8 +574,8 @@ export default async function handler(req, res){
       if(manutencao !== undefined) cmds.push(['SET', 'config:manutencao', manutencao ? '1' : '0']);
       if(recado !== undefined) cmds.push(['SET', 'config:recado', String(recado || '')]);
       if(horasMes !== undefined) cmds.push(['SET', 'config:horasMes', String(horasMes || '')]);
-      if(top3 !== undefined) cmds.push(['SET', 'config:top3', JSON.stringify(top3)]);
-      if(hall !== undefined) cmds.push(['SET', 'config:hall', JSON.stringify(hall)]);
+      if(top3 !== undefined) cmds.push(['SET', 'config:top3', JSON.stringify(Array.isArray(top3) ? top3.slice(0,3) : [])]);
+      if(hall !== undefined) cmds.push(['SET', 'config:hall', JSON.stringify(Array.isArray(hall) ? hall.slice(0,5) : [])]);
       cmds.push(['SET', 'config:updatedAt', agora]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
       await redis(cmds);
@@ -541,7 +585,7 @@ export default async function handler(req, res){
 
     /* -------- LOGS -------- */
     if(req.method === 'GET' && action === 'logs-ver'){
-      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      if(!(await temPermissao(sessao, 'ver_logs'))) return res.status(403).json({ error: 'Sem permissão' });
       const [flat] = await redis([['LRANGE', 'admin:logs', '0', '49']]);
       const logs = (flat || []).map(x => { try { return JSON.parse(x); } catch { return null; } }).filter(Boolean);
       return res.status(200).json({ logs });

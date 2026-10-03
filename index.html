@@ -197,14 +197,25 @@
           <p id="recadoSoso" class="mini-recado">Sem recadinho no momento. Volte mais tarde! 💜</p>
         </div>
 
-        <div class="ap-sec ap-top3" id="apTop3">
+        <div class="ap-sec ap-top3">
           <span class="ap-h">🏆 Top 3 apoiadores</span>
           <div class="top3" id="top3Lista">
-            <p class="ap-vazio">O pódio ainda está vazio. 💜</p>
+            <div class="top3-card top3-em-breve" onclick="toast('Em breve 💜', 'info')">
+              <span class="t3-medal">🥇</span>
+              <span class="t3-name">Em breve</span>
+            </div>
+            <div class="top3-card top3-em-breve" onclick="toast('Em breve 💜', 'info')">
+              <span class="t3-medal">🥈</span>
+              <span class="t3-name">Em breve</span>
+            </div>
+            <div class="top3-card top3-em-breve" onclick="toast('Em breve 💜', 'info')">
+              <span class="t3-medal">🥉</span>
+              <span class="t3-name">Em breve</span>
+            </div>
           </div>
         </div>
 
-        <div class="ap-sec ap-hall" id="apHall">
+        <div class="ap-sec ap-hall">
           <span class="ap-h">👑 Hall da fama · maiores subs</span>
           <div class="hall" id="hallLista">
             <p class="ap-vazio">Em breve os maiores subs da história. 👑</p>
@@ -261,15 +272,13 @@
   </div>
 
   <div class="sub-tabs" id="comunidadeTabs">
-    <button class="sub-tab on" data-tab="discord">💬 Discord</button>
-    <button class="sub-tab" data-tab="clipes">🎬 Clipes</button>
-    <button class="sub-tab" data-tab="musicas">🎵 Músicas</button>
+    <button class="sub-tab on" data-tab="discord">💬 Comunidade</button>
+    <button class="sub-tab" data-tab="conteudo">🎬 Conteúdo</button>
     <button class="sub-tab" data-tab="sub">👑 Seja Sub</button>
-    <button class="sub-tab" data-tab="comandos">🤖 Comandos</button>
-    <button class="sub-tab" data-tab="regras">📜 Regras</button>
+    <button class="sub-tab" data-tab="info">📖 Info</button>
   </div>
 
-  <!-- DISCORD -->
+  <!-- COMUNIDADE (Discord + metas) -->
   <div class="sub-panel on" data-panel="discord">
     <div class="dc-cta">
       <div>
@@ -304,8 +313,8 @@
     </div>
   </div>
 
-  <!-- CLIPES -->
-  <div class="sub-panel" data-panel="clipes">
+  <!-- CONTEÚDO (Clipes + Músicas) -->
+  <div class="sub-panel" data-panel="conteudo">
     <div class="clips-box" id="clipsBox" style="display:none">
       <h3>
         <span id="clipsTitulo">🎬 Clipes em destaque</span>
@@ -314,11 +323,8 @@
       <div class="clips-grid-4" id="clipsGrid"></div>
     </div>
     <p class="tm-h4" id="clipsVazio" style="padding:20px;text-align:center;display:none">Nenhum clipe disponível agora. Volta mais tarde! 💜</p>
-  </div>
 
-  <!-- MÚSICAS -->
-  <div class="sub-panel" data-panel="musicas">
-    <div class="music-box">
+    <div class="music-box" style="margin-top:16px">
       <div class="music-head">
         <span class="music-ic" aria-hidden="true">
           <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
@@ -334,7 +340,7 @@
     </div>
   </div>
 
-  <!-- SEJA SUB (COMPACTO) -->
+  <!-- SEJA SUB -->
   <div class="sub-panel" data-panel="sub">
     <div class="sub-beneficios">
       <h3>✨ Benefícios exclusivos</h3>
@@ -361,8 +367,8 @@
     </div>
   </div>
 
-  <!-- COMANDOS -->
-  <div class="sub-panel" data-panel="comandos">
+  <!-- INFO (Comandos + Regras) -->
+  <div class="sub-panel" data-panel="info">
     <div class="cmds-wrap">
       <h3 style="color:var(--white);margin-bottom:4px">🤖 Comandos do chat</h3>
       <p style="color:var(--mute);font-size:.85rem">Busque rápido e copie com 1 clique.</p>
@@ -373,11 +379,8 @@
       </table>
       <p class="cmds-empty" id="cmdsEmpty" style="display:none">Nenhum comando encontrado.</p>
     </div>
-  </div>
 
-  <!-- REGRAS -->
-  <div class="sub-panel" data-panel="regras">
-    <div class="rules-wrap">
+    <div class="rules-wrap" style="margin-top:16px">
       <h3>📜 Regras da comunidade</h3>
       <div class="rules-grid">
         <div class="rule-card"><i>01</i><span class="rc-ic">💜</span><div><strong>Respeito em primeiro lugar</strong><p>Nada de discurso de ódio, preconceito, racismo, homofobia ou assédio contra a Soso ou qualquer pessoa no chat.</p></div></div>
@@ -501,3 +504,4 @@
 <script src="app.js"></script>
 <script src="admin-ui.js"></script>
 </body>
+</html>

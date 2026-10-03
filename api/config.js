@@ -1,5 +1,3 @@
-// Vercel serverless: /api/config.js
-// Devolve config pública SEM CACHE (evita CDN entregar versão antiga).
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
@@ -33,8 +31,8 @@ export default async function handler(req, res) {
 
     let aviso = null, top3 = [], hall = [];
     try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
-    try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){}
-    try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){}
+    try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){ top3 = []; }
+    try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){ hall = []; }
 
     return res.status(200).json({
       aviso,
@@ -43,7 +41,8 @@ export default async function handler(req, res) {
       recado: recadoRaw || '',
       horasMes: horasRaw || '',
       updatedAt: updatedRaw || null,
-      top3, hall
+      top3: Array.isArray(top3) ? top3.slice(0, 3) : [],
+      hall: Array.isArray(hall) ? hall.slice(0, 5) : []
     });
   } catch (e) {
     return res.status(200).json({});

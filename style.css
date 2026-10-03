@@ -792,3 +792,135 @@ body.sou-admin .g[draggable="true"]:active{cursor:grabbing}
 .counter-up{
   animation:counterGlow 1.3s ease-out;
 }
+
+/* ============================================================
+   TOP 3 APOIADORES — cards "Em breve" clicáveis
+   ============================================================ */
+.ap-top3 .top3{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+}
+.top3-card{
+  background:linear-gradient(160deg,rgba(255,209,102,.10),rgba(168,85,247,.05));
+  border:1px solid rgba(255,209,102,.25);
+  border-radius:10px;
+  padding:10px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  text-align:center;
+  transition:.2s;
+  min-height:60px;justify-content:center;
+}
+.top3-card .t3-medal{font-size:1.4rem;line-height:1;opacity:.75}
+.top3-card .t3-name{
+  color:var(--mute);font-size:.72rem;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+  font-style:italic;letter-spacing:.2px;
+}
+.top3-card .t3-val{color:var(--gold);font-size:.68rem;font-weight:800}
+
+.top3-card.top3-em-breve{
+  cursor:pointer;
+  opacity:.7;
+}
+.top3-card.top3-em-breve:hover{
+  opacity:1;
+  transform:translateY(-2px);
+  border-color:rgba(255,209,102,.6);
+  background:linear-gradient(160deg,rgba(255,209,102,.16),rgba(168,85,247,.08));
+}
+.top3-card.top3-em-breve:hover .t3-medal{opacity:1}
+
+/* ============================================================
+   BOTÕES DE AÇÃO NOVA (Editar/Remover em admins)
+   ============================================================ */
+.admin-voto .btn-acao{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:5px 11px;border-radius:6px;border:1px solid transparent;
+  font-family:inherit;font-weight:700;font-size:.7rem;cursor:pointer;
+  transition:.2s;white-space:nowrap;line-height:1;
+}
+.admin-voto .btn-acao.editar{
+  background:rgba(168,85,247,.14);
+  color:var(--purple-light);
+  border-color:rgba(168,85,247,.3);
+}
+.admin-voto .btn-acao.editar:hover:not(:disabled){
+  background:var(--purple);color:#fff;border-color:var(--purple);
+  transform:translateY(-1px);
+}
+.admin-voto .btn-acao.remover{
+  background:rgba(255,77,95,.1);
+  color:#ff8a95;
+  border-color:rgba(255,77,95,.3);
+}
+.admin-voto .btn-acao.remover:hover:not(:disabled){
+  background:#ff4d5f;color:#fff;border-color:#ff4d5f;
+  transform:translateY(-1px);
+}
+.admin-voto .btn-acao:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+
+/* ============================================================
+   CHECKBOXES DE PERMISSÕES — Cargos
+   ============================================================ */
+.perms-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  margin-top:14px;
+}
+@media(max-width:900px){
+  .perms-grid{grid-template-columns:1fr}
+}
+.perm-cargo{
+  background:rgba(255,255,255,.02);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px 16px;
+  transition:.2s;
+}
+.perm-cargo:hover{border-color:rgba(168,85,247,.4)}
+.perm-cargo-head{
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:12px;
+  padding-bottom:10px;
+  border-bottom:1px dashed var(--line);
+}
+.perm-cargo-head .pc-ic{font-size:1.4rem;line-height:1}
+.perm-cargo-head b{color:var(--white);font-size:.95rem}
+.perm-cargo-head small{color:var(--mute);font-size:.7rem;margin-left:auto;font-weight:600}
+
+.perm-grupo{margin-bottom:12px}
+.perm-grupo:last-child{margin-bottom:0}
+.perm-grupo-titulo{
+  font-size:.6rem;letter-spacing:.7px;font-weight:800;
+  color:var(--mute);text-transform:uppercase;
+  margin-bottom:6px;display:block;
+}
+.perm-item{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 8px;border-radius:6px;
+  font-size:.8rem;color:#ddd5eb;cursor:pointer;
+  transition:.15s;
+}
+.perm-item:hover{background:rgba(168,85,247,.06)}
+.perm-item input[type="checkbox"]{
+  width:15px;height:15px;cursor:pointer;
+  accent-color:var(--purple);
+  flex:none;margin:0;
+}
+.perm-item input[type="checkbox"]:disabled{cursor:not-allowed;opacity:.4}
+.perm-item input[type="checkbox"]:disabled + span{opacity:.5}
+
+.perm-fixo{
+  display:flex;align-items:center;gap:8px;
+  padding:5px 8px;border-radius:6px;font-size:.8rem;
+  color:var(--mute);opacity:.8;
+}
+.perm-fixo input[type="checkbox"]{
+  width:15px;height:15px;accent-color:var(--gold);flex:none;margin:0;
+}
+.perm-fixo .perm-fixo-lock{font-size:.68rem;opacity:.6;margin-left:auto;font-style:italic}
+
+/* Tooltip nativo — botões com title já funcionam */
