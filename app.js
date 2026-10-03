@@ -59,7 +59,7 @@ let vodAtual = null, assistindoVod = false;
 let videosTw = [];
 let inicioLive = null;
 let modo = 'jogos', filtro = 'Todos';
-let CONFIG_GERAL = { aviso: null, donate: null, manutencao: false };
+let CONFIG_GERAL = { aviso: null, donate: null, manutencao: false, recado: '', horasMes: '' };
 
 /* ============================================================
    HELPERS
@@ -86,6 +86,22 @@ const durTw = d => {
   const h = /(\d+)h/.exec(d || ''), mi = /(\d+)m/.exec(d || '');
   return h ? h[1] + 'h' + (mi ? mi[1].padStart(2, '0') : '00') : (mi ? mi[1] + ' min' : '');
 };
+
+/* ============================================================
+   TOAST GLOBAL (5 segundos)
+   ============================================================ */
+function toast(msg, tipo = 'ok'){
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + tipo;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('toast-on'));
+  setTimeout(() => {
+    el.classList.remove('toast-on');
+    setTimeout(() => el.remove(), 400);
+  }, 4600);
+}
+window.toast = toast;
 
 function atualizarMeta(pre, atual, marcos = MARCOS){
   const elDesc = $(pre+'Desc'), elNum = $(pre+'Num'), elBar = $(pre+'Bar');
@@ -129,18 +145,23 @@ function renderSiteUpdate(){
   if(el) el.textContent = CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR');
 }
 
+function renderHomeExtras(){
+  const horasEl = $('horasMesNum');
+  if(horasEl) horasEl.textContent = CONFIG_GERAL.horasMes || '—';
+  const subEl = $('horasMesSub');
+  if(subEl && CONFIG_GERAL.horasMes) subEl.textContent = 'de live esse mês';
+  const recadoEl = $('recadoSoso');
+  if(recadoEl){
+    const r = (CONFIG_GERAL.recado || '').trim();
+    recadoEl.textContent = r || 'Sem recadinho no momento. Volte mais tarde! 💜';
+    recadoEl.style.fontStyle = r ? 'italic' : 'normal';
+  }
+}
+
 function setLivePulse(isLive){
   document.querySelectorAll('.live-indicator').forEach(el => el.classList.toggle('live', !!isLive));
   const badge = $('bannerLiveBadge');
   if(badge) badge.classList.toggle('live', !!isLive);
-}
-
-function renderTopDoadores(){
-  const box = $('topDoadores'); if(!box) return;
-  const t = (CONFIG.topDoadores || []).slice(0, 3);
-  box.innerHTML = t.length
-    ? t.map((d, i) => `<div class="podio-i"><span>${['🥇','🥈','🥉'][i]}</span><b>${esc(d.nome)}</b>${d.valor ? `<em>${esc(d.valor)}</em>` : ''}</div>`).join('')
-    : '<p class="podio-vazio">O pódio está vazio. Seja a primeira pessoa a aparecer aqui! 💜</p>';
 }
 
 /* ============================================================
@@ -155,6 +176,22 @@ function mudarAba(nome, salvar = true){
   if(salvar) localStorage.setItem('abaAtiva', nome);
   window.scrollTo({ top:0, behavior:'smooth' });
   if(nome === 'admin') adminIrPara('home');
+}
+window.mudarAba = mudarAba;
+
+/* ============================================================
+   SUB-ABAS COMUNIDADE
+   ============================================================ */
+function setupComunidadeTabs(){
+  const wrap = $('comunidadeTabs'); if(!wrap) return;
+  wrap.addEventListener('click', e => {
+    const b = e.target.closest('.sub-tab'); if(!b) return;
+    const tab = b.dataset.tab;
+    wrap.querySelectorAll('.sub-tab').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('#sec-comunidade .sub-panel').forEach(p => {
+      p.classList.toggle('on', p.dataset.panel === tab);
+    });
+  });
 }
 
 /* ============================================================
@@ -174,6 +211,7 @@ function assistirVod(v){
   const box = document.querySelector('.twitch-player-box');
   if(box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
+window.assistirVod = assistirVod;
 
 function tickUptime(){
   const el = $('tmUp'); if(!el) return;
@@ -210,8 +248,6 @@ async function verificarStatusTwitch() {
 
     atualizarMeta('goalSeg', data.followers);
     atualizarMeta('goalDc', data.discord);
-    const subsCount = (data.subs != null) ? data.subs : CONFIG.subs;
-    atualizarMeta('goalSub', subsCount, MARCOS_SUBS);
 
     const live = !!data.stream;
     inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
@@ -261,7 +297,7 @@ async function verificarStatusTwitch() {
   } catch (err) {
     console.error('Erro ao buscar dados da Twitch:', err);
     atualizarFoco(null, false);
-    ['goalSeg','goalDc','goalSub'].forEach(p => { if (g(p+'Num').textContent === '…') atualizarMeta(p, null); });
+    ['goalSeg','goalDc'].forEach(p => { const el = $(p+'Num'); if (el && el.textContent === '…') atualizarMeta(p, null); });
     setLivePulse(false);
   }
 }
@@ -275,10 +311,16 @@ document.addEventListener('click', e => {
    CLIPES
    ============================================================ */
 function renderClips(list){
-  if(clipsOk || !list || !list.length) return;
+  if(clipsOk) return;
+  if(!list || !list.length){
+    const vazio = $('clipsVazio'); if(vazio) vazio.style.display = 'block';
+    const box = $('clipsBox'); if(box) box.style.display = 'none';
+    return;
+  }
   clipsOk = true;
   clipsCache = list.slice(0, 4);
-  $('clipsBox').style.display = '';
+  const box = $('clipsBox'); if(box) box.style.display = '';
+  const vazio = $('clipsVazio'); if(vazio) vazio.style.display = 'none';
   $('clipsGrid').innerHTML = clipsCache.map(c =>
     `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}">
       <img src="${esc(c.thumbnail)}" alt="" loading="lazy">
@@ -334,7 +376,7 @@ const JOGOS_FALLBACK = [
     progresso:56, horas:50, nota:8,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
     comentario:'Um dos mundos mais vivos e detalhados dos games.' },
-  { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Jogado', nota:9, horas:40,
+  { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Zerado', nota:9, horas:40,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario:'' },
   { id:'stardew-valley', nome:'Stardew Valley', tier:'A', status:'Jogando', nota:8, horas:120,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario:'' }
@@ -364,9 +406,9 @@ async function carregarBiblioteca(){
 const MODOS = {
   jogos:  {
     get lista(){ return JOGOS; },
-    status:['Todos','Jogando','Jogado','Concluído','Na fila','Pretendo jogar','Dropado'],
-    feito:'Concluído', plural:'jogos', hrs:'horas jogadas', hl:'horas jogadas',
-    l4:'jogos concluídos', titulo:'Tier List de Jogos',
+    status:['Todos','Jogando','Zerado','Dropado','Na fila','Wishlist'],
+    feito:'Zerado', plural:'jogos', hrs:'horas jogadas', hl:'horas jogadas',
+    l4:'jogos zerados', titulo:'Tier List de Jogos',
     sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.',
     busca:'Buscar jogo...', vazio:'Nenhum jogo aqui'
   },
@@ -421,11 +463,18 @@ function atualizarFoco(game, aoVivo){
   const pr = j && j.progresso != null && j.progresso > 0;
   $('focoBar').style.display = pr ? '' : 'none';
   if(pr){ $('focoPct').textContent = j.progresso + '%'; $('focoBarI').style.width = j.progresso + '%'; }
-  const v = (typeof vodAtual !== 'undefined') && vodAtual;
+  const v = vodAtual;
   $('focoHoras').textContent = aoVivo ? 'Entra no chat e vem jogar junto! 💜' : (v && v.created_at ? `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}` : '');
   const c = $('focoCover');
   if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
   else c.style.display = 'none';
+
+  // Botão Ver na Twitch quando ao vivo
+  const twLink = $('focoTwitchLink');
+  if(twLink){
+    if(aoVivo){ twLink.href = 'https://www.twitch.tv/asemtet0'; twLink.style.display = ''; }
+    else twLink.style.display = 'none';
+  }
 }
 
 function renderChips(){
@@ -449,6 +498,8 @@ function aplicarModo(novo, salvar = true){
 function cartao(j,i){
   const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
   const podeArrastar = !!(USUARIO && USUARIO.admin);
+  const conq = j.conquistas && j.conquistas.total
+    ? `<span class="conq">🏆 ${j.conquistas.obtidas}/${j.conquistas.total}</span>` : '';
   return `
     <button class="g" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}">
       <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
@@ -462,6 +513,7 @@ function cartao(j,i){
         ${j.horas > 0 ? `<span class="ch">${fh(j.horas)}</span>` : ''}
         ${j.duracao > 0 ? `<span class="ch">${fmtDuracao(j.duracao)}</span>` : ''}
       </div>
+      ${conq}
     </button>
   `;
 }
@@ -518,12 +570,7 @@ function setupDragDrop(){
       item.tier = novoTier;
       desenharStats();
       desenhar();
-      const toast = document.createElement('div');
-      toast.textContent = `✅ "${item.nome}" movido de ${tierAntigo} para ${novoTier}`;
-      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(168,85,247,.95);color:#fff;padding:10px 18px;border-radius:99px;font-family:inherit;font-size:.85rem;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:opacity .3s';
-      document.body.appendChild(toast);
-      setTimeout(() => { toast.style.opacity = '0'; }, 1500);
-      setTimeout(() => toast.remove(), 1900);
+      toast(`✅ "${item.nome}" movido de ${tierAntigo} para ${novoTier}`, 'ok');
       try {
         await fetch('/api/admin?action=tierlist-set', {
           method: 'POST',
@@ -704,6 +751,7 @@ async function sair(){
   mudarAba('inicio', false);
   location.reload();
 }
+window.sair = sair;
 
 function aplicarVotos(d){
   if(d && Array.isArray(d.opcoes)){
@@ -818,13 +866,14 @@ async function votar(id){
     if(r.status === 401){ await checarLogin(); return; }
     if(r.status === 403){
       const d = await r.json();
-      alert(d.error || 'Você foi banido de votar');
+      toast(d.error || 'Você foi banido de votar', 'erro');
       return;
     }
     if(r.ok) aplicarVotos(await r.json());
   }catch(e){}
   renderVotacao();
 }
+window.votar = votar;
 
 /* ============================================================
    PAINEL ADMIN
@@ -837,6 +886,9 @@ function adminIrPara(pagina){
 }
 function adminIrAba(aba){ ADMIN_TAB = aba; renderAdminVotacao(); }
 function adminIrTierTab(tab){ ADMIN_TIER_TAB = tab; renderAdminTierList(); }
+window.adminIrPara = adminIrPara;
+window.adminIrAba = adminIrAba;
+window.adminIrTierTab = adminIrTierTab;
 
 async function carregarAdmin(){
   const area = $('adminArea'); if(!area) return;
@@ -861,7 +913,7 @@ async function carregarAdmin(){
                     : ADMIN_PAGE === 'admins' ? 'Quem pode acessar o painel.'
                     : ADMIN_PAGE === 'sugestoes' ? 'Mensagens e atividades recebidas.'
                     : ADMIN_PAGE === 'banidos' ? 'Quem não pode votar.'
-                    : ADMIN_PAGE === 'config' ? 'Aviso, doação e manutenção.'
+                    : ADMIN_PAGE === 'config' ? 'Aviso, doação, recado, horas e manutenção.'
                     : ADMIN_PAGE === 'logs' ? 'Histórico de ações.'
                     : '';
   }
@@ -917,7 +969,7 @@ function renderAdminHome(){
       <button class="admin-menu-card" onclick="adminIrPara('config')">
         <span class="ic">⚙️</span>
         <h3>Config geral</h3>
-        <p>Aviso da home, link de doação, modo manutenção.</p>
+        <p>Aviso, doação, recado da home, horas, manutenção.</p>
         <span class="cta">Abrir →</span>
       </button>` : ''}
       ${podeEditar ? `
@@ -1055,11 +1107,12 @@ async function resetarVotacao(){
   try{
     const r = await fetch('/api/admin?action=reset', { method:'POST' });
     if(!r.ok) throw new Error('Falha ao resetar');
-    alert('Votação resetada! ✅');
+    toast('Votação resetada! ✅', 'ok');
     await carregarAdminVotacao();
     await carregarVotosApi();
-  }catch(e){ alert('Erro: ' + e.message); }
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
+window.resetarVotacao = resetarVotacao;
 
 function editarOpcao(i){
   const opcoes = (ADMIN_DADOS.config || []).slice();
@@ -1068,14 +1121,28 @@ function editarOpcao(i){
   $('dTitle').textContent = 'Editar opção ' + (i+1);
   $('dBody').innerHTML = `
     <div class="admin-form">
-      <div><label>Nome do jogo/filme</label><input id="editNome" type="text" value="${esc(o.nome || '')}"></div>
-      <div><label>Tipo</label>
+      <div>
+        <label>Nome do jogo/filme</label>
+        <div class="busca-row">
+          <input id="editNome" type="text" value="${esc(o.nome || '')}" placeholder="Ex: Elden Ring">
+          <button type="button" onclick="buscarCapaOpcao()">🔍 Buscar capa</button>
+        </div>
+        <div id="buscaOpcaoStatus" style="font-size:.72rem;color:var(--mute);margin-top:6px"></div>
+      </div>
+      <div>
+        <label>Tipo</label>
         <select id="editTipo">
           <option value="jogo" ${o.tipo === 'jogo' ? 'selected' : ''}>🎮 Jogo</option>
           <option value="filme" ${o.tipo === 'filme' ? 'selected' : ''}>🎬 Filme</option>
         </select>
       </div>
-      <div><label>URL da capa (opcional)</label><input id="editCapa" type="text" value="${esc(o.capa || '')}"></div>
+      <div>
+        <label>URL da capa (opcional)</label>
+        <input id="editCapa" type="text" value="${esc(o.capa || '')}" placeholder="https://...">
+        <div style="margin-top:8px">
+          <img class="mini-capa" id="editCapaPreview" src="${esc(o.capa || '')}" style="${o.capa ? '' : 'display:none'}" onerror="this.style.display='none'">
+        </div>
+      </div>
       <div class="admin-actions" style="justify-content:flex-end">
         <button class="admin-btn ghost" onclick="removerOpcao(${i})">Remover</button>
         <button class="admin-btn" onclick="salvarOpcao(${i})">Salvar</button>
@@ -1084,6 +1151,7 @@ function editarOpcao(i){
   `;
   dlg.showModal();
 }
+window.editarOpcao = editarOpcao;
 
 function adicionarOpcao(){
   const opcoes = (ADMIN_DADOS.config || []).slice();
@@ -1092,14 +1160,28 @@ function adicionarOpcao(){
   $('dTitle').textContent = 'Nova opção';
   $('dBody').innerHTML = `
     <div class="admin-form">
-      <div><label>Nome do jogo/filme</label><input id="editNome" type="text"></div>
-      <div><label>Tipo</label>
+      <div>
+        <label>Nome do jogo/filme</label>
+        <div class="busca-row">
+          <input id="editNome" type="text" placeholder="Ex: Elden Ring">
+          <button type="button" onclick="buscarCapaOpcao()">🔍 Buscar capa</button>
+        </div>
+        <div id="buscaOpcaoStatus" style="font-size:.72rem;color:var(--mute);margin-top:6px"></div>
+      </div>
+      <div>
+        <label>Tipo</label>
         <select id="editTipo">
           <option value="jogo" selected>🎮 Jogo</option>
           <option value="filme">🎬 Filme</option>
         </select>
       </div>
-      <div><label>URL da capa (opcional)</label><input id="editCapa" type="text"></div>
+      <div>
+        <label>URL da capa (opcional)</label>
+        <input id="editCapa" type="text" placeholder="https://...">
+        <div style="margin-top:8px">
+          <img class="mini-capa" id="editCapaPreview" style="display:none">
+        </div>
+      </div>
       <div class="admin-actions" style="justify-content:flex-end">
         <button class="admin-btn" onclick="salvarOpcao(${i}, true)">Adicionar</button>
       </div>
@@ -1107,18 +1189,43 @@ function adicionarOpcao(){
   `;
   dlg.showModal();
 }
+window.adicionarOpcao = adicionarOpcao;
+
+async function buscarCapaOpcao(){
+  const nome = $('editNome').value.trim();
+  if(!nome) return;
+  const tipo = $('editTipo').value;
+  const status = $('buscaOpcaoStatus');
+  status.textContent = '🔎 Buscando…';
+  try{
+    const action = tipo === 'filme' ? 'buscar-filme' : 'buscar-jogo';
+    const r = await fetch(`/api/admin?action=${action}&nome=${encodeURIComponent(nome)}`);
+    const d = await r.json();
+    if(d.erro){ status.textContent = '⚠️ ' + d.erro; return; }
+    if(d.capa){
+      $('editCapa').value = d.capa;
+      const p = $('editCapaPreview'); p.src = d.capa; p.style.display = 'block';
+    }
+    status.textContent = '✅ Capa encontrada!';
+    setTimeout(() => { status.textContent = ''; }, 3000);
+  }catch(e){
+    status.textContent = '⚠️ Erro na busca';
+  }
+}
+window.buscarCapaOpcao = buscarCapaOpcao;
 
 async function salvarOpcao(i, ehNovo){
   const nome = $('editNome').value.trim();
   const tipo = $('editTipo').value;
   const capa = $('editCapa').value.trim();
-  if(!nome){ alert('Digite um nome!'); return; }
+  if(!nome){ toast('Digite um nome!', 'warn'); return; }
   const opcoes = (ADMIN_DADOS.config || []).slice();
   while(opcoes.length <= i) opcoes.push({});
   const id = opcoes[i].id || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
   opcoes[i] = { id, nome, tipo, capa: capa || null };
   await salvarOpcoesVotacao(opcoes);
 }
+window.salvarOpcao = salvarOpcao;
 
 async function removerOpcao(i){
   if(!confirm('Remover essa opção?')) return;
@@ -1126,6 +1233,7 @@ async function removerOpcao(i){
   opcoes.splice(i, 1);
   await salvarOpcoesVotacao(opcoes);
 }
+window.removerOpcao = removerOpcao;
 
 async function salvarOpcoesVotacao(opcoes){
   try{
@@ -1137,9 +1245,10 @@ async function salvarOpcoesVotacao(opcoes){
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     dlg.close();
+    toast('Salvo! ✅', 'ok');
     await carregarAdminVotacao();
     await carregarVotosApi();
-  }catch(e){ alert('Erro: ' + e.message); }
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
 
 async function restaurarPadraoVotacao(){
@@ -1150,6 +1259,7 @@ async function restaurarPadraoVotacao(){
     { id:'stardew-valley', nome:'Stardew Valley', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
   ]);
 }
+window.restaurarPadraoVotacao = restaurarPadraoVotacao;
 
 /* ---------- TIER LIST ADMIN ---------- */
 async function carregarAdminTierList(){
@@ -1206,20 +1316,21 @@ function renderAdminTierList(){
 async function importarSteam(){
   const btn = $('btnImportarSteam');
   if(!confirm('Buscar jogos na Steam e adicionar na tier list?')) return;
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar 10-20s)'; }
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar)'; }
   try{
     const r = await fetch('/api/admin?action=importar-steam', { method: 'POST' });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha na importação');
-    if(btn) btn.textContent = `✅ ${d.adicionados} adicionados · ${d.pulados} já existiam`;
-    setTimeout(() => { if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; } }, 4000);
+    toast(`✅ ${d.adicionados} adicionados · ${d.pulados} já existiam`, 'ok');
+    if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; }
     await carregarAdminTierList();
     await carregarBiblioteca();
   }catch(e){
-    alert('Erro: ' + e.message);
+    toast('Erro: ' + e.message, 'erro');
     if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; }
   }
 }
+window.importarSteam = importarSteam;
 
 function abrirModalItemTier(i){
   const tipo = ADMIN_TIER_TAB;
@@ -1227,7 +1338,7 @@ function abrirModalItemTier(i){
   const ehNovo = (i === -1);
   const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null } : lista[i];
   const statusOpcoes = tipo === 'jogos'
-    ? ['Jogando','Jogado','Concluído','Na fila','Pretendo jogar','Dropado']
+    ? ['Jogando','Zerado','Dropado','Na fila','Wishlist']
     : ['Assistindo','Assistido','Na fila'];
 
   $('dTitle').textContent = (ehNovo ? 'Adicionar ' : 'Editar ') + (tipo === 'jogos' ? 'jogo' : 'filme');
@@ -1257,7 +1368,12 @@ function abrirModalItemTier(i){
         <div><label>Nota (0-10)</label><input id="itemNota" type="number" min="0" max="10" step="0.1" value="${it.nota || 0}"></div>
         ${tipo === 'jogos' ? `
           <div><label>Horas</label><input id="itemHoras" type="number" min="0" step="0.1" value="${it.horas || 0}"></div>
-          <div><label>Progresso (%)</label><input id="itemProgresso" type="number" min="0" max="100" value="${it.progresso || 0}"></div>
+          <div><label>Conquistas (obtidas/total)</label>
+            <div style="display:flex;gap:6px">
+              <input id="itemConqObt" type="number" min="0" value="${it.conquistas?.obtidas || 0}" placeholder="15">
+              <input id="itemConqTot" type="number" min="0" value="${it.conquistas?.total || 0}" placeholder="50">
+            </div>
+          </div>
         ` : `
           <div><label>Duração (min)</label><input id="itemDuracao" type="number" min="0" value="${it.duracao || ''}"></div>
           <div><label>Ano</label><input id="itemAno" type="number" min="1900" max="2100" value="${it.ano || ''}"></div>
@@ -1286,6 +1402,8 @@ function abrirModalItemTier(i){
 
 function adicionarItemTier(){ abrirModalItemTier(-1); }
 function editarItemTier(i){ abrirModalItemTier(i); }
+window.adicionarItemTier = adicionarItemTier;
+window.editarItemTier = editarItemTier;
 
 async function buscarItemAuto(){
   const nome = $('itemNome').value.trim();
@@ -1314,11 +1432,12 @@ async function buscarItemAuto(){
     status.textContent = '⚠️ Erro na busca';
   }
 }
+window.buscarItemAuto = buscarItemAuto;
 
 async function traduzirComentario(){
   const ta = $('itemComentario');
   const texto = ta.value.trim();
-  if(!texto){ alert('Nada para traduzir'); return; }
+  if(!texto){ toast('Nada para traduzir', 'warn'); return; }
   ta.disabled = true;
   try{
     const r = await fetch('/api/admin?action=traduzir', {
@@ -1327,16 +1446,17 @@ async function traduzirComentario(){
       body: JSON.stringify({ texto })
     });
     const d = await r.json();
-    if(d.traduzido) ta.value = d.traduzido;
-    else alert('Não foi possível traduzir');
-  }catch(e){ alert('Erro ao traduzir'); }
+    if(d.traduzido){ ta.value = d.traduzido; toast('Traduzido! ✅', 'ok'); }
+    else toast('Não foi possível traduzir', 'erro');
+  }catch(e){ toast('Erro ao traduzir', 'erro'); }
   finally { ta.disabled = false; }
 }
+window.traduzirComentario = traduzirComentario;
 
 async function salvarItemTier(i){
   const tipo = ADMIN_TIER_TAB;
   const nome = $('itemNome').value.trim();
-  if(!nome){ alert('Digite um nome!'); return; }
+  if(!nome){ toast('Digite um nome!', 'warn'); return; }
 
   const item = {
     id: (i >= 0 && ADMIN_TIER[tipo][i].id) || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
@@ -1347,7 +1467,9 @@ async function salvarItemTier(i){
   };
   if(tipo === 'jogos'){
     item.horas = Number($('itemHoras').value) || 0;
-    item.progresso = Number($('itemProgresso').value) || 0;
+    const o = Number($('itemConqObt').value) || 0;
+    const t = Number($('itemConqTot').value) || 0;
+    item.conquistas = (o || t) ? { obtidas: o, total: t } : null;
   } else {
     item.duracao = Number($('itemDuracao').value) || null;
     item.ano = Number($('itemAno').value) || null;
@@ -1358,6 +1480,7 @@ async function salvarItemTier(i){
   ADMIN_TIER[tipo] = nova;
   await salvarTierList(`Editou "${item.nome}" (tier ${item.tier})`);
 }
+window.salvarItemTier = salvarItemTier;
 
 async function removerItemTier(i){
   if(!confirm('Remover esse item?')) return;
@@ -1367,6 +1490,7 @@ async function removerItemTier(i){
   ADMIN_TIER[tipo].splice(i, 1);
   await salvarTierList(`Removeu "${removido}"`);
 }
+window.removerItemTier = removerItemTier;
 
 async function salvarTierList(logAcao){
   try{
@@ -1378,9 +1502,10 @@ async function salvarTierList(logAcao){
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     dlg.close();
+    toast('Salvo! ✅', 'ok');
     await carregarAdminTierList();
     await carregarBiblioteca();
-  }catch(e){ alert('Erro: ' + e.message); }
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
 
 /* ---------- ADMINS ---------- */
@@ -1447,6 +1572,7 @@ async function renderAdminAdmins(){
     </div>
   `;
 }
+window.renderAdminAdmins = renderAdminAdmins;
 
 function editarAdmin(id, username, avatar, cargoAtual){
   $('dTitle').textContent = 'Editar admin';
@@ -1469,6 +1595,7 @@ function editarAdmin(id, username, avatar, cargoAtual){
   `;
   dlg.showModal();
 }
+window.editarAdmin = editarAdmin;
 
 async function salvarAdmin(id, username, avatar){
   const cargo = $('editAdminCargo').value;
@@ -1481,9 +1608,11 @@ async function salvarAdmin(id, username, avatar){
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     dlg.close();
+    toast('Salvo! ✅', 'ok');
     await renderAdminAdmins();
-  }catch(e){ alert('Erro: ' + e.message); }
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
+window.salvarAdmin = salvarAdmin;
 
 function adicionarAdmin(){
   $('dTitle').textContent = 'Adicionar admin';
@@ -1505,11 +1634,12 @@ function adicionarAdmin(){
   `;
   dlg.showModal();
 }
+window.adicionarAdmin = adicionarAdmin;
 
 async function salvarNovoAdmin(){
   const userId = $('novoAdminId').value.trim();
   const cargo = $('novoAdminCargo').value;
-  if(!userId) return alert('Digite o ID');
+  if(!userId){ toast('Digite o ID', 'warn'); return; }
   try{
     const r = await fetch('/api/admin?action=admins-add', {
       method: 'POST',
@@ -1519,9 +1649,11 @@ async function salvarNovoAdmin(){
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     dlg.close();
+    toast('Admin adicionado ✅', 'ok');
     await renderAdminAdmins();
-  }catch(e){ alert('Erro: ' + e.message); }
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
+window.salvarNovoAdmin = salvarNovoAdmin;
 
 async function removerAdmin(id){
   if(!confirm('Remover esse admin?')) return;
@@ -1533,9 +1665,11 @@ async function removerAdmin(id){
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
+    toast('Removido ✅', 'ok');
     await renderAdminAdmins();
-  }catch(e){ alert('Erro: ' + e.message); }
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
+window.removerAdmin = removerAdmin;
 
 /* ---------- SUGESTÕES ADMIN ---------- */
 async function renderAdminSugestoes(){
@@ -1573,6 +1707,7 @@ async function renderAdminSugestoes(){
     area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
   }
 }
+window.renderAdminSugestoes = renderAdminSugestoes;
 
 /* ---------- BANIDOS ADMIN ---------- */
 async function renderAdminBanidos(){
@@ -1611,6 +1746,7 @@ async function renderAdminBanidos(){
     </div>
   `;
 }
+window.renderAdminBanidos = renderAdminBanidos;
 
 function adicionarBanido(){
   $('dTitle').textContent = 'Banir usuário';
@@ -1625,11 +1761,12 @@ function adicionarBanido(){
   `;
   dlg.showModal();
 }
+window.adicionarBanido = adicionarBanido;
 
 async function salvarBanido(){
   const userId = $('banirId').value.trim();
   const motivo = $('banirMotivo').value.trim();
-  if(!userId) return alert('Digite o ID');
+  if(!userId){ toast('Digite o ID', 'warn'); return; }
   try{
     const r = await fetch('/api/admin?action=banidos-add', {
       method: 'POST',
@@ -1639,9 +1776,11 @@ async function salvarBanido(){
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     dlg.close();
+    toast('Banido ✅', 'ok');
     await renderAdminBanidos();
-  }catch(e){ alert('Erro: ' + e.message); }
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
+window.salvarBanido = salvarBanido;
 
 async function removerBanido(id){
   if(!confirm('Desbanir esse usuário?')) return;
@@ -1652,9 +1791,11 @@ async function removerBanido(id){
       body: JSON.stringify({ userId: id })
     });
     if(!r.ok) throw new Error('Falha');
+    toast('Desbanido ✅', 'ok');
     await renderAdminBanidos();
-  }catch(e){ alert('Erro: ' + e.message); }
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
+window.removerBanido = removerBanido;
 
 /* ---------- CONFIG ADMIN ---------- */
 async function renderAdminConfig(){
@@ -1696,6 +1837,22 @@ async function renderAdminConfig(){
       </div>
 
       <div class="admin-card">
+        <h3>💬 Recado da Soso</h3>
+        <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Aparece na home, na caixinha "Recado da Soso".</p>
+        <div class="admin-form">
+          <div><label>Texto do recado</label><textarea id="cfgRecado" rows="3" placeholder="Ex: Essa semana tem live de terror! 💜">${esc(d.recado || '')}</textarea></div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>📺 Horas do mês</h3>
+        <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Aparece na home como "Horas esse mês".</p>
+        <div class="admin-form">
+          <div><label>Horas (texto livre)</label><input id="cfgHorasMes" type="text" placeholder="Ex: 32h" value="${esc(d.horasMes || '')}"></div>
+        </div>
+      </div>
+
+      <div class="admin-card">
         <h3>🔧 Modo manutenção</h3>
         <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">
           Quando ligado, quem <b>não é admin</b> vê uma tela de "Estamos em manutenção". Admins logados continuam vendo o site normal.
@@ -1715,6 +1872,7 @@ async function renderAdminConfig(){
     area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
   }
 }
+window.renderAdminConfig = renderAdminConfig;
 
 async function salvarConfig(){
   const aviso = {
@@ -1725,26 +1883,27 @@ async function salvarConfig(){
     texto: $('cfgAvisoTexto').value.trim()
   };
   const donate = $('cfgDonate').value.trim();
+  const recado = $('cfgRecado').value.trim();
+  const horasMes = $('cfgHorasMes').value.trim();
   const manutencao = $('cfgManutencao').checked;
 
   try{
     const r = await fetch('/api/admin?action=config-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ aviso, donate, manutencao })
+      body: JSON.stringify({ aviso, donate, manutencao, recado, horasMes })
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
-    CONFIG_GERAL = { aviso, donate, manutencao };
-    if (aviso.ativo && aviso.texto) {
-      Object.assign(AVISO, aviso);
-    } else {
-      AVISO.ativo = false;
-    }
+    CONFIG_GERAL = { aviso, donate, manutencao, recado, horasMes };
+    if (aviso.ativo && aviso.texto) { Object.assign(AVISO, aviso); }
+    else { AVISO.ativo = false; }
     renderAviso();
-    alert('Salvo! ✅');
-  }catch(e){ alert('Erro: ' + e.message); }
+    renderHomeExtras();
+    toast('Salvo! ✅', 'ok');
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
+window.salvarConfig = salvarConfig;
 
 /* ---------- LOGS ADMIN ---------- */
 async function renderAdminLogs(){
@@ -1778,6 +1937,7 @@ async function renderAdminLogs(){
     area.innerHTML = adminVoltarHTML('📋 Logs') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
   }
 }
+window.renderAdminLogs = renderAdminLogs;
 
 /* ============================================================
    SUGESTÕES PÚBLICAS
@@ -1786,12 +1946,10 @@ async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
   const tipo = $('sugTipo') ? $('sugTipo').value : '';
   const texto = $('sugTexto').value.trim();
-  const status = $('sugStatus'), btn = $('sugBtn');
-  const msg = (cor, t) => { status.style.display = 'block'; status.style.color = cor; status.textContent = t; };
+  const btn = $('sugBtn');
   if($('sugSite').value) return;
-  if(!texto) return msg('#ff4d5f', 'Por favor, escreva sua mensagem!');
+  if(!texto){ toast('Escreva sua mensagem!', 'warn'); return; }
   btn.disabled = true;
-  msg('var(--purple-light)', 'Enviando...');
   try{
     const res = await fetch('/api/sugestoes', {
       method:'POST', headers:{ 'Content-Type':'application/json' },
@@ -1800,23 +1958,38 @@ async function enviarSugestao(){
     let dados = null;
     try { dados = await res.json(); } catch(e){}
     if(res.ok){
-      msg('#b7ff00', 'Mensagem enviada! Obrigado 💜');
+      toast('Mensagem enviada! Obrigado 💜', 'ok');
       $('sugNome').value = ''; $('sugTexto').value = '';
     } else if(res.status === 429){
-      msg('#ff4d5f', 'Calma! Aguarde alguns segundos.');
+      toast('Calma! Aguarde alguns segundos.', 'warn');
     } else if(res.status === 500 && dados && dados.error === 'Webhook não configurado'){
-      msg('#ff4d5f', '⚠️ Webhook do Discord não configurado.');
+      toast('⚠️ Webhook do Discord não configurado.', 'erro');
     } else if(res.status === 502){
-      msg('#ff4d5f', '⚠️ Discord recusou o envio.');
+      toast('⚠️ Discord recusou o envio.', 'erro');
     } else {
-      msg('#ff4d5f', 'Não consegui enviar agora.');
+      toast('Não consegui enviar agora.', 'erro');
     }
   }catch(e){
-    msg('#ff4d5f', 'Sem conexão com o servidor.');
+    toast('Sem conexão com o servidor.', 'erro');
   }finally{
     btn.disabled = false;
-    setTimeout(() => { status.style.display = 'none'; }, 6000);
   }
+}
+window.enviarSugestao = enviarSugestao;
+
+/* ============================================================
+   CARREGAR CONFIG PÚBLICA
+   ============================================================ */
+async function carregarConfigPublica(){
+  try{
+    const r = await fetch('/api/config'); // endpoint opcional, se não existir, ignora
+    if(!r.ok) return;
+    const d = await r.json();
+    CONFIG_GERAL = { ...CONFIG_GERAL, ...d };
+    if(d.aviso) Object.assign(AVISO, d.aviso);
+    renderAviso();
+    renderHomeExtras();
+  }catch(e){ /* silencioso */ }
 }
 
 /* ============================================================
@@ -1829,11 +2002,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
   renderAviso();
   renderEmotes();
-  renderTopDoadores();
   renderSiteUpdate();
   renderSetup();
   renderChips();
   renderComandos();
+  renderHomeExtras();
+  setupComunidadeTabs();
 
   const buscaCmd = $('buscaCmd');
   if(buscaCmd){
@@ -1884,7 +2058,7 @@ window.addEventListener('DOMContentLoaded', () => {
     $('dTitle').textContent = j.nome;
     let terceiro = '';
     if (modo === 'jogos') {
-      if (j.progresso != null) terceiro = `<div><b>${j.progresso}%</b><span>progresso</span></div>`;
+      if (j.conquistas && j.conquistas.total) terceiro = `<div><b>${j.conquistas.obtidas}/${j.conquistas.total}</b><span>conquistas</span></div>`;
     } else {
       if (j.duracao) terceiro = `<div><b>${fmtDuracao(j.duracao)}</b><span>duração</span></div>`;
       else if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
@@ -1922,4 +2096,5 @@ window.addEventListener('DOMContentLoaded', () => {
 
   carregarBiblioteca();
   carregarVotosApi();
+  carregarConfigPublica();
 });

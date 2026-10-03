@@ -1,5 +1,6 @@
 // Vercel serverless: /api/auth.js
 // Login OAuth2 com Discord + sessão via cookie assinado (HMAC).
+// Salva username/avatar em `user_profiles` pra aparecer no painel de admins.
 // Env: DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, SESSION_SECRET, DISCORD_ADMIN_IDS
 //      UPSTASH_REDIS_REST_URL/TOKEN (ou KV_REST_API_*)
 import { createHmac, randomBytes } from 'crypto';
@@ -63,6 +64,19 @@ async function buscarCargoSalvo(userId){
   } catch(e){ return null; }
 }
 
+/* ---------- Salva perfil pra aparecer no painel ---------- */
+async function salvarPerfil(userId, username, avatar){
+  if(!URL_ || !TOKEN_R) return;
+  try {
+    const payload = JSON.stringify({ username, avatar, ts: Date.now() });
+    await fetch(`${URL_}/pipeline`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${TOKEN_R}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify([['HSET', 'user_profiles', String(userId), payload]])
+    });
+  } catch(e){ /* silencioso */ }
+}
+
 /* ---------- Handler ---------- */
 export default async function handler(req, res){
   if(!CLIENT_ID || !CLIENT_SECRET) return res.status(500).json({ error: 'Discord OAuth não configurado' });
@@ -115,6 +129,10 @@ export default async function handler(req, res){
       const avatar = me.avatar
         ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
         : `https://cdn.discordapp.com/embed/avatars/${Number(me.discriminator || 0) % 5}.png`;
+      const username = me.global_name || me.username;
+
+      // Sempre salva o perfil (aparece no painel admin mesmo pra quem ainda não é admin)
+      await salvarPerfil(me.id, username, avatar);
 
       // Cargo: env var (dev) tem prioridade; senão Redis
       let cargo = null;
@@ -123,7 +141,7 @@ export default async function handler(req, res){
 
       const token = criarToken({
         id: me.id,
-        username: me.global_name || me.username,
+        username,
         avatar,
         admin: !!cargo,
         cargo: cargo || null

@@ -1,6 +1,5 @@
 // Vercel serverless: /api/admin.js
-// Painel admin completo: votos, opções, admins, tierlist, banidos, config, logs,
-// sugestões, buscar-jogo (IGDB), buscar-filme (TMDB), traduzir e importar-steam.
+// Painel admin completo.
 //
 // Env necessárias:
 //   UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN  (ou KV_REST_API_*)
@@ -60,7 +59,31 @@ async function logAcao(quem, cargo, acao){
 }
 
 /* ============================================================
-   IGDB (nota + capa + sinopse de jogos)
+   TRADUÇÃO EN→PT (Google grátis, sem chave)
+   ============================================================ */
+async function traduzir(texto){
+  if(!texto) return null;
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(texto)}`;
+    const r = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; asemtet0-site/1.0)' }
+    });
+    if(!r.ok) return null;
+    const d = await r.json();
+    // formato: [[["linha1","orig",...],["linha2",...]], ...]
+    if(Array.isArray(d) && Array.isArray(d[0])){
+      const partes = d[0].map(seg => (Array.isArray(seg) ? seg[0] : '')).filter(Boolean);
+      const juntas = partes.join('');
+      return juntas || null;
+    }
+    return null;
+  } catch(e){
+    return null;
+  }
+}
+
+/* ============================================================
+   IGDB — busca de jogos (match exato + popularidade)
    ============================================================ */
 let igdbCache = { token: null, exp: 0 };
 async function igdbToken(){
@@ -80,33 +103,75 @@ async function igdbBuscar(nome){
   if(!TWITCH_ID || !TWITCH_SECRET) return { erro: 'IGDB não configurado' };
   try {
     const token = await igdbToken();
-    const body = `search "${String(nome).replace(/"/g,'')}"; fields name, rating, aggregated_rating, cover.url, summary, first_release_date; limit 1;`;
-    const r = await fetch('https://api.igdb.com/v4/games', {
-      method: 'POST',
-      headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
-      body
-    });
-    const d = await r.json();
-    const g = Array.isArray(d) ? d[0] : null;
-    if(!g) return { erro: 'Jogo não encontrado' };
-    const capa = g.cover && g.cover.url
-      ? `https:${g.cover.url.replace('t_thumb','t_cover_big').replace('t_cover_small','t_cover_big')}`
-      : null;
-    const rating = g.aggregated_rating || g.rating || null;
+    const limpo = String(nome || '').replace(/["\\]/g, '').trim();
+    if(!limpo) return { erro: 'Informe um nome' };
+
+    const post = async (body) => {
+      const r = await fetch('https://api.igdb.com/v4/games', {
+        method: 'POST',
+        headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
+        body
+      });
+      return r.json();
+    };
+
+    const campos = 'fields name, rating, aggregated_rating, total_rating_count, cover.url, summary, first_release_date, version_parent, category;';
+
+    // 1) match exato (sem DLCs/edições), ordenado por popularidade
+    let lista = await post(
+      `where name = "${limpo}" & version_parent = null & category = 0; ${campos} sort total_rating_count desc; limit 10;`
+    );
+
+    // 2) se nada, tenta sem filtrar categoria (mantém popularidade)
+    if(!Array.isArray(lista) || !lista.length){
+      lista = await post(
+        `where name = "${limpo}" & version_parent = null; ${campos} sort total_rating_count desc; limit 10;`
+      );
+    }
+
+    // 3) fallback: search por texto, também ordenado por popularidade
+    if(!Array.isArray(lista) || !lista.length){
+      lista = await post(
+        `search "${limpo}"; ${campos} where version_parent = null; limit 15;`
+      );
+    }
+
+    if(!Array.isArray(lista) || !lista.length) return { erro: 'Jogo não encontrado' };
+
+    // Ordena manualmente por popularidade (garantia)
+    lista.sort((a, b) => (b.total_rating_count || 0) - (a.total_rating_count || 0));
+
+    const mapJogo = g => {
+      const capa = g.cover && g.cover.url
+        ? 'https:' + g.cover.url
+            .replace('t_thumb', 't_1080p')
+            .replace('t_cover_small', 't_1080p')
+            .replace('t_cover_big', 't_1080p')
+            .replace('t_720p', 't_1080p')
+        : null;
+      const rating = g.aggregated_rating || g.rating || null;
+      return {
+        id: g.id,
+        nome: g.name,
+        capa,
+        nota: rating ? Math.round(rating) / 10 : null,
+        sinopse: g.summary || '',
+        ano: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null
+      };
+    };
+
+    const resultados = lista.map(mapJogo);
     return {
-      nome: g.name,
-      capa,
-      nota: rating ? Math.round(rating) / 10 : null,
-      sinopse: g.summary || '',
-      ano: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null
+      ...resultados[0],
+      resultados // disponível caso queira mostrar opções no futuro
     };
   } catch(e){
-    return { erro: 'Erro ao buscar no IGDB' };
+    return { erro: 'Erro ao buscar no IGDB: ' + e.message };
   }
 }
 
 /* ============================================================
-   TMDB (capa + sinopse + duração + ano de filmes)
+   TMDB — filmes (com sinopse em PT-BR nativa)
    ============================================================ */
 async function tmdbBuscar(nome, ano){
   if(!TMDB_TOKEN && !TMDB_KEY) return { erro: 'TMDB não configurado' };
@@ -118,10 +183,16 @@ async function tmdbBuscar(nome, ano){
     return r.json();
   };
   try {
-    // 1ª tentativa pt-BR com ano, 2ª sem ano, 3ª em en-US
+    // 1ª tentativa pt-BR com ano
     let d = await chamar('/search/movie', { query: nome, include_adult: 'false', ...(ano ? { year: String(ano) } : {}) });
     let filme = d.results && d.results[0];
-    if(!filme){ d = await chamar('/search/movie', { query: nome, include_adult: 'false' }); filme = d.results && d.results[0]; }
+
+    // 2ª pt-BR sem ano
+    if(!filme){
+      d = await chamar('/search/movie', { query: nome, include_adult: 'false' });
+      filme = d.results && d.results[0];
+    }
+    // 3ª en-US
     if(!filme){
       d = await chamar('/search/movie', { query: nome, include_adult: 'false', language: 'en-US' });
       filme = d.results && d.results[0];
@@ -130,6 +201,7 @@ async function tmdbBuscar(nome, ano){
 
     const det = await chamar(`/movie/${filme.id}`);
     return {
+      id: det.id,
       nome: det.title || filme.title,
       capa: det.poster_path ? `https://image.tmdb.org/t/p/w500${det.poster_path}` : null,
       sinopse: det.overview || '',
@@ -142,29 +214,22 @@ async function tmdbBuscar(nome, ano){
 }
 
 /* ============================================================
-   Tradução EN→PT (LibreTranslate público — sem chave)
+   Conquistas Steam (🏆 15/50)
    ============================================================ */
-async function traduzir(texto){
+async function buscarConquistasSteam(appid){
+  if(!STEAM_KEY || !appid) return null;
   try {
-    const r = await fetch('https://libretranslate.com/translate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: texto, source: 'en', target: 'pt', format: 'text' })
-    });
+    const url = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&appid=${appid}&l=portuguese`;
+    const r = await fetch(url);
+    if(!r.ok) return null;
     const d = await r.json();
-    if(d && d.translatedText) return d.translatedText;
-    return null;
+    const lista = d && d.playerstats && d.playerstats.achievements;
+    if(!Array.isArray(lista) || !lista.length) return null;
+    const total = lista.length;
+    const obtidas = lista.filter(a => a.achieved === 1).length;
+    return { obtidas, total };
   } catch(e){
-    // fallback: usa outro endpoint público
-    try {
-      const r = await fetch('https://translate.astian.org/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: texto, source: 'en', target: 'pt', format: 'text' })
-      });
-      const d = await r.json();
-      return d && d.translatedText ? d.translatedText : null;
-    } catch(e2){ return null; }
+    return null;
   }
 }
 
@@ -183,7 +248,6 @@ async function importarSteam(){
     .sort((a,b) => b.playtime_forever - a.playtime_forever)
     .slice(0, 60);
 
-  // Pega tier list atual
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
   try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
@@ -193,17 +257,18 @@ async function importarSteam(){
   for(const g of jogados){
     if(existentes.has(g.name.toLowerCase())){ pulados++; continue; }
     const capaSteam = `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`;
-    // Tenta enriquecer com IGDB (nota, sinopse)
     let extra = {};
     try { extra = await igdbBuscar(g.name); } catch(e){}
+    let conquistas = null;
+    try { conquistas = await buscarConquistasSteam(g.appid); } catch(e){}
     atuais.push({
       id: g.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
       appid: g.appid,
       nome: g.name,
       tier: 'NR',
-      status: 'Jogado',
+      status: 'Jogando',
       horas: Math.round(g.playtime_forever / 6) / 10,
-      progresso: 0,
+      conquistas,
       nota: extra.nota || 0,
       capa: (extra.capa) || capaSteam,
       comentario: extra.sinopse || ''
@@ -213,7 +278,7 @@ async function importarSteam(){
   }
 
   await redis([['SET', 'tierlist:jogos', JSON.stringify(atuais)]]);
-  return { ok: true, adicionados, pulados, total: jogos.length };
+  return { ok: true, adicionados, pulados, total: jogados.length };
 }
 
 /* ============================================================
@@ -294,23 +359,38 @@ export default async function handler(req, res){
     }
 
     /* ============================================================
-       ADMINS
+       ADMINS (merge com perfis salvos no login)
        ============================================================ */
     if(req.method === 'GET' && (action === 'admins' || action === 'admins-ver')){
-      const [flat] = await redis([['HGETALL', 'admins']]);
+      const [flat, perfisFlat] = await redis([
+        ['HGETALL', 'admins'],
+        ['HGETALL', 'user_profiles']
+      ]);
+      const perfis = {};
+      for(let i = 0; i < (perfisFlat||[]).length; i += 2){
+        try { perfis[perfisFlat[i]] = JSON.parse(perfisFlat[i+1]); } catch(e){}
+      }
+
       const admins = [];
       const jaVistos = new Set();
       for(const id of ENV_ADMINS){
-        admins.push({ id, username: null, avatar: null, cargo: 'dev', fixo: true });
+        const p = perfis[id] || {};
+        admins.push({ id, username: p.username || null, avatar: p.avatar || null, cargo: 'dev', fixo: true });
         jaVistos.add(id);
       }
       for(let i = 0; i < (flat||[]).length; i += 2){
         const id = flat[i];
         if(jaVistos.has(id)) continue;
-        try {
-          const d = JSON.parse(flat[i+1]);
-          admins.push({ id, username: d.username || null, avatar: d.avatar || null, cargo: d.cargo || 'moderador', fixo: false });
-        } catch(e){}
+        let d = {};
+        try { d = JSON.parse(flat[i+1]); } catch(e){}
+        const p = perfis[id] || {};
+        admins.push({
+          id,
+          username: d.username || p.username || null,
+          avatar: d.avatar || p.avatar || null,
+          cargo: d.cargo || 'moderador',
+          fixo: false
+        });
       }
       return res.status(200).json({ admins, meuCargo: sessao.cargo || null });
     }
@@ -322,7 +402,17 @@ export default async function handler(req, res){
       if(cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs criam Devs' });
       if(NIVEIS[cargo] > meNivel) return res.status(403).json({ error: 'Cargo maior que o seu' });
       if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'ID já é admin fixo (env var)' });
-      const payload = JSON.stringify({ username: username || null, avatar: avatar || null, cargo, ts: Date.now() });
+
+      // Se já temos o perfil salvo, puxa nick/avatar
+      const [perfilRaw] = await redis([['HGET', 'user_profiles', String(userId)]]);
+      let perfil = {};
+      try { perfil = perfilRaw ? JSON.parse(perfilRaw) : {}; } catch(e){}
+
+      const payload = JSON.stringify({
+        username: username || perfil.username || null,
+        avatar: avatar || perfil.avatar || null,
+        cargo, ts: Date.now()
+      });
       await redis([['HSET', 'admins', String(userId), payload]]);
       await logAcao(quem, sessao.cargo, `Adicionou admin ${userId} (${cargo})`);
       return res.status(200).json({ ok: true });
@@ -339,10 +429,15 @@ export default async function handler(req, res){
       let atual = {};
       try { atual = atualRaw ? JSON.parse(atualRaw) : {}; } catch(e){}
       if(atual.cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs editam Devs' });
+
+      const [perfilRaw] = await redis([['HGET', 'user_profiles', String(userId)]]);
+      let perfil = {};
+      try { perfil = perfilRaw ? JSON.parse(perfilRaw) : {}; } catch(e){}
+
       const payload = JSON.stringify({
         ...atual,
-        username: username || atual.username || null,
-        avatar: avatar || atual.avatar || null,
+        username: username || atual.username || perfil.username || null,
+        avatar: avatar || atual.avatar || perfil.avatar || null,
         cargo, ts: Date.now()
       });
       await redis([['HSET', 'admins', String(userId), payload]]);
@@ -388,7 +483,7 @@ export default async function handler(req, res){
     }
 
     /* ============================================================
-       BUSCAS AUTOMÁTICAS (IGDB / TMDB)
+       BUSCAS AUTOMÁTICAS
        ============================================================ */
     if(req.method === 'GET' && action === 'buscar-jogo'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
@@ -407,12 +502,21 @@ export default async function handler(req, res){
       return res.status(200).json(d);
     }
 
+    if(req.method === 'GET' && action === 'buscar-conquistas'){
+      if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
+      const appid = Number((req.query||{}).appid);
+      if(!appid) return res.status(400).json({ erro: 'appid obrigatório' });
+      const conq = await buscarConquistasSteam(appid);
+      if(!conq) return res.status(200).json({ erro: 'Sem conquistas disponíveis' });
+      return res.status(200).json(conq);
+    }
+
     if(req.method === 'POST' && action === 'traduzir'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const texto = String((req.body||{}).texto || '').trim();
       if(!texto) return res.status(400).json({ error: 'Nada pra traduzir' });
       const traduzido = await traduzir(texto);
-      if(!traduzido) return res.status(502).json({ error: 'Tradutor indisponível' });
+      if(!traduzido) return res.status(502).json({ error: 'Tradutor indisponível no momento' });
       return res.status(200).json({ traduzido });
     }
 
@@ -432,7 +536,6 @@ export default async function handler(req, res){
        ============================================================ */
     if(req.method === 'GET' && action === 'sugestoes-ver'){
       if(meNivel < 1) return res.status(403).json({ error: 'Sem permissão' });
-      // Lê do StreamElements, se estiver configurado
       const jwt = process.env.SE_JWT, canal = process.env.SE_CHANNEL_ID;
       if(!jwt || !canal){
         return res.status(200).json({ itens: [], aviso: 'StreamElements não configurado' });
@@ -499,30 +602,36 @@ export default async function handler(req, res){
     }
 
     /* ============================================================
-       CONFIG GERAL
+       CONFIG GERAL (agora com recado e horasMes)
        ============================================================ */
     if(req.method === 'GET' && action === 'config-get'){
-      const [avisoRaw, donateRaw, manutRaw] = await redis([
+      const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw] = await redis([
         ['GET', 'config:aviso'],
         ['GET', 'config:donate'],
-        ['GET', 'config:manutencao']
+        ['GET', 'config:manutencao'],
+        ['GET', 'config:recado'],
+        ['GET', 'config:horasMes']
       ]);
       let aviso = null;
       try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
       return res.status(200).json({
         aviso,
         donate: donateRaw || null,
-        manutencao: manutRaw === '1'
+        manutencao: manutRaw === '1',
+        recado: recadoRaw || '',
+        horasMes: horasRaw || ''
       });
     }
 
     if(req.method === 'POST' && action === 'config-set'){
       if(meNivel < 3) return res.status(403).json({ error: 'Sem permissão' });
-      const { aviso, donate, manutencao } = req.body || {};
+      const { aviso, donate, manutencao, recado, horasMes } = req.body || {};
       const cmds = [];
       if(aviso !== undefined) cmds.push(['SET', 'config:aviso', JSON.stringify(aviso)]);
       if(donate !== undefined) cmds.push(['SET', 'config:donate', String(donate || '')]);
       if(manutencao !== undefined) cmds.push(['SET', 'config:manutencao', manutencao ? '1' : '0']);
+      if(recado !== undefined) cmds.push(['SET', 'config:recado', String(recado || '')]);
+      if(horasMes !== undefined) cmds.push(['SET', 'config:horasMes', String(horasMes || '')]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
       await redis(cmds);
       await logAcao(quem, sessao.cargo, `Salvou config geral${manutencao ? ' (manutenção LIGADA)' : ''}`);
