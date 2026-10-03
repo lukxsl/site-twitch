@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>asemtet0 | Streamer & Comunidade</title>
+<meta name="description" content="Oie! Eu sou a Soso (asemtet0). Games, caos, conversa e muita gameplay duvidosa. Vem pro cantinho! 💜">
+<meta property="og:title" content="asemtet0 — Streamer & Comunidade 💜">
+<meta property="og:description" content="Games, caos e gameplay duvidosa. Vem pro cantinho!">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://asemtet0.vercel.app/">
+<meta property="og:image" content="https://asemtet0.vercel.app/img/banner.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0b0713">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -85,7 +93,7 @@
         </div>
 
         <div class="box focus-box foco">
-          <img class="foco-cover" id="focoCover" alt="" style="display:none">
+          <img class="foco-cover skeleton" id="focoCover" alt="">
           <div class="foco-info">
             <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
             <h3 id="focoNome">Carregando…</h3>
@@ -154,25 +162,11 @@
 
     <div class="apoio-home">
       <div class="sbox apoie">
-        <h3>💜 Apoie o cantinho</h3>
-        <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
-        <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
-
-        <div class="ap-sec">
-          <span class="ap-h">🎯 Metas da comunidade</span>
-          <div class="goals3" style="grid-template-columns:1fr 1fr;margin:0">
-            <div class="goalc">
-              <div class="gc-top"><span>💜 Seguidores</span><b id="goalSegNum">…</b></div>
-              <div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div>
-              <small id="goalSegDesc">Carregando…</small>
-            </div>
-            <div class="goalc">
-              <div class="gc-top"><span>🎮 Discord</span><b id="goalDcNum">…</b></div>
-              <div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div>
-              <small id="goalDcDesc">Carregando…</small>
-            </div>
-          </div>
+        <div class="apoie-head">
+          <h3>💜 Apoie o cantinho</h3>
+          <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
         </div>
+        <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
 
         <div class="ap-sec ap-mini-stat">
           <span class="ap-h">📺 Horas esse mês</span>
@@ -189,8 +183,10 @@
       </div>
 
       <div class="sbox apoie">
-        <h3>Seja Sub <span class="crown-inline" aria-hidden="true">👑</span></h3>
-        <p>Vire Sub e desbloqueie vantagens exclusivas no cantinho.</p>
+        <div class="apoie-head">
+          <h3>Seja Sub <span class="crown-inline" aria-hidden="true">👑</span></h3>
+          <p>Vire Sub e desbloqueie vantagens exclusivas no cantinho.</p>
+        </div>
         <div class="benefits-grid">
           <div class="benefit">✨ Cargos exclusivos no Discord</div>
           <div class="benefit">🎁 Emotes personalizados pro chat</div>
@@ -242,7 +238,7 @@
     <button class="sub-tab" data-tab="regras">📜 Regras</button>
   </div>
 
-  <!-- DISCORD -->
+  <!-- DISCORD (com metas da comunidade no fim) -->
   <div class="sub-panel on" data-panel="discord">
     <div class="dc-cta">
       <div>
@@ -260,12 +256,21 @@
         <li>🎬 Indicações de jogos e filmes da galera</li>
       </ul>
     </div>
-    <div class="dc-sub-cta">
-      <div>
-        <b>👑 Quer virar Sub?</b>
-        <span>Apoie o canal e ganhe vantagens exclusivas.</span>
+
+    <div class="metas-comunidade">
+      <span class="ap-h">🎯 Metas da comunidade</span>
+      <div class="goals3" style="grid-template-columns:1fr 1fr;margin:0">
+        <div class="goalc">
+          <div class="gc-top"><span>💜 Seguidores</span><b id="goalSegNum">…</b></div>
+          <div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div>
+          <small id="goalSegDesc">Carregando…</small>
+        </div>
+        <div class="goalc">
+          <div class="gc-top"><span>🎮 Discord</span><b id="goalDcNum">…</b></div>
+          <div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div>
+          <small id="goalDcDesc">Carregando…</small>
+        </div>
       </div>
-      <a class="btn" href="#" onclick="mudarAba('inicio');return false;">Ver benefícios →</a>
     </div>
   </div>
 
@@ -273,7 +278,7 @@
   <div class="sub-panel" data-panel="clipes">
     <div class="clips-box" id="clipsBox" style="display:none">
       <h3>
-        <span>🎬 Clipes em destaque</span>
+        <span id="clipsTitulo">🎬 Clipes em destaque</span>
         <a href="https://www.twitch.tv/asemtet0/clips" target="_blank" rel="noopener">Ver todos →</a>
       </h3>
       <div class="clips-grid-4" id="clipsGrid"></div>
@@ -285,7 +290,9 @@
   <div class="sub-panel" data-panel="musicas">
     <div class="music-box">
       <div class="music-head">
-        <span class="music-ic">🎵</span>
+        <span class="music-ic" aria-hidden="true">
+          <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
+        </span>
         <div>
           <h3>Playlist da Soso</h3>
           <p>A trilha sonora que rola nas lives. Salva no Spotify pra ouvir depois! 💜</p>
@@ -424,7 +431,6 @@
   <div class="db" id="dBody"></div>
 </dialog>
 
-<!-- Modal de confirmação customizado (substitui confirm()) -->
 <dialog id="confirmDlg" class="confirm-dlg" aria-labelledby="confirmTitle">
   <div class="confirm-body">
     <div class="confirm-icon" id="confirmIcon">⚠️</div>

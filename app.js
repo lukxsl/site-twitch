@@ -7,13 +7,11 @@ const CONFIG = {
   siteUpdated: '12/10/2026',
   topDoadores: [],
   atividadeManual: [],
-  // Cole aqui a URL da playlist do Spotify (ex: https://open.spotify.com/playlist/XXXXX)
   spotifyPlaylist: ''
 };
 
 const AVISO = {
-  ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso',
-  texto: 'Sem live essa semana por conta de imprevistos. Volto logo! 💜'
+  ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: ''
 };
 
 const EMOTES = [
@@ -23,7 +21,6 @@ const EMOTES = [
 ];
 
 const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
-const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
 const HOST = window.location.hostname || 'localhost';
 
 const COMANDOS_LISTA = [
@@ -43,7 +40,6 @@ const LABEL_CARGO = {
   moderador: '🔰 Moderador'
 };
 
-/* Tooltips dos status da tier list (Bônus 8) */
 const STATUS_TOOLTIP = {
   'Todos':    'Ver todos os itens',
   'Jogando':  'Estou jogando atualmente',
@@ -105,7 +101,6 @@ const durTw = d => {
   return h ? h[1] + 'h' + (mi ? mi[1].padStart(2, '0') : '00') : (mi ? mi[1] + ' min' : '');
 };
 
-/* Formata data + hora: "12/10/2026 às 14:32" */
 function fmtDataHora(iso){
   if(!iso) return null;
   const d = new Date(iso);
@@ -115,15 +110,17 @@ function fmtDataHora(iso){
   return `${data} às ${hora}`;
 }
 
-/* Jogo é "novo" se foi adicionado nos últimos 7 dias */
+/* B7 — Só é "novo" enquanto o jogo ainda não saiu do tier NR */
 function ehNovo(item){
-  if(!item || !item.adicionadoEm) return false;
+  if(!item) return false;
+  if(item.tier && item.tier !== 'NR') return false;
+  if(!item.adicionadoEm) return false;
   const dias = (Date.now() - new Date(item.adicionadoEm)) / 86400000;
   return dias <= 7;
 }
 
 /* ============================================================
-   TOAST GLOBAL (5 segundos)
+   TOAST GLOBAL
    ============================================================ */
 function toast(msg, tipo = 'ok'){
   const el = document.createElement('div');
@@ -139,9 +136,7 @@ function toast(msg, tipo = 'ok'){
 window.toast = toast;
 
 /* ============================================================
-   MODAL DE CONFIRMAÇÃO CUSTOMIZADO
-   Substitui o confirm() nativo.
-   Uso: const ok = await confirmar('Remover?', 'Essa ação não volta.', '🗑️');
+   MODAL DE CONFIRMAÇÃO
    ============================================================ */
 function confirmar(titulo = 'Confirmar?', texto = 'Tem certeza?', icone = '⚠️'){
   return new Promise(resolve => {
@@ -208,21 +203,18 @@ function renderEmotes(){
 }
 
 function renderSiteUpdate(){
-  const el = $('siteUpdated');
-  if(!el) return;
+  const el = $('siteUpdated'); if(!el) return;
   const iso = CONFIG_GERAL.updatedAt;
-  el.textContent = iso ? fmtDataHora(iso) : (CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR'));
+  if(iso){ el.textContent = fmtDataHora(iso); return; }
+  // Fallback: mostra a data estática do CONFIG
+  el.textContent = CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR');
 }
 
 function renderHomeExtras(){
   const horasEl = $('horasMesNum');
   if(horasEl) horasEl.textContent = CONFIG_GERAL.horasMes || '—';
-
   const subEl = $('horasMesSub');
-  if(subEl){
-    subEl.textContent = CONFIG_GERAL.horasMes ? 'de live esse mês' : 'aguardando dados';
-  }
-
+  if(subEl) subEl.textContent = CONFIG_GERAL.horasMes ? 'de live esse mês' : 'aguardando dados';
   const recadoEl = $('recadoSoso');
   if(recadoEl){
     const r = (CONFIG_GERAL.recado || '').trim();
@@ -238,7 +230,6 @@ function renderPlaylist(){
     embed.innerHTML = `<p class="music-placeholder">🎧 Playlist em breve — a Soso está montando!</p>`;
     return;
   }
-  // Converte https://open.spotify.com/playlist/XXXX em URL de embed
   const m = url.match(/playlist\/([a-zA-Z0-9]+)/);
   if(!m){
     embed.innerHTML = `<p class="music-placeholder">🎧 Link da playlist inválido.</p>`;
@@ -268,7 +259,7 @@ function mudarAba(nome, salvar = true){
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
   window.scrollTo({ top:0, behavior:'smooth' });
-  if(nome === 'admin') adminIrPara('home');
+  if(nome === 'admin') adminIrPara(localStorage.getItem('admin:page') || 'home');
 }
 window.mudarAba = mudarAba;
 
@@ -315,22 +306,12 @@ function tickUptime(){
 setInterval(tickUptime, 30000);
 
 async function carregarAtividade(){
-  let itens = [];
-  const ROT_ATIV = { sub:['👑','Último sub'], raid:['🚀','Última raid'], tip:['💜','Última doação'], follow:['✨','Novo seguidor'], cheer:['💎','Últimos bits'] };
-  try {
-    const r = await fetch('/api/atividade');
-    if(r.ok) itens = ((await r.json()).itens || []).map(x => {
-      const [ic, rot] = ROT_ATIV[x.tipo] || ['⭐', 'Atividade'];
-      const extra = x.valor ? (x.tipo === 'tip' ? ` · R$ ${Number(x.valor).toLocaleString('pt-BR')}` : x.tipo === 'raid' ? ` · ${x.valor} viewers` : '') : '';
-      return { icone: ic, rotulo: rot, valor: '@' + x.usuario + extra };
-    });
-  } catch(e) {}
-  if(!itens.length) itens = CONFIG.atividadeManual || [];
-  const wrap = $('tmFeedWrap'), feed = $('tmFeed');
-  if(wrap) wrap.style.display = itens.length ? '' : 'none';
-  if(feed) feed.innerHTML = itens.slice(0, 4).map(a => `<div class="tm-fi"><small>${esc(a.icone)} ${esc(a.rotulo)}</small><b>${esc(a.valor)}</b></div>`).join('');
+  // Sem SE_JWT, o bloco de atividade fica oculto
+  const wrap = $('tmFeedWrap'); if(!wrap) return;
+  wrap.style.display = 'none';
 }
 
+let toastLiveMostrado = false;
 async function verificarStatusTwitch() {
   const g = id => document.getElementById(id);
   const iframe = g('twitchIframe'), panel = g('offlinePanel'), badge = g('bannerLiveBadge');
@@ -346,7 +327,12 @@ async function verificarStatusTwitch() {
     inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
     tickUptime();
 
-    // Horas do mês — vem do backend (soma dos VODs do mês atual)
+    // #21 — Toast "ao vivo" (só na primeira detecção por sessão)
+    if (live && !toastLiveMostrado) {
+      toastLiveMostrado = true;
+      setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
+    }
+
     if (data.horasMes != null) {
       CONFIG_GERAL.horasMes = typeof data.horasMes === 'number'
         ? data.horasMes.toLocaleString('pt-BR') + 'h'
@@ -413,7 +399,7 @@ document.addEventListener('click', e => {
 });
 
 /* ============================================================
-   CLIPES (Bônus 7 — contador de views no topo)
+   CLIPES
    ============================================================ */
 function renderClips(list){
   if(clipsOk) return;
@@ -426,10 +412,9 @@ function renderClips(list){
   clipsOk = true;
   clipsCache = list.slice(0, 4);
 
-  // Bônus 7: contador total de views no título
   const totalViews = clipsCache.reduce((a, c) => a + (Number(c.views) || 0), 0);
-  const h3 = box && box.querySelector('h3 span');
-  if(h3) h3.textContent = `🎬 Clipes em destaque · 👁 ${totalViews.toLocaleString('pt-BR')} views`;
+  const titulo = $('clipsTitulo');
+  if(titulo) titulo.textContent = `🎬 Clipes em destaque · 👁 ${totalViews.toLocaleString('pt-BR')} views`;
 
   if(box) box.style.display = '';
   if(vazio) vazio.style.display = 'none';
@@ -466,25 +451,11 @@ document.addEventListener('click', e => {
 });
 
 /* ============================================================
-   COMANDOS DO CHAT
+   COMANDOS DO CHAT (apenas os fixos)
    ============================================================ */
-let COMANDOS_DINAMICOS = null;
-async function carregarComandosSE(){
-  try {
-    const r = await fetch('/api/comandos');
-    if(!r.ok) return;
-    const d = await r.json();
-    if(Array.isArray(d.comandos) && d.comandos.length){
-      COMANDOS_DINAMICOS = d.comandos;
-      renderComandos($('buscaCmd') ? $('buscaCmd').value : '');
-    }
-  } catch(e){ /* segue com lista local */ }
-}
-
 function renderComandos(filtroTxt = ''){
-  const listaBase = COMANDOS_DINAMICOS && COMANDOS_DINAMICOS.length ? COMANDOS_DINAMICOS : COMANDOS_LISTA;
   const q = filtroTxt.toLowerCase().trim();
-  const lista = listaBase.filter(x => !q || x.c.toLowerCase().includes(q) || x.d.toLowerCase().includes(q));
+  const lista = COMANDOS_LISTA.filter(x => !q || x.c.toLowerCase().includes(q) || x.d.toLowerCase().includes(q));
   const body = $('cmdsBody'); if(!body) return;
   body.innerHTML = lista.map(x =>
     `<tr><td>${esc(x.c)}</td><td>${esc(x.d)}</td><td style="text-align:right"><button data-c="${esc(x.c)}">Copiar</button></td></tr>`
@@ -574,6 +545,8 @@ function atualizarFoco(game, aoVivo){
   ultGame = game; ultVivo = aoVivo;
   const j = game ? JOGOS.find(x => norm(x.nome) === norm(game.name)) : (JOGOS.find(x => x.status === 'Jogando') || JOGOS[0]);
   const nome = game ? game.name : (j && j.nome);
+  const c = $('focoCover');
+  if(c) c.classList.remove('skeleton');
   if(!nome) return;
   const capa = (j && j.capa) || (game && game.box_art) || '';
   const elNome = $('focoNome'); if(!elNome) return;
@@ -591,7 +564,6 @@ function atualizarFoco(game, aoVivo){
   if(pr){ $('focoPct').textContent = j.progresso + '%'; $('focoBarI').style.width = j.progresso + '%'; }
   const v = vodAtual;
   $('focoHoras').textContent = aoVivo ? 'Entra no chat e vem jogar junto! 💜' : (v && v.created_at ? `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}` : '');
-  const c = $('focoCover');
   if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
   else c.style.display = 'none';
 
@@ -814,16 +786,13 @@ function abrirBuscaItem(produto){
 }
 
 /* ============================================================
-   LOGIN / VOTAÇÃO
+   LOGIN / MANUTENÇÃO
    ============================================================ */
-const RANKS = ['🥇','🥈','🥉'];
-
 async function checarLogin(){
   try{
     const r = await fetch('/api/auth?action=me');
     const d = await r.json();
     USUARIO = d.logado ? d : null;
-    if (d.manutencao !== undefined) CONFIG_GERAL.manutencao = d.manutencao;
   }catch(e){ USUARIO = null; }
   renderLogin();
   document.body.classList.toggle('sou-admin', !!(USUARIO && USUARIO.admin));
@@ -831,6 +800,7 @@ async function checarLogin(){
   aplicarManutencao();
 }
 
+/* B1 — Aplica manutenção a cada checagem de estado */
 function aplicarManutencao(){
   const emManutencao = CONFIG_GERAL.manutencao && !(USUARIO && USUARIO.admin);
   let overlay = document.getElementById('manutencaoOverlay');
@@ -882,6 +852,11 @@ async function sair(){
   location.reload();
 }
 window.sair = sair;
+
+/* ============================================================
+   VOTAÇÃO
+   ============================================================ */
+const RANKS = ['🥇','🥈','🥉'];
 
 function aplicarVotos(d){
   if(d && Array.isArray(d.opcoes)){
@@ -1012,10 +987,11 @@ function adminIrPara(pagina){
   ADMIN_PAGE = pagina;
   if(pagina === 'votacao') ADMIN_TAB = 'votos';
   if(pagina === 'tierlist') ADMIN_TIER_TAB = 'jogos';
+  localStorage.setItem('admin:page', pagina); // B3
   carregarAdmin();
 }
-function adminIrAba(aba){ ADMIN_TAB = aba; renderAdminVotacao(); }
-function adminIrTierTab(tab){ ADMIN_TIER_TAB = tab; renderAdminTierList(); }
+function adminIrAba(aba){ ADMIN_TAB = aba; localStorage.setItem('admin:tab', aba); renderAdminVotacao(); }
+function adminIrTierTab(tab){ ADMIN_TIER_TAB = tab; localStorage.setItem('admin:tierTab', tab); renderAdminTierList(); }
 window.adminIrPara = adminIrPara;
 window.adminIrAba = adminIrAba;
 window.adminIrTierTab = adminIrTierTab;
@@ -1036,12 +1012,15 @@ async function carregarAdmin(){
     </div>`;
     return;
   }
+  // B3 — restaura aba salva
+  ADMIN_PAGE = localStorage.getItem('admin:page') || 'home';
+  if(ADMIN_PAGE === 'sugestoes') ADMIN_PAGE = 'home'; // B5 — aba removida
+
   if(sub){
     sub.textContent = ADMIN_PAGE === 'home' ? 'Gerencie tudo do site pelo painel.'
                     : ADMIN_PAGE === 'votacao' ? 'Votos e opções da votação.'
                     : ADMIN_PAGE === 'tierlist' ? 'Editar jogos e filmes.'
                     : ADMIN_PAGE === 'admins' ? 'Quem pode acessar o painel.'
-                    : ADMIN_PAGE === 'sugestoes' ? 'Mensagens e atividades recebidas.'
                     : ADMIN_PAGE === 'banidos' ? 'Quem não pode votar.'
                     : ADMIN_PAGE === 'config' ? 'Aviso, doação, recado, horas e manutenção.'
                     : ADMIN_PAGE === 'logs' ? 'Histórico de ações.'
@@ -1051,7 +1030,6 @@ async function carregarAdmin(){
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
   else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
   else if(ADMIN_PAGE === 'admins') renderAdminAdmins();
-  else if(ADMIN_PAGE === 'sugestoes') await renderAdminSugestoes();
   else if(ADMIN_PAGE === 'banidos') await renderAdminBanidos();
   else if(ADMIN_PAGE === 'config') await renderAdminConfig();
   else if(ADMIN_PAGE === 'logs') await renderAdminLogs();
@@ -1077,12 +1055,6 @@ function renderAdminHome(){
         <p>Adicionar, editar e remover jogos e filmes.</p>
         <span class="cta">Abrir →</span>
       </button>` : ''}
-      <button class="admin-menu-card" onclick="adminIrPara('sugestoes')">
-        <span class="ic">💡</span>
-        <h3>Sugestões</h3>
-        <p>Ver mensagens e atividades recebidas.</p>
-        <span class="cta">Abrir →</span>
-      </button>
       <button class="admin-menu-card" onclick="adminIrPara('banidos')">
         <span class="ic">🚫</span>
         <h3>Banidos</h3>
@@ -1134,6 +1106,7 @@ async function carregarAdminVotacao(){
     area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
     return;
   }
+  ADMIN_TAB = localStorage.getItem('admin:tab') || 'votos';
   renderAdminVotacao();
 }
 
@@ -1233,11 +1206,7 @@ function renderAdminOpcoes(opcoes, contagem){
 }
 
 async function resetarVotacao(){
-  const ok = await confirmar(
-    'Resetar votação?',
-    'TODOS os votos serão apagados e a votação começa do zero.',
-    '🗑️'
-  );
+  const ok = await confirmar('Resetar votação?', 'TODOS os votos serão apagados e a votação começa do zero.', '🗑️');
   if(!ok) return;
   try{
     const r = await fetch('/api/admin?action=reset', { method:'POST' });
@@ -1411,6 +1380,7 @@ async function carregarAdminTierList(){
     area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
     return;
   }
+  ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
   renderAdminTierList();
 }
 
@@ -1452,11 +1422,7 @@ function renderAdminTierList(){
 
 async function importarSteam(){
   const btn = $('btnImportarSteam');
-  const ok = await confirmar(
-    'Importar da Steam?',
-    'Vou buscar seus jogos na Steam e adicionar na tier list. Pode demorar alguns segundos.',
-    '📥'
-  );
+  const ok = await confirmar('Importar da Steam?', 'Vou buscar seus jogos na Steam e adicionar na tier list. Pode demorar alguns segundos.', '📥');
   if(!ok) return;
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando…'; }
   try{
@@ -1618,7 +1584,6 @@ async function salvarItemTier(i){
     item.duracao = Number($('itemDuracao').value) || null;
     item.ano = Number($('itemAno').value) || null;
   }
-  // Marca data de adição pra badge "Novo"
   if(i < 0) item.adicionadoEm = new Date().toISOString();
   else if(ADMIN_TIER[tipo][i].adicionadoEm) item.adicionadoEm = ADMIN_TIER[tipo][i].adicionadoEm;
 
@@ -1821,44 +1786,6 @@ async function removerAdmin(id){
 }
 window.removerAdmin = removerAdmin;
 
-/* ---------- SUGESTÕES ADMIN ---------- */
-async function renderAdminSugestoes(){
-  const area = $('adminArea'); if(!area) return;
-  area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<p class="admin-vazio">Carregando…</p>`;
-  try {
-    const r = await fetch('/api/admin?action=sugestoes-ver');
-    const d = await r.json();
-    const { itens = [], aviso } = d;
-    if(aviso){
-      area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>⚠️ ${esc(aviso)}</b></div>`;
-      return;
-    }
-    area.innerHTML = adminVoltarHTML('💡 Sugestões') + `
-      <div class="admin-card">
-        <h3>💡 Atividades recentes <span class="cont">${itens.length}</span></h3>
-        ${itens.length ? `<div class="admin-votos">${itens.map(s => `
-          <div class="admin-voto">
-            <div class="admin-voto-ph">${s.tipo === 'tip' ? '💜' : s.tipo === 'subscriber' ? '👑' : s.tipo === 'follow' ? '✨' : s.tipo === 'raid' ? '🚀' : '⭐'}</div>
-            <div class="admin-voto-info">
-              <b>${esc(s.usuario)}</b>
-              <small>${esc(s.tipo)}${s.valor ? ' · R$ ' + Number(s.valor).toLocaleString('pt-BR') : ''}</small>
-            </div>
-            <div class="admin-voto-opcao">
-              <small>${s.data ? tempoAtras(s.data) : ''}</small>
-            </div>
-          </div>
-        `).join('')}</div>` : '<p class="admin-vazio" style="padding:20px">Nada recente</p>'}
-        <div class="admin-actions">
-          <button class="admin-btn ghost" onclick="renderAdminSugestoes()">🔄 Atualizar</button>
-        </div>
-      </div>
-    `;
-  } catch(e){
-    area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
-  }
-}
-window.renderAdminSugestoes = renderAdminSugestoes;
-
 /* ---------- BANIDOS ADMIN ---------- */
 async function renderAdminBanidos(){
   const area = $('adminArea'); if(!area) return;
@@ -2048,12 +1975,13 @@ async function salvarConfig(){
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
-    CONFIG_GERAL = { ...CONFIG_GERAL, aviso, donate, manutencao, recado, horasMes, updatedAt: new Date().toISOString() };
-    if (aviso.ativo && aviso.texto) { Object.assign(AVISO, aviso); }
-    else { AVISO.ativo = false; }
+    CONFIG_GERAL = { ...CONFIG_GERAL, aviso, donate, manutencao, recado, horasMes, updatedAt: d.updatedAt || new Date().toISOString() };
+    Object.assign(AVISO, aviso);
+    if(!aviso.ativo || !aviso.texto) AVISO.ativo = false;
     renderAviso();
     renderHomeExtras();
     renderSiteUpdate();
+    aplicarManutencao(); // B1
     toast('Salvo! ✅', 'ok');
   }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
@@ -2094,7 +2022,7 @@ async function renderAdminLogs(){
 window.renderAdminLogs = renderAdminLogs;
 
 /* ============================================================
-   SUGESTÕES PÚBLICAS
+   SUGESTÕES PÚBLICAS (formulário continua funcionando)
    ============================================================ */
 async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
@@ -2136,21 +2064,27 @@ window.enviarSugestao = enviarSugestao;
    ============================================================ */
 async function carregarConfigPublica(){
   try{
-    const r = await fetch('/api/config');
-    if(!r.ok) return;
+    const r = await fetch('/api/config', { cache: 'no-store' });
+    if(!r.ok){ console.warn('[config] HTTP', r.status); return; }
     const d = await r.json();
+    if(d.aviso){
+      Object.assign(AVISO, d.aviso);
+      if(!d.aviso.ativo || !d.aviso.texto) AVISO.ativo = false;
+    }
     CONFIG_GERAL = { ...CONFIG_GERAL, ...d };
-    if(d.aviso) Object.assign(AVISO, d.aviso);
     renderAviso();
     renderHomeExtras();
     renderSiteUpdate();
-  }catch(e){ /* silencioso */ }
+    aplicarManutencao(); // B1 — aplica manutenção pro visitante anônimo
+  }catch(e){
+    console.error('[config] erro:', e);
+  }
 }
 
 /* ============================================================
    BOOT
    ============================================================ */
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   const abaSalva = localStorage.getItem('abaAtiva');
   if(abaSalva && document.getElementById('sec-' + abaSalva)) mudarAba(abaSalva, false);
   else mudarAba('inicio', false);
@@ -2245,13 +2179,12 @@ window.addEventListener('DOMContentLoaded', () => {
     dlgEl.addEventListener('click', e => { if(e.target === dlgEl) dlgEl.close(); });
   }
 
-  carregarAtividade();
-  setInterval(carregarAtividade, 300000);
+  // B2 — carrega config ANTES de tudo, garante que aviso/manutenção apareçam
+  await carregarConfigPublica();
+
   verificarStatusTwitch();
   setInterval(verificarStatusTwitch, 60000);
-  carregarComandosSE();
 
   carregarBiblioteca();
   carregarVotosApi();
-  carregarConfigPublica();
 });

@@ -1,4 +1,15 @@
 // Vercel serverless: /api/admin.js
+// Painel admin completo: votação, admins, tier list, banidos, config, logs,
+// sugestões, buscar-jogo (IGDB + Wikipedia fallback), buscar-filme (TMDB),
+// conquistas Steam, traduzir (Google grátis) e importar-steam.
+//
+// Env necessárias:
+//   UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN  (ou KV_REST_API_*)
+//   SESSION_SECRET
+//   DISCORD_ADMIN_IDS  (IDs separados por vírgula — viram "dev" fixos)
+//   TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET  (para IGDB)
+//   TMDB_TOKEN (ou TMDB_API_KEY)
+//   STEAM_API_KEY (ou STEAM)
 import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -16,7 +27,7 @@ const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.t
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
 
 /* ============================================================
-   SESSÃO
+   HELPERS DE SESSÃO
    ============================================================ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
@@ -50,7 +61,7 @@ async function logAcao(quem, cargo, acao){
 }
 
 /* ============================================================
-   TRADUÇÃO EN→PT (Google grátis)
+   TRADUÇÃO EN→PT (Google grátis, sem chave)
    ============================================================ */
 async function traduzir(texto){
   if(!texto) return null;
@@ -71,7 +82,34 @@ async function traduzir(texto){
 }
 
 /* ============================================================
-   IGDB
+   Wikipedia — fallback de sinopse em PT
+   ============================================================ */
+async function sinopseWikipedia(nome, lang = 'pt'){
+  try {
+    const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(nome)}&format=json&origin=*&srlimit=1`;
+    const r1 = await fetch(searchUrl, {
+      headers: { 'User-Agent': 'asemtet0-site/1.0 (https://asemtet0.vercel.app)' }
+    });
+    const d1 = await r1.json();
+    const titulo = d1 && d1.query && d1.query.search && d1.query.search[0] && d1.query.search[0].title;
+    if(!titulo) return null;
+
+    const extractUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(titulo)}&format=json&origin=*`;
+    const r2 = await fetch(extractUrl, {
+      headers: { 'User-Agent': 'asemtet0-site/1.0 (https://asemtet0.vercel.app)' }
+    });
+    const d2 = await r2.json();
+    const pages = d2 && d2.query && d2.query.pages;
+    if(!pages) return null;
+    const page = Object.values(pages)[0];
+    const extract = page && page.extract;
+    if(!extract) return null;
+    return extract.length > 800 ? extract.slice(0, 797) + '…' : extract;
+  } catch(e){ return null; }
+}
+
+/* ============================================================
+   IGDB — busca de jogos (com fallback Wikipedia PT→EN)
    ============================================================ */
 let igdbCache = { token: null, exp: 0 };
 async function igdbToken(){
@@ -105,16 +143,19 @@ async function igdbBuscar(nome){
 
     const campos = 'fields name, rating, aggregated_rating, total_rating_count, cover.url, summary, first_release_date, version_parent, category;';
 
+    // 1) match exato sem DLCs, ordenado por popularidade
     let lista = await post(
       `where name = "${limpo}" & version_parent = null & category = 0; ${campos} sort total_rating_count desc; limit 10;`
     );
 
+    // 2) match exato sem filtrar categoria
     if(!Array.isArray(lista) || !lista.length){
       lista = await post(
         `where name = "${limpo}" & version_parent = null; ${campos} sort total_rating_count desc; limit 10;`
       );
     }
 
+    // 3) fallback search
     if(!Array.isArray(lista) || !lista.length){
       lista = await post(
         `search "${limpo}"; ${campos} where version_parent = null; limit 15;`
@@ -145,14 +186,26 @@ async function igdbBuscar(nome){
     };
 
     const resultados = lista.map(mapJogo);
-    return { ...resultados[0], resultados };
+    const principal = resultados[0];
+
+    // Fallback: se IGDB não trouxe sinopse, tenta Wikipedia PT e depois EN
+    if(!principal.sinopse){
+      const wikiPt = await sinopseWikipedia(principal.nome, 'pt');
+      if(wikiPt) principal.sinopse = wikiPt;
+      else {
+        const wikiEn = await sinopseWikipedia(principal.nome, 'en');
+        if(wikiEn) principal.sinopse = wikiEn; // fica em EN, o botão traduzir resolve
+      }
+    }
+
+    return { ...principal, resultados };
   } catch(e){
     return { erro: 'Erro ao buscar no IGDB: ' + e.message };
   }
 }
 
 /* ============================================================
-   TMDB
+   TMDB — filmes (sinopse PT-BR nativa)
    ============================================================ */
 async function tmdbBuscar(nome, ano){
   if(!TMDB_TOKEN && !TMDB_KEY) return { erro: 'TMDB não configurado' };
@@ -211,7 +264,7 @@ async function buscarConquistasSteam(appid){
 }
 
 /* ============================================================
-   Importar Steam
+   Steam → importar jogos (com tradução automática da sinopse)
    ============================================================ */
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
@@ -225,6 +278,7 @@ async function importarSteam(){
     .sort((a,b) => b.playtime_forever - a.playtime_forever)
     .slice(0, 60);
 
+  // Pega tier list atual
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
   try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
@@ -234,10 +288,24 @@ async function importarSteam(){
   for(const g of jogados){
     if(existentes.has(g.name.toLowerCase())){ pulados++; continue; }
     const capaSteam = `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`;
+
+    // Enriquece com IGDB (nota, sinopse)
     let extra = {};
     try { extra = await igdbBuscar(g.name); } catch(e){}
+
+    // Traduz a sinopse se estiver em EN
+    let comentario = extra.sinopse || '';
+    if(comentario){
+      try {
+        const traduzido = await traduzir(comentario);
+        if(traduzido) comentario = traduzido;
+      } catch(e){}
+    }
+
+    // Puxa conquistas Steam
     let conquistas = null;
     try { conquistas = await buscarConquistasSteam(g.appid); } catch(e){}
+
     atuais.push({
       id: g.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
       appid: g.appid,
@@ -247,8 +315,8 @@ async function importarSteam(){
       horas: Math.round(g.playtime_forever / 6) / 10,
       conquistas,
       nota: extra.nota || 0,
-      capa: (extra.capa) || capaSteam,
-      comentario: extra.sinopse || '',
+      capa: extra.capa || capaSteam,
+      comentario,
       adicionadoEm: new Date().toISOString()
     });
     adicionados++;
@@ -260,7 +328,7 @@ async function importarSteam(){
 }
 
 /* ============================================================
-   HANDLER
+   HANDLER PRINCIPAL
    ============================================================ */
 export default async function handler(req, res){
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
@@ -275,7 +343,9 @@ export default async function handler(req, res){
   const quem = sessao.username || 'anônimo';
 
   try {
-    /* -------- VOTAÇÃO -------- */
+    /* ============================================================
+       VOTAÇÃO
+       ============================================================ */
     if(req.method === 'GET' && action === 'votos'){
       const ciclo = (await redis([['GET','votos:ciclo_atual']]))[0] || '1';
       const [usuariosRaw, contRaw, configRaw] = await redis([
@@ -334,7 +404,9 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, novoCiclo: novo });
     }
 
-    /* -------- ADMINS -------- */
+    /* ============================================================
+       ADMINS (merge com perfis salvos no login)
+       ============================================================ */
     if(req.method === 'GET' && (action === 'admins' || action === 'admins-ver')){
       const [flat, perfisFlat] = await redis([
         ['HGETALL', 'admins'],
@@ -432,7 +504,9 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- TIER LIST -------- */
+    /* ============================================================
+       TIER LIST
+       ============================================================ */
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
       const [jogosRaw, filmesRaw] = await redis([['GET','tierlist:jogos'], ['GET','tierlist:filmes']]);
       let jogos = [], filmes = [];
@@ -453,7 +527,9 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- BUSCAS -------- */
+    /* ============================================================
+       BUSCAS AUTOMÁTICAS
+       ============================================================ */
     if(req.method === 'GET' && action === 'buscar-jogo'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const nome = String((req.query||{}).nome || '').trim();
@@ -489,7 +565,9 @@ export default async function handler(req, res){
       return res.status(200).json({ traduzido });
     }
 
-    /* -------- IMPORTAR STEAM -------- */
+    /* ============================================================
+       IMPORTAR DA STEAM
+       ============================================================ */
     if(req.method === 'POST' && action === 'importar-steam'){
       if(meNivel < 3) return res.status(403).json({ error: 'Precisa ser Dono ou Dev' });
       const r = await importarSteam();
@@ -498,7 +576,9 @@ export default async function handler(req, res){
       return res.status(200).json(r);
     }
 
-    /* -------- SUGESTÕES / ATIVIDADE -------- */
+    /* ============================================================
+       SUGESTÕES / ATIVIDADE
+       ============================================================ */
     if(req.method === 'GET' && action === 'sugestoes-ver'){
       if(meNivel < 1) return res.status(403).json({ error: 'Sem permissão' });
       const jwt = process.env.SE_JWT, canal = process.env.SE_CHANNEL_ID;
@@ -531,7 +611,9 @@ export default async function handler(req, res){
       }
     }
 
-    /* -------- BANIDOS -------- */
+    /* ============================================================
+       BANIDOS
+       ============================================================ */
     if(req.method === 'GET' && action === 'banidos-ver'){
       const [flat] = await redis([['HGETALL', 'banidos']]);
       const banidos = [];
@@ -564,7 +646,9 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- CONFIG (agora com updatedAt) -------- */
+    /* ============================================================
+       CONFIG GERAL (com recado, horasMes e updatedAt)
+       ============================================================ */
     if(req.method === 'GET' && action === 'config-get'){
       const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw] = await redis([
         ['GET', 'config:aviso'],
@@ -603,7 +687,9 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, updatedAt: agora });
     }
 
-    /* -------- LOGS -------- */
+    /* ============================================================
+       LOGS
+       ============================================================ */
     if(req.method === 'GET' && action === 'logs-ver'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const [flat] = await redis([['LRANGE', 'admin:logs', '0', '49']]);
