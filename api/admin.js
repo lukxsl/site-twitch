@@ -1,13 +1,4 @@
 // Vercel serverless: /api/admin.js
-// Painel admin completo.
-//
-// Env necessárias:
-//   UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN  (ou KV_REST_API_*)
-//   SESSION_SECRET
-//   DISCORD_ADMIN_IDS  (IDs separados por vírgula — viram "dev" fixos)
-//   TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET  (para IGDB)
-//   TMDB_TOKEN (ou TMDB_API_KEY)
-//   STEAM_API_KEY (ou STEAM)
 import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -25,7 +16,7 @@ const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.t
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
 
 /* ============================================================
-   HELPERS DE SESSÃO
+   SESSÃO
    ============================================================ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
@@ -59,7 +50,7 @@ async function logAcao(quem, cargo, acao){
 }
 
 /* ============================================================
-   TRADUÇÃO EN→PT (Google grátis, sem chave)
+   TRADUÇÃO EN→PT (Google grátis)
    ============================================================ */
 async function traduzir(texto){
   if(!texto) return null;
@@ -70,20 +61,17 @@ async function traduzir(texto){
     });
     if(!r.ok) return null;
     const d = await r.json();
-    // formato: [[["linha1","orig",...],["linha2",...]], ...]
     if(Array.isArray(d) && Array.isArray(d[0])){
       const partes = d[0].map(seg => (Array.isArray(seg) ? seg[0] : '')).filter(Boolean);
       const juntas = partes.join('');
       return juntas || null;
     }
     return null;
-  } catch(e){
-    return null;
-  }
+  } catch(e){ return null; }
 }
 
 /* ============================================================
-   IGDB — busca de jogos (match exato + popularidade)
+   IGDB
    ============================================================ */
 let igdbCache = { token: null, exp: 0 };
 async function igdbToken(){
@@ -117,19 +105,16 @@ async function igdbBuscar(nome){
 
     const campos = 'fields name, rating, aggregated_rating, total_rating_count, cover.url, summary, first_release_date, version_parent, category;';
 
-    // 1) match exato (sem DLCs/edições), ordenado por popularidade
     let lista = await post(
       `where name = "${limpo}" & version_parent = null & category = 0; ${campos} sort total_rating_count desc; limit 10;`
     );
 
-    // 2) se nada, tenta sem filtrar categoria (mantém popularidade)
     if(!Array.isArray(lista) || !lista.length){
       lista = await post(
         `where name = "${limpo}" & version_parent = null; ${campos} sort total_rating_count desc; limit 10;`
       );
     }
 
-    // 3) fallback: search por texto, também ordenado por popularidade
     if(!Array.isArray(lista) || !lista.length){
       lista = await post(
         `search "${limpo}"; ${campos} where version_parent = null; limit 15;`
@@ -138,7 +123,6 @@ async function igdbBuscar(nome){
 
     if(!Array.isArray(lista) || !lista.length) return { erro: 'Jogo não encontrado' };
 
-    // Ordena manualmente por popularidade (garantia)
     lista.sort((a, b) => (b.total_rating_count || 0) - (a.total_rating_count || 0));
 
     const mapJogo = g => {
@@ -161,17 +145,14 @@ async function igdbBuscar(nome){
     };
 
     const resultados = lista.map(mapJogo);
-    return {
-      ...resultados[0],
-      resultados // disponível caso queira mostrar opções no futuro
-    };
+    return { ...resultados[0], resultados };
   } catch(e){
     return { erro: 'Erro ao buscar no IGDB: ' + e.message };
   }
 }
 
 /* ============================================================
-   TMDB — filmes (com sinopse em PT-BR nativa)
+   TMDB
    ============================================================ */
 async function tmdbBuscar(nome, ano){
   if(!TMDB_TOKEN && !TMDB_KEY) return { erro: 'TMDB não configurado' };
@@ -183,16 +164,12 @@ async function tmdbBuscar(nome, ano){
     return r.json();
   };
   try {
-    // 1ª tentativa pt-BR com ano
     let d = await chamar('/search/movie', { query: nome, include_adult: 'false', ...(ano ? { year: String(ano) } : {}) });
     let filme = d.results && d.results[0];
-
-    // 2ª pt-BR sem ano
     if(!filme){
       d = await chamar('/search/movie', { query: nome, include_adult: 'false' });
       filme = d.results && d.results[0];
     }
-    // 3ª en-US
     if(!filme){
       d = await chamar('/search/movie', { query: nome, include_adult: 'false', language: 'en-US' });
       filme = d.results && d.results[0];
@@ -214,7 +191,7 @@ async function tmdbBuscar(nome, ano){
 }
 
 /* ============================================================
-   Conquistas Steam (🏆 15/50)
+   Conquistas Steam
    ============================================================ */
 async function buscarConquistasSteam(appid){
   if(!STEAM_KEY || !appid) return null;
@@ -234,7 +211,7 @@ async function buscarConquistasSteam(appid){
 }
 
 /* ============================================================
-   Steam → importar jogos pra tier list
+   Importar Steam
    ============================================================ */
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
@@ -271,7 +248,8 @@ async function importarSteam(){
       conquistas,
       nota: extra.nota || 0,
       capa: (extra.capa) || capaSteam,
-      comentario: extra.sinopse || ''
+      comentario: extra.sinopse || '',
+      adicionadoEm: new Date().toISOString()
     });
     adicionados++;
     existentes.add(g.name.toLowerCase());
@@ -282,7 +260,7 @@ async function importarSteam(){
 }
 
 /* ============================================================
-   HANDLER PRINCIPAL
+   HANDLER
    ============================================================ */
 export default async function handler(req, res){
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
@@ -297,9 +275,7 @@ export default async function handler(req, res){
   const quem = sessao.username || 'anônimo';
 
   try {
-    /* ============================================================
-       VOTAÇÃO
-       ============================================================ */
+    /* -------- VOTAÇÃO -------- */
     if(req.method === 'GET' && action === 'votos'){
       const ciclo = (await redis([['GET','votos:ciclo_atual']]))[0] || '1';
       const [usuariosRaw, contRaw, configRaw] = await redis([
@@ -358,9 +334,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, novoCiclo: novo });
     }
 
-    /* ============================================================
-       ADMINS (merge com perfis salvos no login)
-       ============================================================ */
+    /* -------- ADMINS -------- */
     if(req.method === 'GET' && (action === 'admins' || action === 'admins-ver')){
       const [flat, perfisFlat] = await redis([
         ['HGETALL', 'admins'],
@@ -401,9 +375,8 @@ export default async function handler(req, res){
       if(!userId || !NIVEIS[cargo]) return res.status(400).json({ error: 'Dados inválidos' });
       if(cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs criam Devs' });
       if(NIVEIS[cargo] > meNivel) return res.status(403).json({ error: 'Cargo maior que o seu' });
-      if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'ID já é admin fixo (env var)' });
+      if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'ID já é admin fixo' });
 
-      // Se já temos o perfil salvo, puxa nick/avatar
       const [perfilRaw] = await redis([['HGET', 'user_profiles', String(userId)]]);
       let perfil = {};
       try { perfil = perfilRaw ? JSON.parse(perfilRaw) : {}; } catch(e){}
@@ -459,9 +432,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* ============================================================
-       TIER LIST
-       ============================================================ */
+    /* -------- TIER LIST -------- */
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
       const [jogosRaw, filmesRaw] = await redis([['GET','tierlist:jogos'], ['GET','tierlist:filmes']]);
       let jogos = [], filmes = [];
@@ -482,9 +453,7 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* ============================================================
-       BUSCAS AUTOMÁTICAS
-       ============================================================ */
+    /* -------- BUSCAS -------- */
     if(req.method === 'GET' && action === 'buscar-jogo'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const nome = String((req.query||{}).nome || '').trim();
@@ -520,9 +489,7 @@ export default async function handler(req, res){
       return res.status(200).json({ traduzido });
     }
 
-    /* ============================================================
-       IMPORTAR DA STEAM
-       ============================================================ */
+    /* -------- IMPORTAR STEAM -------- */
     if(req.method === 'POST' && action === 'importar-steam'){
       if(meNivel < 3) return res.status(403).json({ error: 'Precisa ser Dono ou Dev' });
       const r = await importarSteam();
@@ -531,9 +498,7 @@ export default async function handler(req, res){
       return res.status(200).json(r);
     }
 
-    /* ============================================================
-       SUGESTÕES / ATIVIDADE
-       ============================================================ */
+    /* -------- SUGESTÕES / ATIVIDADE -------- */
     if(req.method === 'GET' && action === 'sugestoes-ver'){
       if(meNivel < 1) return res.status(403).json({ error: 'Sem permissão' });
       const jwt = process.env.SE_JWT, canal = process.env.SE_CHANNEL_ID;
@@ -566,9 +531,7 @@ export default async function handler(req, res){
       }
     }
 
-    /* ============================================================
-       BANIDOS
-       ============================================================ */
+    /* -------- BANIDOS -------- */
     if(req.method === 'GET' && action === 'banidos-ver'){
       const [flat] = await redis([['HGETALL', 'banidos']]);
       const banidos = [];
@@ -601,16 +564,15 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* ============================================================
-       CONFIG GERAL (agora com recado e horasMes)
-       ============================================================ */
+    /* -------- CONFIG (agora com updatedAt) -------- */
     if(req.method === 'GET' && action === 'config-get'){
-      const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw] = await redis([
+      const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw] = await redis([
         ['GET', 'config:aviso'],
         ['GET', 'config:donate'],
         ['GET', 'config:manutencao'],
         ['GET', 'config:recado'],
-        ['GET', 'config:horasMes']
+        ['GET', 'config:horasMes'],
+        ['GET', 'config:updatedAt']
       ]);
       let aviso = null;
       try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
@@ -619,28 +581,29 @@ export default async function handler(req, res){
         donate: donateRaw || null,
         manutencao: manutRaw === '1',
         recado: recadoRaw || '',
-        horasMes: horasRaw || ''
+        horasMes: horasRaw || '',
+        updatedAt: updatedRaw || null
       });
     }
 
     if(req.method === 'POST' && action === 'config-set'){
       if(meNivel < 3) return res.status(403).json({ error: 'Sem permissão' });
       const { aviso, donate, manutencao, recado, horasMes } = req.body || {};
+      const agora = new Date().toISOString();
       const cmds = [];
       if(aviso !== undefined) cmds.push(['SET', 'config:aviso', JSON.stringify(aviso)]);
       if(donate !== undefined) cmds.push(['SET', 'config:donate', String(donate || '')]);
       if(manutencao !== undefined) cmds.push(['SET', 'config:manutencao', manutencao ? '1' : '0']);
       if(recado !== undefined) cmds.push(['SET', 'config:recado', String(recado || '')]);
       if(horasMes !== undefined) cmds.push(['SET', 'config:horasMes', String(horasMes || '')]);
+      cmds.push(['SET', 'config:updatedAt', agora]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
       await redis(cmds);
       await logAcao(quem, sessao.cargo, `Salvou config geral${manutencao ? ' (manutenção LIGADA)' : ''}`);
-      return res.status(200).json({ ok: true });
+      return res.status(200).json({ ok: true, updatedAt: agora });
     }
 
-    /* ============================================================
-       LOGS
-       ============================================================ */
+    /* -------- LOGS -------- */
     if(req.method === 'GET' && action === 'logs-ver'){
       if(meNivel < 2) return res.status(403).json({ error: 'Sem permissão' });
       const [flat] = await redis([['LRANGE', 'admin:logs', '0', '49']]);

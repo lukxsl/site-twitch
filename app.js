@@ -6,7 +6,9 @@ const CONFIG = {
   donate: 'https://midfielder.tv.br/asemtet0',
   siteUpdated: '12/10/2026',
   topDoadores: [],
-  atividadeManual: []
+  atividadeManual: [],
+  // Cole aqui a URL da playlist do Spotify (ex: https://open.spotify.com/playlist/XXXXX)
+  spotifyPlaylist: ''
 };
 
 const AVISO = {
@@ -23,6 +25,7 @@ const EMOTES = [
 const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
 const MARCOS_SUBS = [5,10,25,50,100,250,500,1000];
 const HOST = window.location.hostname || 'localhost';
+
 const COMANDOS_LISTA = [
   { c:'!discord', d:'Link do Discord' },
   { c:'!insta',   d:'Instagram da Soso' },
@@ -38,6 +41,18 @@ const LABEL_CARGO = {
   dono: '👑 Dono',
   administrador: '🛡️ Administrador',
   moderador: '🔰 Moderador'
+};
+
+/* Tooltips dos status da tier list (Bônus 8) */
+const STATUS_TOOLTIP = {
+  'Todos':    'Ver todos os itens',
+  'Jogando':  'Estou jogando atualmente',
+  'Zerado':   'Terminei a história principal',
+  'Dropado':  'Comecei mas não vou continuar',
+  'Na fila':  'Vou jogar em breve, já escolhi',
+  'Wishlist': 'Quero jogar algum dia, sem pressa',
+  'Assistindo': 'Estou assistindo agora',
+  'Assistido':  'Já assisti'
 };
 
 /* ============================================================
@@ -59,7 +74,10 @@ let vodAtual = null, assistindoVod = false;
 let videosTw = [];
 let inicioLive = null;
 let modo = 'jogos', filtro = 'Todos';
-let CONFIG_GERAL = { aviso: null, donate: null, manutencao: false, recado: '', horasMes: '' };
+let CONFIG_GERAL = {
+  aviso: null, donate: null, manutencao: false,
+  recado: '', horasMes: '', updatedAt: null
+};
 
 /* ============================================================
    HELPERS
@@ -87,6 +105,23 @@ const durTw = d => {
   return h ? h[1] + 'h' + (mi ? mi[1].padStart(2, '0') : '00') : (mi ? mi[1] + ' min' : '');
 };
 
+/* Formata data + hora: "12/10/2026 às 14:32" */
+function fmtDataHora(iso){
+  if(!iso) return null;
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return String(iso);
+  const data = d.toLocaleDateString('pt-BR');
+  const hora = d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  return `${data} às ${hora}`;
+}
+
+/* Jogo é "novo" se foi adicionado nos últimos 7 dias */
+function ehNovo(item){
+  if(!item || !item.adicionadoEm) return false;
+  const dias = (Date.now() - new Date(item.adicionadoEm)) / 86400000;
+  return dias <= 7;
+}
+
 /* ============================================================
    TOAST GLOBAL (5 segundos)
    ============================================================ */
@@ -103,6 +138,38 @@ function toast(msg, tipo = 'ok'){
 }
 window.toast = toast;
 
+/* ============================================================
+   MODAL DE CONFIRMAÇÃO CUSTOMIZADO
+   Substitui o confirm() nativo.
+   Uso: const ok = await confirmar('Remover?', 'Essa ação não volta.', '🗑️');
+   ============================================================ */
+function confirmar(titulo = 'Confirmar?', texto = 'Tem certeza?', icone = '⚠️'){
+  return new Promise(resolve => {
+    const dlg = $('confirmDlg');
+    if(!dlg){ resolve(confirm(titulo + '\n' + texto)); return; }
+    $('confirmIcon').textContent = icone;
+    $('confirmTitle').textContent = titulo;
+    $('confirmText').textContent = texto;
+    const fechar = (ok) => {
+      dlg.close();
+      $('confirmOk').removeEventListener('click', onOk);
+      $('confirmCancel').removeEventListener('click', onCancel);
+      dlg.removeEventListener('cancel', onCancel);
+      resolve(ok);
+    };
+    const onOk = () => fechar(true);
+    const onCancel = (e) => { if(e) e.preventDefault(); fechar(false); };
+    $('confirmOk').addEventListener('click', onOk);
+    $('confirmCancel').addEventListener('click', onCancel);
+    dlg.addEventListener('cancel', onCancel);
+    dlg.showModal();
+  });
+}
+window.confirmar = confirmar;
+
+/* ============================================================
+   META / PROGRESSO
+   ============================================================ */
 function atualizarMeta(pre, atual, marcos = MARCOS){
   const elDesc = $(pre+'Desc'), elNum = $(pre+'Num'), elBar = $(pre+'Bar');
   if(!elDesc || !elNum || !elBar) return;
@@ -142,20 +209,46 @@ function renderEmotes(){
 
 function renderSiteUpdate(){
   const el = $('siteUpdated');
-  if(el) el.textContent = CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR');
+  if(!el) return;
+  const iso = CONFIG_GERAL.updatedAt;
+  el.textContent = iso ? fmtDataHora(iso) : (CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR'));
 }
 
 function renderHomeExtras(){
   const horasEl = $('horasMesNum');
   if(horasEl) horasEl.textContent = CONFIG_GERAL.horasMes || '—';
+
   const subEl = $('horasMesSub');
-  if(subEl && CONFIG_GERAL.horasMes) subEl.textContent = 'de live esse mês';
+  if(subEl){
+    subEl.textContent = CONFIG_GERAL.horasMes ? 'de live esse mês' : 'aguardando dados';
+  }
+
   const recadoEl = $('recadoSoso');
   if(recadoEl){
     const r = (CONFIG_GERAL.recado || '').trim();
     recadoEl.textContent = r || 'Sem recadinho no momento. Volte mais tarde! 💜';
     recadoEl.style.fontStyle = r ? 'italic' : 'normal';
   }
+}
+
+function renderPlaylist(){
+  const embed = $('musicEmbed'); if(!embed) return;
+  const url = CONFIG.spotifyPlaylist;
+  if(!url){
+    embed.innerHTML = `<p class="music-placeholder">🎧 Playlist em breve — a Soso está montando!</p>`;
+    return;
+  }
+  // Converte https://open.spotify.com/playlist/XXXX em URL de embed
+  const m = url.match(/playlist\/([a-zA-Z0-9]+)/);
+  if(!m){
+    embed.innerHTML = `<p class="music-placeholder">🎧 Link da playlist inválido.</p>`;
+    return;
+  }
+  const id = m[1];
+  embed.innerHTML = `<iframe src="https://open.spotify.com/embed/playlist/${id}?theme=0"
+    width="100%" height="380" frameborder="0" allowtransparency="true"
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+    loading="lazy" title="Playlist do Spotify"></iframe>`;
 }
 
 function setLivePulse(isLive){
@@ -252,7 +345,18 @@ async function verificarStatusTwitch() {
     const live = !!data.stream;
     inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
     tickUptime();
-    if (data.discord && $('dcMembros')) $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
+
+    // Horas do mês — vem do backend (soma dos VODs do mês atual)
+    if (data.horasMes != null) {
+      CONFIG_GERAL.horasMes = typeof data.horasMes === 'number'
+        ? data.horasMes.toLocaleString('pt-BR') + 'h'
+        : String(data.horasMes);
+      renderHomeExtras();
+    }
+
+    if (data.discord && $('dcMembros'))
+      $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
+
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
     g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
@@ -266,6 +370,7 @@ async function verificarStatusTwitch() {
     g('tmVods').innerHTML = videosTw.slice(0, 3).map((v, i) =>
       `<button class="tm-vod" data-i="${i}">${v.thumbnail ? `<img src="${esc(v.thumbnail)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div><b>${esc(v.title || 'Live')}</b><span>${v.created_at ? tempoAtras(v.created_at) : ''}${v.duration ? ' · ' + durTw(v.duration) : ''}${v.views != null ? ' · 👁 ' + v.views : ''}</span></div><em>▶</em></button>`
     ).join('') || '<span class="tm-h4">Nenhuma live gravada ainda.</span>';
+
     atualizarFoco(data.game, !!data.stream);
     renderClips(data.clips);
     g('btnVod').style.display = vodAtual ? '' : 'none';
@@ -308,19 +413,26 @@ document.addEventListener('click', e => {
 });
 
 /* ============================================================
-   CLIPES
+   CLIPES (Bônus 7 — contador de views no topo)
    ============================================================ */
 function renderClips(list){
   if(clipsOk) return;
+  const vazio = $('clipsVazio'), box = $('clipsBox');
   if(!list || !list.length){
-    const vazio = $('clipsVazio'); if(vazio) vazio.style.display = 'block';
-    const box = $('clipsBox'); if(box) box.style.display = 'none';
+    if(vazio) vazio.style.display = 'block';
+    if(box) box.style.display = 'none';
     return;
   }
   clipsOk = true;
   clipsCache = list.slice(0, 4);
-  const box = $('clipsBox'); if(box) box.style.display = '';
-  const vazio = $('clipsVazio'); if(vazio) vazio.style.display = 'none';
+
+  // Bônus 7: contador total de views no título
+  const totalViews = clipsCache.reduce((a, c) => a + (Number(c.views) || 0), 0);
+  const h3 = box && box.querySelector('h3 span');
+  if(h3) h3.textContent = `🎬 Clipes em destaque · 👁 ${totalViews.toLocaleString('pt-BR')} views`;
+
+  if(box) box.style.display = '';
+  if(vazio) vazio.style.display = 'none';
   $('clipsGrid').innerHTML = clipsCache.map(c =>
     `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}">
       <img src="${esc(c.thumbnail)}" alt="" loading="lazy">
@@ -356,9 +468,23 @@ document.addEventListener('click', e => {
 /* ============================================================
    COMANDOS DO CHAT
    ============================================================ */
+let COMANDOS_DINAMICOS = null;
+async function carregarComandosSE(){
+  try {
+    const r = await fetch('/api/comandos');
+    if(!r.ok) return;
+    const d = await r.json();
+    if(Array.isArray(d.comandos) && d.comandos.length){
+      COMANDOS_DINAMICOS = d.comandos;
+      renderComandos($('buscaCmd') ? $('buscaCmd').value : '');
+    }
+  } catch(e){ /* segue com lista local */ }
+}
+
 function renderComandos(filtroTxt = ''){
+  const listaBase = COMANDOS_DINAMICOS && COMANDOS_DINAMICOS.length ? COMANDOS_DINAMICOS : COMANDOS_LISTA;
   const q = filtroTxt.toLowerCase().trim();
-  const lista = COMANDOS_LISTA.filter(x => !q || x.c.toLowerCase().includes(q) || x.d.toLowerCase().includes(q));
+  const lista = listaBase.filter(x => !q || x.c.toLowerCase().includes(q) || x.d.toLowerCase().includes(q));
   const body = $('cmdsBody'); if(!body) return;
   body.innerHTML = lista.map(x =>
     `<tr><td>${esc(x.c)}</td><td>${esc(x.d)}</td><td style="text-align:right"><button data-c="${esc(x.c)}">Copiar</button></td></tr>`
@@ -373,7 +499,7 @@ const TIERS = ['S','A','B','C'];
 
 const JOGOS_FALLBACK = [
   { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando',
-    progresso:56, horas:50, nota:8,
+    horas:50, nota:8,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
     comentario:'Um dos mundos mais vivos e detalhados dos games.' },
   { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Zerado', nota:9, horas:40,
@@ -469,7 +595,6 @@ function atualizarFoco(game, aoVivo){
   if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
   else c.style.display = 'none';
 
-  // Botão Ver na Twitch quando ao vivo
   const twLink = $('focoTwitchLink');
   if(twLink){
     if(aoVivo){ twLink.href = 'https://www.twitch.tv/asemtet0'; twLink.style.display = ''; }
@@ -478,7 +603,10 @@ function atualizarFoco(game, aoVivo){
 }
 
 function renderChips(){
-  $('chips').innerHTML = MODOS[modo].status.map(s => `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}">${s}</button>`).join('');
+  $('chips').innerHTML = MODOS[modo].status.map(s => {
+    const tip = STATUS_TOOLTIP[s] || s;
+    return `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}" title="${esc(tip)}">${s}</button>`;
+  }).join('');
 }
 
 function aplicarModo(novo, salvar = true){
@@ -500,12 +628,14 @@ function cartao(j,i){
   const podeArrastar = !!(USUARIO && USUARIO.admin);
   const conq = j.conquistas && j.conquistas.total
     ? `<span class="conq">🏆 ${j.conquistas.obtidas}/${j.conquistas.total}</span>` : '';
+  const novo = ehNovo(j) ? `<span class="novo">Novo</span>` : '';
   return `
     <button class="g" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}">
       <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
         <div class="ph">${esc(ini)}</div>
         ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
         ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
+        ${novo}
         ${j.nota > 0 ? `<span class="nt">${n1(j.nota)}</span>` : ''}
       </div>
       <div class="cap">
@@ -969,7 +1099,7 @@ function renderAdminHome(){
       <button class="admin-menu-card" onclick="adminIrPara('config')">
         <span class="ic">⚙️</span>
         <h3>Config geral</h3>
-        <p>Aviso, doação, recado da home, horas, manutenção.</p>
+        <p>Aviso, doação, recado, horas e manutenção.</p>
         <span class="cta">Abrir →</span>
       </button>` : ''}
       ${podeEditar ? `
@@ -1103,7 +1233,12 @@ function renderAdminOpcoes(opcoes, contagem){
 }
 
 async function resetarVotacao(){
-  if(!confirm('Tem certeza? TODOS os votos serão apagados.')) return;
+  const ok = await confirmar(
+    'Resetar votação?',
+    'TODOS os votos serão apagados e a votação começa do zero.',
+    '🗑️'
+  );
+  if(!ok) return;
   try{
     const r = await fetch('/api/admin?action=reset', { method:'POST' });
     if(!r.ok) throw new Error('Falha ao resetar');
@@ -1228,7 +1363,8 @@ async function salvarOpcao(i, ehNovo){
 window.salvarOpcao = salvarOpcao;
 
 async function removerOpcao(i){
-  if(!confirm('Remover essa opção?')) return;
+  const ok = await confirmar('Remover opção?', 'Essa opção sai da votação.', '🗑️');
+  if(!ok) return;
   const opcoes = (ADMIN_DADOS.config || []).slice();
   opcoes.splice(i, 1);
   await salvarOpcoesVotacao(opcoes);
@@ -1252,7 +1388,8 @@ async function salvarOpcoesVotacao(opcoes){
 }
 
 async function restaurarPadraoVotacao(){
-  if(!confirm('Restaurar as opções padrão?')) return;
+  const ok = await confirmar('Restaurar padrão?', 'As opções voltam pro padrão de fábrica.', '♻️');
+  if(!ok) return;
   await salvarOpcoesVotacao([
     { id:'hollow-knight', nome:'Hollow Knight', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
     { id:'phasmophobia', nome:'Phasmophobia', tipo:'jogo', capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/739630/library_600x900.jpg' },
@@ -1315,8 +1452,13 @@ function renderAdminTierList(){
 
 async function importarSteam(){
   const btn = $('btnImportarSteam');
-  if(!confirm('Buscar jogos na Steam e adicionar na tier list?')) return;
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar)'; }
+  const ok = await confirmar(
+    'Importar da Steam?',
+    'Vou buscar seus jogos na Steam e adicionar na tier list. Pode demorar alguns segundos.',
+    '📥'
+  );
+  if(!ok) return;
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando…'; }
   try{
     const r = await fetch('/api/admin?action=importar-steam', { method: 'POST' });
     const d = await r.json();
@@ -1439,6 +1581,8 @@ async function traduzirComentario(){
   const texto = ta.value.trim();
   if(!texto){ toast('Nada para traduzir', 'warn'); return; }
   ta.disabled = true;
+  const original = ta.value;
+  ta.value = '🌐 Traduzindo…';
   try{
     const r = await fetch('/api/admin?action=traduzir', {
       method: 'POST',
@@ -1447,8 +1591,8 @@ async function traduzirComentario(){
     });
     const d = await r.json();
     if(d.traduzido){ ta.value = d.traduzido; toast('Traduzido! ✅', 'ok'); }
-    else toast('Não foi possível traduzir', 'erro');
-  }catch(e){ toast('Erro ao traduzir', 'erro'); }
+    else { ta.value = original; toast('Não foi possível traduzir', 'erro'); }
+  }catch(e){ ta.value = original; toast('Erro ao traduzir', 'erro'); }
   finally { ta.disabled = false; }
 }
 window.traduzirComentario = traduzirComentario;
@@ -1474,6 +1618,10 @@ async function salvarItemTier(i){
     item.duracao = Number($('itemDuracao').value) || null;
     item.ano = Number($('itemAno').value) || null;
   }
+  // Marca data de adição pra badge "Novo"
+  if(i < 0) item.adicionadoEm = new Date().toISOString();
+  else if(ADMIN_TIER[tipo][i].adicionadoEm) item.adicionadoEm = ADMIN_TIER[tipo][i].adicionadoEm;
+
   const nova = ADMIN_TIER[tipo].slice();
   if(i >= 0) nova[i] = item;
   else nova.push(item);
@@ -1483,9 +1631,10 @@ async function salvarItemTier(i){
 window.salvarItemTier = salvarItemTier;
 
 async function removerItemTier(i){
-  if(!confirm('Remover esse item?')) return;
   const tipo = ADMIN_TIER_TAB;
   const removido = ADMIN_TIER[tipo][i].nome;
+  const ok = await confirmar('Remover item?', `"${removido}" será removido da tier list.`, '🗑️');
+  if(!ok) return;
   ADMIN_TIER[tipo] = ADMIN_TIER[tipo].slice();
   ADMIN_TIER[tipo].splice(i, 1);
   await salvarTierList(`Removeu "${removido}"`);
@@ -1656,7 +1805,8 @@ async function salvarNovoAdmin(){
 window.salvarNovoAdmin = salvarNovoAdmin;
 
 async function removerAdmin(id){
-  if(!confirm('Remover esse admin?')) return;
+  const ok = await confirmar('Remover admin?', 'A pessoa perde acesso ao painel.', '🗑️');
+  if(!ok) return;
   try{
     const r = await fetch('/api/admin?action=admins-remove', {
       method: 'POST',
@@ -1783,7 +1933,8 @@ async function salvarBanido(){
 window.salvarBanido = salvarBanido;
 
 async function removerBanido(id){
-  if(!confirm('Desbanir esse usuário?')) return;
+  const ok = await confirmar('Desbanir?', 'A pessoa volta a poder votar.', '✅');
+  if(!ok) return;
   try{
     const r = await fetch('/api/admin?action=banidos-remove', {
       method: 'POST',
@@ -1838,7 +1989,7 @@ async function renderAdminConfig(){
 
       <div class="admin-card">
         <h3>💬 Recado da Soso</h3>
-        <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Aparece na home, na caixinha "Recado da Soso".</p>
+        <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Aparece na home, dentro do card "Apoie o cantinho".</p>
         <div class="admin-form">
           <div><label>Texto do recado</label><textarea id="cfgRecado" rows="3" placeholder="Ex: Essa semana tem live de terror! 💜">${esc(d.recado || '')}</textarea></div>
         </div>
@@ -1846,16 +1997,18 @@ async function renderAdminConfig(){
 
       <div class="admin-card">
         <h3>📺 Horas do mês</h3>
-        <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Aparece na home como "Horas esse mês".</p>
+        <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">
+          Preenchido automaticamente pela Twitch (soma dos VODs do mês atual). Você pode sobrescrever manualmente se quiser.
+        </p>
         <div class="admin-form">
-          <div><label>Horas (texto livre)</label><input id="cfgHorasMes" type="text" placeholder="Ex: 32h" value="${esc(d.horasMes || '')}"></div>
+          <div><label>Horas (texto livre — deixe vazio pra usar Twitch)</label><input id="cfgHorasMes" type="text" placeholder="Ex: 32h" value="${esc(d.horasMes || '')}"></div>
         </div>
       </div>
 
       <div class="admin-card">
         <h3>🔧 Modo manutenção</h3>
         <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">
-          Quando ligado, quem <b>não é admin</b> vê uma tela de "Estamos em manutenção". Admins logados continuam vendo o site normal.
+          Quando ligado, quem <b>não é admin</b> vê uma tela de "Estamos em manutenção".
         </p>
         <label style="display:flex;align-items:center;gap:10px;font-weight:700">
           <input type="checkbox" id="cfgManutencao" ${d.manutencao ? 'checked' : ''} style="width:auto">
@@ -1895,11 +2048,12 @@ async function salvarConfig(){
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
-    CONFIG_GERAL = { aviso, donate, manutencao, recado, horasMes };
+    CONFIG_GERAL = { ...CONFIG_GERAL, aviso, donate, manutencao, recado, horasMes, updatedAt: new Date().toISOString() };
     if (aviso.ativo && aviso.texto) { Object.assign(AVISO, aviso); }
     else { AVISO.ativo = false; }
     renderAviso();
     renderHomeExtras();
+    renderSiteUpdate();
     toast('Salvo! ✅', 'ok');
   }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
@@ -1978,17 +2132,18 @@ async function enviarSugestao(){
 window.enviarSugestao = enviarSugestao;
 
 /* ============================================================
-   CARREGAR CONFIG PÚBLICA
+   CONFIG PÚBLICA
    ============================================================ */
 async function carregarConfigPublica(){
   try{
-    const r = await fetch('/api/config'); // endpoint opcional, se não existir, ignora
+    const r = await fetch('/api/config');
     if(!r.ok) return;
     const d = await r.json();
     CONFIG_GERAL = { ...CONFIG_GERAL, ...d };
     if(d.aviso) Object.assign(AVISO, d.aviso);
     renderAviso();
     renderHomeExtras();
+    renderSiteUpdate();
   }catch(e){ /* silencioso */ }
 }
 
@@ -2007,6 +2162,7 @@ window.addEventListener('DOMContentLoaded', () => {
   renderChips();
   renderComandos();
   renderHomeExtras();
+  renderPlaylist();
   setupComunidadeTabs();
 
   const buscaCmd = $('buscaCmd');
@@ -2093,6 +2249,7 @@ window.addEventListener('DOMContentLoaded', () => {
   setInterval(carregarAtividade, 300000);
   verificarStatusTwitch();
   setInterval(verificarStatusTwitch, 60000);
+  carregarComandosSE();
 
   carregarBiblioteca();
   carregarVotosApi();

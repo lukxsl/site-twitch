@@ -10,8 +10,7 @@ const GOALS = {
 };
 
 // A API da Twitch não expõe subs via client_credentials.
-// Configure TWITCH_SUBS_ATUAIS na Vercel (Settings > Environment Variables)
-// ou edite o padrão 45 aqui.
+// Configure TWITCH_SUBS_ATUAIS na Vercel se quiser.
 const SUBS_ATUAIS = Number(process.env.TWITCH_SUBS_ATUAIS) || 45;
 
 let cache = { token: null, exp: 0 };
@@ -27,6 +26,31 @@ async function getToken(id, secret) {
   if (!d.access_token) throw new Error('Falha ao obter token');
   cache = { token: d.access_token, exp: Date.now() + (d.expires_in - 60) * 1000 };
   return cache.token;
+}
+
+/* Converte "1h30m45s" ou "45m20s" em minutos */
+function duracaoParaMin(d) {
+  if (!d) return 0;
+  const h = /(\d+)h/.exec(d);
+  const m = /(\d+)m/.exec(d);
+  const s = /(\d+)s/.exec(d);
+  return (h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0) + (s ? Math.round(Number(s[1]) / 60) : 0);
+}
+
+/* Soma duração dos VODs do mês atual */
+function calcularHorasMes(videos) {
+  if (!Array.isArray(videos)) return 0;
+  const agora = new Date();
+  const anoAtual = agora.getUTCFullYear();
+  const mesAtual = agora.getUTCMonth();
+  let totalMin = 0;
+  for (const v of videos) {
+    if (!v.created_at || !v.duration) continue;
+    const d = new Date(v.created_at);
+    if (d.getUTCFullYear() !== anoAtual || d.getUTCMonth() !== mesAtual) continue;
+    totalMin += duracaoParaMin(v.duration);
+  }
+  return Math.round(totalMin / 60); // retorna horas arredondadas
 }
 
 export default async function handler(req, res) {
@@ -46,7 +70,7 @@ export default async function handler(req, res) {
     const [s, f, v, ch, cl, dc] = await Promise.all([
       api(`streams?user_id=${user.id}`),
       api(`channels/followers?broadcaster_id=${user.id}&first=1`).catch(() => ({})),
-      api(`videos?user_id=${user.id}&type=archive&first=10`).catch(() => ({})),
+      api(`videos?user_id=${user.id}&type=archive&first=50`).catch(() => ({})),
       api(`channels?broadcaster_id=${user.id}`).catch(() => ({})),
       api(`clips?broadcaster_id=${user.id}&first=6`).catch(() => ({})),
       fetch(`https://discord.com/api/v10/invites/${DISCORD_INVITE}?with_counts=true`)
@@ -69,6 +93,9 @@ export default async function handler(req, res) {
     });
     const videos = (v.data || []).map(mapVideo);
     const video = videos[0] || null;
+
+    // Horas do mês atual (soma dos VODs publicados nesse mês)
+    const horasMes = calcularHorasMes(videos);
 
     const c = ch.data && ch.data[0];
     let game = null;
@@ -98,10 +125,10 @@ export default async function handler(req, res) {
         uptime,
         started_at: stream.started_at
       },
-      // 👇 Estes 3 campos alimentam os cards de meta (seguidores, discord, subs)
       followers: followersTotal || null,
       discord: discordTotal || null,
       subs: SUBS_ATUAIS,
+      horasMes, // número (ex: 32) — frontend adiciona o "h"
       video, videos, game, clips
     });
   } catch (e) {

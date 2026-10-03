@@ -1,6 +1,5 @@
 // Vercel serverless: /api/config.js
-// Devolve config pública: aviso, donate, manutenção, recado, horas do mês.
-// Não exige login. Usado pela home pra renderizar recado + horas.
+// Devolve config pública. Não exige login.
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
@@ -18,12 +17,13 @@ export default async function handler(req, res) {
   if (!URL_ || !TOKEN) return res.status(200).json({});
 
   try {
-    const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw] = await redis([
+    const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw] = await redis([
       ['GET', 'config:aviso'],
       ['GET', 'config:donate'],
       ['GET', 'config:manutencao'],
       ['GET', 'config:recado'],
-      ['GET', 'config:horasMes']
+      ['GET', 'config:horasMes'],
+      ['GET', 'config:updatedAt']
     ]);
 
     let aviso = null;
@@ -35,7 +35,8 @@ export default async function handler(req, res) {
       donate: donateRaw || null,
       manutencao: manutRaw === '1',
       recado: recadoRaw || '',
-      horasMes: horasRaw || ''
+      horasMes: horasRaw || '',
+      updatedAt: updatedRaw || null
     });
   } catch (e) {
     return res.status(200).json({});
