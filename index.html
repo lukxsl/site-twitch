@@ -3,498 +3,101 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>asemtet0 | Streamer & Comunidade</title>
-<meta name="description" content="Oie! Eu sou a Soso (asemtet0). Games, caos, conversa e muita gameplay duvidosa. Vem pro cantinho! 💜">
-<meta property="og:title" content="asemtet0 — Streamer & Comunidade 💜">
-<meta property="og:description" content="Games, caos e gameplay duvidosa. Vem pro cantinho!">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://asemtet0.vercel.app/">
-<meta property="og:image" content="https://asemtet0.vercel.app/img/banner.png">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#0b0713">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>asemtet0 · o cantinho da Soso</title>
+<meta name="description" content="Lives de games, caos e conversa. Vem pro cantinho da Soso!">
+<meta property="og:title" content="asemtet0 · o cantinho da Soso">
+<meta property="og:image" content="img/banner.png">
+<meta name="theme-color" content="#100818">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header class="topo">
+  <a class="marca" href="#inicio"><img src="img/twitch.png" alt="" width="32" height="32">asemtet0</a>
+  <nav aria-label="Principal" id="menu">
+    <a href="#inicio">Início</a><a href="#tierlist">Tier list</a><a href="#votar">Votar e sugerir</a><a href="#comunidade">Comunidade</a>
+  </nav>
+  <div id="conta"></div>
+</header>
 
-<nav>
-  <div class="wrapper">
-    <div class="logo-container" onclick="mudarAba('inicio')" aria-label="Ir para início">
-      <img src="img/twitch.png" alt="Twitch" class="twitch-logo-img">
-      <div class="logo-text">asemtet<span>0</span></div>
+<main>
+<section id="inicio" class="pg">
+  <div class="palco">
+    <div class="tv adesivo">
+      <div class="tv-barra"><span class="ponto" id="ponto"></span><b id="tvStatus">Offline</b><span id="tvInfo">@asemtet0</span></div>
+      <div class="tv-tela" id="tvTela">
+        <img src="img/banner.png" alt="Bem-vindo ao meu cantinho">
+        <p>Fora do ar agora. Segue o canal pra receber o aviso quando eu abrir a live.</p>
+      </div>
     </div>
-    <div class="nav-right">
-      <ul>
-        <li><button onclick="mudarAba('inicio')" id="btn-inicio" class="on">Início</button></li>
-        <li><button onclick="mudarAba('tierlist')" id="btn-tierlist">Tier List</button></li>
-        <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
-        <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
-        <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
-        <li class="admin-nav"><button onclick="mudarAba('admin')" id="btn-admin">⚙️ Admin</button></li>
-      </ul>
-      <div class="nav-user" id="navUser"></div>
-    </div>
+    <aside class="bilhete adesivo rosa">
+      <img class="foto" src="img/avatar.png" alt="Soso" onerror="this.remove()">
+      <h1>Oie, eu sou a Soso</h1>
+      <p>Também atendo por Sophs ou Teto. Aqui tem game, caos, conversa e gameplay duvidosa, quase todo dia.</p>
+      <div class="links">
+        <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
+        <a class="btn vazio" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Discord</a>
+        <a class="btn vazio" href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener">Instagram</a>
+        <a class="btn vazio" href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener">TikTok</a>
+      </div>
+    </aside>
   </div>
-</nav>
+  <div id="aviso" class="aviso" hidden></div>
+  <div class="faixa" id="numeros"></div>
+  <div class="duo">
+    <div class="adesivo" id="ultimoJogo"><h2>Jogando por último</h2><p class="mudo">Carregando…</p></div>
+    <div class="adesivo" id="tocando"><h2>Na trilha agora</h2><p class="mudo">Nada tocando no momento.</p></div>
+  </div>
+  <div class="adesivo" id="vods"><h2>Lives recentes</h2><div class="grade-v" id="vodsGrade"></div></div>
+</section>
 
-<main class="wrapper">
+<section id="tierlist" class="pg" hidden>
+  <h2 class="titulo">Tier list</h2>
+  <div class="barra">
+    <div class="abas" id="modo"><button class="on" data-m="jogos">Jogos</button><button data-m="filmes">Filmes</button></div>
+    <input id="busca" type="search" placeholder="Buscar pelo nome" aria-label="Buscar">
+  </div>
+  <div id="tiers"></div>
+</section>
 
-<!-- INÍCIO -->
-<section id="sec-inicio" class="page-section ativo">
-  <div class="hero-container">
-    <div class="banner">
-      <div class="banner-live-badge" id="bannerLiveBadge">
-        <span class="live-indicator" id="bannerLiveDot"></span>
-        <span id="bannerLiveText">AO VIVO AGORA</span>
-      </div>
-      <img class="banner-bg" src="img/banner.png" alt="" aria-hidden="true">
-      <img id="bannerImg" src="img/banner.png" alt="Bem-vindo ao meu cantinho - asemtet0">
-    </div>
-
-    <div class="aviso" id="avisoBox" style="display:none">
-      <span class="aviso-ic" id="avisoIcon">📢</span>
-      <div class="aviso-tx">
-        <b id="avisoTitulo">Aviso</b>
-        <span id="avisoTexto"></span>
-      </div>
-    </div>
-
-    <div class="hero-grid">
-      <div class="coluna-esquerda">
-        <div class="profile-card-mini">
-          <div class="profile-avatar-container">
-            <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
-          </div>
-          <h2>asemtet0 💜</h2>
-          <div class="subloc">📍 Maceió – AL • Streamer desde 2025</div>
-          <p class="profile-description">
-            Oie! Eu sou a Soso, também conhecida como Sophs ou Teto.
-            Aqui você encontra games, caos, conversa e muita gameplay duvidosa. 💜
-          </p>
-          <div class="profile-stats-grid">
-            <div class="profile-stat-row"><span>🎮 Foco principal</span><span>Games & Chat</span></div>
-            <div class="profile-stat-row"><span>✨ Vibe da live</span><span>Caos & Diversão</span></div>
-            <div class="profile-stat-row"><span>⚡ Frequência</span><span>Quase todo dia</span></div>
-          </div>
-          <div class="profile-socials">
-            <a class="profile-social-btn" href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z"/><path d="M16 2H8a6 6 0 0 0-6 6v8a6 6 0 0 0 6 6h8a6 6 0 0 0 6-6V8a6 6 0 0 0-6-6Zm4.2 14a4.2 4.2 0 0 1-4.2 4.2H8A4.2 4.2 0 0 1 3.8 16V8A4.2 4.2 0 0 1 8 3.8h8A4.2 4.2 0 0 1 20.2 8v8Z"/></svg>
-              Instagram
-            </a>
-            <a class="profile-social-btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
-              Discord
-            </a>
-            <a class="profile-social-btn" href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 2h-3.3v13.2a2.9 2.9 0 1 1-2-2.8V9a6.2 6.2 0 1 0 5.3 6.2V8.6a7.5 7.5 0 0 0 4.4 1.4V6.7a4.4 4.4 0 0 1-4.4-4.7Z"/></svg>
-              TikTok
-            </a>
-          </div>
-        </div>
-
-        <div class="box focus-box foco">
-          <img class="foco-cover skeleton" id="focoCover" alt="">
-          <div class="foco-info">
-            <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
-            <h3 id="focoNome">Carregando…</h3>
-            <div class="foco-meta" id="focoMeta"></div>
-            <div class="foco-bar" id="focoBar" style="display:none"><small><span>Progresso</span><b id="focoPct"></b></small><div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div></div>
-            <p class="foco-last" id="focoHoras"></p>
-            <div class="foco-btns">
-              <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
-              <a class="btn" id="focoTwitchLink" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="display:none">Ver na Twitch →</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="music-box" id="musicBox">
-          <div class="music-head">
-            <span class="music-ic" aria-hidden="true">
-              <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
-            </span>
-            <div class="music-info">
-              <h3>Spotify da Soso</h3>
-              <p>A trilha sonora que rola nas lives. 💜</p>
-            </div>
-          </div>
-
-          <div class="music-tabs" role="tablist">
-            <button class="music-tab on" data-tab="playlist" role="tab">🎵 Playlist</button>
-            <button class="music-tab" data-tab="ouvindo" role="tab">▶ Ouvindo agora</button>
-          </div>
-
-          <div class="music-panel" id="musicPainelPlaylist">
-            <div class="music-embed" id="musicEmbed">
-              <p class="music-placeholder">🎧 Playlist em breve — a Soso está montando!</p>
-            </div>
-          </div>
-
-          <div class="music-panel" id="musicPainelOuvindo" style="display:none">
-            <div class="ouvindo-vazio">🎧 Não estou ouvindo nada agora 💜</div>
-          </div>
-        </div>
-
-        <div class="box proximo foco" id="proximoBox">
-          <img class="foco-cover" id="proxCover" alt="" style="display:none">
-          <div class="foco-info">
-            <span class="foco-label">🗳️ Próximo na votação</span>
-            <h3 id="proxNome">Votação aberta</h3>
-            <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
-            <div class="foco-btns">
-              <button class="btn" onclick="mudarAba('sugestoes')">Votar →</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="coluna-direita">
-        <div class="twitch-player-box">
-          <div class="twitch-player-header">
-            <div class="twitch-player-title"><span class="live-indicator" id="headerLiveDot"></span>AO VIVO NA TWITCH</div>
-            <div class="twitch-player-status" id="viewerCountStatus">@asemtet0</div>
-          </div>
-          <div class="twitch-player">
-            <div class="offline-panel" id="offlinePanel">
-              <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
-              <h4>Estamos offline por agora 💜</h4>
-              <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
-              <div class="offline-actions">
-                <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
-                <button class="btn" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
-              </div>
-            </div>
-            <iframe id="twitchIframe" style="display:none" src="" allowfullscreen scrolling="no" title="Live da Soso na Twitch"></iframe>
-          </div>
-          <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
-        </div>
-        <div class="tmon">
-          <div class="tmon-h"><span class="live-indicator" id="panelLiveDot"></span><b>PAINEL DO CANAL</b><span class="pill" id="tmStatus">OFFLINE</span></div>
-          <div class="tmon-b">
-            <div class="tm-three">
-              <div class="tm-t"><small>SEGUIDORES</small><b id="tmSeg">—</b></div>
-              <div class="tm-t"><small>UPTIME</small><b id="tmUp">—</b></div>
-              <div class="tm-t"><small>HORAS / MÊS</small><b id="tmHoras">—</b></div>
-            </div>
-            <div class="tm-t"><small id="tmLbl">ÚLTIMA LIVE</small><p id="tmSub">Carregando…</p></div>
-            <div id="tmFeedWrap" style="display:none">
-              <div class="tm-h4">ATIVIDADE RECENTE</div>
-              <div class="tm-feed" id="tmFeed"></div>
-            </div>
-            <div class="tm-h4">ÚLTIMAS LIVES · CLIQUE PARA REVER</div>
-            <div class="tm-vods" id="tmVods"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="apoio-home">
-      <div class="sbox apoie">
-        <div class="apoie-head">
-          <h3>💜 Apoie o cantinho</h3>
-          <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
-        </div>
-        <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
-
-        <div class="ap-sec ap-recado">
-          <span class="ap-h">💌 Recado da Soso</span>
-          <p id="recadoSoso" class="mini-recado">Sem recadinho no momento. Volte mais tarde! 💜</p>
-        </div>
-
-        <div class="ap-sec ap-top3">
-          <span class="ap-h">🏆 Top 3 apoiadores</span>
-          <div class="top3" id="top3Lista">
-            <div class="top3-card top3-em-breve" onclick="toast('Em breve 💜', 'info')">
-              <span class="t3-medal">🥇</span>
-              <span class="t3-name">Em breve</span>
-            </div>
-            <div class="top3-card top3-em-breve" onclick="toast('Em breve 💜', 'info')">
-              <span class="t3-medal">🥈</span>
-              <span class="t3-name">Em breve</span>
-            </div>
-            <div class="top3-card top3-em-breve" onclick="toast('Em breve 💜', 'info')">
-              <span class="t3-medal">🥉</span>
-              <span class="t3-name">Em breve</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="ap-sec ap-hall">
-          <span class="ap-h">👑 Hall da fama · maiores subs</span>
-          <div class="hall" id="hallLista">
-            <p class="ap-vazio">Em breve os maiores subs da história. 👑</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="sbox sub-hero-box">
-        <span class="sub-hero-crown">👑</span>
-        <h3>Seja Sub</h3>
-        <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho.</p>
-        <div class="sub-hero-btns">
-          <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
-          <a href="#" onclick="abrirSejaSub();return false;" class="btn ghost block">Ver todos os benefícios →</a>
-        </div>
-        <div class="como-funciona">
-          <span class="cf-titulo">✨ Como funciona</span>
-          <ol class="cf-lista">
-            <li><b>1.</b> Vai na Twitch e clica em Inscrever</li>
-            <li><b>2.</b> Escolhe o plano mensal</li>
-            <li><b>3.</b> Volta aqui e usa os emotes no chat 💜</li>
-          </ol>
-        </div>
-        <div class="emotes-preview">
-          <small>Preview dos emotes de sub</small>
-          <div class="emotes-grid" id="emotesGrid"></div>
-        </div>
-      </div>
-    </div>
+<section id="votar" class="pg" hidden>
+  <h2 class="titulo">Votar e sugerir</h2>
+  <div class="duo">
+    <div class="adesivo"><h3>O que eu jogo ou assisto a seguir?</h3><div id="votos"></div></div>
+    <form class="adesivo" id="form">
+      <h3>Mande uma ideia</h3>
+      <label>Seu nome<input id="sNome" maxlength="40" autocomplete="nickname"></label>
+      <label>Tipo<select id="sTipo"><option>Sugestão de jogo</option><option>Sugestão / ideia</option><option>Feedback</option><option>Reportar bug do site</option></select></label>
+      <label>Mensagem<textarea id="sTexto" rows="5" maxlength="1000" required></textarea></label>
+      <input id="sSite" tabindex="-1" autocomplete="off" class="isca" aria-hidden="true">
+      <button class="btn" type="submit">Enviar mensagem</button>
+      <p id="sStatus" role="status" class="mudo"></p>
+    </form>
   </div>
 </section>
 
-<!-- TIER LIST -->
-<section id="sec-tierlist" class="page-section">
-  <div class="section-header">
-    <h1 id="tlTitulo">Tier List de Jogos</h1>
-    <p id="tlSub">Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.</p>
-    <div class="modo" id="modo">
-      <button class="on" data-m="jogos">🎮 Jogos</button>
-      <button data-m="filmes">🎬 Filmes</button>
-    </div>
+<section id="comunidade" class="pg" hidden>
+  <h2 class="titulo">Comunidade</h2>
+  <div class="duo">
+    <div class="adesivo rosa"><h3>Discord</h3><p id="dcInfo">Avisos de live, calls de jogo, memes e resenha.</p><a class="btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Entrar no Discord</a></div>
+    <div class="adesivo"><h3>Seja sub</h3><p>Emotes exclusivos, cargo no Discord, canal só de subs e lives sem anúncios.</p><a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Assinar na Twitch</a></div>
   </div>
-
-  <div class="tools">
-    <input class="search" id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo">
-    <div class="chips" id="chips"></div>
-  </div>
-
-  <section class="stats" id="stats" aria-label="Resumo"></section>
-
-  <div class="drag-hint">🖱️ Arraste os cards entre os tiers para reorganizar</div>
-  <section id="tiers"></section>
-  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificada por ela.</p>
-</section>
-
-<!-- COMUNIDADE -->
-<section id="sec-comunidade" class="page-section">
-  <div class="section-header">
-    <h2>Comunidade</h2>
-    <p>Entre no Discord, veja os clipes, escute a playlist e conheça as regras do cantinho.</p>
-  </div>
-
-  <div class="sub-tabs" id="comunidadeTabs">
-    <button class="sub-tab on" data-tab="discord">💬 Comunidade</button>
-    <button class="sub-tab" data-tab="clipes">🎬 Clipes</button>
-    <button class="sub-tab" data-tab="sub">👑 Seja Sub</button>
-    <button class="sub-tab" data-tab="info">📖 Info</button>
-  </div>
-
-  <div class="sub-panel on" data-panel="discord">
-    <div class="dc-cta">
-      <div>
-        <b>💬 Discord da Soso</b>
-        <span id="dcMembros">Avisos de live, resenha e novidades do cantinho.</span>
-      </div>
-      <a class="btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Entrar no Discord →</a>
-    </div>
-    <div class="dc-info">
-      <p>Aqui é onde a comunidade se reúne fora das lives: avisos de live em primeira mão, memes, calls de jogo e resenha. Um cantinho pra quem gosta de conversar e jogar junto. 💜</p>
-      <ul class="dc-perks">
-        <li>📢 Avisos de live em primeira mão</li>
-        <li>🎮 Calls e sessões de jogo em grupo</li>
-        <li>💬 Chat livre e memes</li>
-        <li>🎬 Indicações de jogos e filmes da galera</li>
-      </ul>
-    </div>
-    <div class="metas-comunidade">
-      <span class="ap-h">🎯 Metas da comunidade</span>
-      <div class="goals3" style="grid-template-columns:1fr 1fr;margin:0">
-        <div class="goalc">
-          <div class="gc-top"><span>💜 Seguidores</span><b id="goalSegNum">…</b></div>
-          <div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div>
-          <small id="goalSegDesc">Carregando…</small>
-        </div>
-        <div class="goalc">
-          <div class="gc-top"><span>🎮 Discord</span><b id="goalDcNum">…</b></div>
-          <div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div>
-          <small id="goalDcDesc">Carregando…</small>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="sub-panel" data-panel="clipes">
-    <div class="clips-box" id="clipsBox" style="display:none">
-      <h3>
-        <span id="clipsTitulo">🎬 Clipes em destaque</span>
-        <a href="https://www.twitch.tv/asemtet0/clips" target="_blank" rel="noopener">Ver todos →</a>
-      </h3>
-      <div class="clips-grid-4" id="clipsGrid"></div>
-    </div>
-    <p class="tm-h4" id="clipsVazio" style="padding:20px;text-align:center;display:none">Nenhum clipe disponível agora. Volta mais tarde! 💜</p>
-  </div>
-
-  <div class="sub-panel" data-panel="sub">
-    <div class="sub-beneficios">
-      <h3>✨ Benefícios exclusivos</h3>
-      <div class="benefits-grid benefits-grid-2">
-        <div class="benefit"><b>🎖️ Cargos exclusivos no Discord</b><span>Apareça com destaque no servidor da comunidade.</span></div>
-        <div class="benefit"><b>🎁 Emotes personalizados pro chat</b><span>Use os emotes exclusivos dos subs em qualquer live.</span></div>
-        <div class="benefit"><b>💜 Sem anúncios</b><span>Assista as lives tranquilamente, sem interrupção.</span></div>
-        <div class="benefit"><b>💬 Canal exclusivo no Discord</b><span>Acesso a um canal privado só pra subs, com resenha e bastidores.</span></div>
-      </div>
-    </div>
-
-    <div class="sub-emotes">
-      <h3>🎨 Preview dos emotes</h3>
-      <p>Um gostinho do que você desbloqueia virando Sub. 💜</p>
-      <div class="emotes-grid" id="emotesGridComunidade"></div>
-    </div>
-
-    <div class="sub-cta">
-      <div>
-        <b>Pronto pra apoiar o cantinho?</b>
-        <span>Vira Sub na Twitch e vem fazer parte!</span>
-      </div>
-      <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch →</a>
-    </div>
-  </div>
-
-  <div class="sub-panel" data-panel="info">
-    <div class="info-grid">
-      <div class="cmds-wrap">
-        <h3 style="color:var(--white);margin-bottom:4px">🤖 Comandos do chat</h3>
-        <p style="color:var(--mute);font-size:.85rem">Busque rápido e copie com 1 clique.</p>
-        <input class="cmds-search" id="buscaCmd" type="search" placeholder="Buscar comando (ex: discord, uptime...)">
-        <table class="cmds-table" id="tabelaCmds">
-          <thead><tr><th>Comando</th><th>O que faz</th><th></th></tr></thead>
-          <tbody id="cmdsBody"></tbody>
-        </table>
-        <p class="cmds-empty" id="cmdsEmpty" style="display:none">Nenhum comando encontrado.</p>
-      </div>
-
-      <div class="rules-wrap">
-        <h3>📜 Regras da comunidade</h3>
-        <div class="rules-grid">
-          <div class="rule-card"><i>01</i><span class="rc-ic">💜</span><div><strong>Respeito em primeiro lugar</strong><p>Nada de discurso de ódio, preconceito, racismo, homofobia ou assédio contra a Soso ou qualquer pessoa no chat.</p></div></div>
-          <div class="rule-card"><i>02</i><span class="rc-ic">🚫</span><div><strong>Sem spoilers nem dicas</strong><p>Não dê dicas ou spoilers de jogos e filmes, a não ser que eu peça. Muitas das minhas perguntas são retóricas!</p></div></div>
-          <div class="rule-card"><i>03</i><span class="rc-ic">🕊️</span><div><strong>Cuide do clima do chat</strong><p>Evite discussões desnecessárias, brigas ou comentários que gerem conflito.</p></div></div>
-          <div class="rule-card"><i>04</i><span class="rc-ic">💬</span><div><strong>Sem spam ou flood</strong><p>Não repita mensagens nem encha o chat de símbolos, pra não atrapalhar a leitura.</p></div></div>
-          <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organizado.</p></div></div>
-          <div class="rule-card"><i>06</i><span class="rc-ic">🎮</span><div><strong>Divirta-se!</strong><p>O objetivo é jogar, conversar e dar risada junto. Caos bom é bem-vindo.</p></div></div>
-        </div>
-        <p class="rules-foot">Vale a mesma regra na Twitch e no Discord. 💜</p>
-      </div>
-    </div>
+  <div class="adesivo"><h3>Clipes</h3><div class="grade-v" id="clipes"><p class="mudo">Sem clipes por enquanto.</p></div></div>
+  <div class="adesivo"><h3>Regras do cantinho</h3>
+    <ol class="regras">
+      <li><b>Respeito primeiro.</b> Sem ódio, preconceito ou assédio, com a Soso ou com qualquer pessoa.</li>
+      <li><b>Sem spoiler nem dica</b> de jogo ou filme, a menos que eu peça. Muita pergunta minha é retórica.</li>
+      <li><b>Clima leve.</b> Evite briga e discussão à toa.</li>
+      <li><b>Sem spam nem flood.</b></li>
+      <li><b>A moderação tem a palavra final.</b></li>
+    </ol>
+    <p class="mudo">Vale na Twitch e no Discord.</p>
   </div>
 </section>
-
-<!-- SETUP -->
-<section id="sec-setup" class="page-section">
-  <div class="section-header">
-    <h2>Meu Setup</h2>
-    <p>As ferramentas que fazem a mágica (e os travamentos) acontecerem. Clique em "Buscar" para procurar na KaBuM! ou na Amazon.</p>
-  </div>
-  <div class="setup-interativo" id="setupInterativo">
-    <img src="img/setup.jpg" alt="Setup da Soso" id="setupImg" onerror="this.parentNode.remove()">
-  </div>
-  <div class="sgrid" id="setupGrid"></div>
-</section>
-
-<!-- SUGESTÕES -->
-<section id="sec-sugestoes" class="page-section">
-  <div class="section-header">
-    <h2>Sugestões de Jogos & Ideias</h2>
-    <p>Quer sugerir um jogo/filme para eu testar em live ou mandar um feedback? Deixe sua ideia anotada aqui!</p>
-  </div>
-
-  <div class="sugestoes-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;">
-    <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
-      <div>
-        <h3>🗳️ Qual o próximo jogo ou filme?</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo/filme que você quer ver na live. Um voto por pessoa 💜</p>
-        <div id="destaqueBox"></div>
-        <div id="votoLista">Carregando votação...</div>
-      </div>
-    </div>
-
-    <div class="setup-box" style="margin:0; display:flex; flex-direction:column; justify-content:flex-start;">
-      <div>
-        <h3>💡 Envie uma mensagem</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Sua mensagem pode virar uma nova ideia, jogo ou correção no site.</p>
-        <div style="display:grid;gap:15px;">
-          <div>
-            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Seu Nome / Apelido</label>
-            <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
-          </div>
-          <div>
-            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Tipo</label>
-            <select id="sugTipo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;outline:none;cursor:pointer;">
-              <option value="Sugestão / ideia">💡 Sugestão / ideia</option>
-              <option value="Sugestão de jogo">🎮 Sugestão de jogo</option>
-              <option value="Feedback">💬 Feedback</option>
-              <option value="Reportar bug do site">🐛 Reportar bug do site</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Mensagem</label>
-            <textarea id="sugTexto" rows="7" placeholder="Escreva sua sugestão, ideia, feedback ou bug..." style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
-          </div>
-          <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-        </div>
-      </div>
-      <div style="margin-top:16px;text-align:center;">
-        <button class="btn big" id="sugBtn" onclick="enviarSugestao()" style="padding:10px 28px">Enviar mensagem 🚀</button>
-        <span id="sugStatus" style="font-size:.85rem;display:none;margin-top:8px;text-align:center;"></span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ADMIN -->
-<section id="sec-admin" class="page-section">
-  <div class="section-header">
-    <h2>⚙️ Painel Admin</h2>
-    <p id="adminSub">Gerencie tudo do site pelo painel.</p>
-  </div>
-  <div id="adminArea"><p class="admin-vazio">Carregando…</p></div>
-</section>
-
 </main>
 
-<footer>
-  <div class="wrapper">
-    <div class="footer-links">
-      <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Twitch</a>
-      <a href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener">Instagram</a>
-      <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Discord</a>
-      <a href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener">TikTok</a>
-    </div>
-    <p class="footer-credit">© 2026 asemtet0 · Feito por <b>lukxsl</b> 💜</p>
-    <div class="footer-updated">🔄 Atualizado em <b id="siteUpdated">—</b></div>
-  </div>
-</footer>
-
-<dialog id="dlg" aria-labelledby="dTitle">
-  <div class="dh">
-    <h3 id="dTitle"></h3>
-    <button class="x" id="dClose" aria-label="Fechar">✕</button>
-  </div>
-  <div class="db" id="dBody"></div>
-</dialog>
-
-<dialog id="confirmDlg" class="confirm-dlg" aria-labelledby="confirmTitle">
-  <div class="confirm-body">
-    <div class="confirm-icon" id="confirmIcon">⚠️</div>
-    <h3 id="confirmTitle">Confirmar?</h3>
-    <p id="confirmText">Tem certeza?</p>
-    <div class="confirm-actions">
-      <button class="btn ghost" id="confirmCancel">Cancelar</button>
-      <button class="btn" id="confirmOk">Confirmar</button>
-    </div>
-  </div>
-</dialog>
-
+<footer>© 2026 asemtet0 · feito por lukxsl · <span id="atualizado"></span></footer>
+<dialog id="dlg"><button class="fechar" aria-label="Fechar" onclick="dlg.close()">✕</button><div id="dlgCorpo"></div></dialog>
 <script src="app.js"></script>
-<script src="admin-ui.js"></script>
 </body>
 </html>
