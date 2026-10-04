@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asemtet0 | Hub da Comunidade</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Ecrã de Manutenção (Oculto por defeito) -->
+  <div id="manutencaoOverlay" class="hidden">
+    <div class="glass-card text-center">
+      <h2>🛠️ Em Manutenção</h2>
+      <p>O site está a receber melhorias. Voltamos em breve!</p>
+    </div>
+  </div>
+
+  <div class="dashboard-layout">
+    <!-- Barra Lateral -->
+    <aside class="sidebar glass-panel">
+      <div class="brand">
+        <div class="avatar-ph">💜</div>
+        <h2>Asemtet0</h2>
+        <span class="badge">Ao Vivo</span>
+      </div>
+      <nav class="nav-menu">
+        <button class="nav-btn active" onclick="mudarEcra('home')">🏠 Início</button>
+        <button class="nav-btn" onclick="mudarEcra('votacao')">🗳️ Votação</button>
+        <button class="nav-btn" onclick="mudarEcra('tierlist')">🎮 Tier List</button>
+        <button class="nav-btn" onclick="mudarEcra('admin')">⚙️ Painel Admin</button>
+      </nav>
+      <div class="sidebar-footer">
+        <a id="btnDonate" href="#" target="_blank" class="btn-neon">Apoiar o Canal</a>
+      </div>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+      <!-- Topo com Aviso Dinâmico -->
+      <header class="top-header">
+        <div id="avisoGlobal" class="aviso-banner hidden"></div>
+        <div class="user-profile">
+          <span id="userStatus">Inicie sessão com o Discord</span>
+          <button class="btn-login">Entrar</button>
+        </div>
+      </header>
+
+      <!-- Área Dinâmica -->
+      <div id="contentArea" class="content-wrapper">
+        
+        <!-- Secção Home -->
+        <section id="homeSection" class="section active">
+          <div class="hero-glass">
+            <h1>Bem-vindo ao Hub da Soso</h1>
+            <p id="recadoSoso" class="subtitle">A carregar novidades...</p>
+          </div>
+        </section>
+
+        <!-- Secção Admin (Onde o admin-ui.js atua) -->
+        <section id="adminSection" class="section">
+          <div class="admin-header">
+            <h1>Painel de Controlo</h1>
+            <p id="adminSub">Faça a gestão de todo o site por aqui.</p>
+          </div>
+          <div id="adminArea" class="admin-grid">
+            <!-- Conteúdo gerado pelo admin-ui.js -->
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Global -->
+  <dialog id="dlg" class="glass-modal">
+    <div class="modal-content">
+      <h3 id="dTitle">Título</h3>
+      <div id="dBody"></div>
+      <button class="btn-close" onclick="dlg.close()">×</button>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+  <script src="admin-ui.js"></script>
+</body>
+</html>
