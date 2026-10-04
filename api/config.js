@@ -10,10 +10,40 @@ async function redis(cmds) {
   return (await r.json()).map(x => x.result);
 }
 
+function safeStr(v, max = 1000) {
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+
+/* Sanitiza o aviso antes de mandar pro front */
+function sanitizarAviso(a) {
+  if (!a || typeof a !== 'object') return null;
+  return {
+    ativo: !!a.ativo,
+    tipo: a.tipo === 'warn' ? 'warn' : 'info',
+    icone: safeStr(a.icone, 8) || '📢',
+    titulo: safeStr(a.titulo, 120) || 'Aviso',
+    texto: safeStr(a.texto, 1000)
+  };
+}
+
+/* Sanitiza listas (top3, hall) */
+function sanitizarLista(list, campos, max) {
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, max).map(item => {
+    if (!item || typeof item !== 'object') return null;
+    const safe = {};
+    for (const c of campos) {
+      safe[c] = item[c] != null ? safeStr(item[c], 80) : null;
+    }
+    return safe.nome ? safe : null;
+  }).filter(Boolean);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.setHeader('CDN-Cache-Control', 'no-store');
   res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+
   if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido' });
   if (!URL_ || !TOKEN) return res.status(200).json({});
 
@@ -30,19 +60,22 @@ export default async function handler(req, res) {
     ]);
 
     let aviso = null, top3 = [], hall = [];
-    try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
-    try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){ top3 = []; }
-    try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){ hall = []; }
+    try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch (e) {}
+    try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch (e) { top3 = []; }
+    try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch (e) { hall = []; }
+
+    const donate = safeStr(donateRaw, 500);
+    const donateUrl = /^https?:\/\//i.test(donate) ? donate : null;
 
     return res.status(200).json({
-      aviso,
-      donate: donateRaw || null,
+      aviso: sanitizarAviso(aviso),
+      donate: donateUrl,
       manutencao: manutRaw === '1',
-      recado: recadoRaw || '',
-      horasMes: horasRaw || '',
-      updatedAt: updatedRaw || null,
-      top3: Array.isArray(top3) ? top3.slice(0, 3) : [],
-      hall: Array.isArray(hall) ? hall.slice(0, 5) : []
+      recado: safeStr(recadoRaw, 500),
+      horasMes: safeStr(horasRaw, 30),
+      updatedAt: safeStr(updatedRaw, 40) || null,
+      top3: sanitizarLista(top3, ['nome', 'valor'], 3),
+      hall: sanitizarLista(hall, ['nome', 'meta'], 5)
     });
   } catch (e) {
     return res.status(200).json({});

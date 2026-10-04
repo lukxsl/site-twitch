@@ -1,6 +1,5 @@
 // Vercel serverless: /api/jogos.js
 // Junta Steam (horas reais) + IGDB (nota, capa, sinopse).
-// Env: STEAM_API_KEY (ou STEAM), TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET
 const STEAM_KEY = process.env.STEAM_API_KEY || process.env.STEAM;
 const STEAM_ID = '76561199823015081';
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
@@ -30,6 +29,16 @@ async function igdbQuery(body) {
   return r.json();
 }
 
+function safeStr(v, max = 2000) {
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+function safeUrl(v) {
+  const s = safeStr(v, 500);
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) return null;
+  return s;
+}
+
 export default async function handler(req, res) {
   if (!STEAM_KEY) {
     return res.status(200).json({
@@ -39,7 +48,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ---------- 1) Steam: horas + appid ----------
     const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
     const r = await fetch(url);
 
@@ -69,12 +77,11 @@ export default async function handler(req, res) {
       .sort((a, b) => b.playtime_forever - a.playtime_forever)
       .slice(0, 60);
 
-    // ---------- 2) IGDB: enriquece com nota, capa, sinopse ----------
     const igdbData = {};
     if (TWITCH_ID && TWITCH_SECRET) {
       try {
         const lotes = [];
-        const nomes = jogados.map(g => g.name.replace(/"/g, '').trim());
+        const nomes = jogados.map(g => String(g.name || '').replace(/["\\]/g, '').trim().slice(0, 120)).filter(Boolean);
         for (let i = 0; i < nomes.length; i += 40) lotes.push(nomes.slice(i, i + 40));
 
         for (const lote of lotes) {
@@ -88,8 +95,8 @@ export default async function handler(req, res) {
                 : null;
               igdbData[g.name.toLowerCase()] = {
                 nota: g.rating ? Math.round(g.rating) / 10 : null,
-                capa,
-                sinopse: g.summary || '',
+                capa: safeUrl(capa),
+                sinopse: safeStr(g.summary, 2000),
                 ano: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null
               };
             }
@@ -98,7 +105,6 @@ export default async function handler(req, res) {
       } catch (e) { /* segue só com Steam */ }
     }
 
-    // ---------- 3) Merge final ----------
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=3600');
     return res.status(200).json({
       total: jogados.length,
@@ -106,14 +112,14 @@ export default async function handler(req, res) {
       jogos: jogados.map(g => {
         const extra = igdbData[g.name.toLowerCase()] || {};
         return {
-          appid: g.appid,
-          nome: g.name,
+          appid: Number(g.appid) || 0,
+          nome: safeStr(g.name, 200),
           horas: Math.round(g.playtime_forever / 6) / 10,
           recente: (g.playtime_2weeks || 0) > 0,
           nota: extra.nota || 0,
           sinopse: extra.sinopse || '',
           ano: extra.ano || null,
-          capa: extra.capa || `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`
+          capa: extra.capa || safeUrl(`https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`)
         };
       })
     });

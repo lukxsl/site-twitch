@@ -15,7 +15,23 @@ const REDIRECT_URI = 'https://asemtet0.vercel.app/api/auth';
 const COOKIE_NAME = 'sessao_site';
 const DIAS_SESSAO = 30;
 
-/* ---------- Helpers de sessão ---------- */
+/* ---------- Rate-limit por IP (anti-abuso simples) ---------- */
+const IP_RATE = new Map();
+function checkIp(req, ms = 3000) {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  const now = Date.now();
+  const last = IP_RATE.get(ip) || 0;
+  if (now - last < ms) return false;
+  IP_RATE.set(ip, now);
+  if (IP_RATE.size > 500) {
+    for (const [k, t] of IP_RATE) {
+      if (now - t > 60000) IP_RATE.delete(k);
+    }
+  }
+  return true;
+}
+
+/* ---------- Helpers ---------- */
 function b64url(str){ return Buffer.from(str).toString('base64url'); }
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(payloadB64){ return createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url'); }
@@ -46,6 +62,16 @@ function pegarCookie(req){
   return m ? m[1] : null;
 }
 
+/* ---------- Sanitização ---------- */
+function safeStr(v, max = 60){
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+function safeAvatar(url){
+  const s = safeStr(url, 300);
+  if(!/^https:\/\/cdn\.discordapp\.com\//.test(s)) return null;
+  return s;
+}
+
 /* ---------- Busca cargo no Redis ---------- */
 async function buscarCargoSalvo(userId){
   if(!URL_ || !TOKEN_R) return null;
@@ -58,11 +84,14 @@ async function buscarCargoSalvo(userId){
     const [raw] = (await r.json()).map(x => x.result);
     if(!raw) return null;
     const dados = JSON.parse(raw);
-    return dados.cargo || null;
+    const cargo = dados.cargo;
+    // Valida cargo contra a whitelist
+    if(!['dev','dono','administrador','moderador'].includes(cargo)) return null;
+    return cargo;
   } catch(e){ return null; }
 }
 
-/* ---------- Salva perfil pra aparecer no painel ---------- */
+/* ---------- Salva perfil ---------- */
 async function salvarPerfil(userId, username, avatar){
   if(!URL_ || !TOKEN_R) return;
   try {
@@ -84,6 +113,7 @@ export default async function handler(req, res){
 
   // ============ Login ============
   if(action === 'login'){
+    if(!checkIp(req, 2000)) return res.status(429).json({ error: 'Aguarde 2s antes de tentar de novo' });
     const state = randomBytes(16).toString('hex');
     res.setHeader('Set-Cookie', `oauth_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
     const params = new URLSearchParams({
@@ -99,6 +129,7 @@ export default async function handler(req, res){
 
   // ============ Callback do Discord ============
   if(action === 'callback' || (req.query && req.query.code)){
+    if(!checkIp(req, 2000)) return res.status(429).json({ error: 'Aguarde 2s' });
     const code = req.query.code;
     const state = req.query.state;
     const stateCookie = (req.headers.cookie || '').match(/oauth_state=([^;]+)/);
@@ -125,10 +156,12 @@ export default async function handler(req, res){
       const me = await meRes.json();
       if(!me.id) return res.status(400).json({ error: 'Falha ao obter usuário' });
 
-      const avatar = me.avatar
+      // Sanitiza dados do Discord antes de usar
+      const rawAvatar = me.avatar
         ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128`
         : `https://cdn.discordapp.com/embed/avatars/${Number(me.discriminator || 0) % 5}.png`;
-      const username = me.global_name || me.username;
+      const avatar = safeAvatar(rawAvatar);
+      const username = safeStr(me.global_name || me.username, 60).replace(/[<>]/g, '') || 'Anônimo';
 
       await salvarPerfil(me.id, username, avatar);
 
