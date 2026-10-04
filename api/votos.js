@@ -1,6 +1,5 @@
 // Vercel serverless: /api/votos.js
-import { createHmac, timingSafeEqual } from 'crypto';
-function iguais(a,b){const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length===y.length&&timingSafeEqual(x,y);}
+import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -24,7 +23,7 @@ function lerSessao(req){
   const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
   if(!m) return null;
   const [payload, sig] = m[1].split('.');
-  if(!payload || !sig || !iguais(assinar(payload), sig)) return null;
+  if(!payload || !sig || assinar(payload) !== sig) return null;
   try {
     const d = JSON.parse(b64urlDecode(payload));
     if(d.exp && Date.now() > d.exp) return null;
@@ -74,9 +73,7 @@ export default async function handler(req, res){
   try {
     const [banido] = await redis([['HEXISTS', 'banidos', sessao.id]]);
     if(banido === 1) return res.status(403).json({ error: 'Você foi banido de votar' });
-  } catch(e){ return res.status(503).json({ error: 'Não foi possível verificar sua conta. Tente de novo.' }); }
-
-  if(req.method === 'POST'){ const o = req.headers.origin; if(o){ try{ if(new URL(o).host !== req.headers.host) return res.status(403).json({ error: 'Origem inválida' }); }catch(e){ return res.status(403).json({ error: 'Origem inválida' }); } } }
+  } catch(e){}
 
   const CICLO = await pegarCiclo();
   const OPCOES = await pegarOpcoes();

@@ -5,8 +5,7 @@
 // POST    { action:'restore', id } → restaura backup
 // POST    { action:'delete', id }  → apaga backup
 // GET     ?action=cron           → cria backup automático (protegido por CRON_SECRET)
-import { createHmac, timingSafeEqual } from 'crypto';
-function iguais(a,b){const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length===y.length&&timingSafeEqual(x,y);}
+import { createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -44,7 +43,7 @@ function lerSessao(req){
   const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
   if(!m) return null;
   const [payload, sig] = m[1].split('.');
-  if(!payload || !sig || !iguais(assinar(payload), sig)) return null;
+  if(!payload || !sig || assinar(payload) !== sig) return null;
   try {
     const d = JSON.parse(b64urlDecode(payload));
     if(d.exp && Date.now() > d.exp) return null;
@@ -127,7 +126,7 @@ export default async function handler(req, res){
       return res.status(500).json({ error: 'CRON_SECRET não configurado' });
     }
     const auth = req.headers.authorization || '';
-    if(!iguais(auth, `Bearer ${CRON_SECRET}`)){
+    if(auth !== `Bearer ${CRON_SECRET}`){
       return res.status(401).json({ error: 'Unauthorized' });
     }
     try{
@@ -142,8 +141,6 @@ export default async function handler(req, res){
   const sessao = lerSessao(req);
   if(!sessao) return res.status(401).json({ error: 'Faça login' });
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
-  if(!['dev','dono'].includes(sessao.cargo)) return res.status(403).json({ error: 'Só dev e dono mexem em backups' });
-  if(req.method === 'POST'){ const o = req.headers.origin; if(o){ try{ if(new URL(o).host !== req.headers.host) return res.status(403).json({ error: 'Origem inválida' }); }catch(e){ return res.status(403).json({ error: 'Origem inválida' }); } } }
 
   const quem = sessao.username || 'anônimo';
 
@@ -196,6 +193,6 @@ export default async function handler(req, res){
 
     return res.status(405).json({ error: 'Método não permitido' });
   } catch(e){
-    return res.status(500).json({ error: 'Erro no backup' });
+    return res.status(500).json({ error: 'Erro no backup: ' + e.message });
   }
 }
