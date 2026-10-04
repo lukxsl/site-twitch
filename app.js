@@ -123,6 +123,14 @@ function ehNovo(item){
   return dias <= 7;
 }
 
+function gerarIniciaisFaixa(nome){
+  if(!nome) return '♪';
+  const palavras = String(nome).trim().split(/\s+/).filter(Boolean);
+  if(!palavras.length) return '♪';
+  if(palavras.length === 1) return palavras[0].slice(0, 2).toUpperCase();
+  return (palavras[0][0] + palavras[1][0]).toUpperCase();
+}
+
 /* ============================================================
    TOAST
    ============================================================ */
@@ -231,6 +239,11 @@ function renderAviso(){
     box.className = 'aviso ' + (AVISO.tipo === 'warn' ? 'warn' : '');
     box.style.display = 'flex';
   } else box.style.display = 'none';
+  // Esconde/mostra o recado do card "Apoie" conforme tem aviso ou não
+  const recadoWrap = document.querySelector('.ap-recado');
+  if(recadoWrap){
+    recadoWrap.style.display = (AVISO && AVISO.ativo && AVISO.texto) ? 'none' : '';
+  }
 }
 
 function renderEmotes(){
@@ -293,7 +306,7 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
-   CARD DE MÚSICA (Playlist + Ouvindo agora com tabs)
+   CARD DE MÚSICA (Playlist + Ouvindo agora)
    ============================================================ */
 function renderPlaylist(){
   const embed = $('musicEmbed'); if(!embed) return;
@@ -347,8 +360,22 @@ function pintarOuvindo(d){
   if(faixa) faixa.textContent = d.faixa || '—';
   if(artista) artista.textContent = d.artista ? `${d.artista}${d.album ? ' · ' + d.album : ''}` : '';
   if(capa){
-    if(d.capa){ capa.src = d.capa; capa.style.display = ''; capa.onerror = () => { capa.style.display = 'none'; }; }
-    else capa.style.display = 'none';
+    if(d.capa){
+      capa.src = d.capa;
+      capa.style.display = '';
+      capa.classList.remove('ouvindo-capa-ph');
+      capa.textContent = '';
+      capa.onerror = () => {
+        capa.removeAttribute('src');
+        capa.classList.add('ouvindo-capa-ph');
+        capa.textContent = gerarIniciaisFaixa(d.faixa);
+      };
+    } else {
+      capa.removeAttribute('src');
+      capa.classList.add('ouvindo-capa-ph');
+      capa.textContent = gerarIniciaisFaixa(d.faixa);
+      capa.style.display = '';
+    }
   }
   if(link){
     if(d.url){ link.href = d.url; link.style.display = ''; }
@@ -399,6 +426,11 @@ function mudarAba(nome, salvar = true){
   if(section) section.classList.add('ativo');
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
+  // Se saiu da aba admin, esquece a sub-página (volta pra home do admin)
+  if(nome !== 'admin'){
+    try { localStorage.removeItem('admin:page'); } catch(e){}
+    ADMIN_PAGE = 'home';
+  }
   window.scrollTo({ top:0, behavior:'smooth' });
   if(nome === 'admin' && typeof carregarAdmin === 'function') carregarAdmin();
 }
@@ -751,7 +783,7 @@ function cartao(j,i){
         ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
         ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
         ${novo}
-        ${j.nota > 0 ? `<span class="nt">${n1(j.nota)}</span>` : ''}
+        ${j.nota > 0 ? `<span class="nt">⭐ ${n1(j.nota)}</span>` : ''}
       </div>
       <div class="cap">
         <span class="cn" style="font-size:.68rem;font-weight:600;line-height:1.2">${esc(j.nome)}</span>
@@ -1251,8 +1283,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (modo === 'jogos') {
       if (j.conquistas && j.conquistas.total) terceiro = `<div><b>${j.conquistas.obtidas}/${j.conquistas.total}</b><span>conquistas</span></div>`;
     } else {
-      if (j.duracao) terceiro = `<div><b>${fmtDuracao(j.duracao)}</b><span>duração</span></div>`;
-      else if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
+      if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
     }
     $('dBody').innerHTML = `
       <div class="mrow">
@@ -1264,7 +1295,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           </div>
           <div class="kv">
             <div><b>${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '—')}</b><span>${m.hl}</span></div>
-            <div><b>${j.nota > 0 ? n1(j.nota) : '—'}</b><span>nota</span></div>
+            <div><b>${j.nota > 0 ? '⭐ ' + n1(j.nota) : '—'}</b><span>nota</span></div>
             ${terceiro}
           </div>
           ${(j.comentario || j.sinopse) ? `<p>${esc(j.comentario || j.sinopse)}</p>` : ''}
