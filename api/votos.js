@@ -15,6 +15,19 @@ const OPCOES_PADRAO = [
     capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
 ];
 
+/* ---------- Rate-limit por usuário ---------- */
+const VOTE_RATE = new Map();
+function voteLimit(userId, ms = 800) {
+  const now = Date.now();
+  const last = VOTE_RATE.get(userId) || 0;
+  if (now - last < ms) return false;
+  VOTE_RATE.set(userId, now);
+  if (VOTE_RATE.size > 1000) {
+    for (const [k, t] of VOTE_RATE) if (now - t > 60000) VOTE_RATE.delete(k);
+  }
+  return true;
+}
+
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
 function lerSessao(req){
@@ -40,18 +53,39 @@ async function redis(cmds){
   return (await r.json()).map(x => x.result);
 }
 
+function safeId(v, max = 40) {
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+function safeStr(v, max = 100) {
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+function safeUrl(v) {
+  const s = safeStr(v, 500);
+  if(!s) return null;
+  if(!/^https?:\/\//i.test(s)) return null;
+  return s;
+}
+
 async function pegarOpcoes(){
   const [raw] = await redis([['GET','votos:config']]);
   if(!raw) return OPCOES_PADRAO;
   try{
     const d = JSON.parse(raw);
-    return Array.isArray(d) && d.length ? d : OPCOES_PADRAO;
+    if(!Array.isArray(d) || !d.length) return OPCOES_PADRAO;
+    // Sanitiza cada opção vinda do Redis (defesa em profundidade)
+    return d.slice(0, 10).map(o => ({
+      id: safeId(o.id) || safeId(o.nome),
+      nome: safeStr(o.nome, 80),
+      tipo: o.tipo === 'filme' ? 'filme' : 'jogo',
+      capa: safeUrl(o.capa)
+    })).filter(o => o.id && o.nome);
   }catch(e){ return OPCOES_PADRAO; }
 }
 
 async function pegarCiclo(){
   const [raw] = await redis([['GET','votos:ciclo_atual']]);
-  return String(raw || '1');
+  const n = Number(raw);
+  return String(Number.isFinite(n) && n > 0 ? n : 1);
 }
 
 function lerVoto(raw){
@@ -84,8 +118,10 @@ export default async function handler(req, res){
     let jaVotou = false;
 
     if(req.method === 'POST'){
-      const id = (req.body || {}).id;
-      if(!OPCOES.some(o => o.id === id)) return res.status(400).json({ error: 'Opção inválida' });
+      if(!voteLimit(sessao.id, 800)) return res.status(429).json({ error: 'Calma! Aguarde um instante.' });
+
+      const id = safeId((req.body || {}).id);
+      if(!id || !OPCOES.some(o => o.id === id)) return res.status(400).json({ error: 'Opção inválida' });
 
       const [anteriorRaw] = await redis([['HGET', kTodos, sessao.id]]);
       const anterior = lerVoto(anteriorRaw);
@@ -96,8 +132,8 @@ export default async function handler(req, res){
       } else {
         const payload = JSON.stringify({
           opcao: id,
-          username: sessao.username || 'Anônimo',
-          avatar: sessao.avatar || null,
+          username: safeStr(sessao.username, 60) || 'Anônimo',
+          avatar: safeUrl(sessao.avatar) || null,
           ts: Date.now()
         });
         const cmds = [['HSET', kTodos, sessao.id, payload]];
@@ -111,7 +147,10 @@ export default async function handler(req, res){
 
     const [flat, meuRaw] = await redis([['HGETALL', kCont], ['HGET', kTodos, sessao.id]]);
     const cont = {};
-    for(let i = 0; i < (flat||[]).length; i += 2) cont[flat[i]] = Number(flat[i+1]);
+    for(let i = 0; i < (flat||[]).length; i += 2) {
+      const n = Number(flat[i+1]);
+      cont[flat[i]] = Number.isFinite(n) && n >= 0 ? n : 0;
+    }
     const meu = lerVoto(meuRaw);
 
     return res.status(200).json({
@@ -121,7 +160,7 @@ export default async function handler(req, res){
       })),
       meuVoto: meu ? meu.opcao : null,
       jaVotou,
-      usuario: { id: sessao.id, username: sessao.username, avatar: sessao.avatar }
+      usuario: { id: sessao.id, username: safeStr(sessao.username, 60), avatar: safeUrl(sessao.avatar) }
     });
   }catch(e){
     return res.status(500).json({ error: 'Erro ao consultar votos' });

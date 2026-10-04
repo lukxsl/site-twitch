@@ -1,6 +1,5 @@
 // Vercel serverless: /api/tierlist.js
 // Se o Redis estiver VAZIO (primeira vez), salva os jogos/filmes padrão.
-// Assim admin e público sempre mostram a mesma coisa.
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
@@ -41,8 +40,41 @@ async function redis(cmds) {
   return (await r.json()).map(x => x.result);
 }
 
+/* Sanitiza cada item vindo do Redis (defesa em profundidade) */
+function sanitizarItem(it) {
+  if (!it || typeof it !== 'object') return null;
+  const safe = {
+    id: String(it.id || '').slice(0, 60),
+    nome: String(it.nome || '').slice(0, 120),
+    tier: ['S','A','B','C','NR'].includes(it.tier) ? it.tier : 'NR',
+    status: String(it.status || '').slice(0, 30),
+    nota: Number(it.nota) || 0,
+    capa: /^https?:\/\//i.test(String(it.capa || '')) ? String(it.capa).slice(0, 500) : null,
+    comentario: String(it.comentario || '').slice(0, 2000),
+    appid: Number(it.appid) || null,
+    horas: Number(it.horas) || 0,
+    duracao: Number(it.duracao) || null,
+    ano: Number(it.ano) || null,
+    adicionadoEm: it.adicionadoEm || null
+  };
+  if (it.conquistas && typeof it.conquistas === 'object') {
+    safe.conquistas = {
+      obtidas: Number(it.conquistas.obtidas) || 0,
+      total: Number(it.conquistas.total) || 0
+    };
+  }
+  if (!safe.id || !safe.nome) return null;
+  return safe;
+}
+
+function sanitizarLista(list) {
+  if (!Array.isArray(list)) return [];
+  return list.slice(0, 500).map(sanitizarItem).filter(Boolean);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido' });
+
   if (!URL_ || !TOKEN) {
     return res.status(200).json({ jogos: JOGOS_PADRAO, filmes: FILMES_PADRAO, aviso: 'Redis não configurado' });
   }
@@ -54,21 +86,26 @@ export default async function handler(req, res) {
     ]);
 
     let jogos, filmes;
-    let comandoSalvar = [];
+    const comandoSalvar = [];
 
-    // Se a chave não existe (primeira vez), seed com o padrão
     if (jogosRaw === null || jogosRaw === undefined) {
       jogos = JOGOS_PADRAO;
       comandoSalvar.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]);
     } else {
-      try { jogos = JSON.parse(jogosRaw); if (!Array.isArray(jogos)) jogos = []; } catch(e){ jogos = []; }
+      try {
+        const parsed = JSON.parse(jogosRaw);
+        jogos = sanitizarLista(parsed);
+      } catch (e) { jogos = []; }
     }
 
     if (filmesRaw === null || filmesRaw === undefined) {
       filmes = FILMES_PADRAO;
       comandoSalvar.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]);
     } else {
-      try { filmes = JSON.parse(filmesRaw); if (!Array.isArray(filmes)) filmes = []; } catch(e){ filmes = []; }
+      try {
+        const parsed = JSON.parse(filmesRaw);
+        filmes = sanitizarLista(parsed);
+      } catch (e) { filmes = []; }
     }
 
     if (comandoSalvar.length) await redis(comandoSalvar);

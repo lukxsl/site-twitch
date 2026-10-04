@@ -1,9 +1,28 @@
 // Vercel serverless: /api/tmdb.js
 // Variável de ambiente: TMDB_TOKEN (API Read Access Token) ou TMDB_API_KEY (chave v3)
-// Uso: /api/tmdb?q=Interestelar&ano=2014   ou   /api/tmdb?id=157336
 const BASE = 'https://api.themoviedb.org/3';
 
+/* Rate-limit por IP (endpoint público) */
+const IP_RATE = new Map();
+function checkIp(req, ms = 500) {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  const now = Date.now();
+  const last = IP_RATE.get(ip) || 0;
+  if (now - last < ms) return false;
+  IP_RATE.set(ip, now);
+  if (IP_RATE.size > 500) {
+    for (const [k, t] of IP_RATE) if (now - t > 60000) IP_RATE.delete(k);
+  }
+  return true;
+}
+
+function safeStr(v, max = 200) {
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+
 export default async function handler(req, res) {
+  if (!checkIp(req, 500)) return res.status(429).json({ error: 'Aguarde um instante' });
+
   const token = process.env.TMDB_TOKEN;
   const key = process.env.TMDB_API_KEY;
   if (!token && !key) return res.status(500).json({ error: 'TMDB não configurado' });
@@ -22,29 +41,26 @@ export default async function handler(req, res) {
     let filmeId = /^\d+$/.test(String(id || '')) ? String(id) : null;
 
     if (!filmeId) {
-      const nome = String(q || '').trim().slice(0, 120);
+      const nome = safeStr(q, 120);
+      const anoLimpo = /^\d{4}$/.test(String(ano || '')) ? String(ano) : null;
       if (!nome) return res.status(400).json({ error: 'Informe q ou id' });
 
       const buscar = async (lang, anoBusca) => {
         const params = { query: nome, include_adult: 'false' };
         if (lang) params.language = lang;
-        if (/^\d{4}$/.test(String(anoBusca || ''))) params.year = String(anoBusca);
+        if (anoBusca) params.year = anoBusca;
         return chamar('/search/movie', params);
       };
 
-      // 1ª tentativa: pt-BR (com ano, se houver)
-      let busca = await buscar('pt-BR', ano);
+      let busca = await buscar('pt-BR', anoLimpo);
       let achado = busca.results && busca.results[0];
 
-      // 2ª tentativa: pt-BR sem ano
       if (!achado) {
         busca = await buscar('pt-BR', null);
         achado = busca.results && busca.results[0];
       }
-
-      // 3ª tentativa: idioma padrão (en-US)
       if (!achado) {
-        busca = await buscar(null, ano);
+        busca = await buscar(null, anoLimpo);
         achado = busca.results && busca.results[0];
       }
 
@@ -58,11 +74,11 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=86400');
     return res.status(200).json({
       id: d.id,
-      titulo: d.title,
+      titulo: safeStr(d.title, 200),
       ano: d.release_date ? Number(d.release_date.slice(0, 4)) : null,
       poster: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : null,
       horas: d.runtime ? Math.round(d.runtime / 6) / 10 : null,
-      sinopse: d.overview || ''
+      sinopse: safeStr(d.overview, 2000)
     });
   } catch (e) {
     return res.status(500).json({ error: 'Erro ao consultar o TMDB' });
