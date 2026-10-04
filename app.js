@@ -70,6 +70,8 @@ let CONFIG_GERAL = {
   aviso: null, donate: null, manutencao: false,
   recado: '', horasMes: '', updatedAt: null, top3: [], hall: []
 };
+let musicaTab = 'playlist';
+let musicaTocando = false;
 
 /* ============================================================
    HELPERS
@@ -80,7 +82,6 @@ const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u030
 const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
 const nivel = cargo => NIVEIS[cargo] || 0;
 
-/* Permissões do usuário atual (carregadas junto com o login) */
 function temPerm(perm){
   if(!USUARIO || !USUARIO.admin) return false;
   if(USUARIO.cargo === 'dev') return true;
@@ -281,10 +282,6 @@ function renderHall(){
 }
 
 function renderHomeExtras(){
-  const horasEl = $('horasMesNum');
-  if(horasEl) horasEl.textContent = CONFIG_GERAL.horasMes || '—';
-  const subEl = $('horasMesSub');
-  if(subEl) subEl.textContent = CONFIG_GERAL.horasMes ? 'de live esse mês' : 'aguardando dados';
   const recadoEl = $('recadoSoso');
   if(recadoEl){
     const r = (CONFIG_GERAL.recado || '').trim();
@@ -295,6 +292,9 @@ function renderHomeExtras(){
   renderHall();
 }
 
+/* ============================================================
+   CARD DE MÚSICA (Playlist + Ouvindo agora com tabs)
+   ============================================================ */
 function renderPlaylist(){
   const embed = $('musicEmbed'); if(!embed) return;
   const url = CONFIG.spotifyPlaylist;
@@ -305,6 +305,82 @@ function renderPlaylist(){
     width="100%" height="380" frameborder="0" allowtransparency="true"
     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
     loading="lazy" title="Playlist do Spotify"></iframe>`;
+}
+
+function trocarMusicaTab(tab){
+  musicaTab = tab;
+  const tabs = document.querySelectorAll('.music-tab');
+  tabs.forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+  const painelPlaylist = $('musicPainelPlaylist');
+  const painelOuvindo = $('musicPainelOuvindo');
+  if(painelPlaylist) painelPlaylist.style.display = tab === 'playlist' ? '' : 'none';
+  if(painelOuvindo) painelOuvindo.style.display = tab === 'ouvindo' ? '' : 'none';
+  if(tab === 'playlist') renderPlaylist();
+  if(tab === 'ouvindo') renderOuvindo();
+}
+window.trocarMusicaTab = trocarMusicaTab;
+
+function renderOuvindo(){
+  const painel = $('musicPainelOuvindo'); if(!painel) return;
+  if(!musicaTocando){
+    painel.innerHTML = `<div class="ouvindo-vazio">🎧 Não estou ouvindo nada agora 💜</div>`;
+    return;
+  }
+  painel.innerHTML = `
+    <div class="ouvindo-now">
+      <img class="ouvindo-capa" id="ouvindoCapa" alt="" loading="lazy">
+      <div class="ouvindo-info">
+        <b id="ouvindoFaixa">—</b>
+        <span id="ouvindoArtista">—</span>
+        <a class="ouvindo-link" id="ouvindoLink" href="#" target="_blank" rel="noopener">▶ Ouvir no Spotify</a>
+      </div>
+    </div>`;
+  if(window.__ultimaMusica) pintarOuvindo(window.__ultimaMusica);
+}
+
+function pintarOuvindo(d){
+  if(!d || !d.tocando) return;
+  const faixa = $('ouvindoFaixa');
+  const artista = $('ouvindoArtista');
+  const capa = $('ouvindoCapa');
+  const link = $('ouvindoLink');
+  if(faixa) faixa.textContent = d.faixa || '—';
+  if(artista) artista.textContent = d.artista ? `${d.artista}${d.album ? ' · ' + d.album : ''}` : '';
+  if(capa){
+    if(d.capa){ capa.src = d.capa; capa.style.display = ''; capa.onerror = () => { capa.style.display = 'none'; }; }
+    else capa.style.display = 'none';
+  }
+  if(link){
+    if(d.url){ link.href = d.url; link.style.display = ''; }
+    else link.style.display = 'none';
+  }
+}
+
+async function carregarOuvindoAgora(){
+  try {
+    const r = await fetch('/api/lastfm', { cache: 'no-store' });
+    if(!r.ok) { musicaTocando = false; return; }
+    const d = await r.json();
+    if(!d || !d.tocando || !d.faixa){
+      musicaTocando = false;
+      window.__ultimaMusica = null;
+      if(musicaTab === 'ouvindo'){
+        trocarMusicaTab('playlist');
+      } else {
+        renderOuvindo();
+      }
+      return;
+    }
+    musicaTocando = true;
+    window.__ultimaMusica = d;
+    if(musicaTab === null) trocarMusicaTab('ouvindo');
+    if(musicaTab === 'ouvindo') {
+      renderOuvindo();
+      pintarOuvindo(d);
+    }
+  } catch(e) {
+    musicaTocando = false;
+  }
 }
 
 function setLivePulse(isLive){
@@ -405,11 +481,10 @@ async function verificarStatusTwitch() {
       setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
     }
 
-    if (data.horasMes != null && !CONFIG_GERAL.horasMes) {
-      CONFIG_GERAL.horasMes = typeof data.horasMes === 'number'
-        ? data.horasMes.toLocaleString('pt-BR') + 'h'
-        : String(data.horasMes);
-      renderHomeExtras();
+    if (data.horasMes != null && g('tmHoras')) {
+      g('tmHoras').textContent = (typeof data.horasMes === 'number' ? data.horasMes : Number(data.horasMes)).toLocaleString('pt-BR') + 'h';
+    } else if (g('tmHoras')) {
+      g('tmHoras').textContent = '—';
     }
 
     if (data.discord && $('dcMembros'))
@@ -419,8 +494,6 @@ async function verificarStatusTwitch() {
     videosTw = data.videos || (data.video ? [data.video] : []);
     g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
     g('tmSeg').textContent = data.followers != null ? data.followers.toLocaleString('pt-BR') : '—';
-    const rec = videosTw.filter(x => x.created_at && Date.now() - new Date(x.created_at) < 14 * 864e5).length;
-    g('tmLives').textContent = videosTw.length ? rec : '—';
     g('tmLbl').textContent = live ? 'AO VIVO AGORA' : 'ÚLTIMA LIVE';
     g('tmSub').textContent = live
       ? `${data.stream.title} · ${data.stream.game_name || ''} · ${data.stream.viewer_count} assistindo`
@@ -469,31 +542,6 @@ document.addEventListener('click', e => {
   const b = e.target.closest('.tm-vod');
   if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]);
 });
-
-/* ============================================================
-   OUVINDO AGORA (Last.fm)
-   ============================================================ */
-async function carregarOuvindoAgora(){
-  const card = $('ouvindoCard'); if(!card) return;
-  try {
-    const r = await fetch('/api/lastfm', { cache: 'no-store' });
-    if(!r.ok) { card.style.display = 'none'; return; }
-    const d = await r.json();
-    if(!d || !d.tocando || !d.faixa){ card.style.display = 'none'; return; }
-
-    $('ouvindoFaixa').textContent = d.faixa;
-    $('ouvindoArtista').textContent = d.artista ? `${d.artista}${d.album ? ' · ' + d.album : ''}` : '';
-    const capa = $('ouvindoCapa');
-    if(d.capa){ capa.src = d.capa; capa.style.display = ''; capa.onerror = () => { capa.style.display = 'none'; }; }
-    else { capa.style.display = 'none'; }
-    const link = $('ouvindoLink');
-    if(d.url){ link.href = d.url; link.style.display = ''; }
-    else link.style.display = 'none';
-    card.style.display = '';
-  } catch(e) {
-    card.style.display = 'none';
-  }
-}
 
 /* ============================================================
    CLIPES
@@ -1141,8 +1189,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   else mudarAba('inicio', false);
 
   renderAviso(); renderEmotes(); renderSiteUpdate(); renderSetup();
-  renderChips(); renderComandos(); renderHomeExtras(); renderPlaylist();
+  renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
+
+  musicaTab = 'playlist';
+  trocarMusicaTab('playlist');
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('.music-tab');
+    if(t) trocarMusicaTab(t.dataset.tab);
+  });
 
   const buscaCmd = $('buscaCmd');
   if(buscaCmd){

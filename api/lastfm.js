@@ -1,8 +1,6 @@
 // Vercel serverless: /api/lastfm.js
 // Puxa "ouvindo agora" do Last.fm.
-// Env:
-//   LASTFM_USER       (ex: asemtet0 — username no Last.fm)
-//   LASTFM_API_KEY    (chave grátis: https://www.last.fm/api/account/create)
+// Env: LASTFM_USER, LASTFM_API_KEY
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
 
@@ -18,7 +16,6 @@ export default async function handler(req, res) {
     const track = d && d.recenttracks && d.recenttracks.track && d.recenttracks.track[0];
     if (!track) return res.status(200).json({ tocando: false });
 
-    // Só retorna se for "tocando agora" (@attr.nowplaying)
     const nowplaying = track['@attr'] && track['@attr'].nowplaying === 'true';
     if (!nowplaying) return res.status(200).json({ tocando: false });
 

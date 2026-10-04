@@ -107,34 +107,30 @@
           </div>
         </div>
 
-        <div class="box ouvindo-card" id="ouvindoCard" style="display:none">
-          <div class="ouvindo-head">
-            <span class="ouvindo-ic">🎵</span>
-            <span class="ouvindo-label">Ouvindo agora</span>
-          </div>
-          <div class="ouvindo-body">
-            <img class="ouvindo-capa" id="ouvindoCapa" alt="" loading="lazy">
-            <div class="ouvindo-info">
-              <b id="ouvindoFaixa">—</b>
-              <span id="ouvindoArtista">—</span>
-              <a class="ouvindo-link" id="ouvindoLink" href="#" target="_blank" rel="noopener">▶ Ouvir no Spotify</a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Playlist do Spotify (movida da aba Conteúdo) -->
         <div class="music-box" id="musicBox">
           <div class="music-head">
             <span class="music-ic" aria-hidden="true">
               <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
             </span>
-            <div>
-              <h3>Playlist da Soso</h3>
+            <div class="music-info">
+              <h3>Música da Soso</h3>
               <p>A trilha sonora que rola nas lives. 💜</p>
             </div>
           </div>
-          <div class="music-embed" id="musicEmbed">
-            <p class="music-placeholder">🎧 Playlist em breve — a Soso está montando!</p>
+
+          <div class="music-tabs" role="tablist">
+            <button class="music-tab on" data-tab="playlist" role="tab">🎵 Playlist</button>
+            <button class="music-tab" data-tab="ouvindo" role="tab">▶ Ouvindo agora</button>
+          </div>
+
+          <div class="music-panel" id="musicPainelPlaylist">
+            <div class="music-embed" id="musicEmbed">
+              <p class="music-placeholder">🎧 Playlist em breve — a Soso está montando!</p>
+            </div>
+          </div>
+
+          <div class="music-panel" id="musicPainelOuvindo" style="display:none">
+            <div class="ouvindo-vazio">🎧 Não estou ouvindo nada agora 💜</div>
           </div>
         </div>
 
@@ -177,7 +173,7 @@
             <div class="tm-three">
               <div class="tm-t"><small>SEGUIDORES</small><b id="tmSeg">—</b></div>
               <div class="tm-t"><small>UPTIME</small><b id="tmUp">—</b></div>
-              <div class="tm-t"><small>LIVES / 14 DIAS</small><b id="tmLives">—</b></div>
+              <div class="tm-t"><small>HORAS / MÊS</small><b id="tmHoras">—</b></div>
             </div>
             <div class="tm-t"><small id="tmLbl">ÚLTIMA LIVE</small><p id="tmSub">Carregando…</p></div>
             <div id="tmFeedWrap" style="display:none">
@@ -192,21 +188,12 @@
     </div>
 
     <div class="apoio-home">
-      <!-- APOIE O CANTINHO -->
       <div class="sbox apoie">
         <div class="apoie-head">
           <h3>💜 Apoie o cantinho</h3>
           <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
         </div>
         <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
-
-        <div class="ap-sec ap-mini-stat">
-          <span class="ap-h">📺 Horas esse mês</span>
-          <div class="mini-stat-line">
-            <b id="horasMesNum">—</b>
-            <small id="horasMesSub">de live esse mês</small>
-          </div>
-        </div>
 
         <div class="ap-sec ap-recado">
           <span class="ap-h">💌 Recado da Soso</span>
@@ -239,7 +226,6 @@
         </div>
       </div>
 
-      <!-- SEJA SUB (HERO) -->
       <div class="sbox sub-hero-box">
         <span class="sub-hero-crown">👑</span>
         <h3>Seja Sub</h3>
@@ -247,6 +233,14 @@
         <div class="sub-hero-btns">
           <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
           <a href="#" onclick="abrirSejaSub();return false;" class="btn ghost block">Ver todos os benefícios →</a>
+        </div>
+        <div class="como-funciona">
+          <span class="cf-titulo">✨ Como funciona</span>
+          <ol class="cf-lista">
+            <li><b>1.</b> Vai na Twitch e clica em Inscrever</li>
+            <li><b>2.</b> Escolhe o plano mensal</li>
+            <li><b>3.</b> Volta aqui e usa os emotes no chat 💜</li>
+          </ol>
         </div>
         <div class="emotes-preview">
           <small>Preview dos emotes de sub</small>
@@ -289,12 +283,11 @@
 
   <div class="sub-tabs" id="comunidadeTabs">
     <button class="sub-tab on" data-tab="discord">💬 Comunidade</button>
-    <button class="sub-tab" data-tab="conteudo">🎬 Conteúdo</button>
+    <button class="sub-tab" data-tab="clipes">🎬 Clipes</button>
     <button class="sub-tab" data-tab="sub">👑 Seja Sub</button>
     <button class="sub-tab" data-tab="info">📖 Info</button>
   </div>
 
-  <!-- COMUNIDADE (Discord + metas) -->
   <div class="sub-panel on" data-panel="discord">
     <div class="dc-cta">
       <div>
@@ -329,8 +322,7 @@
     </div>
   </div>
 
-  <!-- CONTEÚDO (Clipes) -->
-  <div class="sub-panel" data-panel="conteudo">
+  <div class="sub-panel" data-panel="clipes">
     <div class="clips-box" id="clipsBox" style="display:none">
       <h3>
         <span id="clipsTitulo">🎬 Clipes em destaque</span>
@@ -341,7 +333,6 @@
     <p class="tm-h4" id="clipsVazio" style="padding:20px;text-align:center;display:none">Nenhum clipe disponível agora. Volta mais tarde! 💜</p>
   </div>
 
-  <!-- SEJA SUB -->
   <div class="sub-panel" data-panel="sub">
     <div class="sub-beneficios">
       <h3>✨ Benefícios exclusivos</h3>
@@ -368,7 +359,6 @@
     </div>
   </div>
 
-  <!-- INFO (Comandos + Regras lado a lado) -->
   <div class="sub-panel" data-panel="info">
     <div class="info-grid">
       <div class="cmds-wrap">

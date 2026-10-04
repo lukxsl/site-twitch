@@ -442,26 +442,43 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- TIER LIST (com seed automático) -------- */
+       /* -------- TIER LIST (com seed automático + flag pra não reviver) -------- */
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
       if(!(await temPermissao(sessao, 'ver_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
-      const [jogosRaw, filmesRaw] = await redis([['GET','tierlist:jogos'], ['GET','tierlist:filmes']]);
+
+      const [jogosRaw, filmesRaw, seedFeitoRaw] = await redis([
+        ['GET','tierlist:jogos'],
+        ['GET','tierlist:filmes'],
+        ['GET','tierlist:seedFeito']
+      ]);
+
+      const seedFeito = seedFeitoRaw === '1';
       let jogos = [], filmes = [];
       const cmdsSalvar = [];
 
       if(jogosRaw === null || jogosRaw === undefined){
-        jogos = JOGOS_PADRAO;
-        cmdsSalvar.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]);
+        if(!seedFeito){
+          jogos = JOGOS_PADRAO;
+          cmdsSalvar.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]);
+        } else {
+          jogos = [];
+        }
       } else {
         try { jogos = JSON.parse(jogosRaw); if(!Array.isArray(jogos)) jogos = []; } catch(e){ jogos = []; }
       }
 
       if(filmesRaw === null || filmesRaw === undefined){
-        filmes = FILMES_PADRAO;
-        cmdsSalvar.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]);
+        if(!seedFeito){
+          filmes = FILMES_PADRAO;
+          cmdsSalvar.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]);
+        } else {
+          filmes = [];
+        }
       } else {
         try { filmes = JSON.parse(filmesRaw); if(!Array.isArray(filmes)) filmes = []; } catch(e){ filmes = []; }
       }
+
+      if(!seedFeito) cmdsSalvar.push(['SET', 'tierlist:seedFeito', '1']);
 
       if(cmdsSalvar.length) await redis(cmdsSalvar);
 
