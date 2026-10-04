@@ -15,6 +15,8 @@ const COOKIE_NAME = 'sessao_site';
 const LIST_KEY = 'backups:lista';
 const BACKUP_KEY = id => `backups:item:${id}`;
 const MAX_BACKUPS = 5;
+const MAX_BACKUP_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_BACKUP_ID = 60;
 
 const KEYS_PARA_BACKUP = [
   'tierlist:jogos',
@@ -60,6 +62,10 @@ async function redis(cmds){
   return (await r.json()).map(x => x.result);
 }
 
+function safeStr(v, max = 200){
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+
 function novoId(){
   const d = new Date();
   const p = n => String(n).padStart(2, '0');
@@ -76,14 +82,19 @@ async function criarBackup(quem){
   const payload = JSON.stringify({
     id,
     criadoEm: new Date().toISOString(),
-    criadoPor: quem || 'sistema',
+    criadoPor: safeStr(quem, 60) || 'sistema',
     dados
   });
+
+  // Limite de tamanho (evita estourar Redis / memória)
+  if(payload.length > MAX_BACKUP_SIZE) {
+    throw new Error(`Backup muito grande (${(payload.length/1024/1024).toFixed(2)}MB, máx 5MB)`);
+  }
 
   const listaRaw = (await redis([['GET', LIST_KEY]]))[0];
   let lista = [];
   try { lista = listaRaw ? JSON.parse(listaRaw) : []; } catch(e){}
-  lista.unshift({ id, criadoEm: new Date().toISOString(), criadoPor: quem || 'sistema', tamanho: payload.length });
+  lista.unshift({ id, criadoEm: new Date().toISOString(), criadoPor: safeStr(quem, 60) || 'sistema', tamanho: payload.length });
 
   const cmds2 = [
     ['SET', BACKUP_KEY(id), payload],
@@ -106,6 +117,8 @@ async function restaurarBackup(id){
 
   const cmds = [];
   for(const [k, v] of Object.entries(bkp.dados)){
+    // Só restaura chaves conhecidas (evita injetar chaves maliciosas)
+    if(!KEYS_PARA_BACKUP.includes(k)) continue;
     cmds.push(['SET', k, String(v)]);
   }
   if(!cmds.length) return { error: 'Nada pra restaurar' };
@@ -120,7 +133,7 @@ export default async function handler(req, res){
 
   const action = (req.query && req.query.action) || '';
 
-  /* ---------- CRON — protegido obrigatoriamente por CRON_SECRET ---------- */
+  /* ---------- CRON — protegido por CRON_SECRET ---------- */
   if(req.method === 'GET' && action === 'cron'){
     if(!CRON_SECRET){
       return res.status(500).json({ error: 'CRON_SECRET não configurado' });
@@ -142,7 +155,7 @@ export default async function handler(req, res){
   if(!sessao) return res.status(401).json({ error: 'Faça login' });
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
 
-  const quem = sessao.username || 'anônimo';
+  const quem = safeStr(sessao.username, 60) || 'anônimo';
 
   try {
     if(req.method === 'GET' && action === 'list'){
@@ -153,7 +166,7 @@ export default async function handler(req, res){
     }
 
     if(req.method === 'GET' && action === 'download'){
-      const id = String((req.query||{}).id || '').trim();
+      const id = safeStr((req.query||{}).id, MAX_BACKUP_ID);
       if(!id) return res.status(400).json({ error: 'id obrigatório' });
       const raw = (await redis([['GET', BACKUP_KEY(id)]]))[0];
       if(!raw) return res.status(404).json({ error: 'Backup não encontrado' });
@@ -171,14 +184,14 @@ export default async function handler(req, res){
         return res.status(200).json({ ok: true, ...r });
       }
       if(act === 'restore'){
-        const id = String(body.id || '').trim();
+        const id = safeStr(body.id, MAX_BACKUP_ID);
         if(!id) return res.status(400).json({ error: 'id obrigatório' });
         const r = await restaurarBackup(id);
         if(r.error) return res.status(400).json(r);
         return res.status(200).json(r);
       }
       if(act === 'delete'){
-        const id = String(body.id || '').trim();
+        const id = safeStr(body.id, MAX_BACKUP_ID);
         if(!id) return res.status(400).json({ error: 'id obrigatório' });
         await redis([['DEL', BACKUP_KEY(id)]]);
         const raw = (await redis([['GET', LIST_KEY]]))[0];
