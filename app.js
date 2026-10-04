@@ -77,9 +77,10 @@ let musicaTocando = false;
    HELPERS
    ============================================================ */
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
+const urlSegura = u => { try { const x = new URL(u, location.href); return ['https:','http:'].includes(x.protocol) ? x.href : '#'; } catch(e){ return '#'; } };
 const nivel = cargo => NIVEIS[cargo] || 0;
 
 function temPerm(perm){
@@ -378,7 +379,7 @@ function pintarOuvindo(d){
     }
   }
   if(link){
-    if(d.url){ link.href = d.url; link.style.display = ''; }
+    if(d.url){ link.href = urlSegura(d.url); link.style.display = ''; }
     else link.style.display = 'none';
   }
 }
@@ -1246,7 +1247,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   if (CONFIG.donate) {
     const d = $('donateLink');
-    if(d){ d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
+    if(d){ d.href = urlSegura(CONFIG.donate); d.target = '_blank'; d.rel = 'noopener'; }
   }
 
   const modoEl = $('modo');
