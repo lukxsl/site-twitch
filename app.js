@@ -77,10 +77,9 @@ let musicaTocando = false;
    HELPERS
    ============================================================ */
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
-const urlSegura = u => { try { const x = new URL(u, location.href); return ['https:','http:'].includes(x.protocol) ? x.href : '#'; } catch(e){ return '#'; } };
 const nivel = cargo => NIVEIS[cargo] || 0;
 
 function temPerm(perm){
@@ -237,10 +236,9 @@ function renderAviso(){
     $('avisoTexto').textContent = AVISO.texto;
     $('avisoTitulo').textContent = AVISO.titulo || 'Aviso';
     $('avisoIcon').textContent = AVISO.icone || '📢';
-    box.className = 'aviso ' + (AVISO.tipo === 'warn' ? 'warn' : '');
+    box.className = 'aviso reveal in ' + (AVISO.tipo === 'warn' ? 'warn' : '');
     box.style.display = 'flex';
   } else box.style.display = 'none';
-  // Esconde/mostra o recado do card "Apoie" conforme tem aviso ou não
   const recadoWrap = document.querySelector('.ap-recado');
   if(recadoWrap){
     recadoWrap.style.display = (AVISO && AVISO.ativo && AVISO.texto) ? 'none' : '';
@@ -379,7 +377,7 @@ function pintarOuvindo(d){
     }
   }
   if(link){
-    if(d.url){ link.href = urlSegura(d.url); link.style.display = ''; }
+    if(d.url){ link.href = d.url; link.style.display = ''; }
     else link.style.display = 'none';
   }
 }
@@ -427,13 +425,14 @@ function mudarAba(nome, salvar = true){
   if(section) section.classList.add('ativo');
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
-  // Se saiu da aba admin, esquece a sub-página (volta pra home do admin)
   if(nome !== 'admin'){
     try { localStorage.removeItem('admin:page'); } catch(e){}
     ADMIN_PAGE = 'home';
   }
   window.scrollTo({ top:0, behavior:'smooth' });
   if(nome === 'admin' && typeof carregarAdmin === 'function') carregarAdmin();
+  // Re-observa reveals da seção recém-aberta
+  if(section) section.querySelectorAll('.reveal:not(.in)').forEach(el => revealObs && revealObs.observe(el));
 }
 window.mudarAba = mudarAba;
 
@@ -542,7 +541,7 @@ async function verificarStatusTwitch() {
 
     if (data.user) {
       if (data.user.profile_image_url) { const av = g('offlineAvatarImg'); if(av) av.src = data.user.profile_image_url; }
-      if (data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(rgba(11,7,19,.7),rgba(11,7,19,.9)),url(${data.user.offline_image_url})`;
+      if (data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.7),rgba(10,5,17,.9)),url(${data.user.offline_image_url})`;
     }
 
     if (data.stream) {
@@ -787,7 +786,7 @@ function cartao(j,i){
         ${j.nota > 0 ? `<span class="nt">⭐ ${n1(j.nota)}</span>` : ''}
       </div>
       <div class="cap">
-        <span class="cn" style="font-size:.68rem;font-weight:600;line-height:1.2">${esc(j.nome)}</span>
+        <span class="cn">${esc(j.nome)}</span>
         ${j.horas > 0 ? `<span class="ch">${fh(j.horas)}</span>` : ''}
         ${j.duracao > 0 ? `<span class="ch">${fmtDuracao(j.duracao)}</span>` : ''}
       </div>
@@ -985,11 +984,11 @@ function aplicarManutencao(){
     if(!overlay){
       overlay = document.createElement('div');
       overlay.id = 'manutencaoOverlay';
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:radial-gradient(circle at 50% 30%,rgba(168,85,247,.25),#0b0713 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#f3f0ff;font-family:DM Sans,sans-serif';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:radial-gradient(circle at 50% 30%,rgba(168,85,247,.25),#0a0511 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#f5f3ff;font-family:DM Sans,sans-serif';
       overlay.innerHTML = `
         <div style="font-size:4rem;line-height:1;margin-bottom:20px">🔧</div>
         <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;margin-bottom:10px">Estamos em manutenção</h1>
-        <p style="max-width:400px;color:#a19bba;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
+        <p style="max-width:400px;color:#8b7fa3;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
         <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="margin-top:20px;background:#a855f7;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;text-decoration:none">Ir pra Twitch 💜</a>
       `;
       document.body.appendChild(overlay);
@@ -1077,7 +1076,7 @@ function renderVotacao(){
   }
   if(!VOTOS_DADOS.length){
     destBox.innerHTML = '';
-    listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível no momento' : 'Carregando votação…'}</b>${votoStatus === 'erro' ? 'Tente de novo em instantes.' : ''}</div>`;
+    listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível no momento' : 'Carregando votação…'}</b>${votoStatus === 'erro' ? ' Tente de novo em instantes.' : ''}</div>`;
     return;
   }
   const total = VOTOS_DADOS.reduce((a, x) => a + (x.votos || 0), 0);
@@ -1214,6 +1213,11 @@ async function carregarConfigPublica(){
 window.carregarConfigPublica = carregarConfigPublica;
 
 /* ============================================================
+   REVEAL ON SCROLL
+   ============================================================ */
+let revealObs = null;
+
+/* ============================================================
    BOOT
    ============================================================ */
 window.addEventListener('DOMContentLoaded', async () => {
@@ -1247,7 +1251,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   if (CONFIG.donate) {
     const d = $('donateLink');
-    if(d){ d.href = urlSegura(CONFIG.donate); d.target = '_blank'; d.rel = 'noopener'; }
+    if(d){ d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
   }
 
   const modoEl = $('modo');
@@ -1310,6 +1314,38 @@ window.addEventListener('DOMContentLoaded', async () => {
   if(dlgEl){
     $('dClose').addEventListener('click', () => dlgEl.close());
     dlgEl.addEventListener('click', e => { if(e.target === dlgEl) dlgEl.close(); });
+  }
+
+  /* ============================================================
+     REVEAL ON SCROLL + BURGER MENU
+     ============================================================ */
+  revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){ e.target.classList.add('in'); revealObs.unobserve(e.target); }
+    });
+  }, { rootMargin: '0px 0px -60px 0px', threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+  const burger = document.getElementById('navBurger');
+  const navRight = document.getElementById('navRight');
+  if(burger && navRight){
+    burger.addEventListener('click', () => {
+      const open = navRight.classList.toggle('open');
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    navRight.querySelectorAll('.nav-links button').forEach(b => {
+      b.addEventListener('click', () => {
+        navRight.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+      });
+    });
+    // Fecha ao clicar fora (mobile)
+    document.addEventListener('click', (e) => {
+      if(!navRight.classList.contains('open')) return;
+      if(navRight.contains(e.target) || burger.contains(e.target)) return;
+      navRight.classList.remove('open');
+      burger.setAttribute('aria-expanded', 'false');
+    });
   }
 
   await carregarConfigPublica();
