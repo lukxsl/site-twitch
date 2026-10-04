@@ -1,8 +1,17 @@
 // Vercel serverless: /api/lastfm.js
 // Puxa "ouvindo agora" do Last.fm.
-// Env: LASTFM_USER, LASTFM_API_KEY
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
+
+function safeStr(v, max = 200) {
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+function safeUrl(v) {
+  const s = safeStr(v, 500);
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) return null;
+  return s;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -27,11 +36,11 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       tocando: true,
-      faixa: track.name || '',
-      artista: track.artist?.['#text'] || track.artist || '',
-      album: track.album?.['#text'] || '',
-      capa: capa || null,
-      url: track.url || null
+      faixa: safeStr(track.name, 200),
+      artista: safeStr(track.artist?.['#text'] || track.artist, 200),
+      album: safeStr(track.album?.['#text'], 200),
+      capa: safeUrl(capa),
+      url: safeUrl(track.url)
     });
   } catch (e) {
     return res.status(200).json({ tocando: false });

@@ -17,7 +17,6 @@ async function getToken(id, secret) {
   return cache.token;
 }
 
-/* Converte "1h30m45s" ou "45m20s" em minutos */
 function duracaoParaMin(d) {
   if (!d) return 0;
   const h = /(\d+)h/.exec(d);
@@ -26,7 +25,6 @@ function duracaoParaMin(d) {
   return (h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0) + (s ? Math.round(Number(s[1]) / 60) : 0);
 }
 
-/* Soma duração dos VODs do mês atual */
 function calcularHorasMes(videos) {
   if (!Array.isArray(videos)) return 0;
   const agora = new Date();
@@ -40,6 +38,16 @@ function calcularHorasMes(videos) {
     totalMin += duracaoParaMin(v.duration);
   }
   return Math.round(totalMin / 60);
+}
+
+function safeStr(v, max = 200) {
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+function safeUrl(v) {
+  const s = safeStr(v, 500);
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) return null;
+  return s;
 }
 
 export default async function handler(req, res) {
@@ -77,8 +85,16 @@ export default async function handler(req, res) {
     }
 
     const mapVideo = x => ({
-      id: x.id, title: x.title, created_at: x.created_at, duration: x.duration, views: x.view_count,
-      thumbnail: x.thumbnail_url ? x.thumbnail_url.replace('%{width}', '320').replace('%{height}', '180') : null
+      id: safeStr(x.id, 60),
+      title: safeStr(x.title, 200),
+      created_at: safeStr(x.created_at, 40),
+      duration: safeStr(x.duration, 20),
+      views: Number(x.view_count) || 0,
+      thumbnail: safeUrl(
+        x.thumbnail_url
+          ? x.thumbnail_url.replace('%{width}', '320').replace('%{height}', '180')
+          : null
+      )
     });
     const videos = (v.data || []).map(mapVideo);
     const video = videos[0] || null;
@@ -89,11 +105,17 @@ export default async function handler(req, res) {
     if (c && c.game_id) {
       const g = await api(`games?id=${c.game_id}`).catch(() => ({}));
       const box = g.data && g.data[0] && g.data[0].box_art_url;
-      game = { name: c.game_name, box_art: box ? box.replace('{width}', '285').replace('{height}', '380') : null };
+      game = {
+        name: safeStr(c.game_name, 200),
+        box_art: safeUrl(box ? box.replace('{width}', '285').replace('{height}', '380') : null)
+      };
     }
 
     const clips = (cl.data || []).map(x => ({
-      id: x.id, title: x.title, views: x.view_count, thumbnail: x.thumbnail_url
+      id: safeStr(x.id, 60),
+      title: safeStr(x.title, 200),
+      views: Number(x.view_count) || 0,
+      thumbnail: safeUrl(x.thumbnail_url)
     }));
 
     const followersTotal = typeof f.total === 'number' ? f.total : 0;
@@ -102,15 +124,15 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=30');
     return res.status(200).json({
       user: {
-        profile_image_url: user.profile_image_url,
-        offline_image_url: user.offline_image_url || null
+        profile_image_url: safeUrl(user.profile_image_url),
+        offline_image_url: safeUrl(user.offline_image_url) || null
       },
       stream: stream && {
-        title: stream.title,
-        game_name: stream.game_name,
-        viewer_count: stream.viewer_count,
+        title: safeStr(stream.title, 200),
+        game_name: safeStr(stream.game_name, 200),
+        viewer_count: Number(stream.viewer_count) || 0,
         uptime,
-        started_at: stream.started_at
+        started_at: safeStr(stream.started_at, 40)
       },
       followers: followersTotal || null,
       discord: discordTotal || null,

@@ -12,14 +12,16 @@
 <meta property="og:image" content="https://asemtet0.vercel.app/img/banner.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0b0713">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a class="skip" href="#main">Pular para o conteúdo</a>
+<div id="progress" aria-hidden="true"></div>
 
 <nav>
   <div class="wrapper">
-    <div class="logo-container" onclick="mudarAba('inicio')" aria-label="Ir para início">
+    <div class="logo-container" role="button" tabindex="0" onclick="mudarAba('inicio')" onkeydown="if(event.key==='Enter')mudarAba('inicio')" aria-label="Ir para início">
       <img src="img/twitch.png" alt="Twitch" class="twitch-logo-img">
       <div class="logo-text">asemtet<span>0</span></div>
     </div>
@@ -30,14 +32,14 @@
         <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
         <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
         <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
-        <li class="admin-nav"><button onclick="mudarAba('admin')" id="btn-admin">⚙️ Admin</button></li>
+        <li class="admin-nav"><button onclick="mudarAba('admin')" id="btn-admin">Admin</button></li>
       </ul>
       <div class="nav-user" id="navUser"></div>
     </div>
   </div>
 </nav>
 
-<main class="wrapper">
+<main class="wrapper" id="main">
 
 <!-- INÍCIO -->
 <section id="sec-inicio" class="page-section ativo">
@@ -407,7 +409,7 @@
     <p>Quer sugerir um jogo/filme para eu testar em live ou mandar um feedback? Deixe sua ideia anotada aqui!</p>
   </div>
 
-  <div class="sugestoes-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch;">
+  <div class="sugestoes-grid">
     <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
       <div>
         <h3>🗳️ Qual o próximo jogo ou filme?</h3>
@@ -423,12 +425,12 @@
         <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Sua mensagem pode virar uma nova ideia, jogo ou correção no site.</p>
         <div style="display:grid;gap:15px;">
           <div>
-            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Seu Nome / Apelido</label>
-            <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;">
+            <label class="lbl">Seu Nome / Apelido</label>
+            <input type="text" maxlength="40" id="sugNome" placeholder="Ex: ViewerAnônimo" class="field">
           </div>
           <div>
-            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Tipo</label>
-            <select id="sugTipo" style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;outline:none;cursor:pointer;">
+            <label class="lbl">Tipo</label>
+            <select id="sugTipo" class="field">
               <option value="Sugestão / ideia">💡 Sugestão / ideia</option>
               <option value="Sugestão de jogo">🎮 Sugestão de jogo</option>
               <option value="Feedback">💬 Feedback</option>
@@ -436,8 +438,8 @@
             </select>
           </div>
           <div>
-            <label style="display:block;font-size:.9rem;font-weight:600;margin-bottom:6px;color:var(--white);">Mensagem</label>
-            <textarea id="sugTexto" rows="7" placeholder="Escreva sua sugestão, ideia, feedback ou bug..." style="width:100%;background:#1a102d;border:1px solid var(--line);padding:10px 14px;border-radius:10px;color:var(--ink);font-family:inherit;resize:vertical;"></textarea>
+            <label class="lbl">Mensagem</label>
+            <textarea id="sugTexto" maxlength="1000" rows="7" placeholder="Escreva sua sugestão, ideia, feedback ou bug..." class="field"></textarea>
           </div>
           <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
         </div>
@@ -496,5 +498,6 @@
 
 <script src="app.js"></script>
 <script src="admin-ui.js"></script>
+<script src="extras.js" defer></script>
 </body>
 </html>
