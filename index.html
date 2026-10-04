@@ -11,17 +11,17 @@
 <meta property="og:url" content="https://asemtet0.vercel.app/">
 <meta property="og:image" content="https://asemtet0.vercel.app/img/banner.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#0b0713">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0f0817">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="redesign.css">
 </head>
 <body>
-<a class="skip" href="#main">Pular para o conteúdo</a>
-<div id="progress" aria-hidden="true"></div>
 
 <nav>
   <div class="wrapper">
-    <div class="logo-container" role="button" tabindex="0" onclick="mudarAba('inicio')" onkeydown="if(event.key==='Enter')mudarAba('inicio')" aria-label="Ir para início">
+    <div class="logo-container" onclick="mudarAba('inicio')" aria-label="Ir para início">
       <img src="img/twitch.png" alt="Twitch" class="twitch-logo-img">
       <div class="logo-text">asemtet<span>0</span></div>
     </div>
@@ -32,14 +32,14 @@
         <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
         <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
         <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
-        <li class="admin-nav"><button onclick="mudarAba('admin')" id="btn-admin">Admin</button></li>
+        <li class="admin-nav"><button onclick="mudarAba('admin')" id="btn-admin">⚙️ Admin</button></li>
       </ul>
       <div class="nav-user" id="navUser"></div>
     </div>
   </div>
 </nav>
 
-<main class="wrapper" id="main">
+<main class="wrapper">
 
 <!-- INÍCIO -->
 <section id="sec-inicio" class="page-section ativo">
@@ -50,7 +50,15 @@
         <span id="bannerLiveText">AO VIVO AGORA</span>
       </div>
       <img class="banner-bg" src="img/banner.png" alt="" aria-hidden="true">
-      <img id="bannerImg" src="img/banner.png" alt="Bem-vindo ao meu cantinho - asemtet0">
+      <img id="bannerImg" src="img/banner.png" alt="">
+      <div class="banner-copy">
+        <h1>Games, caos e gameplay duvidosa.</h1>
+        <p>Oi, eu sou a Soso. Venha jogar, conversar e votar no próximo jogo da live.</p>
+        <div class="banner-cta">
+          <a class="btn big" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
+          <a class="btn big ghost" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Entrar no Discord</a>
+        </div>
+      </div>
     </div>
 
     <div class="aviso" id="avisoBox" style="display:none">
@@ -273,7 +281,7 @@
 
   <div class="drag-hint">🖱️ Arraste os cards entre os tiers para reorganizar</div>
   <section id="tiers"></section>
-  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificada por ela.</p>
+  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB. Este site usa a API do TMDB, mas não é endossado nem certificado por ela.</p>
 </section>
 
 <!-- COMUNIDADE -->
@@ -410,43 +418,37 @@
   </div>
 
   <div class="sugestoes-grid">
-    <div class="setup-box" id="votoBox" style="margin:0; display:flex; flex-direction:column; justify-content:space-between;">
+    <div class="setup-box" id="votoBox">
       <div>
-        <h3>🗳️ Qual o próximo jogo ou filme?</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Vote no jogo/filme que você quer ver na live. Um voto por pessoa 💜</p>
+        <h3>Qual o próximo jogo ou filme?</h3>
+        <p class="sub-text">Vote no que você quer ver na live. Um voto por pessoa; você pode trocar depois.</p>
         <div id="destaqueBox"></div>
         <div id="votoLista">Carregando votação...</div>
       </div>
     </div>
 
-    <div class="setup-box" style="margin:0; display:flex; flex-direction:column; justify-content:flex-start;">
+    <div class="setup-box">
       <div>
-        <h3>💡 Envie uma mensagem</h3>
-        <p style="color:var(--mute);font-size:.88rem;margin:4px 0 12px;">Sua mensagem pode virar uma nova ideia, jogo ou correção no site.</p>
-        <div style="display:grid;gap:15px;">
-          <div>
-            <label class="lbl">Seu Nome / Apelido</label>
-            <input type="text" maxlength="40" id="sugNome" placeholder="Ex: ViewerAnônimo" class="field">
-          </div>
-          <div>
-            <label class="lbl">Tipo</label>
-            <select id="sugTipo" class="field">
+        <h3>Envie uma mensagem</h3>
+        <p class="sub-text">Sua mensagem pode virar um jogo na live, uma ideia nova ou uma correção no site.</p>
+        <div style="display:grid;gap:16px">
+          <div class="field"><label for="sugNome">Seu nome ou apelido</label>
+            <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo"></div>
+          <div class="field"><label for="sugTipo">Tipo</label>
+            <select id="sugTipo">
               <option value="Sugestão / ideia">💡 Sugestão / ideia</option>
               <option value="Sugestão de jogo">🎮 Sugestão de jogo</option>
               <option value="Feedback">💬 Feedback</option>
               <option value="Reportar bug do site">🐛 Reportar bug do site</option>
-            </select>
-          </div>
-          <div>
-            <label class="lbl">Mensagem</label>
-            <textarea id="sugTexto" maxlength="1000" rows="7" placeholder="Escreva sua sugestão, ideia, feedback ou bug..." class="field"></textarea>
-          </div>
+            </select></div>
+          <div class="field"><label for="sugTexto">Mensagem</label>
+            <textarea id="sugTexto" rows="6" placeholder="Escreva sua sugestão, ideia, feedback ou bug..."></textarea></div>
           <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
         </div>
       </div>
-      <div style="margin-top:16px;text-align:center;">
-        <button class="btn big" id="sugBtn" onclick="enviarSugestao()" style="padding:10px 28px">Enviar mensagem 🚀</button>
-        <span id="sugStatus" style="font-size:.85rem;display:none;margin-top:8px;text-align:center;"></span>
+      <div class="form-actions">
+        <button class="btn big" id="sugBtn" onclick="enviarSugestao()">Enviar mensagem</button>
+        <span id="sugStatus" style="font-size:.85rem;display:none"></span>
       </div>
     </div>
   </div>
@@ -498,6 +500,5 @@
 
 <script src="app.js"></script>
 <script src="admin-ui.js"></script>
-<script src="extras.js" defer></script>
 </body>
 </html>

@@ -815,3 +815,148 @@ footer{margin-top:40px;border-top:2px solid var(--stroke);padding:28px 0;text-al
   nav ul button{white-space:nowrap}
   .box,.sbox,.setup-box,.profile-card-mini{box-shadow:3px 3px 0 var(--shadow)}
 }
+/* ============================================================
+   REDESIGN — camada visual nova (carrega depois do style.css)
+   Direção: "zine de streamer" — superfícies planas, botões táteis,
+   Syne nos títulos, rosa Teto como segundo acento. Sem glow genérico.
+   ============================================================ */
+:root{
+  --bg:#0f0817;--card-bg:#190f27;--ink:#f4edff;--mute:#a79cc2;
+  --purple:#9b5cff;--purple-light:#c7a6ff;--purple-dark:#7a3df0;
+  --pink:#ff6fa5;--line:rgba(199,166,255,.16);--surface-2:#221434;
+  --r-lg:18px;--r-md:12px;
+}
+body{font-family:'Hanken Grotesk','DM Sans',sans-serif;
+  background:var(--bg) radial-gradient(900px 420px at 15% -80px,rgba(155,92,255,.16),transparent 70%) no-repeat}
+body::before,body::after{display:none}
+h1,h2,h3,.logo-text,.stat b,.destaque b,.g .ph{font-family:'Syne','Bricolage Grotesque',sans-serif;letter-spacing:-.02em}
+.logo-text span{color:var(--pink)}
+
+/* ---------- Navegação ---------- */
+nav{background:rgba(15,8,23,.92);backdrop-filter:blur(12px)}
+nav .wrapper{min-height:64px}
+nav ul{gap:4px}
+nav ul button{padding:8px 14px;border-radius:99px;font-size:.88rem;font-weight:600;transition:background .2s,color .2s}
+nav ul button:hover{background:rgba(155,92,255,.12);color:var(--ink)}
+nav ul button.on{background:var(--ink);color:var(--bg)}
+nav ul button::before{display:none}
+
+/* ---------- Superfícies ---------- */
+.box,.sbox,.setup-box,.tier,.stat,.tmon,.twitch-player-box,.profile-card-mini,.rule-card,.benefit,.goalc{
+  border-radius:var(--r-lg);border-color:var(--line);box-shadow:none}
+.box,.sbox,.setup-box,.stat,.goalc,.benefit,.rule-card{background:var(--card-bg)}
+.profile-card-mini{background:var(--card-bg);text-align:left;padding:20px}
+.profile-card-mini::before{display:none}
+.profile-avatar-container{margin:0 0 12px;background:var(--pink);box-shadow:none;width:72px;height:72px}
+.profile-card-mini h2{font-size:1.5rem}
+.profile-card-mini .subloc{margin-bottom:10px}
+.profile-description{font-size:.9rem;line-height:1.5}
+
+/* ---------- Botões táteis ---------- */
+.btn{border-radius:10px;box-shadow:0 3px 0 #4c1d95;transition:transform .12s,box-shadow .12s,background .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 0 #4c1d95}
+.btn:active{transform:translateY(3px);box-shadow:0 0 0 #4c1d95}
+.btn.ghost{box-shadow:none}
+.btn.ghost:active{transform:scale(.98)}
+.btn:disabled{box-shadow:none}
+.si-btn,.profile-social-btn{border-radius:9px}
+
+/* ---------- Home: hero ---------- */
+.hero-container{max-width:1240px;gap:16px}
+.banner{height:clamp(230px,30vw,360px);border-radius:22px;border:1px solid var(--line);box-shadow:none}
+.banner #bannerImg{filter:brightness(.55) saturate(1.1)}
+.banner::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(15,8,23,.92) 0%,rgba(15,8,23,.55) 45%,transparent 80%);z-index:1}
+.banner-copy{position:absolute;z-index:2;left:clamp(18px,4vw,48px);bottom:clamp(18px,4vw,44px);max-width:min(560px,86%);display:flex;flex-direction:column;gap:14px}
+.banner-copy h1{font-size:clamp(2rem,5.2vw,3.8rem);font-weight:800;line-height:1;color:#fff;text-wrap:balance}
+.banner-copy p{color:#d9cdf0;font-size:clamp(.9rem,1.5vw,1.05rem);max-width:44ch}
+.banner-cta{display:flex;gap:10px;flex-wrap:wrap}
+.banner-live-badge{z-index:3;top:16px;left:auto;right:16px;background:var(--pink);border:0;color:#240018;padding:6px 12px}
+.banner-live-badge .live-indicator{background:#240018;box-shadow:none}
+
+.hero-grid{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px}
+.coluna-direita{order:-1;gap:16px}
+.twitch-player-box{background:#07040c;border-radius:var(--r-lg)}
+.twitch-player-header{background:var(--card-bg)}
+.tmon-h{background:var(--surface-2);border-bottom:1px solid var(--line);font-size:.8rem}
+.tmon-h .pill{background:var(--bg);color:var(--mute)}
+.tm-three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tm-t b{font-family:'Syne',sans-serif;font-size:1.5rem}
+.live-indicator{animation:pulso 2s ease-in-out infinite}
+@keyframes pulso{50%{opacity:.4}}
+
+/* Entrada: um único momento orquestrado no carregamento */
+@keyframes sobe{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.banner{animation:sobe .6s both}
+.banner-copy > *{animation:sobe .6s both}
+.banner-copy h1{animation-delay:.12s}.banner-copy p{animation-delay:.2s}.banner-cta{animation-delay:.28s}
+.hero-grid{animation:sobe .6s .35s both}
+.page-section.ativo:not(#sec-inicio){animation:sobe .3s both}
+
+/* ---------- Seções internas ---------- */
+.section-header{margin-bottom:28px;max-width:62ch}
+.section-header h1,.section-header h2{font-size:clamp(2rem,4vw,3rem);font-weight:800}
+.modo,.sub-tabs{background:var(--card-bg);padding:5px}
+.modo button.on,.sub-tab.on{background:var(--ink);color:var(--bg);box-shadow:none}
+
+/* Tier list */
+.tier{grid-template-columns:96px 1fr;margin-bottom:12px}
+.tier .label{font-family:'Syne',sans-serif;font-weight:800}
+.g{width:96px;border-radius:10px}
+.g:hover{transform:translateY(-4px);border-color:var(--pink)}
+.stats{grid-template-columns:repeat(4,1fr)}
+.stat{padding:16px 18px}
+.stat b{font-size:2rem}
+.search,.cmds-search{border-radius:12px;background:var(--card-bg)}
+
+/* Votação e formulário */
+.vt{border-radius:var(--r-md)}
+.vt.meu{border-color:var(--pink)}
+.vt.meu .btn,.vt.meu .vt-top span,.vt.meu .vt-top span::before{color:var(--pink);border-color:var(--pink)}
+.destaque{border-color:var(--pink);background:linear-gradient(135deg,rgba(255,111,165,.14),transparent)}
+.destaque small{color:var(--pink)}
+.sugestoes-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+.sugestoes-grid > .setup-box{margin:0;display:flex;flex-direction:column;gap:16px}
+.sugestoes-grid h3{font-size:1.3rem}
+.sub-text{color:var(--mute);font-size:.9rem;margin:4px 0 14px}
+.field{display:grid;gap:6px}
+.field label{font-size:.88rem;font-weight:700}
+.field input,.field select,.field textarea{width:100%;background:var(--bg);border:1px solid var(--line);padding:12px 14px;border-radius:10px;color:var(--ink);font:inherit;transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--purple);outline:none}
+.field textarea{resize:vertical;min-height:140px}
+.form-actions{margin-top:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+dialog{border-color:var(--line);border-radius:20px}
+footer{background:var(--bg)}
+
+/* ---------- Mobile: barra inferior de navegação ---------- */
+@media(max-width:820px){
+  body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  nav{backdrop-filter:none;background:var(--bg)}
+  nav .wrapper{min-height:56px}
+  .nav-right{gap:0;flex-wrap:nowrap}
+  .nav-user{margin:0;padding:0;border:0}
+  nav ul{position:fixed;left:0;right:0;bottom:0;z-index:120;flex-wrap:nowrap;justify-content:space-around;gap:0;
+    background:var(--card-bg);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  nav ul li{flex:1;min-width:0}
+  nav ul button{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:.66rem;border-radius:10px;white-space:nowrap}
+  nav ul button::before{display:block;font-size:1.15rem;line-height:1}
+  #btn-inicio::before{content:'🏠'}#btn-tierlist::before{content:'🏆'}#btn-comunidade::before{content:'💬'}
+  #btn-setup::before{content:'🖥️'}#btn-sugestoes::before{content:'🗳️'}#btn-admin::before{content:'⚙️'}
+  nav ul button.on{background:rgba(155,92,255,.2);color:var(--ink)}
+  .hero-grid,.apoio-home,.sugestoes-grid{grid-template-columns:1fr}
+  .coluna-direita{order:0}
+  .banner{height:260px;border-radius:18px}
+  .banner::after{background:linear-gradient(0deg,rgba(15,8,23,.95) 5%,rgba(15,8,23,.35) 75%)}
+  .banner-copy{max-width:calc(100% - 36px)}
+  .profile-socials{grid-template-columns:repeat(3,1fr)}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .tier{grid-template-columns:60px 1fr}
+  .g{width:78px}
+  .btn{min-height:44px}
+  .section-header{margin-bottom:20px}
+}
+@media(max-width:420px){
+  .tm-three{grid-template-columns:1fr 1fr 1fr;gap:4px}
+  .tm-t b{font-size:1.15rem}
+}
+.banner-live-badge{max-width:calc(100% - 32px);white-space:normal;line-height:1.25;font-size:.72rem}
