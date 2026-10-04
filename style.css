@@ -719,3 +719,26 @@ body.sou-admin .g[draggable="true"]:active{cursor:grabbing}
   .music-head h3{font-size:1rem}
   .music-tab{font-size:.75rem;padding:7px 10px}
 }
+
+/* ===== Redesign v2 — camada de tema (sobrepõe as regras acima) ===== */
+:root{
+  --bg:#09050f;--card-bg:#130c20;--ink:#f1ecff;--mute:#a79fc2;
+  --purple:#b266ff;--purple-light:#d0a2ff;--purple-dark:#7a35e0;
+  --line:rgba(178,102,255,.2);--r-lg:22px;--r-md:14px;--r-sm:9px;
+}
+body::before,body::after{display:none}
+body{background:radial-gradient(1100px 520px at 12% -8%,rgba(122,53,224,.22),transparent 60%),var(--bg);background-attachment:fixed}
+h1,h2,h3{letter-spacing:-.02em}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--purple-light);outline-offset:2px;border-radius:var(--r-sm)}
+nav{background:rgba(9,5,15,.82);border-bottom:1px solid var(--line)}
+nav ul button{border-radius:999px;transition:background .15s,color .15s}
+nav ul button.on{background:var(--purple);color:#14081f}
+.banner,.profile-card-mini,.twitch-player-box,.tmon,.sbox,.setup-box,.box{border-radius:var(--r-lg);border:1px solid var(--line);background:var(--card-bg)}
+.banner{overflow:hidden;box-shadow:0 18px 60px -24px rgba(122,53,224,.55)}
+.btn{border-radius:999px;font-weight:700;transition:transform .12s,filter .15s}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:translateY(1px)}
+input,textarea,select{background:#1a1129 !important;border:1px solid var(--line) !important;border-radius:var(--r-md) !important;color:var(--ink)}
+input:focus,textarea:focus,select:focus{border-color:var(--purple) !important}
+.page-section.ativo{animation:entra .28s ease-out}
+@keyframes entra{from{opacity:0}to{opacity:1}}
+@media (max-width:760px){.sugestoes-grid{grid-template-columns:1fr !important}}

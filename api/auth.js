@@ -1,7 +1,8 @@
 // Vercel serverless: /api/auth.js
 // Login OAuth2 com Discord + sessão via cookie assinado (HMAC).
 // Salva username/avatar em `user_profiles` pra aparecer no painel de admins.
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
+function iguais(a,b){const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length===y.length&&timingSafeEqual(x,y);}
 
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
@@ -11,9 +12,14 @@ const ADMIN_IDS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.tr
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN_R = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
-const REDIRECT_URI = 'https://asemtet0.vercel.app/api/auth';
+const SEC = (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'development') ? '; Secure' : '';
+const redirectUri = req => {
+  if(process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, '') + '/api/auth';
+  const host = req.headers.host || '';
+  return (/^(localhost|127\.0\.0\.1)/.test(host) ? 'http://' : 'https://') + host + '/api/auth';
+};
 const COOKIE_NAME = 'sessao_site';
-const DIAS_SESSAO = 30;
+const DIAS_SESSAO = 7;
 
 /* ---------- Helpers de sessão ---------- */
 function b64url(str){ return Buffer.from(str).toString('base64url'); }
@@ -27,7 +33,7 @@ function lerToken(cookie){
   if(!cookie) return null;
   const [payload, sig] = String(cookie).split('.');
   if(!payload || !sig) return null;
-  if(assinar(payload) !== sig) return null;
+  if(!iguais(assinar(payload), sig)) return null;
   try {
     const dados = JSON.parse(b64urlDecode(payload));
     if(dados.exp && Date.now() > dados.exp) return null;
@@ -35,10 +41,10 @@ function lerToken(cookie){
   } catch { return null; }
 }
 function setCookie(res, valor, maxAge){
-  res.setHeader('Set-Cookie', `${COOKIE_NAME}=${valor}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`);
+  res.setHeader('Set-Cookie', `${COOKIE_NAME}=${valor}; Path=/; HttpOnly${SEC}; SameSite=Lax; Max-Age=${maxAge}`);
 }
 function limparCookie(res){
-  res.setHeader('Set-Cookie', `${COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
+  res.setHeader('Set-Cookie', `${COOKIE_NAME}=; Path=/; HttpOnly${SEC}; SameSite=Lax; Max-Age=0`);
 }
 function pegarCookie(req){
   const c = req.headers.cookie || '';
@@ -85,10 +91,10 @@ export default async function handler(req, res){
   // ============ Login ============
   if(action === 'login'){
     const state = randomBytes(16).toString('hex');
-    res.setHeader('Set-Cookie', `oauth_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
+    res.setHeader('Set-Cookie', `oauth_state=${state}; Path=/; HttpOnly${SEC}; SameSite=Lax; Max-Age=600`);
     const params = new URLSearchParams({
       client_id: CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri(req),
       response_type: 'code',
       scope: 'identify',
       state
@@ -103,7 +109,7 @@ export default async function handler(req, res){
     const state = req.query.state;
     const stateCookie = (req.headers.cookie || '').match(/oauth_state=([^;]+)/);
     if(!code) return res.status(400).json({ error: 'Faltou code' });
-    if(!stateCookie || stateCookie[1] !== state) return res.status(400).json({ error: 'State inválido (CSRF?)' });
+    if(!state || !stateCookie || stateCookie[1] !== state) return res.status(400).json({ error: 'State inválido (CSRF?)' });
     try {
       const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
         method: 'POST',
@@ -113,11 +119,11 @@ export default async function handler(req, res){
           client_secret: CLIENT_SECRET,
           grant_type: 'authorization_code',
           code,
-          redirect_uri: REDIRECT_URI
+          redirect_uri: redirectUri(req)
         })
       });
       const tok = await tokenRes.json();
-      if(!tok.access_token) return res.status(400).json({ error: 'Falha ao obter token', detalhe: tok });
+      if(!tok.access_token) return res.status(400).json({ error: 'Falha ao obter token' });
 
       const meRes = await fetch('https://discord.com/api/users/@me', {
         headers: { Authorization: `Bearer ${tok.access_token}` }
@@ -147,7 +153,7 @@ export default async function handler(req, res){
       res.writeHead(302, { Location: '/?login=ok' });
       return res.end();
     } catch(e){
-      return res.status(500).json({ error: 'Erro no callback', detalhe: String(e) });
+      return res.status(500).json({ error: 'Erro no callback' });
     }
   }
 

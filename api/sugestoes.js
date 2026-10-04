@@ -45,7 +45,8 @@ export default async function handler(req, res) {
   const autor = String(nome || '').trim().slice(0, 40) || 'Anônimo';
   if (!msg) return res.status(400).json({ error: 'Escreva uma sugestão' });
 
-  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
+  const ip = req.headers['x-real-ip'] || (req.headers['x-forwarded-for'] || '').split(',').pop().trim() || 'x';
+  if(recentes.size > 500) recentes.clear();
   const agora = Date.now();
   if (agora - (recentes.get(ip) || 0) < 30000) return res.status(429).json({ error: 'Aguarde um pouco' });
   recentes.set(ip, agora);
