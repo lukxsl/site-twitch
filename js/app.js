@@ -257,7 +257,7 @@ function garantirAdminCarregado(){
 
   window.__adminCarregando = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'admin-ui.js';
+    s.src = 'js/admin-ui.js';
     s.async = true;
     s.onload = () => {
       window.__adminCarregado = true;
