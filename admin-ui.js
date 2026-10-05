@@ -27,15 +27,86 @@ const CARGOS_ORDEM = ['dev','dono','administrador','moderador'];
 let PERMS_DADOS = null;
 let PERMS_LABELS = null;
 
+/* ============================================================
+   NAVEGAÇÃO LATERAL — estrutura
+   ============================================================ */
+const ADMIN_NAV = [
+  { id: 'home',     label: 'Home',      icon: '📊', perm: null,            accent: 'purple' },
+  { id: 'votacao',  label: 'Votação',   icon: '🗳️', perm: 'ver_votos',     accent: 'purple' },
+  { id: 'tierlist', label: 'Tier List', icon: '🎮', perm: 'ver_tierlist',  accent: 'amber'  },
+  { id: 'admins',   label: 'Admins',    icon: '👥', perm: 'ver_admins',    accent: 'blue'   },
+  { id: 'banidos',  label: 'Banidos',   icon: '🚫', perm: 'ver_banidos',   accent: 'red'    },
+  { id: 'config',   label: 'Config',    icon: '⚙️', perm: 'ver_config',    accent: 'green'  },
+  { id: 'logs',     label: 'Logs',      icon: '📋', perm: 'ver_logs',      accent: 'pink'   },
+  { id: 'backup',   label: 'Backup',    icon: '💾', perm: 'editar_config', accent: 'cyan'   }
+];
+
+function renderSidebar(){
+  const nav = $('adminSidebarNav');
+  if(!nav) return;
+  const items = ADMIN_NAV.filter(it => !it.perm || temPerm(it.perm));
+  nav.innerHTML = items.map(it => `
+    <button class="admin-nav-btn ${ADMIN_PAGE === it.id ? 'on' : ''}"
+            data-page="${it.id}" data-accent="${it.accent}" type="button">
+      <span class="anb-ic">${it.icon}</span>
+      <span class="anb-lbl">${it.label}</span>
+    </button>
+  `).join('');
+
+  const foot = $('adminSidebarFoot');
+  if(foot){
+    if(USUARIO){
+      foot.innerHTML = `
+        <div class="admin-sidebar-user">
+          ${USUARIO.avatar ? `<img src="${esc(USUARIO.avatar)}" alt="">` : '<div class="asu-ph">👤</div>'}
+          <div class="asu-tx">
+            <b>@${esc(USUARIO.username || 'admin')}</b>
+            <small>${LABEL_CARGO[USUARIO.cargo] || USUARIO.cargo || ''}</small>
+          </div>
+        </div>`;
+    } else {
+      foot.innerHTML = '';
+    }
+  }
+}
+
+function bindSidebarOnce(){
+  const side = $('adminSidebar');
+  if(!side || side.dataset.bound) return;
+  side.dataset.bound = '1';
+  side.addEventListener('click', e => {
+    const b = e.target.closest('.admin-nav-btn');
+    if(!b) return;
+    adminIrPara(b.dataset.page);
+  });
+}
+
+/* ============================================================
+   BREADCRUMBS (substitui "← Voltar")
+   ============================================================ */
+function adminVoltarHTML(titulo){
+  return `<div class="admin-crumbs">
+    <button type="button" onclick="adminIrPara('home')">⚙️ Admin</button>
+    <span class="crumb-sep">›</span>
+    <span class="crumb-current">${titulo}</span>
+  </div>`;
+}
+
+/* ============================================================
+   CARREGAR ADMIN (roteador)
+   ============================================================ */
 async function carregarAdmin(){
   const area = $('adminArea'); if(!area) return;
-  const sub = $('adminSub');
+
   if(USUARIO === null){
     area.innerHTML = `<p class="admin-vazio">Verificando login…</p>`;
     await checarLogin();
   }
+
   if(!USUARIO || !USUARIO.admin){
-    if(sub) sub.textContent = 'Acesso restrito.';
+    const shell = document.querySelector('.admin-shell');
+    if(shell) shell.classList.add('admin-shell--locked');
+    renderSidebar();
     area.innerHTML = `<div class="admin-vazio">
       <b>🔒 Acesso restrito</b>
       Só administradores do site podem ver esta área.
@@ -43,25 +114,21 @@ async function carregarAdmin(){
     </div>`;
     return;
   }
+
+  const shell = document.querySelector('.admin-shell');
+  if(shell) shell.classList.remove('admin-shell--locked');
+
   ADMIN_PAGE = localStorage.getItem('admin:page') || 'home';
   ADMIN_TAB = localStorage.getItem('admin:tab') || 'votos';
   ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
 
-  if(sub){
-    sub.textContent = ADMIN_PAGE === 'home' ? 'Gerencie tudo do site pelo painel.'
-                    : ADMIN_PAGE === 'votacao' ? 'Votos e opções da votação.'
-                    : ADMIN_PAGE === 'tierlist' ? 'Editar jogos e filmes.'
-                    : ADMIN_PAGE === 'admins' ? 'Quem pode acessar o painel.'
-                    : ADMIN_PAGE === 'banidos' ? 'Quem não pode votar.'
-                    : ADMIN_PAGE === 'config' ? 'Aviso, doação, recado, horas e manutenção.'
-                    : ADMIN_PAGE === 'logs' ? 'Histórico de ações.'
-                    : ADMIN_PAGE === 'backup' ? 'Backup e restauração.'
-                    : '';
-  }
-  if(ADMIN_PAGE === 'home') renderAdminHome();
+  bindSidebarOnce();
+  renderSidebar();
+
+  if(ADMIN_PAGE === 'home') await renderAdminHome();
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
   else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
-  else if(ADMIN_PAGE === 'admins') renderAdminAdmins();
+  else if(ADMIN_PAGE === 'admins') await renderAdminAdmins();
   else if(ADMIN_PAGE === 'banidos') await renderAdminBanidos();
   else if(ADMIN_PAGE === 'config') await renderAdminConfig();
   else if(ADMIN_PAGE === 'logs') await renderAdminLogs();
@@ -69,39 +136,225 @@ async function carregarAdmin(){
 }
 window.carregarAdmin = carregarAdmin;
 
-function cardAdmin(ic, titulo, desc, pagina){
-  return `<button class="admin-menu-card" onclick="adminIrPara('${pagina}')">
-    <span class="ic">${ic}</span><h3>${titulo}</h3>
-    <p>${desc}</p><span class="cta">Abrir →</span>
-  </button>`;
+/* ============================================================
+   CARD V2 (hover rich)
+   ============================================================ */
+function cardAdminV2({ icon, title, desc, page, accent = 'purple', actions = [] }){
+  const actionsHTML = actions.map(a =>
+    `<button type="button" class="amc-action" data-fn="${esc(a.fn)}">${a.label}</button>`
+  ).join('');
+  return `
+    <button type="button" class="admin-menu-card2" data-accent="${accent}" data-page="${page}">
+      <span class="amc-bar"></span>
+      <span class="amc-ic-badge"><span class="amc-ic">${icon}</span></span>
+      <h3>${title}</h3>
+      <p>${desc}</p>
+      <div class="amc-actions">
+        <span class="amc-open">Abrir →</span>
+        ${actionsHTML}
+      </div>
+    </button>
+  `;
 }
 
-function renderAdminHome(){
+/* ============================================================
+   HOME DO ADMIN (KPIs + alerta + cards)
+   ============================================================ */
+async function renderAdminHome(){
   const area = $('adminArea'); if(!area) return;
-  const cards = [];
-  if(temPerm('ver_votos')) cards.push(cardAdmin('🗳️','Votação',
-    `Ver quem votou${temPerm('editar_opcoes') ? ', editar opções' : ''}${temPerm('resetar_votos') ? ' e resetar' : ''}.`,
-    'votacao'));
-  if(temPerm('ver_tierlist')) cards.push(cardAdmin('🎮','Tier List',
-    temPerm('editar_tierlist') ? 'Adicionar, editar, remover e apagar em massa.' : 'Ver os itens da tier list.',
-    'tierlist'));
-  if(temPerm('ver_banidos')) cards.push(cardAdmin('🚫','Banidos',
-    temPerm('editar_banidos') ? 'Gerenciar quem não pode votar.' : 'Ver quem não pode votar.',
-    'banidos'));
-  if(temPerm('ver_admins')) cards.push(cardAdmin('👥','Admins',
-    temPerm('editar_admins') ? 'Gerenciar quem tem acesso.' : 'Ver quem tem acesso.',
-    'admins'));
-  if(temPerm('ver_config')) cards.push(cardAdmin('⚙️','Config geral',
-    'Aviso, doação, recado, horas, top 3 e hall.',
-    'config'));
-  if(temPerm('ver_logs')) cards.push(cardAdmin('📋','Logs','Histórico do que foi feito no painel.','logs'));
-  if(temPerm('editar_config')) cards.push(cardAdmin('💾','Backup','Criar, baixar e restaurar backups do site.','backup'));
-  area.innerHTML = `<div class="admin-menu">${cards.join('') || '<p class="admin-vazio">Você não tem permissão pra nenhuma seção.</p>'}</div>`;
-}
 
-function adminVoltarHTML(titulo){
-  return `<div class="admin-top"><button class="admin-voltar" onclick="adminIrPara('home')">← Voltar</button><h2>${titulo}</h2></div>`;
+  const crumbs = `<div class="admin-crumbs"><span class="crumb-current">⚙️ Painel</span></div>`;
+  area.innerHTML = crumbs + `<p class="admin-vazio">Carregando painel…</p>`;
+
+  const podeVotos = temPerm('ver_votos');
+  const podeTier = temPerm('ver_tierlist');
+  const podeAdmins = temPerm('ver_admins');
+  const podeBanidos = temPerm('ver_banidos');
+
+  const safeFetch = (url) => fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
+
+  const [votos, tier, admins, banidos] = await Promise.all([
+    podeVotos    ? safeFetch('/api/admin?action=votos') : null,
+    podeTier     ? safeFetch('/api/admin?action=tierlist-get') : null,
+    podeAdmins   ? safeFetch('/api/admin?action=admins-ver') : null,
+    podeBanidos  ? safeFetch('/api/admin?action=banidos-ver') : null
+  ]);
+
+  // KPIs
+  const kpis = [];
+  if(podeVotos && votos){
+    const total = Object.values(votos.contagem || {}).reduce((a,b) => a + (Number(b)||0), 0);
+    kpis.push({
+      icon:'🗳️', value: total, label:'votos', sub:'total da votação',
+      href:'votacao', accent:'purple'
+    });
+  }
+  if(podeTier && tier){
+    const jg = (tier.jogos || []).length;
+    const fl = (tier.filmes || []).length;
+    kpis.push({
+      icon:'🎮', value: jg + fl, label:'itens', sub: `${jg} jogos · ${fl} filmes`,
+      href:'tierlist', accent:'amber'
+    });
+  }
+  if(podeAdmins && admins){
+    const n = (admins.admins || []).length;
+    kpis.push({
+      icon:'👥', value: n, label:'admins', sub:'com acesso ao painel',
+      href:'admins', accent:'blue'
+    });
+  }
+  if(podeBanidos && banidos){
+    const n = (banidos.banidos || []).length;
+    kpis.push({
+      icon:'🚫', value: n, label:'banidos', sub: n === 0 ? 'ninguém banido' : 'não pode votar',
+      href:'banidos', accent:'red'
+    });
+  }
+
+  const kpiHTML = kpis.length ? `
+    <div class="admin-kpis">
+      ${kpis.map(k => `
+        <button type="button" class="admin-kpi" data-accent="${k.accent}" data-page="${k.href}">
+          <span class="akpi-ic">${k.icon}</span>
+          <b class="akpi-val">${k.value}</b>
+          <span class="akpi-lbl">${k.label}</span>
+          <small class="akpi-sub">${esc(k.sub)}</small>
+        </button>
+      `).join('')}
+    </div>` : '';
+
+  // Alerta de manutenção
+  const manutencaoOn = CONFIG_GERAL.manutencao;
+  const podeEditarConfig = temPerm('editar_config');
+  const alertHTML = manutencaoOn ? `
+    <div class="admin-alert admin-alert-danger">
+      <span class="aa-ic">⚠️</span>
+      <div class="aa-tx">
+        <b>Modo manutenção está LIGADO</b>
+        <span>Quem não é admin vê uma tela de "Estamos em manutenção".</span>
+      </div>
+      ${podeEditarConfig ? `<button type="button" class="aa-btn" onclick="desligarManutencao()">🔓 Desligar agora</button>` : ''}
+    </div>` : '';
+
+  // Cards
+  const cards = [];
+  if(temPerm('ver_votos')){
+    const actions = temPerm('resetar_votos')
+      ? [{ label:'🗑️ Resetar', fn:'resetarVotacao()' }] : [];
+    cards.push(cardAdminV2({
+      icon:'🗳️', title:'Votação',
+      desc: `Ver quem votou${temPerm('editar_opcoes') ? ', editar opções' : ''}${temPerm('resetar_votos') ? ' e resetar.' : '.'}`,
+      page:'votacao', accent:'purple', actions
+    }));
+  }
+  if(temPerm('ver_tierlist')){
+    const actions = temPerm('editar_tierlist')
+      ? [{ label:'+ Item', fn:"adminIrPara('tierlist')" }] : [];
+    cards.push(cardAdminV2({
+      icon:'🎮', title:'Tier List',
+      desc: temPerm('editar_tierlist')
+        ? 'Adicionar, editar, remover e importar.'
+        : 'Ver os itens da tier list.',
+      page:'tierlist', accent:'amber', actions
+    }));
+  }
+  if(temPerm('ver_admins')){
+    const actions = temPerm('editar_admins')
+      ? [{ label:'+ Admin', fn:"adminIrPara('admins')" }] : [];
+    cards.push(cardAdminV2({
+      icon:'👥', title:'Admins',
+      desc: temPerm('editar_admins')
+        ? 'Gerenciar quem tem acesso ao painel.'
+        : 'Ver quem tem acesso ao painel.',
+      page:'admins', accent:'blue', actions
+    }));
+  }
+  if(temPerm('ver_banidos')){
+    const actions = temPerm('editar_banidos')
+      ? [{ label:'+ Banir', fn:"adminIrPara('banidos')" }] : [];
+    cards.push(cardAdminV2({
+      icon:'🚫', title:'Banidos',
+      desc: temPerm('editar_banidos')
+        ? 'Gerenciar quem não pode votar.'
+        : 'Ver quem não pode votar.',
+      page:'banidos', accent:'red', actions
+    }));
+  }
+  if(temPerm('ver_config')){
+    cards.push(cardAdminV2({
+      icon:'⚙️', title:'Config geral',
+      desc:'Aviso, doação, recado, horas e manutenção.',
+      page:'config', accent:'green'
+    }));
+  }
+  if(temPerm('ver_logs')){
+    cards.push(cardAdminV2({
+      icon:'📋', title:'Logs',
+      desc:'Histórico do que foi feito no painel.',
+      page:'logs', accent:'pink'
+    }));
+  }
+  if(temPerm('editar_config')){
+    cards.push(cardAdminV2({
+      icon:'💾', title:'Backup',
+      desc:'Criar, baixar e restaurar backups do site.',
+      page:'backup', accent:'cyan',
+      actions: [{ label:'+ Criar agora', fn:'criarBackupManual()' }]
+    }));
+  }
+
+  area.innerHTML = crumbs + alertHTML + kpiHTML + `
+    <div class="admin-menu-grid">
+      ${cards.join('') || '<p class="admin-vazio">Você não tem permissão pra nenhuma seção.</p>'}
+    </div>
+  `;
+
+  // KPIs clicáveis
+  area.querySelectorAll('.admin-kpi').forEach(k => {
+    k.addEventListener('click', () => adminIrPara(k.dataset.page));
+  });
+
+  // Cards + ações rápidas (delegação)
+  const grid = area.querySelector('.admin-menu-grid');
+  if(grid && !grid.dataset.bound){
+    grid.dataset.bound = '1';
+    grid.addEventListener('click', e => {
+      const actionBtn = e.target.closest('.amc-action');
+      if(actionBtn){
+        e.stopPropagation();
+        const fn = actionBtn.dataset.fn;
+        if(fn){ try { (0, eval)(fn); } catch(err){ console.error(err); } }
+        return;
+      }
+      const card = e.target.closest('.admin-menu-card2');
+      if(card){ adminIrPara(card.dataset.page); }
+    });
+  }
 }
+window.renderAdminHome = renderAdminHome;
+
+/* ============================================================
+   ALERTA — desligar manutenção direto da home
+   ============================================================ */
+async function desligarManutencao(){
+  const ok = await confirmar('Desligar manutenção?', 'O site volta ao normal pra todos os visitantes.', '🔓');
+  if(!ok) return;
+  try{
+    const r = await fetch('/api/admin?action=config-set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manutencao: false })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    CONFIG_GERAL.manutencao = false;
+    if(typeof aplicarManutencao === 'function') aplicarManutencao();
+    toast('Manutenção desligada ✅', 'ok');
+    renderAdminHome();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.desligarManutencao = desligarManutencao;
 
 /* ---------- VOTAÇÃO ADMIN ---------- */
 async function carregarAdminVotacao(){
