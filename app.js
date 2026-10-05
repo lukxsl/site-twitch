@@ -74,6 +74,15 @@ let musicaTab = 'playlist';
 let musicaTocando = false;
 let revealObs = null;
 
+// Setup
+const SETUP_VIEW_KEY = 'setup:view';
+let setupView = 'grid';
+let setupBusca = '';
+
+// Sugestões
+let sugTipoAtual = 'Sugestão / ideia';
+let muralFiltro = 'all';
+
 /* ============================================================
    HELPERS
    ============================================================ */
@@ -450,7 +459,6 @@ function mudarAba(nome, salvar = true){
   window.scrollTo({ top:0, behavior:'smooth' });
 
   if(nome === 'admin'){
-    // Lazy load do admin-ui.js — só carrega quando o user entra no admin
     garantirAdminCarregado()
       .then(() => {
         if(typeof carregarAdmin === 'function') carregarAdmin();
@@ -905,86 +913,207 @@ function desenhar(){
 }
 
 /* ============================================================
-   SETUP
+   SETUP — dados + render
    ============================================================ */
-const SETUP = [
-  { t:'🖥️ PC Gamer', col:1, i:[
-    ['🗄️','Gabinete','Risemode Aquarium branco'],['🧠','Processador','Ryzen 9 5900x'],
-    ['🧩','Memória RAM','48GB DDR4'],['🔌','Placa Mãe','X570 TUF Gaming'],
-    ['🎮','Placa de Vídeo','RX 6750 XT'],['💧','Water cooler','Risemode Aura RGB']
-  ]},
-  { t:'💾 Armazenamento & Energia', col:1, i:[
-    ['💾','Armazenamento','SSD 2TB NVMe M2'],['⚡','Fonte','Corsair RM800w']
-  ]},
-  { t:'🖱️ Periféricos & Outros', col:2, i:[
-    ['⌨','Teclado','AULA H88'],['🖱','Mouse','Logitech G502X Superlight'],
-    ['🎧','Headset','Astro A50'],['🎙️','Microfone','FIFINE AM8 Branco'],
-    ['🖥️','Monitor','AOC 240Hz'],['📷','Webcam','Logitech C920']
-  ]},
-  { t:'✨ Wishlist / Sonhos de consumo', col:2, i:[
-    ['🎥','Câmera profissional','Sony ZV-E10'],['🎤','Microfone pro','Shure SM7B']
-  ]}
+const SETUP_DATA = [
+  {
+    id: 'pc',
+    titulo: '💻 PC Gamer',
+    accent: 'blue',
+    tipo: 'real',
+    itens: [
+      { ic:'🗄️', cat:'Gabinete', nome:'Risemode Aquarium branco', ano:2023, nota:8,
+        comentario:'Gabinte branco compacto, airflow ótimo e visual limpo.' },
+      { ic:'🧠', cat:'Processador', nome:'Ryzen 9 5900x', ano:2023, nota:10,
+        comentario:'Monstro pra jogos e streaming ao mesmo tempo. Nunca travou.' },
+      { ic:'🧩', cat:'Memória RAM', nome:'48GB DDR4', ano:2023, nota:9,
+        comentario:'Sobra RAM pra jogar, streamar e editar junto.' },
+      { ic:'🔌', cat:'Placa Mãe', nome:'X570 TUF Gaming', ano:2023, nota:8,
+        comentario:'Ótima construção, várias portas USB e boa dissipação.' },
+      { ic:'🎮', cat:'Placa de Vídeo', nome:'RX 6750 XT', ano:2024, nota:8,
+        comentario:'Roda tudo em 1440p liso. CxB excelente.' },
+      { ic:'💧', cat:'Water cooler', nome:'Risemode Aura RGB', ano:2023, nota:7,
+        comentario:'Mantém a temperatura baixa, RGB de sobra.' }
+    ]
+  },
+  {
+    id: 'arm',
+    titulo: '💾 Armazenamento & Energia',
+    accent: 'cyan',
+    tipo: 'real',
+    itens: [
+      { ic:'💾', cat:'Armazenamento', nome:'SSD 2TB NVMe M2', ano:2024, nota:9,
+        comentario:'Leitura rápida, jogo carrega em segundos.' },
+      { ic:'⚡', cat:'Fonte', nome:'Corsair RM800w', ano:2023, nota:9,
+        comentario:'80 Plus Gold, silenciosa e confiável.' }
+    ]
+  },
+  {
+    id: 'per',
+    titulo: '🖱️ Periféricos & Outros',
+    accent: 'pink',
+    tipo: 'real',
+    itens: [
+      { ic:'⌨️', cat:'Teclado', nome:'AULA H88', ano:2023, nota:8,
+        comentario:'Switch gateron amarelo, ótimo pra digitar e jogar.' },
+      { ic:'🖱️', cat:'Mouse', nome:'Logitech G502X Superlight', ano:2024, nota:10,
+        comentario:'Leve, preciso e com sensor TOP. Melhor mouse que já tive.' },
+      { ic:'🎧', cat:'Headset', nome:'Astro A50', ano:2023, nota:9,
+        comentario:'Áudio muito bom e microfone que capta bem.' },
+      { ic:'🎙️', cat:'Microfone', nome:'FIFINE AM8 Branco', ano:2024, nota:8,
+        comentario:'USB, com ganho bom e acabamento bonito.' },
+      { ic:'🖥️', cat:'Monitor', nome:'AOC 240Hz', ano:2023, nota:9,
+        comentario:'240Hz faz MUITA diferença em FPS.' },
+      { ic:'📷', cat:'Webcam', nome:'Logitech C920', ano:2023, nota:7,
+        comentario:'Clássica, boa pra live. Com luz fica ótima.' }
+    ]
+  },
+  {
+    id: 'sonhos',
+    titulo: '✨ Setup dos sonhos',
+    accent: 'purple',
+    tipo: 'sonho',
+    itens: [
+      { ic:'🎥', cat:'Câmera profissional', nome:'Sony ZV-E10', meta:'Em breve',
+        comentario:'Pra dar um upgrade monstro no visual da live.' },
+      { ic:'🎤', cat:'Microfone pro', nome:'Shure SM7B', meta:'Em breve',
+        comentario:'O sonho de todo streamer, mas precisa de interface.' }
+    ]
+  }
 ];
 
-function renderCategoria(cat){
-  return `
-    <div class="sbox">
-      <h3>${cat.t}</h3>
-      <ul>
-        ${cat.i.map(item => `
-          <li>
-            <div class="si">
-              <div class="si-ic">${item[0]}</div>
-              <div class="si-tx"><small>${item[1]}</small><b>${item[2]}</b></div>
-              <div class="si-btns"><button class="si-btn" data-produto="${esc(item[2])}" aria-label="Buscar ${esc(item[2])}">🔍 Buscar</button></div>
-            </div>
-          </li>
-        `).join('')}
-      </ul>
-    </div>
-  `;
+function setupRender(){
+  const grid = $('setupGrid'); if(!grid) return;
+
+  const q = setupBusca.toLowerCase().trim();
+  const normQ = norm(q);
+
+  grid.className = 'setup-groups view-' + setupView;
+
+  const gruposFiltrados = SETUP_DATA.map(g => {
+    const itens = g.itens.filter(it => {
+      if(!q) return true;
+      return norm(it.nome).includes(normQ) ||
+             norm(it.cat).includes(normQ);
+    });
+    return { ...g, itensFiltrados: itens };
+  }).filter(g => g.itensFiltrados.length > 0);
+
+  if(!gruposFiltrados.length){
+    grid.innerHTML = `
+      <div class="logs-empty">
+        <b>Nenhum item encontrado</b>
+        Tenta buscar outro termo (ex: "mouse", "ryzen", "corsair").
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = gruposFiltrados.map(g => {
+    const isSonho = g.tipo === 'sonho';
+    return `
+      <div class="setup-group ${isSonho ? 'sonho' : ''}" data-accent="${g.accent}">
+        <div class="sg-head">
+          <h3>${g.titulo}</h3>
+          <span class="sg-count">${g.itensFiltrados.length}</span>
+        </div>
+        <div class="sg-list">
+          ${g.itensFiltrados.map((it, i) => {
+            const idx = g.itens.indexOf(it);
+            return `
+              <button type="button" class="setup-item" data-grupo="${g.id}" data-idx="${idx}">
+                <span class="si-ic-wrap" data-ic-cat="${esc(it.cat)}">
+                  <span class="si-ic">${it.ic}</span>
+                  <span class="si-lupa">🔍</span>
+                </span>
+                <span class="si-tx">
+                  <span class="si-cat">${esc(it.cat)}</span>
+                  <span class="si-nome">${esc(it.nome)}</span>
+                  ${!isSonho ? `<span class="si-meta">${it.ano ? it.ano : ''}${it.ano && it.nota ? ' · ' : ''}${it.nota ? '⭐ nota ' + it.nota : ''}</span>` : ''}
+                  ${isSonho && it.meta ? `<span class="si-meta sonho-meta">💫 ${esc(it.meta)}</span>` : ''}
+                </span>
+                <span class="si-set">→</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
-function renderSetup(){
-  const g = $('setupGrid'); if(!g) return;
-  const col1 = SETUP.filter(c => c.col === 1);
-  const col2 = SETUP.filter(c => c.col !== 1);
-  g.innerHTML = `<div class="scol">${col1.map(renderCategoria).join('')}</div><div class="scol">${col2.map(renderCategoria).join('')}</div>`;
-}
+function abrirItemSetup(grupoId, idx){
+  const g = SETUP_DATA.find(x => x.id === grupoId);
+  if(!g) return;
+  const it = g.itens[idx];
+  if(!it) return;
 
-function abrirBuscaItem(produto){
-  $('dTitle').textContent = produto;
+  const isSonho = g.tipo === 'sonho';
+  $('dTitle').textContent = it.nome;
+
+  const metaHTML = isSonho
+    ? `<div class="kv" style="grid-template-columns:repeat(2,1fr)">
+        <div><b>💫</b><span>setup dos sonhos</span></div>
+        <div><b>${it.meta ? esc(it.meta) : '—'}</b><span>meta</span></div>
+       </div>`
+    : `<div class="kv" style="grid-template-columns:repeat(3,1fr)">
+        <div><b>${it.ano || '—'}</b><span>ano</span></div>
+        <div><b>${it.nota ? '⭐ ' + it.nota : '—'}</b><span>nota</span></div>
+        <div><b>${esc(it.cat)}</b><span>categoria</span></div>
+       </div>`;
+
   $('dBody').innerHTML = `
-    <p style="color:var(--mute);font-size:.85rem;margin-bottom:10px">Ajuste o termo se quiser e escolha a loja:</p>
-    <input id="buscaTermo" type="text" value="${esc(produto)}"
-      style="width:100%;background:#1a102d;border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.9rem;margin-bottom:12px">
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <a class="busca-loja kb" id="lnkKabum" href="#" target="_blank" rel="noopener">🛒 KaBuM!</a>
-      <a class="busca-loja am" id="lnkAmazon" href="#" target="_blank" rel="noopener">🛒 Amazon</a>
+    <div class="setup-modal-item">
+      <div class="smi-hero" data-accent="${g.accent}">
+        <span class="smi-hero-ic">${it.ic}</span>
+      </div>
+      <div class="smi-info">
+        <small>${esc(it.cat)}</small>
+        <b>${esc(it.nome)}</b>
+        ${metaHTML}
+        ${it.comentario ? `<p class="smi-coment">${esc(it.comentario)}</p>` : ''}
+        ${!isSonho ? `
+          <div class="smi-actions">
+            <a class="btn" href="https://www.kabum.com.br/busca/${encodeURIComponent(it.nome)}" target="_blank" rel="noopener">🛒 KaBuM!</a>
+            <a class="btn ghost" href="https://www.amazon.com.br/s?k=${encodeURIComponent(it.nome)}" target="_blank" rel="noopener">🛒 Amazon</a>
+          </div>
+        ` : `
+          <div class="smi-aviso">
+            <span>💭</span>
+            <small>Isso ainda é um sonho. Se um dia eu comprar, sai dessa lista e vira realidade 💜</small>
+          </div>
+        `}
+      </div>
     </div>
-    <button class="busca-copiar" id="btnCopiar" type="button">📋 Copiar nome do produto</button>
   `;
-  const input = $('buscaTermo');
-  const atualizar = () => {
-    const q = encodeURIComponent(input.value.trim() || produto);
-    $('lnkKabum').href = `https://www.kabum.com.br/busca/${q}`;
-    $('lnkAmazon').href = `https://www.amazon.com.br/s?k=${q}`;
-  };
-  input.addEventListener('input', atualizar);
-  atualizar();
-  $('btnCopiar').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(input.value); $('btnCopiar').textContent = '✓ Copiado!'; }
-    catch { $('btnCopiar').textContent = 'Erro ao copiar'; }
-    setTimeout(() => { $('btnCopiar').textContent = '📋 Copiar nome do produto'; }, 1600);
-  });
-  input.focus(); input.select();
   $('dlg').showModal();
 }
+window.abrirItemSetup = abrirItemSetup;
+
+function setupSetView(view){
+  setupView = view;
+  try { localStorage.setItem(SETUP_VIEW_KEY, view); } catch(e){}
+  document.querySelectorAll('.svt-btn').forEach(b => {
+    const on = b.dataset.view === view;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  setupRender();
+}
+window.setupSetView = setupSetView;
 
 /* ============================================================
    LOGIN / MANUTENÇÃO
    ============================================================ */
 async function checarLogin(){
+  // 🆕 Modo preview — força visitante (não loga como admin)
+  if(location.search.includes('preview=1')){
+    USUARIO = null;
+    renderLogin();
+    document.body.classList.remove('sou-admin');
+    aplicarManutencao();
+    return;
+  }
+
   try{
     const r = await fetch('/api/auth?action=me');
     const d = await r.json();
@@ -1069,6 +1198,7 @@ function aplicarVotos(d){
     if(d.usuario && !USUARIO) USUARIO = { ...d.usuario };
   }
 }
+
 async function carregarVotosApi(){
   await checarLogin();
   if(!USUARIO){ votoStatus = 'sem-login'; renderVotacao(); return; }
@@ -1089,7 +1219,13 @@ function renderVotacao(){
   const proxBarWrap = $('proxBarWrap');
   const proxBarI = $('proxBarI');
 
+  // Info topo
+  const infoTop = $('votoInfoTop');
+  const totalEl = $('votoTotal');
+  const statusEl = $('votoStatus');
+
   if(!USUARIO){
+    if(infoTop) infoTop.style.display = 'none';
     destBox.innerHTML = '';
     listaBox.innerHTML = `
       <div class="voto-bloqueado">
@@ -1106,18 +1242,31 @@ function renderVotacao(){
     return;
   }
   if(!VOTOS_DADOS.length){
+    if(infoTop) infoTop.style.display = 'none';
     destBox.innerHTML = '';
     listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível no momento' : 'Carregando votação…'}</b>${votoStatus === 'erro' ? ' Tente de novo em instantes.' : ''}</div>`;
     return;
   }
+
   const total = VOTOS_DADOS.reduce((a, x) => a + (x.votos || 0), 0);
+  const totalPessoas = VOTOS_DADOS.length; // totais opções
   const ord = [...VOTOS_DADOS].sort((a, b) => (b.votos || 0) - (a.votos || 0));
   const pct = v => total ? Math.round((v || 0) / total * 100) : 0;
+
+  // Info topo
+  if(infoTop) infoTop.style.display = '';
+  if(totalEl) totalEl.textContent = `${total} voto${total === 1 ? '' : 's'} · ${total > 0 ? '1 pessoa votou' : 'aguardando'}`;
+  if(statusEl){
+    const dot = statusEl.querySelector('.vit-dot');
+    if(dot) dot.classList.remove('pulse');
+  }
+
   const btn = (it) => {
     const meu = meuVoto === it.id;
     if(meu) return `<button class="btn ghost" disabled>Votado ✓</button>`;
-    return `<button class="btn" onclick="votar('${it.id}')">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
+    return `<button class="btn" onclick="votar('${it.id}', event)">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
   };
+
   if(total > 0){
     const l = ord[0], p = pct(l.votos);
     destBox.innerHTML = `
@@ -1144,6 +1293,7 @@ function renderVotacao(){
     $('proxNome').textContent = 'Votação aberta';
     $('proxInfo').textContent = 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
+
   const resto = total > 0 ? ord.slice(1) : ord;
   listaBox.innerHTML = resto.map((it, i) => {
     const p = pct(it.votos);
@@ -1153,26 +1303,34 @@ function renderVotacao(){
     const votos = it.votos || 0;
     const diff = (ord[0] ? ord[0].votos : 0) - votos;
     let statusTxt, statusCls;
-    if (votos === 0) { statusTxt = 'Aguardando o primeiro voto'; statusCls = 'zero'; }
+    if (votos === 0) { statusTxt = 'Nenhum voto ainda'; statusCls = 'zero'; }
     else if (diff === 0) { statusTxt = 'Empatado com o 1º lugar 🔥'; statusCls = 'close'; }
     else if (diff === 1) { statusTxt = 'Apenas 1 voto atrás do líder'; statusCls = 'close'; }
     else { statusTxt = `${diff} votos atrás do líder`; statusCls = ''; }
     return `
-      <div class="vt ${meu ? 'meu' : ''}">
+      <div class="vt ${meu ? 'meu' : ''}" data-id="${esc(it.id)}">
+        ${meu ? '<span class="vt-badge-meu">✓ Seu voto</span>' : ''}
         <span class="vt-rank" title="${posicao}º lugar">${medalha}</span>
         ${it.capa ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" class="vt-img" onerror="this.style.display='none'">` : '<div class="vt-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>'}
         <div class="vt-info">
           <div class="vt-top"><span>${esc(it.nome)}</span><b>${posicao}º · ${p}%</b></div>
           <span class="vt-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
         </div>
-        <div class="goal-bar"><i style="width:${p}%"></i></div>
+        <div class="vt-bar-wrap">
+          <div class="vt-bar">
+            <i style="width:${votos > 0 ? Math.max(p, 8) : 0}%"></i>
+            ${votos === 0 ? '<span class="vt-bar-vazio">sem votos</span>' : ''}
+          </div>
+        </div>
         ${btn(it)}
       </div>`;
-  }).join('') + `<div class="vt-total">Total: ${total} voto${total === 1 ? '' : 's'}</div>`;
+  }).join('') + `<div class="vt-total">Total: ${total} voto${total === 1 ? '' : 's'} · ${ord.length} opç${ord.length === 1 ? 'ão' : 'ões'}</div>`;
 }
 
-async function votar(id){
+async function votar(id, event){
   if(!USUARIO) return;
+  const card = event?.target?.closest('.vt') || event?.target?.closest('.destaque');
+  if(card) card.classList.add('voting');
   try{
     const r = await fetch('/api/votos', {
       method:'POST',
@@ -1185,7 +1343,10 @@ async function votar(id){
       toast(d.error || 'Você foi banido de votar', 'erro');
       return;
     }
-    if(r.ok) aplicarVotos(await r.json());
+    if(r.ok){
+      aplicarVotos(await r.json());
+      toast('Voto registrado! 💜', 'ok');
+    }
   }catch(e){}
   renderVotacao();
 }
@@ -1194,13 +1355,68 @@ window.votar = votar;
 /* ============================================================
    SUGESTÕES
    ============================================================ */
+function setupSugForm(){
+  const chips = document.querySelectorAll('#sugTipoChips .st-chip');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      sugTipoAtual = chip.dataset.tipo;
+      const sel = $('sugTipo');
+      if(sel) sel.value = sugTipoAtual;
+    });
+  });
+
+  const ta = $('sugTexto');
+  const counter = $('sugCounter');
+  const btn = $('sugBtn');
+  const nomeInput = $('sugNome');
+
+  function atualizarEstadoBtn(){
+    if(!btn) return;
+    const txt = (ta?.value || '').trim();
+    btn.disabled = txt.length < 3;
+  }
+
+  if(ta){
+    ta.addEventListener('input', () => {
+      if(counter) counter.textContent = `${ta.value.length} / 1000`;
+      ta.classList.remove('erro');
+      atualizarEstadoBtn();
+    });
+  }
+
+  if(nomeInput){
+    nomeInput.addEventListener('input', () => {
+      nomeInput.classList.remove('erro');
+    });
+  }
+
+  atualizarEstadoBtn();
+
+  // Botão de doação no final da aba sugestões
+  const donateCta = $('donateCtaSugestoes');
+  if(donateCta && CONFIG.donate){
+    donateCta.href = CONFIG.donate;
+  }
+}
+
 async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
-  const tipo = $('sugTipo') ? $('sugTipo').value : '';
+  const tipo = sugTipoAtual || 'Sugestão / ideia';
   const texto = $('sugTexto').value.trim();
   const btn = $('sugBtn');
+  const success = $('sugSuccess');
+
   if($('sugSite').value) return;
-  if(!texto){ toast('Escreva sua mensagem!', 'warn'); return; }
+
+  // Validação visual
+  if(!texto || texto.length < 3){
+    $('sugTexto').classList.add('erro');
+    toast('Escreve algo antes de enviar! 💜', 'warn');
+    return;
+  }
+
   btn.disabled = true;
   try{
     const res = await fetch('/api/sugestoes', {
@@ -1210,8 +1426,19 @@ async function enviarSugestao(){
     let dados = null;
     try { dados = await res.json(); } catch(e){}
     if(res.ok){
+      // Esconde o form e mostra success
+      $('sugNome').value = '';
+      $('sugTexto').value = '';
+      if($('sugCounter')) $('sugCounter').textContent = '0 / 1000';
+
+      if(success){
+        success.hidden = false;
+        setTimeout(() => { success.hidden = true; }, 5000);
+      }
       toast('Mensagem enviada! Obrigado 💜', 'ok');
-      $('sugNome').value = ''; $('sugTexto').value = '';
+
+      // Atualiza mural (se tiver API)
+      carregarMural();
     } else if(res.status === 429){ toast('Calma! Aguarde alguns segundos.', 'warn'); }
     else if(res.status === 500 && dados && dados.error === 'Webhook não configurado'){ toast('⚠️ Webhook do Discord não configurado.', 'erro'); }
     else if(res.status === 502){ toast('⚠️ Discord recusou o envio.', 'erro'); }
@@ -1220,9 +1447,73 @@ async function enviarSugestao(){
     toast('Sem conexão com o servidor.', 'erro');
   }finally{
     btn.disabled = false;
+    setTimeout(() => {
+      const txt = ($('sugTexto')?.value || '').trim();
+      if(btn) btn.disabled = txt.length < 3;
+    }, 100);
   }
 }
 window.enviarSugestao = enviarSugestao;
+
+async function carregarMural(){
+  const lista = $('muralLista'); if(!lista) return;
+  try{
+    const r = await fetch('/api/sugestoes');
+    if(!r.ok) throw new Error('falha');
+    const d = await r.json();
+    const itens = Array.isArray(d.itens) ? d.itens : [];
+    if(!itens.length){
+      lista.innerHTML = `
+        <div class="mural-empty">
+          <span>✨</span>
+          <b>Mural em breve</b>
+          <small>Quando a galera começar a mandar sugestões, elas aparecem aqui 💜</small>
+        </div>`;
+      return;
+    }
+    const filtrados = muralFiltro === 'all' ? itens : itens.filter(i => {
+      const n = (i.nome || '').toLowerCase();
+      if(muralFiltro === 'jogo') return /jogo|game/.test(n);
+      if(muralFiltro === 'bug') return /bug|erro/.test(n);
+      return true;
+    });
+    if(!filtrados.length){
+      lista.innerHTML = `
+        <div class="mural-empty">
+          <span>✨</span>
+          <b>Nada nesse filtro</b>
+          <small>Muda o filtro acima pra ver outras sugestões.</small>
+        </div>`;
+      return;
+    }
+    lista.innerHTML = filtrados.slice(0, 10).map(i => `
+      <div class="mural-item">
+        <span class="mi-ic">💡</span>
+        <div class="mi-tx">
+          <b>${esc(i.nome || 'Alguém')}</b>
+          <small>${i.data ? tempoAtras(i.data) : 'há um tempo'}</small>
+        </div>
+      </div>
+    `).join('');
+  }catch(e){
+    lista.innerHTML = `
+      <div class="mural-empty">
+        <span>✨</span>
+        <b>Mural em breve</b>
+        <small>A ideia ainda vai ser implementada, mas a sugestão já chega no Discord 💜</small>
+      </div>`;
+  }
+}
+
+function setupMuralFiltros(){
+  const wrap = $('muralFiltros'); if(!wrap) return;
+  wrap.addEventListener('click', e => {
+    const b = e.target.closest('.mf-chip'); if(!b) return;
+    wrap.querySelectorAll('.mf-chip').forEach(c => c.classList.toggle('on', c === b));
+    muralFiltro = b.dataset.filtro || 'all';
+    carregarMural();
+  });
+}
 
 /* ============================================================
    CONFIG PÚBLICA
@@ -1246,7 +1537,7 @@ async function carregarConfigPublica(){
 window.carregarConfigPublica = carregarConfigPublica;
 
 /* ============================================================
-   REVEAL ON SCROLL
+   REVEAL + PARALLAX + BURGER
    ============================================================ */
 function setupReveal(){
   revealObs = new IntersectionObserver((entries) => {
@@ -1257,9 +1548,6 @@ function setupReveal(){
   document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 }
 
-/* ============================================================
-   PARALLAX DA SALA
-   ============================================================ */
 function setupRoomParallax(){
   const room = document.querySelector('.room');
   if(!room) return;
@@ -1284,9 +1572,6 @@ function setupRoomParallax(){
   })();
 }
 
-/* ============================================================
-   BURGER MENU (mobile)
-   ============================================================ */
 function setupBurger(){
   const burger = document.getElementById('navBurger');
   const navRight = document.getElementById('navRight');
@@ -1313,13 +1598,54 @@ function setupBurger(){
    BOOT
    ============================================================ */
 window.addEventListener('DOMContentLoaded', async () => {
-  const abaSalva = localStorage.getItem('abaAtiva');
+  // Preview: força home limpa
+  const isPreview = location.search.includes('preview=1');
+  if(isPreview){
+    try { localStorage.removeItem('abaAtiva'); } catch(e){}
+  }
+
+  const abaSalva = isPreview ? 'inicio' : localStorage.getItem('abaAtiva');
   if(abaSalva && document.getElementById('sec-' + abaSalva)) mudarAba(abaSalva, false);
   else mudarAba('inicio', false);
 
-  renderAviso(); renderEmotes(); renderSiteUpdate(); renderSetup();
+  renderAviso(); renderEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
+
+  // Setup
+  setupView = localStorage.getItem(SETUP_VIEW_KEY) || 'grid';
+  document.querySelectorAll('.svt-btn').forEach(b => {
+    const on = b.dataset.view === setupView;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  setupRender();
+
+  const setupBuscaEl = $('setupBusca');
+  if(setupBuscaEl){
+    setupBuscaEl.addEventListener('input', e => {
+      setupBusca = e.target.value;
+      setupRender();
+    });
+  }
+
+  document.querySelectorAll('.svt-btn').forEach(b => {
+    b.addEventListener('click', () => setupSetView(b.dataset.view));
+  });
+
+  const setupGridEl = $('setupGrid');
+  if(setupGridEl){
+    setupGridEl.addEventListener('click', e => {
+      const item = e.target.closest('.setup-item');
+      if(!item) return;
+      abrirItemSetup(item.dataset.grupo, Number(item.dataset.idx));
+    });
+  }
+
+  // Sugestões
+  setupSugForm();
+  setupMuralFiltros();
+  carregarMural();
 
   musicaTab = 'playlist';
   trocarMusicaTab('playlist');
@@ -1420,3 +1746,37 @@ window.addEventListener('DOMContentLoaded', async () => {
   carregarBiblioteca();
   carregarVotosApi();
 });
+
+/* ============================================================
+   BUSCA DE ITEM (KaBuM / Amazon) — legado, ainda usado se algum
+   .si-btn sobrar em outro lugar
+   ============================================================ */
+function abrirBuscaItem(produto){
+  $('dTitle').textContent = produto;
+  $('dBody').innerHTML = `
+    <p style="color:var(--mute);font-size:.85rem;margin-bottom:10px">Ajuste o termo se quiser e escolha a loja:</p>
+    <input id="buscaTermo" type="text" value="${esc(produto)}"
+      style="width:100%;background:#1a102d;border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.9rem;margin-bottom:12px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a class="busca-loja kb" id="lnkKabum" href="#" target="_blank" rel="noopener">🛒 KaBuM!</a>
+      <a class="busca-loja am" id="lnkAmazon" href="#" target="_blank" rel="noopener">🛒 Amazon</a>
+    </div>
+    <button class="busca-copiar" id="btnCopiar" type="button">📋 Copiar nome do produto</button>
+  `;
+  const input = $('buscaTermo');
+  const atualizar = () => {
+    const q = encodeURIComponent(input.value.trim() || produto);
+    $('lnkKabum').href = `https://www.kabum.com.br/busca/${q}`;
+    $('lnkAmazon').href = `https://www.amazon.com.br/s?k=${q}`;
+  };
+  input.addEventListener('input', atualizar);
+  atualizar();
+  $('btnCopiar').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(input.value); $('btnCopiar').textContent = '✓ Copiado!'; }
+    catch { $('btnCopiar').textContent = 'Erro ao copiar'; }
+    setTimeout(() => { $('btnCopiar').textContent = '📋 Copiar nome do produto'; }, 1600);
+  });
+  input.focus(); input.select();
+  $('dlg').showModal();
+}
+window.abrirBuscaItem = abrirBuscaItem;

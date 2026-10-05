@@ -23,12 +23,10 @@
 <div class="room" aria-hidden="true">
   <div class="room-wall" data-depth="0.3"></div>
   <div class="room-wallpaper"></div>
-
   <div class="room-window" data-depth="0.9">
     <span class="rw-frame"></span>
     <span class="rw-light"></span>
   </div>
-
   <div class="room-shelf" data-depth="0.7">
     <span class="rs-book" style="--c:#a855f7;--h:88%"></span>
     <span class="rs-book" style="--c:#ec4899;--h:72%"></span>
@@ -38,7 +36,6 @@
     <span class="rs-book" style="--c:#c084fc;--h:70%"></span>
     <span class="rs-board"></span>
   </div>
-
   <div class="room-topShelf" data-depth="0.5">
     <span class="rt-obj rt-cup">🏆</span>
     <span class="rt-obj rt-heart">💜</span>
@@ -46,11 +43,7 @@
     <span class="rt-obj rt-star">⭐</span>
     <span class="rt-board"></span>
   </div>
-
-  <div class="room-floor" data-depth="1.4">
-    <div class="rf-glow"></div>
-  </div>
-
+  <div class="room-floor" data-depth="1.4"><div class="rf-glow"></div></div>
   <div class="room-vignette"></div>
   <div class="room-grain"></div>
 </div>
@@ -110,7 +103,6 @@
   </div>
 
   <div class="bento">
-
     <article class="card profile-card reveal">
       <div class="profile-avatar-container">
         <span class="av-ring"></span>
@@ -245,7 +237,6 @@
         </div>
       </div>
     </article>
-
   </div>
 
   <div class="apoio-home">
@@ -452,12 +443,38 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>As ferramentas que fazem a mágica (e os travamentos) acontecerem. Clique em "Buscar" para procurar na KaBuM! ou na Amazon.</p>
+    <p>As ferramentas que fazem a mágica acontecer. Clique num item pra ver os detalhes.</p>
   </header>
-  <div class="setup-interativo reveal" id="setupInterativo">
-    <img src="img/setup.jpg" alt="Setup da Soso" id="setupImg" onerror="this.parentNode.remove()">
+
+  <div class="setup-controls reveal">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
+      <input class="search" id="setupBusca" type="search" placeholder="Buscar item (ex: mouse, ryzen, corsair...)" aria-label="Buscar item do setup">
+    </div>
+    <div class="setup-view-toggle" role="tablist" aria-label="Modo de visualização">
+      <button class="svt-btn on" data-view="grid" title="Modo grid" aria-pressed="true">▦ <span>Grid</span></button>
+      <button class="svt-btn" data-view="list" title="Modo lista" aria-pressed="false">☰ <span>Lista</span></button>
+    </div>
   </div>
-  <div class="sgrid" id="setupGrid"></div>
+
+  <div class="setup-foto reveal" id="setupFoto">
+    <img src="img/setup.jpg" alt="Foto do setup da Soso" loading="lazy"
+         onerror="this.parentNode.innerHTML='<div class=&quot;sf-placeholder&quot;><span>📷</span><b>Foto do setup em breve</b><small>A Soso tá preparando uma foto especial do cantinho 💜</small></div>'">
+  </div>
+
+  <div class="setup-groups reveal" id="setupGrid"></div>
+
+  <div class="setup-timeline reveal">
+    <div class="st-head">
+      <span class="st-kicker">📅 Evolução</span>
+      <h3>Como o setup evoluiu</h3>
+    </div>
+    <div class="st-empty">
+      <span>✨</span>
+      <b>Timeline em breve</b>
+      <small>Tô juntando as histórias pra contar como o setup evoluiu até aqui 💜</small>
+    </div>
+  </div>
 </section>
 
 <!-- ==================== SUGESTÕES ==================== -->
@@ -470,23 +487,35 @@
 
   <div class="sugestoes-grid">
     <article class="setup-box reveal" id="votoBox">
-      <h3>🗳️ Qual o próximo jogo ou filme?</h3>
+      <div class="voto-head">
+        <h3>🗳️ Qual o próximo jogo ou filme?</h3>
+        <div class="voto-info-top" id="votoInfoTop">
+          <span class="vit-item" id="votoStatus"><span class="vit-dot"></span> Votação aberta</span>
+          <span class="vit-item" id="votoTotal">0 votos</span>
+        </div>
+      </div>
       <p class="sug-sub">Vote no jogo/filme que você quer ver na live. Um voto por pessoa 💜</p>
       <div id="destaqueBox"></div>
       <div id="votoLista">Carregando votação...</div>
     </article>
 
-    <article class="setup-box reveal">
+    <article class="setup-box reveal" id="sugFormBox">
       <h3>💡 Envie uma mensagem</h3>
       <p class="sug-sub">Sua mensagem pode virar uma nova ideia, jogo ou correção no site.</p>
       <div class="sug-form">
         <div>
           <label for="sugNome">Seu Nome / Apelido</label>
-          <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo">
+          <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" maxlength="40">
         </div>
         <div>
-          <label for="sugTipo">Tipo</label>
-          <select id="sugTipo">
+          <label>Tipo</label>
+          <div class="sug-tipo-chips" id="sugTipoChips">
+            <button type="button" class="st-chip on" data-tipo="Sugestão / ideia">💡 Sugestão</button>
+            <button type="button" class="st-chip" data-tipo="Sugestão de jogo">🎮 Jogo</button>
+            <button type="button" class="st-chip" data-tipo="Feedback">💬 Feedback</button>
+            <button type="button" class="st-chip" data-tipo="Reportar bug do site">🐛 Bug</button>
+          </div>
+          <select id="sugTipo" hidden>
             <option value="Sugestão / ideia">💡 Sugestão / ideia</option>
             <option value="Sugestão de jogo">🎮 Sugestão de jogo</option>
             <option value="Feedback">💬 Feedback</option>
@@ -495,15 +524,62 @@
         </div>
         <div>
           <label for="sugTexto">Mensagem</label>
-          <textarea id="sugTexto" rows="7" placeholder="Escreva sua sugestão, ideia, feedback ou bug..."></textarea>
+          <div class="sug-textarea-wrap">
+            <textarea id="sugTexto" rows="4" maxlength="1000" placeholder="Escreva sua sugestão, ideia, feedback ou bug..."></textarea>
+            <span class="sug-counter" id="sugCounter">0 / 1000</span>
+          </div>
         </div>
         <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
       </div>
       <div class="sug-actions">
-        <button class="btn big" id="sugBtn" onclick="enviarSugestao()">Enviar mensagem 🚀</button>
-        <span id="sugStatus" style="display:none"></span>
+        <button class="btn big" id="sugBtn" onclick="enviarSugestao()" disabled>Enviar mensagem 🚀</button>
+        <div class="sug-success" id="sugSuccess" hidden>
+          <span>✅</span>
+          <div>
+            <b>Mensagem enviada!</b>
+            <small>Sua ideia chegou no Discord da Soso 💜</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="sug-extras">
+        <div class="sug-discord-cta">
+          <span>💬</span>
+          <div>
+            <b>Prefere mandar direto?</b>
+            <small>Entra no Discord e conversa com a galera</small>
+          </div>
+          <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener" class="btn ghost">Abrir →</a>
+        </div>
       </div>
     </article>
+  </div>
+
+  <div class="mural reveal" id="muralSugestoes">
+    <div class="mural-head">
+      <span class="mural-kicker">💡 Ideias da galera</span>
+      <h3>Últimas sugestões</h3>
+      <div class="mural-filtros" id="muralFiltros">
+        <button class="mf-chip on" data-filtro="all">Todas</button>
+        <button class="mf-chip" data-filtro="jogo">🎮 Jogos</button>
+        <button class="mf-chip" data-filtro="bug">🐛 Bugs</button>
+      </div>
+    </div>
+    <div class="mural-lista" id="muralLista">
+      <div class="mural-empty">
+        <span>✨</span>
+        <b>Mural em breve</b>
+        <small>Quando a galera começar a mandar sugestões, elas aparecem aqui 💜</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-doacao reveal">
+    <div>
+      <b>💜 Gostou das melhorias?</b>
+      <small>Apoie o cantinho pra continuar recebendo ideias e novidades</small>
+    </div>
+    <a class="btn big" href="#" id="donateCtaSugestoes" target="_blank" rel="noopener">Fazer uma doação →</a>
   </div>
 </section>
 
