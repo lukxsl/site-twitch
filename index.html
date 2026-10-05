@@ -19,7 +19,6 @@
 </head>
 <body>
 
-<!-- ============ CENA: SALA DE ESTAR ============ -->
 <div class="room" aria-hidden="true">
   <div class="room-wall" data-depth="0.3"></div>
   <div class="room-wallpaper"></div>
@@ -452,8 +451,8 @@
       <input class="search" id="setupBusca" type="search" placeholder="Buscar item (ex: mouse, ryzen, corsair...)" aria-label="Buscar item do setup">
     </div>
     <div class="setup-view-toggle" role="tablist" aria-label="Modo de visualização">
-      <button class="svt-btn on" data-view="grid" title="Modo grid" aria-pressed="true">▦ <span>Grid</span></button>
-      <button class="svt-btn" data-view="list" title="Modo lista" aria-pressed="false">☰ <span>Lista</span></button>
+      <button class="svt-btn on" data-view="3d" title="Galeria 3D" aria-pressed="true">🎴 3D</button>
+      <button class="svt-btn" data-view="list" title="Modo lista" aria-pressed="false">☰ Lista</button>
     </div>
   </div>
 
@@ -464,16 +463,21 @@
 
   <div class="setup-groups reveal" id="setupGrid"></div>
 
-  <div class="setup-timeline reveal">
-    <div class="st-head">
-      <span class="st-kicker">📅 Evolução</span>
-      <h3>Como o setup evoluiu</h3>
+  <div class="setup-sonhos reveal" id="setupSonhos">
+    <div class="sonhos-head">
+      <span class="sh-kicker">✨ Setup dos sonhos</span>
+      <h3>Ajuda a Soso a conquistar 💜</h3>
+      <p>Tudo aqui é um sonho que quero realizar um dia. Se quiser ajudar, cada contribuição me aproxima. Quem ajudar, aparece na lista de apoiadores 💜</p>
     </div>
-    <div class="st-empty">
-      <span>✨</span>
-      <b>Timeline em breve</b>
-      <small>Tô juntando as histórias pra contar como o setup evoluiu até aqui 💜</small>
+    <div class="sonhos-lista" id="sonhosLista"></div>
+  </div>
+
+  <div class="setup-apoiadores reveal" id="setupApoiadores">
+    <div class="apoiadores-head">
+      <span class="ap-kicker">🏆 Apoiadores</span>
+      <h3>Quem tá ajudando a Soso a realizar os sonhos</h3>
     </div>
+    <div class="apoiadores-lista" id="apoiadoresLista"></div>
   </div>
 </section>
 
@@ -490,13 +494,27 @@
       <div class="voto-head">
         <h3>🗳️ Qual o próximo jogo ou filme?</h3>
         <div class="voto-info-top" id="votoInfoTop">
-          <span class="vit-item" id="votoStatus"><span class="vit-dot"></span> Votação aberta</span>
-          <span class="vit-item" id="votoTotal">0 votos</span>
+          <span class="vit-item vit-status" id="votoStatus"><span class="vit-dot"></span> Votação aberta</span>
+          <span class="vit-item" id="votoCountdown">— </span>
         </div>
       </div>
       <p class="sug-sub">Vote no jogo/filme que você quer ver na live. Um voto por pessoa 💜</p>
       <div id="destaqueBox"></div>
       <div id="votoLista">Carregando votação...</div>
+      <div class="voto-stats" id="votoStats">
+        <div class="vs-item">
+          <b id="votoStatOpcoes">0</b>
+          <span>opções</span>
+        </div>
+        <div class="vs-item">
+          <b id="votoStatVotos">0</b>
+          <span>votos</span>
+        </div>
+        <div class="vs-item">
+          <b id="votoStatPessoas">0</b>
+          <span>pessoas votaram</span>
+        </div>
+      </div>
     </article>
 
     <article class="setup-box reveal" id="sugFormBox">
@@ -542,36 +560,32 @@
         </div>
       </div>
 
-      <div class="sug-extras">
-        <div class="sug-discord-cta">
-          <span>💬</span>
-          <div>
-            <b>Prefere mandar direto?</b>
-            <small>Entra no Discord e conversa com a galera</small>
+      <div class="sug-ideias-recentes" id="sugIdeiasRecentes">
+        <div class="sir-head">
+          <span class="sir-kicker">💡 Últimas ideias</span>
+          <div class="sir-filtros" id="sirFiltros">
+            <button class="sir-chip on" data-filtro="all">Todas</button>
+            <button class="sir-chip" data-filtro="jogo">🎮</button>
+            <button class="sir-chip" data-filtro="bug">🐛</button>
           </div>
-          <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener" class="btn ghost">Abrir →</a>
+        </div>
+        <div class="sir-lista" id="sirLista">
+          <div class="sir-empty">
+            <span>✨</span>
+            <small>Nenhuma ideia ainda. Seja a primeira pessoa a mandar 💜</small>
+          </div>
         </div>
       </div>
-    </article>
-  </div>
 
-  <div class="mural reveal" id="muralSugestoes">
-    <div class="mural-head">
-      <span class="mural-kicker">💡 Ideias da galera</span>
-      <h3>Últimas sugestões</h3>
-      <div class="mural-filtros" id="muralFiltros">
-        <button class="mf-chip on" data-filtro="all">Todas</button>
-        <button class="mf-chip" data-filtro="jogo">🎮 Jogos</button>
-        <button class="mf-chip" data-filtro="bug">🐛 Bugs</button>
+      <div class="sug-discord-cta">
+        <span>💬</span>
+        <div>
+          <b>Prefere mandar direto?</b>
+          <small>Entra no Discord e conversa com a galera</small>
+        </div>
+        <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener" class="btn ghost">Abrir →</a>
       </div>
-    </div>
-    <div class="mural-lista" id="muralLista">
-      <div class="mural-empty">
-        <span>✨</span>
-        <b>Mural em breve</b>
-        <small>Quando a galera começar a mandar sugestões, elas aparecem aqui 💜</small>
-      </div>
-    </div>
+    </article>
   </div>
 
   <div class="cta-doacao reveal">

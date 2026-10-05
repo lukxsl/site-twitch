@@ -4,26 +4,18 @@
 
 /* ---------- NAVEGAÇÃO ---------- */
 function adminIrPara(pagina){
-  if(pagina === 'votacao'){
-    ADMIN_TAB = 'votos';
-  }
+  if(pagina === 'votacao') ADMIN_TAB = 'votos';
   ADMIN_PAGE = pagina;
   localStorage.setItem('admin:page', pagina);
   carregarAdmin();
 }
-function adminIrAba(aba){
-  ADMIN_TAB = aba;
-  renderAdminVotacao();
-}
+function adminIrAba(aba){ ADMIN_TAB = aba; renderAdminVotacao(); }
 function adminIrTierTab(tab){
   ADMIN_TIER_TAB = tab;
   localStorage.setItem('admin:tierTab', tab);
   renderAdminTierList();
 }
-function adminIrConfigTab(tab){
-  ADMIN_CONFIG_TAB = tab;
-  renderAdminConfig();
-}
+function adminIrConfigTab(tab){ ADMIN_CONFIG_TAB = tab; renderAdminConfig(); }
 window.adminIrPara = adminIrPara;
 window.adminIrAba = adminIrAba;
 window.adminIrTierTab = adminIrTierTab;
@@ -49,31 +41,26 @@ let PERMS_LABELS = null;
    ============================================================ */
 let ADMIN_CONFIG_TAB = 'aviso';
 let ADMIN_SHARED = {
-  votos: null,
-  tier: null,
-  admins: null,
-  banidos: null,
-  logs: null,
-  backup: null,
+  votos: null, tier: null, admins: null, banidos: null, logs: null, backup: null,
   fetchedAt: 0
 };
 let _sharedPromise = null;
 const _KPI_LAST = {};
 
 /* ============================================================
-   NAVEGAÇÃO LATERAL — estrutura
+   NAVEGAÇÃO LATERAL
    ============================================================ */
 const ADMIN_NAV = [
   { id: 'home',     label: 'Home',      icon: '📊', perm: null,            accent: 'purple', badgeKey: null       },
   { id: 'votacao',  label: 'Votação',   icon: '🗳️', perm: 'ver_votos',     accent: 'purple', badgeKey: 'votacao'  },
   { id: 'tierlist', label: 'Tier List', icon: '🎮', perm: 'ver_tierlist',  accent: 'amber',  badgeKey: 'tierlist' },
+  { id: 'setup',    label: 'Setup',     icon: '🖥️', perm: 'ver_tierlist',  accent: 'cyan',   badgeKey: null       },
   { id: 'admins',   label: 'Admins',    icon: '👥', perm: 'ver_admins',    accent: 'blue',   badgeKey: 'admins'   },
   { id: 'banidos',  label: 'Banidos',   icon: '🚫', perm: 'ver_banidos',   accent: 'red',    badgeKey: 'banidos'  },
   { id: 'config',   label: 'Config',    icon: '⚙️', perm: 'ver_config',    accent: 'green',  badgeKey: null       },
   { id: 'logs',     label: 'Logs',      icon: '📋', perm: 'ver_logs',      accent: 'pink',   badgeKey: 'logs'     },
   { id: 'backup',   label: 'Backup',    icon: '💾', perm: 'editar_config', accent: 'cyan',   badgeKey: 'backup'   }
 ];
-
 const VALID_ADMIN_PAGES = ADMIN_NAV.map(it => it.id);
 
 /* ============================================================
@@ -82,7 +69,6 @@ const VALID_ADMIN_PAGES = ADMIN_NAV.map(it => it.id);
 function renderSidebar(){
   const nav = document.getElementById('adminSidebarNav');
   if(!nav) return;
-
   const items = ADMIN_NAV.filter(it => !it.perm || temPerm(it.perm));
   nav.innerHTML = items.map(it => {
     let badgeHTML = '';
@@ -127,9 +113,7 @@ function renderSidebar(){
             <small>${LABEL_CARGO[USUARIO.cargo] || USUARIO.cargo || ''}</small>
           </div>
         </div>`;
-    } else {
-      foot.innerHTML = '';
-    }
+    } else foot.innerHTML = '';
   }
 }
 
@@ -157,17 +141,14 @@ function adminVoltarHTML(titulo, extraRight = ''){
 }
 
 /* ============================================================
-   CARREGAR DADOS COMPARTILHADOS (para badges e KPIs)
+   CARREGAR DADOS COMPARTILHADOS
    ============================================================ */
 async function carregarShared(force = false){
-  if(!force && Date.now() - ADMIN_SHARED.fetchedAt < 30000){
-    return ADMIN_SHARED;
-  }
+  if(!force && Date.now() - ADMIN_SHARED.fetchedAt < 30000) return ADMIN_SHARED;
   if(!force && _sharedPromise) return _sharedPromise;
 
   _sharedPromise = (async () => {
     const safeFetch = (url) => fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
-
     const [votos, tier, admins, banidos, logs, backup] = await Promise.all([
       temPerm('ver_votos')     ? safeFetch('/api/admin?action=votos')        : null,
       temPerm('ver_tierlist')  ? safeFetch('/api/admin?action=tierlist-get') : null,
@@ -176,18 +157,13 @@ async function carregarShared(force = false){
       temPerm('ver_logs')      ? safeFetch('/api/admin?action=logs-ver')     : null,
       temPerm('editar_config') ? safeFetch('/api/backup?action=list')        : null
     ]);
-
     ADMIN_SHARED = { votos, tier, admins, banidos, logs, backup, fetchedAt: Date.now() };
     _sharedPromise = null;
     return ADMIN_SHARED;
   })();
-
   return _sharedPromise;
 }
 
-/* ============================================================
-   KPI PULSE
-   ============================================================ */
 function kpiChanged(key, valor){
   const prev = _KPI_LAST[key];
   _KPI_LAST[key] = valor;
@@ -227,13 +203,12 @@ async function carregarAdmin(){
 
   bindSidebarOnce();
   renderSidebar();
-
-  // Carrega badges em background
   carregarShared().then(() => renderSidebar()).catch(() => {});
 
   if(ADMIN_PAGE === 'home') await renderAdminHome();
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
   else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
+  else if(ADMIN_PAGE === 'setup') await renderAdminSetup();
   else if(ADMIN_PAGE === 'admins') await renderAdminAdmins();
   else if(ADMIN_PAGE === 'banidos') await renderAdminBanidos();
   else if(ADMIN_PAGE === 'config') await renderAdminConfig();
@@ -243,7 +218,7 @@ async function carregarAdmin(){
 window.carregarAdmin = carregarAdmin;
 
 /* ============================================================
-   CARD V2 (hover rich)
+   CARD V2
    ============================================================ */
 function cardAdminV2({ icon, title, desc, page, accent = 'purple', actions = [] }){
   const actionsHTML = actions.map(a =>
@@ -270,18 +245,16 @@ async function renderAdminHome(){
   const area = document.getElementById('adminArea');
   if(!area) return;
 
-  const visitanteBtn = `<button type="button" class="btn-mini" onclick="verComoVisitante()" title="Abrir home numa nova aba">👁️ Ver como visitante</button>`;
+  const visitanteBtn = `<button type="button" class="ver-visitante" onclick="verComoVisitante()" title="Abrir home numa nova aba">👁️ Ver como visitante</button>`;
   const crumbs = adminVoltarHTML('⚙️ Painel', visitanteBtn);
   area.innerHTML = crumbs + `<p class="admin-vazio">Carregando painel…</p>`;
 
   const shared = await carregarShared(true);
-
   const podeVotos = temPerm('ver_votos');
   const podeTier = temPerm('ver_tierlist');
   const podeAdmins = temPerm('ver_admins');
   const podeBanidos = temPerm('ver_banidos');
 
-  // KPIs
   const kpis = [];
   if(podeVotos && shared.votos){
     const total = Object.values(shared.votos.contagem || {}).reduce((a,b) => a + (Number(b)||0), 0);
@@ -318,7 +291,6 @@ async function renderAdminHome(){
       `).join('')}
     </div>` : '';
 
-  // Alerta de manutenção
   const manutencaoOn = CONFIG_GERAL.manutencao;
   const podeEditarConfig = temPerm('editar_config');
   const alertHTML = manutencaoOn ? `
@@ -331,7 +303,6 @@ async function renderAdminHome(){
       ${podeEditarConfig ? `<button type="button" class="aa-btn" onclick="desligarManutencao()">🔓 Desligar agora</button>` : ''}
     </div>` : '';
 
-  // ---- Operação ----
   const cardsOperacao = [];
   if(temPerm('ver_votos')){
     const actions = temPerm('resetar_votos') ? [{ label:'🗑️ Resetar', fn:'resetarVotacao()' }] : [];
@@ -347,6 +318,13 @@ async function renderAdminHome(){
       icon:'🎮', title:'Tier List',
       desc: temPerm('editar_tierlist') ? 'Adicionar, editar, remover e importar.' : 'Ver os itens da tier list.',
       page:'tierlist', accent:'amber', actions
+    }));
+  }
+  if(temPerm('ver_tierlist')){
+    cardsOperacao.push(cardAdminV2({
+      icon:'🖥️', title:'Setup dos sonhos',
+      desc:'Editar sonhos, metas e apoiadores da vaquinha.',
+      page:'setup', accent:'cyan'
     }));
   }
   if(temPerm('ver_admins')){
@@ -366,12 +344,11 @@ async function renderAdminHome(){
     }));
   }
 
-  // ---- Sistema ----
   const cardsSistema = [];
   if(temPerm('ver_config')){
     cardsSistema.push(cardAdminV2({
       icon:'⚙️', title:'Config geral',
-      desc:'Aviso, aparência, manutenção e horas.',
+      desc:'Aviso, aparência, manutenção e votação.',
       page:'config', accent:'green'
     }));
   }
@@ -406,12 +383,10 @@ async function renderAdminHome(){
     secaoHTML('Operação', cardsOperacao) +
     secaoHTML('Sistema', cardsSistema);
 
-  // Delegação: KPIs
   area.querySelectorAll('.admin-kpi').forEach(k => {
     k.addEventListener('click', () => adminIrPara(k.dataset.page));
   });
 
-  // Delegação: cards + ações rápidas
   const grids = area.querySelectorAll('.admin-section-grid');
   grids.forEach(grid => {
     if(grid.dataset.bound) return;
@@ -431,9 +406,6 @@ async function renderAdminHome(){
 }
 window.renderAdminHome = renderAdminHome;
 
-/* ============================================================
-   ALERTA — desligar manutenção
-   ============================================================ */
 async function desligarManutencao(){
   const ok = await confirmar('Desligar manutenção?', 'O site volta ao normal pra todos os visitantes.', '🔓');
   if(!ok) return;
@@ -453,22 +425,16 @@ async function desligarManutencao(){
 }
 window.desligarManutencao = desligarManutencao;
 
-/* ============================================================
-   VER COMO VISITANTE
-   ============================================================ */
 function verComoVisitante(){
   const url = window.location.origin + '/?preview=1';
   const w = window.open(url, '_blank', 'noopener');
-  if(!w){
-    toast('Permita popups pra abrir o preview', 'warn');
-    return;
-  }
+  if(!w){ toast('Permita popups pra abrir o preview', 'warn'); return; }
   toast('Home aberta em nova aba 💜', 'ok');
 }
 window.verComoVisitante = verComoVisitante;
 
 /* ============================================================
-   VOTAÇÃO ADMIN
+   VOTAÇÃO ADMIN (com fechamento)
    ============================================================ */
 async function carregarAdminVotacao(){
   const area = document.getElementById('adminArea');
@@ -482,7 +448,6 @@ async function carregarAdminVotacao(){
     area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
     return;
   }
-  // Sempre começa em "Votos"
   ADMIN_TAB = 'votos';
   renderAdminVotacao();
 }
@@ -495,51 +460,51 @@ function renderAdminVotacao(){
     area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<div class="admin-vazio">Sem dados</div>`;
     return;
   }
-  const { usuarios = [], contagem = {}, config } = ADMIN_DADOS;
+  const { usuarios = [], contagem = {}, config, fechamento } = ADMIN_DADOS;
   const totalVotos = Object.values(contagem).reduce((a,b)=>a+b,0);
   const mapaOpcao = {};
   (config || []).forEach(o => { mapaOpcao[o.id] = o; });
   const podeEditar = temPerm('editar_opcoes');
   const podeResetar = temPerm('resetar_votos');
+
+  const cd = typeof tempoRestante === 'function' ? tempoRestante(fechamento) : null;
+  const fechamentoTxt = fechamento
+    ? (cd && !cd.encerrado ? `Fecha em ${cd.texto.replace('Fecha em ', '')}` : 'Encerrada')
+    : 'Sem prazo definido';
+
   area.innerHTML = adminVoltarHTML('🗳️ Votação') + `
     <div class="votacao-tabs">
       <button class="${ADMIN_TAB === 'votos' ? 'on' : ''}" onclick="adminIrAba('votos')">Votos (${totalVotos})</button>
       ${podeEditar ? `<button class="${ADMIN_TAB === 'opcoes' ? 'on' : ''}" onclick="adminIrAba('opcoes')">Opções</button>` : ''}
+      ${podeEditar ? `<button class="${ADMIN_TAB === 'prazo' ? 'on' : ''}" onclick="adminIrAba('prazo')">⏰ Prazo</button>` : ''}
     </div>
     <div id="adminConteudo"></div>
   `;
+
   if(ADMIN_TAB === 'votos') renderAdminVotos(usuarios, mapaOpcao, contagem, podeResetar);
-  else if(podeEditar) renderAdminOpcoes(config || [], contagem);
+  else if(ADMIN_TAB === 'opcoes' && podeEditar) renderAdminOpcoes(config || [], contagem);
+  else if(ADMIN_TAB === 'prazo' && podeEditar) renderAdminPrazo(fechamento, fechamentoTxt);
 }
 
 function renderAdminVotos(usuarios, mapaOpcao, contagem, podeResetar){
-  const el = document.getElementById('adminConteudo');
-  if(!el) return;
-
+  const el = document.getElementById('adminConteudo'); if(!el) return;
   if(!usuarios.length){
     el.innerHTML = `
       <div class="admin-card">
         <h3>🗳️ Votos</h3>
-        <div class="logs-empty">
-          <b>Ninguém votou ainda</b>
-          A votação tá aberta, mas ninguém escolheu nada por enquanto.
-        </div>
+        <div class="logs-empty"><b>Ninguém votou ainda</b>A votação tá aberta, mas ninguém escolheu nada por enquanto.</div>
         <div class="admin-actions">
           <button class="admin-btn ghost" onclick="carregarAdminVotacao()">🔄 Atualizar</button>
         </div>
       </div>`;
     return;
   }
-
-  // Agrupa por opção
   const porOpcao = {};
   usuarios.forEach(u => {
     const op = u.opcao || '__sem__';
     if(!porOpcao[op]) porOpcao[op] = [];
     porOpcao[op].push(u);
   });
-
-  // Ordena opções por quantidade
   const opcoesOrdenadas = Object.keys(porOpcao).sort((a,b) => porOpcao[b].length - porOpcao[a].length);
 
   el.innerHTML = `
@@ -587,8 +552,7 @@ function renderAdminVotos(usuarios, mapaOpcao, contagem, podeResetar){
 }
 
 function renderAdminOpcoes(opcoes, contagem){
-  const el = document.getElementById('adminConteudo');
-  if(!el) return;
+  const el = document.getElementById('adminConteudo'); if(!el) return;
   const lista = opcoes.length ? opcoes : [];
   const total = Object.values(contagem).reduce((a,b)=>a+b,0);
   const maxVotos = Math.max(1, ...Object.values(contagem).map(Number));
@@ -627,6 +591,78 @@ function renderAdminOpcoes(opcoes, contagem){
       </div>
     </div>`;
 }
+
+function renderAdminPrazo(fechamento, fechamentoTxt){
+  const el = document.getElementById('adminConteudo'); if(!el) return;
+  const iso = fechamento || '';
+  const localIso = iso ? new Date(iso).toISOString().slice(0,16) : '';
+
+  el.innerHTML = `
+    <div class="admin-card">
+      <h3>⏰ Prazo de encerramento</h3>
+      <p style="color:var(--mute);font-size:.85rem;margin-bottom:14px">
+        Quando passar desse horário, a votação fecha automaticamente. Os visitantes não vão poder votar.
+      </p>
+      <div class="admin-form">
+        <div>
+          <label>Fecha em</label>
+          <input id="cfgVotosFechamento" type="datetime-local" value="${esc(localIso)}">
+        </div>
+        <div class="admin-actions" style="justify-content:flex-start">
+          <button class="admin-btn" onclick="salvarPrazoVotacao()">💾 Salvar prazo</button>
+          <button class="admin-btn ghost" onclick="limparPrazoVotacao()">🧹 Limpar prazo</button>
+        </div>
+        <div class="aviso-preview" style="margin-top:14px">
+          <span class="ap-label">Status atual</span>
+          <span class="ap-ic">⏰</span>
+          <div class="ap-tx">
+            <b>${esc(fechamentoTxt)}</b>
+            <span>${fechamento ? 'Fechamento programado' : 'Sem data definida — votação aberta indefinidamente'}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function salvarPrazoVotacao(){
+  const val = document.getElementById('cfgVotosFechamento')?.value || '';
+  if(!val){ toast('Selecione uma data e hora', 'warn'); return; }
+  try{
+    const r = await fetch('/api/admin?action=config-set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ votosFechamento: new Date(val).toISOString() })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    CONFIG_GERAL.votosFechamento = new Date(val).toISOString();
+    VOTOS_FECHAMENTO = CONFIG_GERAL.votosFechamento;
+    toast('Prazo salvo! ✅', 'ok');
+    renderVotacao();
+    renderAdminVotacao();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.salvarPrazoVotacao = salvarPrazoVotacao;
+
+async function limparPrazoVotacao(){
+  const ok = await confirmar('Limpar prazo?', 'A votação fica aberta indefinidamente.', '🧹');
+  if(!ok) return;
+  try{
+    const r = await fetch('/api/admin?action=config-set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ votosFechamento: null })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    CONFIG_GERAL.votosFechamento = null;
+    VOTOS_FECHAMENTO = null;
+    toast('Prazo removido ✅', 'ok');
+    renderVotacao();
+    renderAdminVotacao();
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.limparPrazoVotacao = limparPrazoVotacao;
 
 async function resetarVotacao(){
   const ok = await confirmar('Resetar votação?', 'TODOS os votos serão apagados e a votação começa do zero.', '🗑️');
@@ -812,14 +848,12 @@ async function carregarAdminTierList(){
 window.carregarAdminTierList = carregarAdminTierList;
 
 function renderAdminTierList(){
-  const area = document.getElementById('adminArea');
-  if(!area) return;
+  const area = document.getElementById('adminArea'); if(!area) return;
   const lista = ADMIN_TIER[ADMIN_TIER_TAB] || [];
   const podeEditar = temPerm('editar_tierlist');
   const podeImportar = temPerm('importar_steam');
   const botaoImport = (ADMIN_TIER_TAB === 'jogos' && podeImportar)
-    ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>`
-    : '';
+    ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>` : '';
   const todosSel = lista.length > 0 && ADMIN_MULTISEL.ids.size === lista.length;
   const barraSel = ADMIN_MULTISEL.ativo ? `
     <div class="admin-bar">
@@ -865,7 +899,7 @@ function renderAdminTierList(){
     <div class="admin-card">
       <h3>${ADMIN_TIER_TAB === 'jogos' ? '🎮 Jogos' : '🎬 Filmes'} <span class="cont">${lista.length} itens</span></h3>
       <div>
-        ${lista.length ? lista.map(itemHTML).join('') : '<p class="admin-vazio" style="padding:20px">Nenhum item ainda</p>'}
+        ${lista.length ? lista.map(itemHTML).join('') : '<div class="logs-empty"><b>Nenhum item ainda</b>Adiciona o primeiro.</div>'}
       </div>
       <div class="admin-actions">
         ${podeEditar && !ADMIN_MULTISEL.ativo && lista.length ? `<button class="admin-btn ghost" onclick="ativarMultiSel()">☑️ Selecionar vários</button>` : ''}
@@ -877,25 +911,13 @@ function renderAdminTierList(){
 }
 window.renderAdminTierList = renderAdminTierList;
 
-function ativarMultiSel(){
-  ADMIN_MULTISEL = { ativo: true, ids: new Set() };
-  document.body.classList.add('admin-multisel');
-  renderAdminTierList();
-}
-function cancelarMultiSel(){
-  ADMIN_MULTISEL = { ativo: false, ids: new Set() };
-  document.body.classList.remove('admin-multisel');
-  renderAdminTierList();
-}
-function toggleSelItem(id){
-  if(ADMIN_MULTISEL.ids.has(id)) ADMIN_MULTISEL.ids.delete(id);
-  else ADMIN_MULTISEL.ids.add(id);
-  renderAdminTierList();
-}
+function ativarMultiSel(){ ADMIN_MULTISEL = { ativo: true, ids: new Set() }; document.body.classList.add('admin-multisel'); renderAdminTierList(); }
+function cancelarMultiSel(){ ADMIN_MULTISEL = { ativo: false, ids: new Set() }; document.body.classList.remove('admin-multisel'); renderAdminTierList(); }
+function toggleSelItem(id){ if(ADMIN_MULTISEL.ids.has(id)) ADMIN_MULTISEL.ids.delete(id); else ADMIN_MULTISEL.ids.add(id); renderAdminTierList(); }
 function toggleSelTodos(){
   const lista = ADMIN_TIER[ADMIN_TIER_TAB] || [];
-  if(ADMIN_MULTISEL.ids.size === lista.length){ ADMIN_MULTISEL.ids = new Set(); }
-  else { ADMIN_MULTISEL.ids = new Set(lista.map(it => it.id)); }
+  if(ADMIN_MULTISEL.ids.size === lista.length) ADMIN_MULTISEL.ids = new Set();
+  else ADMIN_MULTISEL.ids = new Set(lista.map(it => it.id));
   renderAdminTierList();
 }
 async function apagarSelecionados(){
@@ -932,7 +954,7 @@ window.apagarSelecionados = apagarSelecionados;
 
 async function importarSteam(){
   const btn = document.getElementById('btnImportarSteam');
-  const ok = await confirmar('Importar da Steam?', 'Vou buscar seus jogos na Steam e adicionar na tier list. A sinopse é traduzida automaticamente — pode demorar um pouco.', '📥');
+  const ok = await confirmar('Importar da Steam?', 'Vou buscar seus jogos na Steam e adicionar na tier list. Pode demorar um pouco.', '📥');
   if(!ok) return;
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar)'; }
   try{
@@ -956,9 +978,7 @@ function abrirModalItemTier(i){
   const lista = ADMIN_TIER[tipo];
   const ehNovo = (i === -1);
   const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null, appid:null } : lista[i];
-  const statusOpcoes = tipo === 'jogos'
-    ? ['Jogando','Zerado','Dropado','Na fila']
-    : ['Assistindo','Assistido','Na fila'];
+  const statusOpcoes = tipo === 'jogos' ? ['Jogando','Zerado','Dropado','Na fila'] : ['Assistindo','Assistido','Na fila'];
   document.getElementById('dTitle').textContent = (ehNovo ? 'Adicionar ' : 'Editar ') + (tipo === 'jogos' ? 'jogo' : 'filme');
   document.getElementById('dBody').innerHTML = `
     <div class="admin-form">
@@ -989,7 +1009,7 @@ function abrirModalItemTier(i){
           <div>
             <label style="display:flex;align-items:center;justify-content:space-between;gap:6px">
               <span>Conquistas (obtidas/total)</span>
-              ${it.appid ? `<button type="button" class="btn-mini" id="btnConqAuto" onclick="buscarConquistasAuto(${it.appid})" style="font-size:.65rem;padding:3px 8px;border:1px solid var(--line);background:transparent;color:var(--purple-2);border-radius:6px;cursor:pointer">🏆 Buscar</button>` : ''}
+              ${it.appid ? `<button type="button" class="btn-mini" id="btnConqAuto" onclick="buscarConquistasAuto(${it.appid})">🏆 Buscar</button>` : ''}
             </label>
             <div style="display:flex;gap:6px">
               <input id="itemConqObt" type="number" min="0" value="${it.conquistas?.obtidas || 0}" placeholder="15">
@@ -1156,11 +1176,196 @@ async function salvarTierList(logAcao){
 }
 
 /* ============================================================
-   ADMINS (com accordion colapsável)
+   SETUP ADMIN — Sonhos + Apoiadores
+   ============================================================ */
+async function renderAdminSetup(){
+  const area = document.getElementById('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('🖥️ Setup dos sonhos') + `<p class="admin-vazio">Carregando…</p>`;
+
+  // Sonhos são em memória (SONHOS_DATA no app.js). Aqui editamos localmente.
+  const sonhos = Array.isArray(window.SONHOS_DATA) ? window.SONHOS_DATA : [];
+
+  area.innerHTML = adminVoltarHTML('🖥️ Setup dos sonhos') + `
+    <div class="admin-card">
+      <h3>✨ Sonhos ativos <span class="cont">${sonhos.length}</span></h3>
+      <p style="color:var(--mute);font-size:.84rem;margin-bottom:14px">
+        Aqui você edita as metas, valores arrecadados e quem ajudou. Depois clica em salvar.
+      </p>
+      <div id="adminSonhosLista"></div>
+      <div class="admin-actions">
+        <button class="admin-btn" onclick="adicionarSonho()">+ Adicionar sonho</button>
+        <button class="admin-btn ghost" onclick="renderAdminSetup()">🔄 Recarregar</button>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <h3>🏆 Ranking de apoiadores</h3>
+      <p style="color:var(--mute);font-size:.84rem;margin-bottom:14px">
+        Visualização automática baseada nas contribuições adicionadas em cada sonho.
+      </p>
+      <div id="adminApoiadoresLista"></div>
+    </div>
+  `;
+  renderAdminSonhosLista(sonhos);
+  renderAdminApoiadoresLista(sonhos);
+}
+window.renderAdminSetup = renderAdminSetup;
+
+function renderAdminSonhosLista(sonhos){
+  const el = document.getElementById('adminSonhosLista'); if(!el) return;
+  if(!sonhos.length){
+    el.innerHTML = '<div class="logs-empty"><b>Nenhum sonho ainda</b>Adiciona o primeiro.</div>';
+    return;
+  }
+  el.innerHTML = sonhos.map((s, idx) => {
+    const pct = s.meta > 0 ? Math.min(100, Math.round((s.arrecadado / s.meta) * 100)) : 0;
+    return `
+      <div class="admin-card" style="background:rgba(255,255,255,.02);margin-bottom:12px">
+        <h3 style="font-size:.98rem">
+          <span style="font-size:1.4rem">${s.icon || '✨'}</span>
+          ${esc(s.nome)}
+          <span class="cont">${pct}%</span>
+        </h3>
+        <div class="admin-form">
+          <div class="row">
+            <div><label>Ícone</label><input type="text" id="sonho-${idx}-icon" value="${esc(s.icon || '✨')}" maxlength="4"></div>
+            <div><label>Categoria</label><input type="text" id="sonho-${idx}-cat" value="${esc(s.cat || '')}"></div>
+          </div>
+          <div><label>Nome</label><input type="text" id="sonho-${idx}-nome" value="${esc(s.nome || '')}"></div>
+          <div><label>Descrição</label><input type="text" id="sonho-${idx}-desc" value="${esc(s.descricao || '')}"></div>
+          <div class="row">
+            <div><label>Meta (R$)</label><input type="number" id="sonho-${idx}-meta" min="0" step="1" value="${Number(s.meta) || 0}"></div>
+            <div><label>Arrecadado (R$)</label><input type="number" id="sonho-${idx}-arr" min="0" step="1" value="${Number(s.arrecadado) || 0}"></div>
+          </div>
+
+          <div style="margin-top:8px">
+            <label>💜 Contribuintes (${(s.contribuintes || []).length})</label>
+            <div>
+              ${(s.contribuintes || []).map((c, ci) => `
+                <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+                  <input type="text" id="sonho-${idx}-c-${ci}-nome" value="${esc(c.nome || '')}" placeholder="Nome" style="flex:1">
+                  <input type="number" id="sonho-${idx}-c-${ci}-val" value="${Number(c.valor) || 0}" placeholder="R$" style="width:110px">
+                  <button type="button" class="btn-mini danger" onclick="removerContribuinte(${idx}, ${ci})">✕</button>
+                </div>
+              `).join('') || '<small style="color:var(--mute)">Ninguém ainda</small>'}
+            </div>
+            <button type="button" class="btn-mini" style="margin-top:6px" onclick="adicionarContribuinte(${idx})">+ Contribuinte</button>
+          </div>
+
+          <div class="admin-actions" style="justify-content:flex-end">
+            <button type="button" class="admin-btn perigo" onclick="removerSonho(${idx})">🗑️ Remover sonho</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAdminApoiadoresLista(sonhos){
+  const el = document.getElementById('adminApoiadoresLista'); if(!el) return;
+  const todos = [];
+  sonhos.forEach(s => {
+    (s.contribuintes || []).forEach(c => {
+      todos.push({ nome: c.nome, valor: Number(c.valor) || 0, sonho: s.nome });
+    });
+  });
+  if(!todos.length){
+    el.innerHTML = '<div class="logs-empty"><b>Ninguém ainda</b>Adiciona contribuintes pra ver o ranking.</div>';
+    return;
+  }
+  const porPessoa = {};
+  todos.forEach(t => {
+    if(!porPessoa[t.nome]) porPessoa[t.nome] = { nome: t.nome, total: 0, sonhos: [] };
+    porPessoa[t.nome].total += t.valor;
+    if(!porPessoa[t.nome].sonhos.includes(t.sonho)) porPessoa[t.nome].sonhos.push(t.sonho);
+  });
+  const ranking = Object.values(porPessoa).sort((a,b) => b.total - a.total);
+  el.innerHTML = ranking.map((p, i) => `
+    <div class="admin-voto" style="margin-bottom:6px">
+      <span style="font-size:1.3rem;flex:none;width:32px;text-align:center">${['🥇','🥈','🥉'][i] || '🎗️'}</span>
+      <div class="admin-voto-info">
+        <b>@${esc(p.nome)}</b>
+        <small>${p.sonhos.join(' · ')}</small>
+      </div>
+      <div class="admin-voto-opcao">
+        <b>${typeof fmtBRL === 'function' ? fmtBRL(p.total) : 'R$ ' + p.total}</b>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function salvarSonhos(){
+  const sonhos = [];
+  let idx = 0;
+  while(document.getElementById(`sonho-${idx}-nome`)){
+    const s = {
+      id: (window.SONHOS_DATA[idx] && window.SONHOS_DATA[idx].id) || ('sonho-' + Date.now() + '-' + idx),
+      icon: document.getElementById(`sonho-${idx}-icon`).value.trim() || '✨',
+      cat: document.getElementById(`sonho-${idx}-cat`).value.trim(),
+      nome: document.getElementById(`sonho-${idx}-nome`).value.trim(),
+      descricao: document.getElementById(`sonho-${idx}-desc`).value.trim(),
+      meta: Number(document.getElementById(`sonho-${idx}-meta`).value) || 0,
+      arrecadado: Number(document.getElementById(`sonho-${idx}-arr`).value) || 0,
+      contribuintes: []
+    };
+    let ci = 0;
+    while(document.getElementById(`sonho-${idx}-c-${ci}-nome`)){
+      const nome = document.getElementById(`sonho-${idx}-c-${ci}-nome`).value.trim();
+      const valor = Number(document.getElementById(`sonho-${idx}-c-${ci}-val`).value) || 0;
+      if(nome) s.contribuintes.push({ nome, valor });
+      ci++;
+    }
+    if(s.nome) sonhos.push(s);
+    idx++;
+  }
+  window.SONHOS_DATA = sonhos;
+  toast('Sonhos salvos! ✅', 'ok');
+  renderAdminSetup();
+}
+window.salvarSonhos = salvarSonhos;
+
+function adicionarSonho(){
+  const sonhos = window.SONHOS_DATA || [];
+  sonhos.push({ id: 'sonho-' + Date.now(), icon: '✨', cat: '', nome: 'Novo sonho', descricao: '', meta: 0, arrecadado: 0, contribuintes: [] });
+  window.SONHOS_DATA = sonhos;
+  renderAdminSetup();
+}
+window.adicionarSonho = adicionarSonho;
+
+function removerSonho(idx){
+  if(!confirmar) return;
+  confirmar('Remover sonho?', 'O sonho e todas as contribuições somem.', '🗑️').then(ok => {
+    if(!ok) return;
+    const sonhos = window.SONHOS_DATA || [];
+    sonhos.splice(idx, 1);
+    window.SONHOS_DATA = sonhos;
+    renderAdminSetup();
+  });
+}
+window.removerSonho = removerSonho;
+
+function adicionarContribuinte(idx){
+  const sonhos = window.SONHOS_DATA || [];
+  if(!sonhos[idx]) return;
+  if(!sonhos[idx].contribuintes) sonhos[idx].contribuintes = [];
+  sonhos[idx].contribuintes.push({ nome: '', valor: 0 });
+  renderAdminSetup();
+}
+window.adicionarContribuinte = adicionarContribuinte;
+
+function removerContribuinte(idx, ci){
+  const sonhos = window.SONHOS_DATA || [];
+  if(!sonhos[idx] || !sonhos[idx].contribuintes) return;
+  sonhos[idx].contribuintes.splice(ci, 1);
+  renderAdminSetup();
+}
+window.removerContribuinte = removerContribuinte;
+
+/* ============================================================
+   ADMINS
    ============================================================ */
 async function renderAdminAdmins(){
-  const area = document.getElementById('adminArea');
-  if(!area) return;
+  const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('👥 Admins') + `<p class="admin-vazio">Carregando…</p>`;
   let dados = { admins: [], meuCargo: null };
   try{
@@ -1199,9 +1404,7 @@ async function renderAdminAdmins(){
   area.innerHTML = adminVoltarHTML('👥 Admins') + `
     <div class="admin-card">
       <h3>👥 Administradores <span class="cont">${(dados.admins||[]).length}</span></h3>
-      ${dados.admins && dados.admins.length
-        ? `<div class="admin-votos">${adminsHTML}</div>`
-        : '<div class="logs-empty"><b>Nenhum admin cadastrado</b>Adiciona o primeiro pra começar.</div>'}
+      ${dados.admins && dados.admins.length ? `<div class="admin-votos">${adminsHTML}</div>` : '<div class="logs-empty"><b>Nenhum admin cadastrado</b>Adiciona o primeiro.</div>'}
       <div class="admin-actions">
         ${podeGerenciar ? `<button class="admin-btn" onclick="adicionarAdmin()">+ Adicionar admin</button>` : ''}
         <button class="admin-btn ghost" onclick="renderAdminAdmins()">🔄 Atualizar</button>
@@ -1210,24 +1413,19 @@ async function renderAdminAdmins(){
 
     <div class="admin-card">
       <h3>🔐 Permissões por cargo</h3>
-      <p style="color:var(--mute);font-size:.82rem;margin-bottom:14px">
-        Clica num cargo pra ver/editar o que ele pode fazer. <b>Dev</b> sempre tem acesso total.
-      </p>
+      <p style="color:var(--mute);font-size:.82rem;margin-bottom:14px">Clica num cargo pra ver/editar.</p>
       <div id="permsAccordion"></div>
       ${podeEditarPerms ? `
         <div class="admin-actions">
           <button class="admin-btn" onclick="salvarPermissoes()">💾 Salvar permissões</button>
           <button class="admin-btn ghost" onclick="carregarPermissoes()">🔄 Recarregar</button>
           <button class="admin-btn ghost" onclick="restaurarPermissoesPadrao()">♻️ Restaurar padrão</button>
-        </div>
-      ` : ''}
+        </div>` : ''}
     </div>`;
-
   if(podeEditarPerms) carregarPermissoes();
 }
 window.renderAdminAdmins = renderAdminAdmins;
 
-/* ---------- Event delegation para admins ---------- */
 document.addEventListener('click', e => {
   const editar = e.target.closest('[data-admin-editar]');
   if(editar){
@@ -1238,7 +1436,6 @@ document.addEventListener('click', e => {
   if(remover){ removerAdmin(remover.dataset.id); }
 });
 
-/* ---------- Permissões (accordion colapsável) ---------- */
 async function carregarPermissoes(){
   const wrap = document.getElementById('permsAccordion');
   if(!wrap) return;
@@ -1260,52 +1457,35 @@ function renderPermissoes(){
   const wrap = document.getElementById('permsAccordion');
   if(!wrap || !PERMS_DADOS) return;
   const podeEditar = temPerm('editar_config');
-
   wrap.innerHTML = CARGOS_ORDEM.map(cargo => {
     const isDev = cargo === 'dev';
     const perms = PERMS_DADOS[cargo] || [];
     const icone = LABEL_CARGO[cargo].split(' ')[0];
     const nomeCargo = LABEL_CARGO[cargo].split(' ').slice(1).join(' ');
-    const tag = isDev
-      ? `<span class="aah-tag locked">🔒 acesso total</span>`
-      : (podeEditar ? `<span class="aah-tag">customizável</span>` : `<span class="aah-tag">somente leitura</span>`);
-
+    const tag = isDev ? `<span class="aah-tag locked">🔒 total</span>`
+      : (podeEditar ? `<span class="aah-tag">custom</span>` : `<span class="aah-tag">read-only</span>`);
     const body = `
       <div class="perms-compact">
         ${Object.entries(PERM_GRUPOS).map(([grupo, lista]) => `
           <div class="perm-compact-group">
             <span>${grupo}</span>
             ${lista.map(p => {
-              if(isDev){
-                return `<div class="perm-check fixed"><input type="checkbox" checked disabled><span>${PERMS_LABELS[p] || p}</span><span class="lock">fixo</span></div>`;
-              }
-              if(!podeEditar){
-                const on = perms.includes(p);
-                return `<div class="perm-check"><input type="checkbox" ${on ? 'checked' : ''} disabled><span>${PERMS_LABELS[p] || p}</span></div>`;
-              }
+              if(isDev) return `<div class="perm-check fixed"><input type="checkbox" checked disabled><span>${PERMS_LABELS[p] || p}</span><span class="lock">fixo</span></div>`;
+              if(!podeEditar) return `<div class="perm-check"><input type="checkbox" ${perms.includes(p) ? 'checked' : ''} disabled><span>${PERMS_LABELS[p] || p}</span></div>`;
               return `<label class="perm-check"><input type="checkbox" data-cargo="${cargo}" data-perm="${p}" ${perms.includes(p) ? 'checked' : ''}><span>${PERMS_LABELS[p] || p}</span></label>`;
             }).join('')}
           </div>
         `).join('')}
-      </div>
-    `;
-
+      </div>`;
     return `
       <div class="admin-accordion" data-cargo="${cargo}">
         <div class="admin-accordion-head" onclick="this.parentElement.classList.toggle('open')">
           <span class="aah-ic">${icone}</span>
-          <span class="aah-tx">
-            <b>${nomeCargo}</b>
-            <small>${isDev ? 'Tem acesso a tudo no painel' : 'Clique pra ver as permissões'}</small>
-          </span>
-          ${tag}
-          <span class="aah-arrow">▶</span>
+          <span class="aah-tx"><b>${nomeCargo}</b><small>Clique pra ver</small></span>
+          ${tag}<span class="aah-arrow">▶</span>
         </div>
-        <div class="admin-accordion-body">
-          <div class="aab-inner">${body}</div>
-        </div>
-      </div>
-    `;
+        <div class="admin-accordion-body"><div class="aab-inner">${body}</div></div>
+      </div>`;
   }).join('');
 }
 
@@ -1331,9 +1511,7 @@ async function salvarPermissoes(){
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     PERMS_DADOS = d.permissoes;
-    if(USUARIO && USUARIO.cargo){
-      USUARIO.permissoes = PERMS_DADOS[USUARIO.cargo] || [];
-    }
+    if(USUARIO && USUARIO.cargo) USUARIO.permissoes = PERMS_DADOS[USUARIO.cargo] || [];
     toast('Permissões salvas! ✅', 'ok');
     renderAdminAdmins();
   }catch(e){ toast('Erro: ' + e.message, 'erro'); }
@@ -1341,23 +1519,20 @@ async function salvarPermissoes(){
 window.salvarPermissoes = salvarPermissoes;
 
 async function restaurarPermissoesPadrao(){
-  const ok = await confirmar('Restaurar padrão?', 'As permissões voltam ao padrão de fábrica. Isso sobrescreve as customizadas.', '♻️');
+  const ok = await confirmar('Restaurar padrão?', 'As permissões voltam ao padrão de fábrica.', '♻️');
   if(!ok) return;
   try{
     const r = await fetch('/api/admin?action=permissoes-get');
     const d = await r.json();
     if(!d.padrao) throw new Error('Padrão indisponível');
     const r2 = await fetch('/api/admin?action=permissoes-set', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+      method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ permissoes: d.padrao })
     });
     const d2 = await r2.json();
     if(!r2.ok) throw new Error(d2.error || 'Falha');
     PERMS_DADOS = d2.permissoes;
-    if(USUARIO && USUARIO.cargo){
-      USUARIO.permissoes = PERMS_DADOS[USUARIO.cargo] || [];
-    }
+    if(USUARIO && USUARIO.cargo) USUARIO.permissoes = PERMS_DADOS[USUARIO.cargo] || [];
     toast('Permissões restauradas! ✅', 'ok');
     renderAdminAdmins();
   }catch(e){ toast('Erro: ' + e.message, 'erro'); }
@@ -1368,7 +1543,7 @@ function editarAdmin(id, username, avatar, cargoAtual){
   document.getElementById('dTitle').textContent = 'Editar admin';
   document.getElementById('dBody').innerHTML = `
     <div class="admin-form">
-      <div><label>ID do Discord</label><input type="text" value="${esc(id)}" disabled></div>
+      <div><label>ID</label><input type="text" value="${esc(id)}" disabled></div>
       <div><label>Nick</label><input type="text" value="${esc(username)}" disabled></div>
       <div><label>Cargo</label>
         <select id="editAdminCargo">
@@ -1391,8 +1566,7 @@ async function salvarAdmin(id, username, avatar){
   const cargo = document.getElementById('editAdminCargo').value;
   try{
     const r = await fetch('/api/admin?action=admins-edit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: id, cargo, username, avatar })
     });
     const d = await r.json();
@@ -1431,8 +1605,7 @@ async function salvarNovoAdmin(){
   if(!userId){ toast('Digite o ID', 'warn'); return; }
   try{
     const r = await fetch('/api/admin?action=admins-add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, cargo })
     });
     const d = await r.json();
@@ -1449,8 +1622,7 @@ async function removerAdmin(id){
   if(!ok) return;
   try{
     const r = await fetch('/api/admin?action=admins-remove', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: id })
     });
     const d = await r.json();
@@ -1465,8 +1637,7 @@ window.removerAdmin = removerAdmin;
    BANIDOS
    ============================================================ */
 async function renderAdminBanidos(){
-  const area = document.getElementById('adminArea');
-  if(!area) return;
+  const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🚫 Banidos') + `<p class="admin-vazio">Carregando…</p>`;
   let banidos = [];
   try {
@@ -1479,9 +1650,7 @@ async function renderAdminBanidos(){
       <h3>🚫 Banidos de votar <span class="cont">${banidos.length}</span></h3>
       ${banidos.length ? `<div class="admin-votos">${banidos.map(b => `
         <div class="admin-voto">
-          ${b.avatar
-            ? `<img class="admin-voto-avatar" src="${esc(b.avatar)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'admin-voto-ph',textContent:'👤'}))">`
-            : '<div class="admin-voto-ph">👤</div>'}
+          ${b.avatar ? `<img class="admin-voto-avatar" src="${esc(b.avatar)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'admin-voto-ph',textContent:'👤'}))">` : '<div class="admin-voto-ph">👤</div>'}
           <div class="admin-voto-info">
             <b>${b.username ? '@' + esc(b.username) : 'Sem nick'}</b>
             <small>${esc(b.id)} · ${esc(b.motivo || 'Sem motivo')}</small>
@@ -1520,8 +1689,7 @@ async function salvarBanido(){
   if(!userId){ toast('Digite o ID', 'warn'); return; }
   try{
     const r = await fetch('/api/admin?action=banidos-add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, motivo })
     });
     const d = await r.json();
@@ -1538,8 +1706,7 @@ async function removerBanido(id){
   if(!ok) return;
   try{
     const r = await fetch('/api/admin?action=banidos-remove', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: id })
     });
     if(!r.ok) throw new Error('Falha');
@@ -1553,8 +1720,7 @@ window.removerBanido = removerBanido;
    CONFIG (com abas)
    ============================================================ */
 async function renderAdminConfig(){
-  const area = document.getElementById('adminArea');
-  if(!area) return;
+  const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<p class="admin-vazio">Carregando…</p>`;
   try {
     const r = await fetch('/api/admin?action=config-get', { cache:'no-store' });
@@ -1572,17 +1738,11 @@ async function renderAdminConfig(){
         <button class="config-tab ${tab === 'sistema' ? 'on' : ''}" onclick="adminIrConfigTab('sistema')">🔧 Sistema</button>
       </div>
 
-      <!-- ===== ABA AVISO ===== -->
       <div class="config-panel ${tab === 'aviso' ? 'on' : ''}">
         <div class="admin-card">
           <h3>📢 Aviso da home</h3>
           <div class="admin-form">
-            <div>
-              <label style="display:flex;align-items:center;gap:8px;text-transform:none">
-                <input type="checkbox" id="cfgAvisoAtivo" ${av.ativo ? 'checked' : ''} style="width:auto">
-                Mostrar aviso na home
-              </label>
-            </div>
+            <div><label style="display:flex;align-items:center;gap:8px;text-transform:none"><input type="checkbox" id="cfgAvisoAtivo" ${av.ativo ? 'checked' : ''} style="width:auto"> Mostrar aviso na home</label></div>
             <div class="row">
               <div><label>Ícone</label><input id="cfgAvisoIcone" type="text" value="${esc(av.icone || '📢')}"></div>
               <div><label>Tipo</label>
@@ -1598,51 +1758,43 @@ async function renderAdminConfig(){
               <div class="aviso-preview ${av.tipo === 'warn' ? 'warn' : ''}" id="avisoPreview">
                 <span class="ap-label">Preview</span>
                 <span class="ap-ic" id="apIcon">${esc(av.icone || '📢')}</span>
-                <div class="ap-tx">
-                  <b id="apTitulo">${esc(av.titulo || 'Aviso')}</b>
-                  <span id="apTexto">${esc(av.texto || 'O texto do aviso aparece aqui…')}</span>
-                </div>
+                <div class="ap-tx"><b id="apTitulo">${esc(av.titulo || 'Aviso')}</b><span id="apTexto">${esc(av.texto || 'O texto do aviso aparece aqui…')}</span></div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ===== ABA APARÊNCIA ===== -->
       <div class="config-panel ${tab === 'aparencia' ? 'on' : ''}">
         <div class="admin-card">
           <h3>💜 Link de doação</h3>
           <div class="admin-form">
             <div><label>URL</label><input id="cfgDonate" type="text" value="${esc(d.donate || CONFIG.donate || '')}"></div>
+            <div><label>Chave Pix (pra vaquinha)</label><input id="cfgPix" type="text" value="${esc(CONFIG.pixKey || '')}"></div>
           </div>
         </div>
-
         <div class="admin-card">
           <h3>💬 Recado da Soso</h3>
-          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Aparece na home, no card "Apoie o cantinho".</p>
           <div class="admin-form">
             <div><label>Texto do recado</label><textarea id="cfgRecado" rows="3" placeholder="Ex: Essa semana tem live de terror! 💜">${esc(d.recado || '')}</textarea></div>
           </div>
         </div>
-
         <div class="admin-card">
           <h3>🏆 Top 3 apoiadores</h3>
           <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Um por linha, formato: <code>Nome | valor</code>.</p>
           <div class="admin-form">
-            <div><label>Linhas (até 3)</label><textarea id="cfgTop3" rows="4" placeholder="lukxsl | R$ 250&#10;mari | R$ 180">${esc(top3Txt)}</textarea></div>
+            <div><label>Linhas (até 3)</label><textarea id="cfgTop3" rows="4" placeholder="lukxsl | R$ 250">${esc(top3Txt)}</textarea></div>
           </div>
         </div>
-
         <div class="admin-card">
-          <h3>👑 Hall da fama · maiores subs</h3>
+          <h3>👑 Hall da fama</h3>
           <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Um por linha, formato: <code>Nome | tempo</code>.</p>
           <div class="admin-form">
-            <div><label>Linhas (até 5)</label><textarea id="cfgHall" rows="6" placeholder="gabizinha | 14 meses&#10;pedrinho | 11 meses">${esc(hallTxt)}</textarea></div>
+            <div><label>Linhas (até 5)</label><textarea id="cfgHall" rows="6" placeholder="gabizinha | 14 meses">${esc(hallTxt)}</textarea></div>
           </div>
         </div>
       </div>
 
-      <!-- ===== ABA SISTEMA ===== -->
       <div class="config-panel ${tab === 'sistema' ? 'on' : ''}">
         <div class="admin-card">
           <h3>📺 Horas do mês</h3>
@@ -1656,12 +1808,9 @@ async function renderAdminConfig(){
             <button type="button" class="admin-btn ghost" id="btnSyncHoras" onclick="sincronizarHoras()">🔄 Sincronizar</button>
           </div>
         </div>
-
         <div class="admin-card">
           <h3>🔧 Modo manutenção</h3>
-          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">
-            Quando ligado, quem <b>não é admin</b> vê uma tela de "Estamos em manutenção".
-          </p>
+          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Quando ligado, quem não é admin vê uma tela de manutenção.</p>
           <label style="display:flex;align-items:center;gap:10px;font-weight:700">
             <input type="checkbox" id="cfgManutencao" ${d.manutencao ? 'checked' : ''} style="width:auto">
             Ligar modo manutenção
@@ -1673,20 +1822,16 @@ async function renderAdminConfig(){
         <div class="admin-actions">
           <button class="admin-btn" onclick="salvarConfig()">💾 Salvar tudo</button>
           <button class="admin-btn ghost" onclick="renderAdminConfig()">🔄 Recarregar</button>
-        </div>
-      ` : `<p style="color:var(--mute);font-size:.82rem;text-align:center;margin-top:14px">Você não tem permissão pra editar o config.</p>`}
+        </div>` : `<p style="color:var(--mute);font-size:.82rem;text-align:center;margin-top:14px">Você não tem permissão pra editar.</p>`}
     `;
 
-    // Live preview do aviso
-    const inputsAviso = ['cfgAvisoIcone','cfgAvisoTitulo','cfgAvisoTexto','cfgAvisoTipo'];
-    inputsAviso.forEach(id => {
+    ['cfgAvisoIcone','cfgAvisoTitulo','cfgAvisoTexto','cfgAvisoTipo'].forEach(id => {
       const el = document.getElementById(id);
       if(!el) return;
       el.addEventListener('input', atualizarPreviewAviso);
       el.addEventListener('change', atualizarPreviewAviso);
     });
     atualizarPreviewAviso();
-
   } catch(e){
     area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
   }
@@ -1702,8 +1847,7 @@ function atualizarPreviewAviso(){
   icon.textContent = document.getElementById('cfgAvisoIcone')?.value.trim() || '📢';
   titulo.textContent = document.getElementById('cfgAvisoTitulo')?.value.trim() || 'Aviso';
   texto.textContent = document.getElementById('cfgAvisoTexto')?.value.trim() || 'O texto do aviso aparece aqui…';
-  const tipo = document.getElementById('cfgAvisoTipo')?.value || 'info';
-  preview.classList.toggle('warn', tipo === 'warn');
+  preview.classList.toggle('warn', (document.getElementById('cfgAvisoTipo')?.value || 'info') === 'warn');
 }
 
 async function sincronizarHoras(){
@@ -1716,11 +1860,8 @@ async function sincronizarHoras(){
     const el = document.getElementById('syncHoras');
     if(el) el.textContent = (horas != null) ? horas + 'h' : '—';
     toast(horas != null ? `Horas atualizadas: ${horas}h` : 'Não foi possível atualizar', horas != null ? 'ok' : 'warn');
-  }catch(e){
-    toast('Erro ao sincronizar', 'erro');
-  }finally{
-    if(btn){ btn.disabled = false; btn.textContent = '🔄 Sincronizar'; }
-  }
+  }catch(e){ toast('Erro ao sincronizar', 'erro'); }
+  finally { if(btn){ btn.disabled = false; btn.textContent = '🔄 Sincronizar'; } }
 }
 window.sincronizarHoras = sincronizarHoras;
 
@@ -1733,15 +1874,17 @@ async function salvarConfig(){
     texto: (document.getElementById('cfgAvisoTexto')?.value || '').trim()
   };
   const donate = (document.getElementById('cfgDonate')?.value || '').trim();
+  const pix = (document.getElementById('cfgPix')?.value || '').trim();
   const recado = (document.getElementById('cfgRecado')?.value || '').trim();
   const manutencao = document.getElementById('cfgManutencao')?.checked || false;
+
+  if(pix) CONFIG.pixKey = pix;
 
   const top3 = ((document.getElementById('cfgTop3')?.value || '')).split('\n').map(l => l.trim()).filter(Boolean).slice(0,3)
     .map(l => {
       const [nome, ...resto] = l.split('|').map(s => s.trim());
       return { nome: nome || '—', valor: resto.join(' ').trim() || null };
     });
-
   const hall = ((document.getElementById('cfgHall')?.value || '')).split('\n').map(l => l.trim()).filter(Boolean).slice(0,5)
     .map(l => {
       const [nome, ...resto] = l.split('|').map(s => s.trim());
@@ -1769,19 +1912,19 @@ async function salvarConfig(){
 window.salvarConfig = salvarConfig;
 
 /* ============================================================
-   LOGS (com filtros)
+   LOGS
    ============================================================ */
 const LOGS_STATE = { busca: '', periodo: 'all', tipo: 'all' };
 
 function categoriaLog(acao){
   const a = (acao || '').toLowerCase();
-  if(/resetou|resetar|votaç|voto|opç/.test(a))    return { ic:'🗳️', accent:'purple', label:'Votação' };
-  if(/tier|moveu|removeu|importou|editou item/.test(a)) return { ic:'🎮', accent:'amber',  label:'Tier List' };
-  if(/admin/.test(a))                              return { ic:'👥', accent:'blue',   label:'Admins' };
-  if(/bani|desbaniu/.test(a))                      return { ic:'🚫', accent:'red',    label:'Banidos' };
-  if(/config|manuten|aviso|recado|doaç/.test(a))   return { ic:'⚙️', accent:'green',  label:'Config' };
-  if(/backup/.test(a))                             return { ic:'💾', accent:'cyan',   label:'Backup' };
-  return { ic:'📋', accent:'purple', label:'Geral' };
+  if(/resetou|resetar|votaç|voto|opç/.test(a))    return { ic:'🗳️', accent:'purple' };
+  if(/tier|moveu|removeu|importou|editou item/.test(a)) return { ic:'🎮', accent:'amber'  };
+  if(/admin/.test(a))                              return { ic:'👥', accent:'blue'   };
+  if(/bani|desbaniu/.test(a))                      return { ic:'🚫', accent:'red'    };
+  if(/config|manuten|aviso|recado|doaç/.test(a))   return { ic:'⚙️', accent:'green'  };
+  if(/backup/.test(a))                             return { ic:'💾', accent:'cyan'   };
+  return { ic:'📋', accent:'purple' };
 }
 
 function periodoMinimo(periodo){
@@ -1795,14 +1938,8 @@ function periodoMinimo(periodo){
 function aplicarFiltrosLogs(logs){
   const q = LOGS_STATE.busca.trim().toLowerCase();
   const minTs = periodoMinimo(LOGS_STATE.periodo);
-  const tipo = LOGS_STATE.tipo;
-
   return logs.filter(l => {
     if(minTs && (l.ts || 0) < minTs) return false;
-    if(tipo !== 'all'){
-      const cat = categoriaLog(l.acao).label.toLowerCase().replace(' ', '');
-      if(cat !== tipo) return false;
-    }
     if(q){
       const txt = ((l.quem || '') + ' ' + (l.acao || '')).toLowerCase();
       if(!txt.includes(q)) return false;
@@ -1814,11 +1951,9 @@ function aplicarFiltrosLogs(logs){
 function agruparLogsPorDia(logs){
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const ontem = new Date(hoje); ontem.setDate(ontem.getDate() - 1);
-  const grupos = {};
-  const ordem = [];
+  const grupos = {}; const ordem = [];
   logs.forEach(l => {
-    const d = new Date(l.ts);
-    const dOnly = new Date(d); dOnly.setHours(0,0,0,0);
+    const d = new Date(l.ts); const dOnly = new Date(d); dOnly.setHours(0,0,0,0);
     let key;
     if(dOnly.getTime() === hoje.getTime()) key = 'Hoje';
     else if(dOnly.getTime() === ontem.getTime()) key = 'Ontem';
@@ -1830,8 +1965,7 @@ function agruparLogsPorDia(logs){
 }
 
 async function renderAdminLogs(){
-  const area = document.getElementById('adminArea');
-  if(!area) return;
+  const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('📋 Logs') + `<p class="admin-vazio">Carregando…</p>`;
 
   let logs = [];
@@ -1842,11 +1976,7 @@ async function renderAdminLogs(){
   } catch(e){}
 
   if(!logs.length){
-    area.innerHTML = adminVoltarHTML('📋 Logs') + `
-      <div class="logs-empty">
-        <b>Nenhuma ação registrada ainda</b>
-        Quando alguém mexer no painel, aparece aqui.
-      </div>`;
+    area.innerHTML = adminVoltarHTML('📋 Logs') + `<div class="logs-empty"><b>Nenhuma ação registrada ainda</b>Quando alguém mexer no painel, aparece aqui.</div>`;
     return;
   }
 
@@ -1854,99 +1984,45 @@ async function renderAdminLogs(){
     <div class="admin-card">
       <h3>📋 Histórico de ações</h3>
       <div class="logs-filters">
-        <div class="logs-search">
-          <input type="text" id="logsBusca" placeholder="Buscar por @admin ou ação..." value="${esc(LOGS_STATE.busca)}">
-        </div>
+        <div class="logs-search"><input type="text" id="logsBusca" placeholder="Buscar por @admin ou ação..." value="${esc(LOGS_STATE.busca)}"></div>
         <select id="logsPeriodo">
-          <option value="all" ${LOGS_STATE.periodo === 'all' ? 'selected' : ''}>Todo o período</option>
-          <option value="24h" ${LOGS_STATE.periodo === '24h' ? 'selected' : ''}>Últimas 24h</option>
-          <option value="7d"  ${LOGS_STATE.periodo === '7d'  ? 'selected' : ''}>Últimos 7 dias</option>
-          <option value="30d" ${LOGS_STATE.periodo === '30d' ? 'selected' : ''}>Últimos 30 dias</option>
-        </select>
-        <select id="logsTipo">
-          <option value="all" ${LOGS_STATE.tipo === 'all' ? 'selected' : ''}>Todos os tipos</option>
-          <option value="votacao" ${LOGS_STATE.tipo === 'votacao' ? 'selected' : ''}>🗳️ Votação</option>
-          <option value="tierlist" ${LOGS_STATE.tipo === 'tierlist' ? 'selected' : ''}>🎮 Tier List</option>
-          <option value="admins" ${LOGS_STATE.tipo === 'admins' ? 'selected' : ''}>👥 Admins</option>
-          <option value="banidos" ${LOGS_STATE.tipo === 'banidos' ? 'selected' : ''}>🚫 Banidos</option>
-          <option value="config" ${LOGS_STATE.tipo === 'config' ? 'selected' : ''}>⚙️ Config</option>
-          <option value="backup" ${LOGS_STATE.tipo === 'backup' ? 'selected' : ''}>💾 Backup</option>
+          <option value="all" ${LOGS_STATE.periodo === 'all' ? 'selected' : ''}>Todo período</option>
+          <option value="24h" ${LOGS_STATE.periodo === '24h' ? 'selected' : ''}>24h</option>
+          <option value="7d"  ${LOGS_STATE.periodo === '7d'  ? 'selected' : ''}>7 dias</option>
+          <option value="30d" ${LOGS_STATE.periodo === '30d' ? 'selected' : ''}>30 dias</option>
         </select>
       </div>
-
       <div class="logs-summary" id="logsSummary"></div>
-
       <div id="logsLista"></div>
     </div>
-
-    <div class="admin-actions">
-      <button class="admin-btn ghost" onclick="renderAdminLogs()">🔄 Atualizar</button>
-    </div>
+    <div class="admin-actions"><button class="admin-btn ghost" onclick="renderAdminLogs()">🔄 Atualizar</button></div>
   `;
 
   const filtrados = aplicarFiltrosLogs(logs);
-
-  // Summary
   const hoje = new Date(); hoje.setHours(0,0,0,0);
   const totalHoje = logs.filter(l => (l.ts || 0) >= hoje.getTime()).length;
-  const totalOntem = logs.filter(l => (l.ts||0) >= hoje.getTime() - 86400000 && (l.ts||0) < hoje.getTime()).length;
-  const total7d = logs.filter(l => (l.ts || 0) >= Date.now() - 7 * 86400000).length;
   document.getElementById('logsSummary').innerHTML = `
     <div class="ls-item">Total<b>${logs.length}</b></div>
     <div class="ls-item">Hoje<b>${totalHoje}</b></div>
-    <div class="ls-item">Ontem<b>${totalOntem}</b></div>
-    <div class="ls-item">Últimos 7d<b>${total7d}</b></div>
     ${filtrados.length !== logs.length ? `<div class="ls-item">Filtrados<b>${filtrados.length}</b></div>` : ''}
   `;
 
-  // Lista
-  const lista = document.getElementById('logsLista');
-  if(!filtrados.length){
-    lista.innerHTML = `<div class="logs-empty"><b>Nenhum log com esses filtros</b>Tenta limpar a busca ou mudar o período.</div>`;
-  } else {
-    const { grupos, ordem } = agruparLogsPorDia(filtrados);
-    lista.innerHTML = ordem.map(dia => `
-      <div class="logs-day">
-        <div class="logs-day-head"><span>${esc(dia)}</span></div>
-        ${grupos[dia].map(l => {
-          const cat = categoriaLog(l.acao);
-          const cargoIc = LABEL_CARGO[l.cargo] ? LABEL_CARGO[l.cargo].split(' ')[0] : '👤';
-          return `
-            <div class="log-row" data-accent="${cat.accent}">
-              <span class="lr-ic">${cat.ic}</span>
-              <div class="lr-tx">
-                <b>${cargoIc} @${esc(l.quem || 'alguém')}</b>
-                <small>${esc(l.acao || '')}</small>
-              </div>
-              <span class="lr-time">${l.ts ? tempoAtras(new Date(l.ts).toISOString()) : ''}</span>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `).join('');
-  }
+  renderLogsLista(filtrados);
 
-  // Bind filtros
   document.getElementById('logsBusca')?.addEventListener('input', e => {
     LOGS_STATE.busca = e.target.value;
-    aplicarFiltrosEAtualizar(logs);
+    renderLogsLista(aplicarFiltrosLogs(logs));
   });
   document.getElementById('logsPeriodo')?.addEventListener('change', e => {
     LOGS_STATE.periodo = e.target.value;
-    aplicarFiltrosEAtualizar(logs);
-  });
-  document.getElementById('logsTipo')?.addEventListener('change', e => {
-    LOGS_STATE.tipo = e.target.value;
-    aplicarFiltrosEAtualizar(logs);
+    renderLogsLista(aplicarFiltrosLogs(logs));
   });
 }
 
-function aplicarFiltrosEAtualizar(logs){
-  const filtrados = aplicarFiltrosLogs(logs);
-  const lista = document.getElementById('logsLista');
-  if(!lista) return;
+function renderLogsLista(filtrados){
+  const lista = document.getElementById('logsLista'); if(!lista) return;
   if(!filtrados.length){
-    lista.innerHTML = `<div class="logs-empty"><b>Nenhum log com esses filtros</b>Tenta limpar a busca ou mudar o período.</div>`;
+    lista.innerHTML = `<div class="logs-empty"><b>Nenhum log com esses filtros</b>Tenta limpar a busca.</div>`;
     return;
   }
   const { grupos, ordem } = agruparLogsPorDia(filtrados);
@@ -1976,8 +2052,7 @@ window.renderAdminLogs = renderAdminLogs;
    BACKUP
    ============================================================ */
 async function renderAdminBackup(){
-  const area = document.getElementById('adminArea');
-  if(!area) return;
+  const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('💾 Backup') + `<p class="admin-vazio">Carregando…</p>`;
   let backups = [];
   try {
@@ -1988,16 +2063,11 @@ async function renderAdminBackup(){
   area.innerHTML = adminVoltarHTML('💾 Backup') + `
     <div class="admin-card">
       <h3>💾 Backups automáticos <span class="cont">${backups.length} / 5</span></h3>
-      <p style="color:var(--mute);font-size:.85rem;margin-bottom:14px">
-        Um backup automático é criado todo dia às 3h da manhã. Você também pode criar manualmente. Os 5 mais recentes são mantidos.
-      </p>
+      <p style="color:var(--mute);font-size:.85rem;margin-bottom:14px">Um backup automático é criado todo dia às 3h. Os 5 mais recentes são mantidos.</p>
       ${backups.length ? backups.map(b => `
         <div class="backup-item">
           <div class="bkp-ic">📦</div>
-          <div class="bkp-info">
-            <b>${esc(b.id)}</b>
-            <small>${fmtDataHora(b.criadoEm)} · ${fmtTamanho(b.tamanho || 0)} · por @${esc(b.criadoPor || 'sistema')}</small>
-          </div>
+          <div class="bkp-info"><b>${esc(b.id)}</b><small>${fmtDataHora(b.criadoEm)} · ${fmtTamanho(b.tamanho || 0)} · por @${esc(b.criadoPor || 'sistema')}</small></div>
           <div class="bkp-actions">
             <a class="admin-btn ghost" href="/api/backup?action=download&id=${encodeURIComponent(b.id)}" download>⬇️ Baixar</a>
             <button class="admin-btn ghost" onclick="restaurarBackup('${esc(b.id)}')">♻️ Restaurar</button>
@@ -2016,11 +2086,7 @@ window.renderAdminBackup = renderAdminBackup;
 async function criarBackupManual(){
   try{
     toast('Criando backup…', 'info');
-    const r = await fetch('/api/backup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'create' })
-    });
+    const r = await fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create' }) });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     toast('Backup criado! ✅', 'ok');
@@ -2030,14 +2096,10 @@ async function criarBackupManual(){
 window.criarBackupManual = criarBackupManual;
 
 async function restaurarBackup(id){
-  const ok = await confirmar('Restaurar backup?', 'TODOS os dados atuais serão substituídos pelos dados desse backup. Essa ação não volta.', '⚠️');
+  const ok = await confirmar('Restaurar backup?', 'Todos os dados atuais serão substituídos. Essa ação não volta.', '⚠️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/backup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'restore', id })
-    });
+    const r = await fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'restore', id }) });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     toast(`✅ Restaurado (${d.total} chaves)`, 'ok');
@@ -2050,14 +2112,10 @@ async function restaurarBackup(id){
 window.restaurarBackup = restaurarBackup;
 
 async function apagarBackup(id){
-  const ok = await confirmar('Apagar backup?', 'O arquivo sai do histórico. Essa ação não volta.', '🗑️');
+  const ok = await confirmar('Apagar backup?', 'O arquivo sai do histórico.', '🗑️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/backup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', id })
-    });
+    const r = await fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
     if(!r.ok) throw new Error('Falha');
     toast('Backup apagado ✅', 'ok');
     await renderAdminBackup();
