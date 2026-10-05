@@ -1,5 +1,5 @@
 /* ============================================================
-   CONFIGURAÇÕES
+   CONFIGURAÇÕES GLOBAIS
    ============================================================ */
 const CONFIG = {
   subs: null,
@@ -8,43 +8,28 @@ const CONFIG = {
   topDoadores: [],
   atividadeManual: [],
   spotifyPlaylist: 'https://open.spotify.com/playlist/0OV32Qe5e7BJY33rL4tpXk',
-  pixKey: 'asemtet0@gmail.com' // Chave Pix pra vaquinha
+  pixKey: 'asemtet0@gmail.com'
 };
 
 const AVISO = { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
-
 const EMOTES = [
   { emoji: '💜', nome: 'amor' }, { emoji: '😭', nome: 'chora' },
   { emoji: '😂', nome: 'risada' }, { emoji: '😡', nome: 'raiva' },
   { emoji: '😱', nome: 'pog' }, { emoji: '🎮', nome: 'gg' }
 ];
-
 const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
 const HOST = window.location.hostname || 'localhost';
-
 const COMANDOS_LISTA = [
-  { c:'!discord', d:'Link do Discord' },
-  { c:'!insta',   d:'Instagram da Soso' },
-  { c:'!social',  d:'Instagram, Discord e TikTok' },
-  { c:'!lurk',    d:'Avisar que vai ficar de lurk' },
-  { c:'!uptime',  d:'Tempo de live' },
-  { c:'!commands',d:'Lista de comandos' }
+  { c:'!discord', d:'Link do Discord' }, { c:'!insta', d:'Instagram da Soso' },
+  { c:'!social', d:'Instagram, Discord e TikTok' }, { c:'!lurk', d:'Avisar que vai ficar de lurk' },
+  { c:'!uptime', d:'Tempo de live' }, { c:'!commands', d:'Lista de comandos' }
 ];
-
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
-const LABEL_CARGO = {
-  dev: '🛠️ Dev', dono: '👑 Dono',
-  administrador: '🛡️ Administrador', moderador: '🔰 Moderador'
-};
-
+const LABEL_CARGO = { dev: '🛠️ Dev', dono: '👑 Dono', administrador: '🛡️ Administrador', moderador: '🔰 Moderador' };
 const STATUS_TOOLTIP = {
-  'Todos': 'Ver todos os itens',
-  'Jogando': 'Estou jogando atualmente',
-  'Zerado': 'Terminei a história principal',
-  'Dropado': 'Comecei mas não vou continuar',
-  'Na fila': 'Quero jogar/assistir em breve',
-  'Assistindo': 'Estou assistindo agora',
-  'Assistido': 'Já assisti'
+  'Todos': 'Ver todos os itens', 'Jogando': 'Estou jogando atualmente', 'Zerado': 'Terminei a história principal',
+  'Dropado': 'Comecei mas não vou continuar', 'Na fila': 'Quero jogar/assistir em breve',
+  'Assistindo': 'Estou assistindo agora', 'Assistido': 'Já assisti'
 };
 
 /* ============================================================
@@ -69,121 +54,18 @@ let videosTw = [];
 let inicioLive = null;
 let modo = 'jogos', filtro = 'Todos';
 let CONFIG_GERAL = {
-  aviso: null, donate: null, manutencao: false,
-  recado: '', horasMes: '', updatedAt: null, top3: [], hall: [],
-  votosFechamento: null
+  aviso: null, donate: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, top3: [], hall: [], votosFechamento: null
 };
 let musicaTab = 'playlist';
 let musicaTocando = false;
 let revealObs = null;
-
-// Setup
-const SETUP_VIEW_KEY = 'setup:view';
-let setupView = '3d';
-let setupBusca = '';
-let _sonhoSelecionado = null;
-
-// Sugestões
 let sugTipoAtual = 'Sugestão / ideia';
 let sirFiltro = 'all';
 
 /* ============================================================
-   DADOS — SETUP ATUAL
+   HELPERS GERAIS
    ============================================================ */
-const SETUP_DATA = [
-  {
-    id: 'pc',
-    titulo: '💻 PC Gamer',
-    accent: 'blue',
-    tipo: 'real',
-    itens: [
-      { ic:'🧠', cat:'Processador', nome:'Ryzen 9 5900x', ano:2023, nota:10,
-        comentario:'Monstro pra jogos e streaming ao mesmo tempo. Nunca travou.' },
-      { ic:'🎮', cat:'Placa de Vídeo', nome:'RX 6750 XT', ano:2024, nota:8,
-        comentario:'Roda tudo em 1440p liso. CxB excelente.' },
-      { ic:'🧩', cat:'Memória RAM', nome:'48GB DDR4', ano:2023, nota:9,
-        comentario:'Sobra RAM pra jogar, streamar e editar junto.' },
-      { ic:'🔌', cat:'Placa Mãe', nome:'X570 TUF Gaming', ano:2023, nota:8,
-        comentario:'Ótima construção, várias portas USB e boa dissipação.' },
-      { ic:'🗄️', cat:'Gabinete', nome:'Risemode Aquarium branco', ano:2023, nota:8,
-        comentario:'Gabinete branco compacto, airflow ótimo e visual limpo.' },
-      { ic:'💧', cat:'Water cooler', nome:'Risemode Aura RGB', ano:2023, nota:7,
-        comentario:'Mantém a temperatura baixa, RGB de sobra.' }
-    ]
-  },
-  {
-    id: 'arm',
-    titulo: '💾 Armazenamento & Energia',
-    accent: 'cyan',
-    tipo: 'real',
-    itens: [
-      { ic:'💾', cat:'Armazenamento', nome:'SSD 2TB NVMe M2', ano:2024, nota:9,
-        comentario:'Leitura rápida, jogo carrega em segundos.' },
-      { ic:'⚡', cat:'Fonte', nome:'Corsair RM800w', ano:2023, nota:9,
-        comentario:'80 Plus Gold, silenciosa e confiável.' }
-    ]
-  },
-  {
-    id: 'per',
-    titulo: '🖱️ Periféricos & Outros',
-    accent: 'pink',
-    tipo: 'real',
-    itens: [
-      { ic:'⌨️', cat:'Teclado', nome:'AULA H88', ano:2023, nota:8,
-        comentario:'Switch gateron amarelo, ótimo pra digitar e jogar.' },
-      { ic:'🖱️', cat:'Mouse', nome:'Logitech G502X Superlight', ano:2024, nota:10,
-        comentario:'Leve, preciso e com sensor TOP. Melhor mouse que já tive.' },
-      { ic:'🎧', cat:'Headset', nome:'Astro A50', ano:2023, nota:9,
-        comentario:'Áudio muito bom e microfone que capta bem.' },
-      { ic:'🎙️', cat:'Microfone', nome:'FIFINE AM8 Branco', ano:2024, nota:8,
-        comentario:'USB, com ganho bom e acabamento bonito.' },
-      { ic:'🖥️', cat:'Monitor', nome:'AOC 240Hz', ano:2023, nota:9,
-        comentario:'240Hz faz MUITA diferença em FPS.' },
-      { ic:'📷', cat:'Webcam', nome:'Logitech C920', ano:2023, nota:7,
-        comentario:'Clássica, boa pra live. Com luz fica ótima.' }
-    ]
-  }
-];
-
-/* ============================================================
-   DADOS — SETUP DOS SONHOS (vaquinha)
-   ============================================================ */
-const SONHOS_DATA = [
-  {
-    id: 'sony-zv-e10',
-    icon: '🎥',
-    cat: 'Câmera profissional',
-    nome: 'Sony ZV-E10',
-    descricao: 'Pra dar um upgrade monstro no visual da live.',
-    meta: 3500,
-    arrecadado: 0,
-    contribuintes: []
-  },
-  {
-    id: 'shure-sm7b',
-    icon: '🎤',
-    cat: 'Microfone pro',
-    nome: 'Shure SM7B',
-    descricao: 'O sonho de todo streamer, mas precisa de interface.',
-    meta: 4200,
-    arrecadado: 0,
-    contribuintes: []
-  }
-];
-
-/* ============================================================
-   HELPERS
-   ============================================================ */
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
 const nivel = cargo => NIVEIS[cargo] || 0;
-
-function fmtBRL(v){
-  if(!v && v !== 0) return 'R$ 0';
-  return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
 
 function temPerm(perm){
   if(!USUARIO || !USUARIO.admin) return false;
@@ -192,90 +74,47 @@ function temPerm(perm){
 }
 window.temPerm = temPerm;
 
-function fmtDuracao(min){
-  if(!min) return null;
-  const h = Math.floor(min/60), m = min % 60;
-  return h ? `${h}h ${String(m).padStart(2,'0')}min` : `${m}min`;
-}
-
-const tempoAtras = iso => {
-  const m = (Date.now() - new Date(iso)) / 60000;
-  if (m < 60) return 'há ' + Math.max(1, Math.round(m)) + ' min';
-  if (m < 1440) return 'há ' + Math.round(m / 60) + 'h';
-  const d = Math.round(m / 1440); return d === 1 ? 'ontem' : 'há ' + d + ' dias';
-};
-const durTw = d => {
-  const h = /(\d+)h/.exec(d || ''), mi = /(\d+)m/.exec(d || '');
-  return h ? h[1] + 'h' + (mi ? mi[1].padStart(2, '0') : '00') : (mi ? mi[1] + ' min' : '');
-};
-
-function fmtDataHora(iso){
-  if(!iso) return null;
-  const d = new Date(iso);
-  if(isNaN(d.getTime())) return String(iso);
-  const data = d.toLocaleDateString('pt-BR');
-  const hora = d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-  return `${data} às ${hora}`;
-}
-
-function tempoRestante(iso){
-  if(!iso) return null;
-  const ms = new Date(iso).getTime() - Date.now();
-  if(ms <= 0) return { encerrado: true, texto: 'Encerrada' };
-  const d = Math.floor(ms / 86400000);
-  const h = Math.floor((ms % 86400000) / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  let texto = '';
-  if(d > 0) texto = `Fecha em ${d}d ${h}h`;
-  else if(h > 0) texto = `Fecha em ${h}h ${m}m`;
-  else texto = `Fecha em ${m}min`;
-  return { encerrado: false, texto, dias: d, horas: h, min: m };
-}
-
-function ehNovo(item){
-  if(!item) return false;
-  if(item.tier && item.tier !== 'NR') return false;
-  if(!item.adicionadoEm) return false;
-  const dias = (Date.now() - new Date(item.adicionadoEm)) / 86400000;
-  return dias <= 7;
-}
-
-function gerarIniciaisFaixa(nome){
-  if(!nome) return '♪';
-  const palavras = String(nome).trim().split(/\s+/).filter(Boolean);
-  if(!palavras.length) return '♪';
-  if(palavras.length === 1) return palavras[0].slice(0, 2).toUpperCase();
-  return (palavras[0][0] + palavras[1][0]).toUpperCase();
-}
-
 /* ============================================================
-   LAZY LOAD — admin-ui.js
+   LAZY LOAD — ADMIN FILES
    ============================================================ */
 function garantirAdminCarregado(){
   if(window.__adminCarregado) return Promise.resolve();
   if(window.__adminCarregando) return window.__adminCarregando;
 
   window.__adminCarregando = new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'js/admin-ui.js';
-    s.async = true;
-    s.onload = () => {
-      window.__adminCarregado = true;
-      window.__adminCarregando = null;
-      resolve();
-    };
-    s.onerror = () => {
-      window.__adminCarregando = null;
-      reject(new Error('Falha ao carregar admin-ui.js'));
-    };
-    document.head.appendChild(s);
+    const files = [
+      'js/admin/admin.js',
+      'js/admin/dashboard.js',
+      'js/admin/forms.js',
+      'js/admin/tables.js'
+    ];
+    let loaded = 0;
+    
+    files.forEach(src => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = false; // Garante a ordem de execução
+      s.onload = () => {
+        loaded++;
+        if(loaded === files.length){
+          window.__adminCarregado = true;
+          window.__adminCarregando = null;
+          resolve();
+        }
+      };
+      s.onerror = () => {
+        window.__adminCarregando = null;
+        reject(new Error(`Falha ao carregar ${src}`));
+      };
+      document.head.appendChild(s);
+    });
   });
   return window.__adminCarregando;
 }
 window.garantirAdminCarregado = garantirAdminCarregado;
 
 /* ============================================================
-   TOAST
+   TOAST & CONFIRM
    ============================================================ */
 function toast(msg, tipo = 'ok'){
   const el = document.createElement('div');
@@ -290,9 +129,6 @@ function toast(msg, tipo = 'ok'){
 }
 window.toast = toast;
 
-/* ============================================================
-   CONFIRM MODAL
-   ============================================================ */
 function confirmar(titulo = 'Confirmar?', texto = 'Tem certeza?', icone = '⚠️'){
   return new Promise(resolve => {
     const dlg = $('confirmDlg');
@@ -318,7 +154,7 @@ function confirmar(titulo = 'Confirmar?', texto = 'Tem certeza?', icone = '⚠�
 window.confirmar = confirmar;
 
 /* ============================================================
-   CONTADOR ANIMADO
+   ANIMAÇÕES & RENDER BÁSICO
    ============================================================ */
 function animarNumero(el, alvo, duracao = 1200){
   if(!el) return;
@@ -336,9 +172,6 @@ function animarNumero(el, alvo, duracao = 1200){
   requestAnimationFrame(tick);
 }
 
-/* ============================================================
-   META
-   ============================================================ */
 function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
   const elDesc = $(pre+'Desc'), elNum = $(pre+'Num'), elBar = $(pre+'Bar');
   if(!elDesc || !elNum || !elBar) return;
@@ -370,9 +203,6 @@ function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
   elDesc.textContent = `Faltam ${(alvo - atual).toLocaleString('pt-BR')} para alcançar a próxima meta!`;
 }
 
-/* ============================================================
-   RENDER BÁSICO
-   ============================================================ */
 function renderAviso(){
   const box = $('avisoBox'); if(!box) return;
   if(AVISO && AVISO.ativo && AVISO.texto){
@@ -569,7 +399,7 @@ function mudarAba(nome, salvar = true){
     garantirAdminCarregado()
       .then(() => {
         if(typeof carregarAdmin === 'function') carregarAdmin();
-        else console.error('carregarAdmin não definido após carregar admin-ui.js');
+        else console.error('carregarAdmin não definido após carregar admin files');
       })
       .catch(err => {
         console.error('Erro ao carregar admin:', err);
@@ -612,166 +442,6 @@ function setupComunidadeTabs(){
     ativarTab(b.dataset.tab);
   });
 }
-
-/* ============================================================
-   TWITCH
-   ============================================================ */
-function assistirVod(v){
-  v = v || vodAtual; if (!v) return;
-  vodAtual = v; assistindoVod = true;
-  const panel = document.getElementById('offlinePanel');
-  if(panel) panel.style.display = 'none';
-  const f = document.getElementById('twitchIframe');
-  if(!f) return;
-  f.style.display = 'block';
-  f.src = `https://player.twitch.tv/?video=v${vodAtual.id}&parent=${HOST}&autoplay=false`;
-  const noteEl = document.getElementById('playerNoteText');
-  if(noteEl) noteEl.textContent = `Reprise: ${vodAtual.title}`;
-  const box = document.querySelector('.twitch-player-box');
-  if(box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-window.assistirVod = assistirVod;
-
-function tickUptime(){
-  const el = $('tmUp'); if(!el) return;
-  if(!inicioLive){ el.textContent = 'Offline'; return; }
-  const m = Math.max(0, Math.floor((Date.now() - inicioLive) / 60000));
-  el.textContent = `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
-}
-setInterval(tickUptime, 30000);
-
-let toastLiveMostrado = false;
-async function verificarStatusTwitch() {
-  const g = id => document.getElementById(id);
-  const iframe = g('twitchIframe'), panel = g('offlinePanel'), badge = g('bannerLiveBadge');
-  try {
-    const response = await fetch('/api/twitch');
-    if (!response.ok) throw new Error('api');
-    const data = await response.json();
-
-    atualizarMeta('goalSeg', data.followers, MARCOS, true);
-    atualizarMeta('goalDc', data.discord, MARCOS, true);
-
-    const live = !!data.stream;
-    inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
-    tickUptime();
-
-    if (live && !toastLiveMostrado) {
-      toastLiveMostrado = true;
-      setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
-    }
-
-    if (data.horasMes != null && g('tmHoras')) {
-      g('tmHoras').textContent = (typeof data.horasMes === 'number' ? data.horasMes : Number(data.horasMes)).toLocaleString('pt-BR') + 'h';
-    } else if (g('tmHoras')) {
-      g('tmHoras').textContent = '—';
-    }
-
-    if (data.discord && $('dcMembros'))
-      $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
-
-    vodAtual = data.video;
-    videosTw = data.videos || (data.video ? [data.video] : []);
-    g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
-    g('tmSeg').textContent = data.followers != null ? data.followers.toLocaleString('pt-BR') : '—';
-    g('tmLbl').textContent = live ? 'AO VIVO AGORA' : 'ÚLTIMA LIVE';
-    g('tmSub').textContent = live
-      ? `${data.stream.title} · ${data.stream.game_name || ''} · ${data.stream.viewer_count} assistindo`
-      : (videosTw[0] && videosTw[0].created_at ? `${tempoAtras(videosTw[0].created_at)} · ${videosTw[0].title}` : 'Canal offline no momento.');
-    g('tmVods').innerHTML = videosTw.slice(0, 3).map((v, i) =>
-      `<button class="tm-vod" data-i="${i}">${v.thumbnail ? `<img src="${esc(v.thumbnail)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div><b>${esc(v.title || 'Live')}</b><span>${v.created_at ? tempoAtras(v.created_at) : ''}${v.duration ? ' · ' + durTw(v.duration) : ''}${v.views != null ? ' · 👁 ' + v.views : ''}</span></div><em>▶</em></button>`
-    ).join('') || '<span class="tm-h4">Nenhuma live gravada ainda.</span>';
-
-    atualizarFoco(data.game, !!data.stream);
-    renderClips(data.clips);
-    g('btnVod').style.display = vodAtual ? '' : 'none';
-    setLivePulse(live);
-
-    if (data.user) {
-      if (data.user.profile_image_url) { const av = g('offlineAvatarImg'); if(av) av.src = data.user.profile_image_url; }
-      if (data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.7),rgba(10,5,17,.9)),url(${data.user.offline_image_url})`;
-    }
-
-    if (data.stream) {
-      assistindoVod = false;
-      panel.style.display = 'none';
-      iframe.style.display = 'block';
-      if (!iframe.src.includes('channel=')) iframe.src = `https://player.twitch.tv/?channel=asemtet0&parent=${HOST}`;
-      badge.style.display = 'flex';
-      g('bannerLiveText').textContent = `AO VIVO • ${data.stream.game_name || 'Jogando'} (${data.stream.viewer_count} espectadores)`;
-      g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
-      g('playerNoteText').textContent = `Transmitindo: ${data.stream.title}`;
-    } else {
-      badge.style.display = 'none';
-      g('viewerCountStatus').textContent = '@asemtet0';
-      if (!assistindoVod) {
-        iframe.style.display = 'none'; iframe.src = '';
-        panel.style.display = 'flex';
-        g('playerNoteText').textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
-      }
-    }
-  } catch (err) {
-    console.error('Erro ao buscar dados da Twitch:', err);
-    atualizarFoco(null, false);
-    ['goalSeg','goalDc'].forEach(p => { const el = $(p+'Num'); if (el && el.textContent === '…') atualizarMeta(p, null); });
-    setLivePulse(false);
-  }
-}
-
-document.addEventListener('click', e => {
-  const b = e.target.closest('.tm-vod');
-  if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]);
-});
-
-/* ============================================================
-   CLIPES
-   ============================================================ */
-function renderClips(list){
-  if(clipsOk) return;
-  const vazio = $('clipsVazio'), box = $('clipsBox');
-  if(!list || !list.length){
-    if(vazio) vazio.style.display = 'block';
-    if(box) box.style.display = 'none';
-    return;
-  }
-  clipsOk = true;
-  clipsCache = list.slice(0, 4);
-  const totalViews = clipsCache.reduce((a, c) => a + (Number(c.views) || 0), 0);
-  const titulo = $('clipsTitulo');
-  if(titulo) titulo.textContent = `🎬 Clipes em destaque · 👁 ${totalViews.toLocaleString('pt-BR')} views`;
-  if(box) box.style.display = '';
-  if(vazio) vazio.style.display = 'none';
-  $('clipsGrid').innerHTML = clipsCache.map(c =>
-    `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}">
-      <img src="${esc(c.thumbnail)}" alt="" loading="lazy">
-      <span class="play">▶</span>
-      <span class="vw">👁 ${Number(c.views || 0).toLocaleString('pt-BR')}</span>
-      <span class="ct">${esc(c.title)}</span>
-    </button>`
-  ).join('');
-}
-function getDlgClip(){
-  if(dlgClip) return dlgClip;
-  dlgClip = document.createElement('dialog');
-  dlgClip.className = 'clip-modal';
-  dlgClip.innerHTML = `<iframe id="clipIframe" allowfullscreen></iframe><div class="cm-foot"><b id="clipTitle"></b><span id="clipViews"></span></div>`;
-  document.body.appendChild(dlgClip);
-  dlgClip.addEventListener('click', e => { if(e.target === dlgClip) fecharClip(); });
-  return dlgClip;
-}
-function abrirClip(id){
-  const c = clipsCache.find(x => x.id === id); if(!c) return;
-  const d = getDlgClip();
-  d.querySelector('#clipIframe').src = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(id)}&parent=${HOST}&autoplay=true`;
-  d.querySelector('#clipTitle').textContent = c.title;
-  d.querySelector('#clipViews').textContent = `👁 ${Number(c.views || 0).toLocaleString('pt-BR')} views`;
-  d.showModal();
-}
-function fecharClip(){ if(dlgClip){ dlgClip.querySelector('#clipIframe').src = ''; dlgClip.close(); } }
-document.addEventListener('click', e => {
-  const b = e.target.closest('.clip');
-  if(b && b.dataset.id) abrirClip(b.dataset.id);
-});
 
 /* ============================================================
    COMANDOS
@@ -1020,287 +690,9 @@ function desenhar(){
 }
 
 /* ============================================================
-   SETUP — 3D + LISTA + SONHOS
-   ============================================================ */
-function setupRender(){
-  const grid = $('setupGrid'); if(!grid) return;
-
-  const q = setupBusca.toLowerCase().trim();
-  const normQ = norm(q);
-
-  grid.className = 'setup-groups view-' + setupView;
-
-  const gruposFiltrados = SETUP_DATA.map(g => {
-    const itens = g.itens.filter(it => {
-      if(!q) return true;
-      return norm(it.nome).includes(normQ) || norm(it.cat).includes(normQ);
-    });
-    return { ...g, itensFiltrados: itens };
-  }).filter(g => g.itensFiltrados.length > 0);
-
-  if(!gruposFiltrados.length){
-    grid.innerHTML = `
-      <div class="logs-empty">
-        <b>Nenhum item encontrado</b>
-        Tenta buscar outro termo (ex: "mouse", "ryzen", "corsair").
-      </div>`;
-    return;
-  }
-
-  grid.innerHTML = gruposFiltrados.map(g => `
-    <div class="setup-group" data-accent="${g.accent}">
-      <div class="sg-head">
-        <h3>${g.titulo}</h3>
-        <span class="sg-count">${g.itensFiltrados.length}</span>
-      </div>
-      <div class="sg-list">
-        ${g.itensFiltrados.map((it) => {
-          const idx = g.itens.indexOf(it);
-          return `
-            <button type="button" class="setup-item setup-item-3d" data-grupo="${g.id}" data-idx="${idx}">
-              <span class="si-ic-wrap" data-ic-cat="${esc(it.cat)}">
-                <span class="si-ic">${it.ic}</span>
-                <span class="si-lupa">🔍</span>
-              </span>
-              <span class="si-tx">
-                <span class="si-cat">${esc(it.cat)}</span>
-                <span class="si-nome">${esc(it.nome)}</span>
-                <span class="si-meta">${it.ano ? it.ano : ''}${it.ano && it.nota ? ' · ' : ''}${it.nota ? '⭐ ' + it.nota : ''}</span>
-              </span>
-              <span class="si-set">→</span>
-            </button>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-function abrirItemSetup(grupoId, idx){
-  const g = SETUP_DATA.find(x => x.id === grupoId);
-  if(!g) return;
-  const it = g.itens[idx];
-  if(!it) return;
-
-  $('dTitle').textContent = it.nome;
-  $('dBody').innerHTML = `
-    <div class="setup-modal-item">
-      <div class="smi-hero" data-accent="${g.accent}">
-        <span class="smi-hero-ic">${it.ic}</span>
-      </div>
-      <div class="smi-info">
-        <small>${esc(it.cat)}</small>
-        <b>${esc(it.nome)}</b>
-        <div class="kv" style="grid-template-columns:repeat(2,1fr)">
-          <div><b>${it.ano || '—'}</b><span>ano</span></div>
-          <div><b>${it.nota ? '⭐ ' + it.nota : '—'}</b><span>nota</span></div>
-        </div>
-        ${it.comentario ? `<p class="smi-coment">${esc(it.comentario)}</p>` : ''}
-        <div class="smi-actions">
-          <a class="btn" href="https://www.kabum.com.br/busca/${encodeURIComponent(it.nome)}" target="_blank" rel="noopener">🛒 KaBuM!</a>
-          <a class="btn ghost" href="https://www.amazon.com.br/s?k=${encodeURIComponent(it.nome)}" target="_blank" rel="noopener">🛒 Amazon</a>
-        </div>
-      </div>
-    </div>
-  `;
-  $('dlg').showModal();
-}
-window.abrirItemSetup = abrirItemSetup;
-
-function setupSetView(view){
-  setupView = view;
-  try { localStorage.setItem(SETUP_VIEW_KEY, view); } catch(e){}
-  document.querySelectorAll('.svt-btn').forEach(b => {
-    const on = b.dataset.view === view;
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-  });
-  setupRender();
-}
-window.setupSetView = setupSetView;
-
-/* ---------- Sonhos (vaquinha) ---------- */
-function renderSonhos(){
-  const lista = $('sonhosLista'); if(!lista) return;
-  if(!SONHOS_DATA.length){
-    lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhum sonho cadastrado ainda 💜</small></div>`;
-    return;
-  }
-  lista.innerHTML = SONHOS_DATA.map(s => {
-    const pct = s.meta > 0 ? Math.min(100, Math.round((s.arrecadado / s.meta) * 100)) : 0;
-    const meta100 = pct >= 100;
-    const nContrib = s.contribuintes.length;
-    return `
-      <div class="sonho-card ${meta100 ? 'meta-conquistada' : ''}" data-sonho="${esc(s.id)}">
-        <div class="sonho-head">
-          <span class="sonho-ic">${s.icon}</span>
-          <div class="sonho-tx">
-            <small>${esc(s.cat)}</small>
-            <b>${esc(s.nome)}</b>
-            ${s.descricao ? `<span>${esc(s.descricao)}</span>` : ''}
-          </div>
-          ${meta100 ? '<span class="sonho-badge-conq">🎉 Conquistado!</span>' : ''}
-        </div>
-
-        <div class="sonho-progresso">
-          <div class="sonho-bar">
-            <i style="width:${pct}%"></i>
-          </div>
-          <div class="sonho-meta-info">
-            <b>${fmtBRL(s.arrecadado)}</b>
-            <span>de ${fmtBRL(s.meta)}</span>
-            <span class="sonho-pct">${pct}%</span>
-          </div>
-        </div>
-
-        ${nContrib ? `
-          <div class="sonho-apoiadores">
-            <span class="sa-h">💜 ${nContrib} ${nContrib === 1 ? 'apoiador' : 'apoiadores'}:</span>
-            <div class="sa-lista">
-              ${s.contribuintes.slice(0, 5).map(c => `<span class="sa-chip" title="${fmtBRL(c.valor)}">@${esc(c.nome)}</span>`).join('')}
-              ${nContrib > 5 ? `<span class="sa-chip sa-mais">+${nContrib - 5}</span>` : ''}
-            </div>
-          </div>` : `
-          <div class="sonho-vazio">
-            <small>Seja a primeira pessoa a apoiar esse sonho 💜</small>
-          </div>`}
-
-        <div class="sonho-actions">
-          <button type="button" class="btn" onclick="abrirContribuirSonho('${esc(s.id)}')">
-            💜 ${meta100 ? 'Ver apoiadores' : 'Contribuir'}
-          </button>
-          <a class="btn ghost" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">💬 Falar no Discord</a>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderApoiadores(){
-  const lista = $('apoiadoresLista'); if(!lista) return;
-  const todos = [];
-  SONHOS_DATA.forEach(s => {
-    (s.contribuintes || []).forEach(c => {
-      todos.push({ nome: c.nome, valor: c.valor, sonho: s.nome });
-    });
-  });
-  if(!todos.length){
-    lista.innerHTML = `
-      <div class="sir-empty">
-        <span>🏆</span>
-        <b>Ninguém ainda</b>
-        <small>Quando alguém apoiar, o nome aparece aqui 💜</small>
-      </div>`;
-    return;
-  }
-  const porPessoa = {};
-  todos.forEach(t => {
-    if(!porPessoa[t.nome]) porPessoa[t.nome] = { nome: t.nome, total: 0, sonhos: [] };
-    porPessoa[t.nome].total += t.valor;
-    if(!porPessoa[t.nome].sonhos.includes(t.sonho)) porPessoa[t.nome].sonhos.push(t.sonho);
-  });
-  const ranking = Object.values(porPessoa).sort((a,b) => b.total - a.total);
-  const medalhas = ['🥇','🥈','🥉'];
-  lista.innerHTML = ranking.map((p, i) => `
-    <div class="apoiador-row ${i < 3 ? 'apoiador-top' : ''}">
-      <span class="ar-pos">${medalhas[i] || '🎗️'}</span>
-      <span class="ar-nome">@${esc(p.nome)}</span>
-      <span class="ar-total">${fmtBRL(p.total)}</span>
-      <span class="ar-sonhos">${p.sonhos.map(s => `<span class="ar-sonho-chip">${esc(s)}</span>`).join('')}</span>
-    </div>
-  `).join('');
-}
-
-function abrirContribuirSonho(id){
-  const s = SONHOS_DATA.find(x => x.id === id);
-  if(!s) return;
-  _sonhoSelecionado = s;
-
-  const pct = s.meta > 0 ? Math.min(100, Math.round((s.arrecadado / s.meta) * 100)) : 0;
-
-  $('dTitle').textContent = '💜 Apoiar ' + s.nome;
-  $('dBody').innerHTML = `
-    <div class="contribuir-modal">
-      <div class="cm-head">
-        <span class="cm-ic">${s.icon}</span>
-        <div>
-          <b>${esc(s.nome)}</b>
-          <small>${esc(s.cat)}</small>
-        </div>
-      </div>
-
-      <div class="cm-progresso">
-        <div class="sonho-bar"><i style="width:${pct}%"></i></div>
-        <div class="cm-prog-info">
-          <b>${fmtBRL(s.arrecadado)}</b>
-          <span>de ${fmtBRL(s.meta)}</span>
-          <span class="sonho-pct">${pct}%</span>
-        </div>
-      </div>
-
-      <div class="cm-info">
-        <b>💜 Como contribuir</b>
-        <ol>
-          <li>Faz um Pix de qualquer valor</li>
-          <li>Volta aqui e avisa a Soso</li>
-          <li>A contribuição aparece após confirmação</li>
-        </ol>
-      </div>
-
-      <div class="cm-pix">
-        <label>📋 Chave Pix</label>
-        <div class="cm-pix-box">
-          <input type="text" id="pixKeyInput" value="${esc(CONFIG.pixKey)}" readonly>
-          <button type="button" class="btn ghost" onclick="copiarPix()">📋 Copiar</button>
-        </div>
-      </div>
-
-      <div class="cm-form">
-        <label>Depois de fazer o Pix, me avisa:</label>
-        <input type="text" id="contribNome" placeholder="Seu nome/apelido" maxlength="40">
-        <input type="number" id="contribValor" placeholder="Valor em R$" min="1" step="1">
-        <button type="button" class="btn big" onclick="enviarContribuicao()">💜 Já fiz o Pix, avisar Soso</button>
-        <small class="cm-aviso">* O valor só aparece depois que a Soso confirmar</small>
-      </div>
-    </div>
-  `;
-  $('dlg').showModal();
-}
-window.abrirContribuirSonho = abrirContribuirSonho;
-
-function copiarPix(){
-  const input = $('pixKeyInput');
-  if(!input) return;
-  try {
-    input.select();
-    navigator.clipboard.writeText(input.value);
-    toast('Chave Pix copiada! 💜', 'ok');
-  } catch(e){ toast('Erro ao copiar', 'erro'); }
-}
-window.copiarPix = copiarPix;
-
-async function enviarContribuicao(){
-  const nome = ($('contribNome')?.value || '').trim();
-  const valor = Number($('contribValor')?.value) || 0;
-  if(!nome){ toast('Digita seu nome/apelido!', 'warn'); return; }
-  if(valor <= 0){ toast('Informa o valor do Pix!', 'warn'); return; }
-
-  // Por enquanto: só toast (a Soso adiciona manualmente no painel)
-  try{
-    // Aqui poderia enviar pra uma API de contribuições pendentes
-    toast(`✅ Aviso enviado! Assim que a Soso confirmar, @${nome} aparece na lista 💜`, 'ok');
-    if($('dlg')) $('dlg').close();
-  }catch(e){
-    toast('Não consegui enviar. Manda no Discord 💜', 'warn');
-  }
-}
-window.enviarContribuicao = enviarContribuicao;
-
-/* ============================================================
    LOGIN / MANUTENÇÃO
    ============================================================ */
 async function checarLogin(){
-  // Modo preview — força visitante
   if(location.search.includes('preview=1')){
     USUARIO = null;
     renderLogin();
@@ -1419,7 +811,6 @@ function renderVotacao(){
   const statusEl = $('votoStatus');
   const countdownEl = $('votoCountdown');
 
-  // Countdown
   const countdown = tempoRestante(VOTOS_FECHAMENTO);
   const fechada = countdown && countdown.encerrado;
 
@@ -1466,7 +857,6 @@ function renderVotacao(){
   const ord = [...VOTOS_DADOS].sort((a, b) => (b.votos || 0) - (a.votos || 0));
   const pct = v => total ? Math.round((v || 0) / total * 100) : 0;
 
-  // Mini stats
   const statOpcoes = $('votoStatOpcoes');
   const statVotos = $('votoStatVotos');
   const statPessoas = $('votoStatPessoas');
@@ -1568,7 +958,7 @@ async function votar(id, event){
 window.votar = votar;
 
 /* ============================================================
-   SUGESTÕES — Formulário + Últimas ideias (sidebar)
+   SUGESTÕES
    ============================================================ */
 function setupSugForm(){
   const chips = document.querySelectorAll('#sugTipoChips .st-chip');
@@ -1767,34 +1157,6 @@ function setupRoomParallax(){
   })();
 }
 
-function setupSetup3D(){
-  // Parallax por card no setup (mouse move) — desligado em mobile
-  if(matchMedia('(max-width:960px)').matches) return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  const grid = $('setupGrid');
-  if(!grid) return;
-
-  grid.addEventListener('mousemove', (e) => {
-    const card = e.target.closest('.setup-item-3d');
-    if(!card) return;
-    const rect = card.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    const rotY = x * 10;
-    const rotX = -y * 8;
-    card.style.setProperty('--rx', rotX + 'deg');
-    card.style.setProperty('--ry', rotY + 'deg');
-  });
-
-  grid.addEventListener('mouseleave', () => {
-    grid.querySelectorAll('.setup-item-3d').forEach(c => {
-      c.style.setProperty('--rx', '0deg');
-      c.style.setProperty('--ry', '0deg');
-    });
-  });
-}
-
 function setupBurger(){
   const burger = document.getElementById('navBurger');
   const navRight = document.getElementById('navRight');
@@ -1834,7 +1196,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
 
-  // Setup
+  // Setup (chamando as funções que agora estão em js/setup/setup.js)
   setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
   document.querySelectorAll('.svt-btn').forEach(b => {
     const on = b.dataset.view === setupView;
@@ -1867,7 +1229,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Sugestões
   setupSugForm();
   setupSirFiltros();
   carregarUltimasIdeias();
@@ -1971,14 +1332,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   carregarBiblioteca();
   carregarVotosApi();
 
-  // Countdown refresh a cada 60s
   setInterval(() => {
     if(VOTOS_FECHAMENTO) renderVotacao();
   }, 60000);
 });
 
 /* ============================================================
-   BUSCA DE ITEM (KaBuM/Amazon) — legado
+   BUSCA DE ITEM (KaBuM/Amazon)
    ============================================================ */
 function abrirBuscaItem(produto){
   $('dTitle').textContent = produto;
