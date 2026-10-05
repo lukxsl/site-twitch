@@ -133,6 +133,32 @@ function gerarIniciaisFaixa(nome){
 }
 
 /* ============================================================
+   LAZY LOAD — admin-ui.js
+   ============================================================ */
+function garantirAdminCarregado(){
+  if(window.__adminCarregado) return Promise.resolve();
+  if(window.__adminCarregando) return window.__adminCarregando;
+
+  window.__adminCarregando = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'admin-ui.js';
+    s.async = true;
+    s.onload = () => {
+      window.__adminCarregado = true;
+      window.__adminCarregando = null;
+      resolve();
+    };
+    s.onerror = () => {
+      window.__adminCarregando = null;
+      reject(new Error('Falha ao carregar admin-ui.js'));
+    };
+    document.head.appendChild(s);
+  });
+  return window.__adminCarregando;
+}
+window.garantirAdminCarregado = garantirAdminCarregado;
+
+/* ============================================================
    TOAST
    ============================================================ */
 function toast(msg, tipo = 'ok'){
@@ -422,7 +448,26 @@ function mudarAba(nome, salvar = true){
     ADMIN_PAGE = 'home';
   }
   window.scrollTo({ top:0, behavior:'smooth' });
-  if(nome === 'admin' && typeof carregarAdmin === 'function') carregarAdmin();
+
+  if(nome === 'admin'){
+    // Lazy load do admin-ui.js — só carrega quando o user entra no admin
+    garantirAdminCarregado()
+      .then(() => {
+        if(typeof carregarAdmin === 'function') carregarAdmin();
+        else console.error('carregarAdmin não definido após carregar admin-ui.js');
+      })
+      .catch(err => {
+        console.error('Erro ao carregar admin:', err);
+        const area = $('adminArea');
+        if(area){
+          area.innerHTML = `<div class="admin-vazio">
+            <b>Erro ao carregar o painel admin</b>
+            Verifique sua conexão e recarregue a página.
+          </div>`;
+        }
+      });
+  }
+
   if(section) section.querySelectorAll('.reveal:not(.in)').forEach(el => revealObs && revealObs.observe(el));
 }
 window.mudarAba = mudarAba;
