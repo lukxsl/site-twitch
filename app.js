@@ -195,7 +195,7 @@ function animarNumero(el, alvo, duracao = 1200){
 }
 
 /* ============================================================
-   META (metas comunidade)
+   META
    ============================================================ */
 function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
   const elDesc = $(pre+'Desc'), elNum = $(pre+'Num'), elBar = $(pre+'Bar');
@@ -306,7 +306,7 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
-   MÚSICA (Playlist + Ouvindo agora)
+   MÚSICA
    ============================================================ */
 function renderPlaylist(){
   const embed = $('musicEmbed'); if(!embed) return;
@@ -315,7 +315,7 @@ function renderPlaylist(){
   const m = url.match(/playlist\/([a-zA-Z0-9]+)/);
   if(!m){ embed.innerHTML = `<p class="music-placeholder">🎧 Link da playlist inválido.</p>`; return; }
   embed.innerHTML = `<iframe src="https://open.spotify.com/embed/playlist/${m[1]}?theme=0"
-    width="100%" height="380" frameborder="0" allowtransparency="true"
+    width="100%" height="152" frameborder="0" allowtransparency="true"
     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
     loading="lazy" title="Playlist do Spotify"></iframe>`;
 }
@@ -974,7 +974,7 @@ function aplicarManutencao(){
       overlay.innerHTML = `
         <div style="font-size:4rem;line-height:1;margin-bottom:20px">🔧</div>
         <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;margin-bottom:10px">Estamos em manutenção</h1>
-        <p style="max-width:400px;color:#a99cbf;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
+        <p style="max-width:400px;color:#b0a5c9;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
         <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="margin-top:20px;background:#a855f7;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;text-decoration:none">Ir pra Twitch 💜</a>
       `;
       document.body.appendChild(overlay);
@@ -1041,6 +1041,9 @@ function renderVotacao(){
   const destBox = $('destaqueBox'), listaBox = $('votoLista');
   if(!destBox || !listaBox) return;
   const proxCover = $('proxCover');
+  const proxBarWrap = $('proxBarWrap');
+  const proxBarI = $('proxBarI');
+
   if(!USUARIO){
     destBox.innerHTML = '';
     listaBox.innerHTML = `
@@ -1054,6 +1057,7 @@ function renderVotacao(){
         </a>
       </div>`;
     if(proxCover) proxCover.style.display = 'none';
+    if(proxBarWrap) proxBarWrap.style.display = 'none';
     return;
   }
   if(!VOTOS_DADOS.length){
@@ -1087,9 +1091,11 @@ function renderVotacao(){
     }
     $('proxNome').textContent = l.nome;
     $('proxInfo').textContent = `Liderando com ${p}% dos votos`;
+    if(proxBarWrap && proxBarI){ proxBarWrap.style.display = ''; proxBarI.style.width = p + '%'; }
   } else {
     destBox.innerHTML = '';
     if(proxCover) proxCover.style.display = 'none';
+    if(proxBarWrap) proxBarWrap.style.display = 'none';
     $('proxNome').textContent = 'Votação aberta';
     $('proxInfo').textContent = 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
@@ -1207,7 +1213,7 @@ function setupReveal(){
 }
 
 /* ============================================================
-   PARALLAX SUAVE DA SALA (mouse)
+   PARALLAX DA SALA
    ============================================================ */
 function setupRoomParallax(){
   const room = document.querySelector('.room');
@@ -1223,11 +1229,11 @@ function setupRoomParallax(){
   }, { passive: true });
 
   (function tick(){
-    cx += (mx - cx) * 0.04;
-    cy += (my - cy) * 0.04;
+    cx += (mx - cx) * 0.06;
+    cy += (my - cy) * 0.06;
     layers.forEach(el => {
       const d = parseFloat(el.dataset.depth) || 1;
-      el.style.transform = `translate3d(${cx * d * 8}px, ${cy * d * 8}px, 0)`;
+      el.style.transform = `translate3d(${cx * d * 12}px, ${cy * d * 12}px, 0)`;
     });
     requestAnimationFrame(tick);
   })();

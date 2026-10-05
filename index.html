@@ -19,13 +19,40 @@
 </head>
 <body>
 
-<!-- ============ CENA DA SALA ============ -->
+<!-- ============ CENA: SALA DE ESTAR ============ -->
 <div class="room" aria-hidden="true">
-  <div class="room-wall" data-depth="0.4"></div>
-  <div class="room-window" data-depth="0.8"></div>
-  <div class="room-lamp" data-depth="0.6"></div>
+  <div class="room-wall" data-depth="0.3"></div>
+  <div class="room-wallpaper"></div>
+
+  <div class="room-window" data-depth="0.9">
+    <span class="rw-frame"></span>
+    <span class="rw-light"></span>
+  </div>
+
+  <div class="room-shelf" data-depth="0.7">
+    <span class="rs-book" style="--c:#a855f7;--h:88%"></span>
+    <span class="rs-book" style="--c:#ec4899;--h:72%"></span>
+    <span class="rs-book" style="--c:#7c3aed;--h:95%"></span>
+    <span class="rs-book" style="--c:#06b6d4;--h:65%"></span>
+    <span class="rs-book" style="--c:#f59e0b;--h:80%"></span>
+    <span class="rs-book" style="--c:#c084fc;--h:70%"></span>
+    <span class="rs-board"></span>
+  </div>
+
+  <div class="room-topShelf" data-depth="0.5">
+    <span class="rt-obj rt-cup">🏆</span>
+    <span class="rt-obj rt-heart">💜</span>
+    <span class="rt-obj rt-game">🎮</span>
+    <span class="rt-obj rt-star">⭐</span>
+    <span class="rt-board"></span>
+  </div>
+
+  <div class="room-floor" data-depth="1.4">
+    <div class="rf-glow"></div>
+  </div>
+
   <div class="room-vignette"></div>
-  <div class="room-floor" data-depth="1.2"></div>
+  <div class="room-grain"></div>
 </div>
 
 <nav>
@@ -215,6 +242,9 @@
       <div class="foco-info">
         <span class="foco-label">🗳️ Próximo na votação</span>
         <h3 id="proxNome">Votação aberta</h3>
+        <div class="prox-bar" id="proxBarWrap" style="display:none">
+          <div class="goal-bar"><i id="proxBarI" style="width:0%"></i></div>
+        </div>
         <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
         <div class="foco-btns">
           <button class="btn" onclick="mudarAba('sugestoes')">Votar agora →</button>
