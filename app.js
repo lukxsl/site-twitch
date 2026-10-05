@@ -72,6 +72,7 @@ let CONFIG_GERAL = {
 };
 let musicaTab = 'playlist';
 let musicaTocando = false;
+let revealObs = null;
 
 /* ============================================================
    HELPERS
@@ -194,7 +195,7 @@ function animarNumero(el, alvo, duracao = 1200){
 }
 
 /* ============================================================
-   META
+   META (metas comunidade)
    ============================================================ */
 function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
   const elDesc = $(pre+'Desc'), elNum = $(pre+'Num'), elBar = $(pre+'Bar');
@@ -305,7 +306,7 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
-   CARD DE MÚSICA (Playlist + Ouvindo agora)
+   MÚSICA (Playlist + Ouvindo agora)
    ============================================================ */
 function renderPlaylist(){
   const embed = $('musicEmbed'); if(!embed) return;
@@ -321,8 +322,7 @@ function renderPlaylist(){
 
 function trocarMusicaTab(tab){
   musicaTab = tab;
-  const tabs = document.querySelectorAll('.music-tab');
-  tabs.forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+  document.querySelectorAll('.music-tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
   const painelPlaylist = $('musicPainelPlaylist');
   const painelOuvindo = $('musicPainelOuvindo');
   if(painelPlaylist) painelPlaylist.style.display = tab === 'playlist' ? '' : 'none';
@@ -360,10 +360,8 @@ function pintarOuvindo(d){
   if(artista) artista.textContent = d.artista ? `${d.artista}${d.album ? ' · ' + d.album : ''}` : '';
   if(capa){
     if(d.capa){
-      capa.src = d.capa;
-      capa.style.display = '';
-      capa.classList.remove('ouvindo-capa-ph');
-      capa.textContent = '';
+      capa.src = d.capa; capa.style.display = '';
+      capa.classList.remove('ouvindo-capa-ph'); capa.textContent = '';
       capa.onerror = () => {
         capa.removeAttribute('src');
         capa.classList.add('ouvindo-capa-ph');
@@ -390,20 +388,14 @@ async function carregarOuvindoAgora(){
     if(!d || !d.tocando || !d.faixa){
       musicaTocando = false;
       window.__ultimaMusica = null;
-      if(musicaTab === 'ouvindo'){
-        trocarMusicaTab('playlist');
-      } else {
-        renderOuvindo();
-      }
+      if(musicaTab === 'ouvindo') trocarMusicaTab('playlist');
+      else renderOuvindo();
       return;
     }
     musicaTocando = true;
     window.__ultimaMusica = d;
     if(musicaTab === null) trocarMusicaTab('ouvindo');
-    if(musicaTab === 'ouvindo') {
-      renderOuvindo();
-      pintarOuvindo(d);
-    }
+    if(musicaTab === 'ouvindo'){ renderOuvindo(); pintarOuvindo(d); }
   } catch(e) {
     musicaTocando = false;
   }
@@ -416,7 +408,7 @@ function setLivePulse(isLive){
 }
 
 /* ============================================================
-   ABAS
+   NAVEGAÇÃO
    ============================================================ */
 function mudarAba(nome, salvar = true){
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
@@ -431,7 +423,6 @@ function mudarAba(nome, salvar = true){
   }
   window.scrollTo({ top:0, behavior:'smooth' });
   if(nome === 'admin' && typeof carregarAdmin === 'function') carregarAdmin();
-  // Re-observa reveals da seção recém-aberta
   if(section) section.querySelectorAll('.reveal:not(.in)').forEach(el => revealObs && revealObs.observe(el));
 }
 window.mudarAba = mudarAba;
@@ -445,9 +436,6 @@ function abrirSejaSub(){
 }
 window.abrirSejaSub = abrirSejaSub;
 
-/* ============================================================
-   SUB-ABAS COMUNIDADE
-   ============================================================ */
 function setupComunidadeTabs(){
   const wrap = $('comunidadeTabs'); if(!wrap) return;
   const ativarTab = (tab) => {
@@ -964,9 +952,7 @@ async function checarLogin(){
       if(pr.ok){
         const pd = await pr.json();
         USUARIO.permissoes = Array.isArray(pd.permissoes) ? pd.permissoes : [];
-      } else {
-        USUARIO.permissoes = [];
-      }
+      } else USUARIO.permissoes = [];
     } catch(e){ USUARIO.permissoes = []; }
   }
 
@@ -988,14 +974,12 @@ function aplicarManutencao(){
       overlay.innerHTML = `
         <div style="font-size:4rem;line-height:1;margin-bottom:20px">🔧</div>
         <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;margin-bottom:10px">Estamos em manutenção</h1>
-        <p style="max-width:400px;color:#8b7fa3;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
+        <p style="max-width:400px;color:#a99cbf;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
         <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="margin-top:20px;background:#a855f7;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;text-decoration:none">Ir pra Twitch 💜</a>
       `;
       document.body.appendChild(overlay);
     }
-  } else if(overlay){
-    overlay.remove();
-  }
+  } else if(overlay) overlay.remove();
 }
 window.aplicarManutencao = aplicarManutencao;
 
@@ -1007,15 +991,13 @@ function renderLogin(){
         <img src="${esc(USUARIO.avatar)}" alt="" onerror="this.style.display='none'">
         <span class="nick">@${esc(USUARIO.username)}</span>
         <button class="nav-user-sair" onclick="sair()">Sair</button>
-      </div>
-    `;
+      </div>`;
   } else {
     area.innerHTML = `
       <a class="nav-user-deslogado" href="/api/auth?action=login" title="Entrar com Discord para votar">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
         Entrar
-      </a>
-    `;
+      </a>`;
   }
 }
 
@@ -1159,7 +1141,7 @@ async function votar(id){
 window.votar = votar;
 
 /* ============================================================
-   SUGESTÕES PÚBLICAS
+   SUGESTÕES
    ============================================================ */
 async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
@@ -1215,7 +1197,66 @@ window.carregarConfigPublica = carregarConfigPublica;
 /* ============================================================
    REVEAL ON SCROLL
    ============================================================ */
-let revealObs = null;
+function setupReveal(){
+  revealObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){ e.target.classList.add('in'); revealObs.unobserve(e.target); }
+    });
+  }, { rootMargin: '0px 0px -60px 0px', threshold: 0.05 });
+  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+}
+
+/* ============================================================
+   PARALLAX SUAVE DA SALA (mouse)
+   ============================================================ */
+function setupRoomParallax(){
+  const room = document.querySelector('.room');
+  if(!room) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const layers = room.querySelectorAll('[data-depth]');
+  if(!layers.length) return;
+
+  let mx = 0, my = 0, cx = 0, cy = 0;
+  window.addEventListener('mousemove', (e) => {
+    mx = (e.clientX / window.innerWidth - 0.5) * 2;
+    my = (e.clientY / window.innerHeight - 0.5) * 2;
+  }, { passive: true });
+
+  (function tick(){
+    cx += (mx - cx) * 0.04;
+    cy += (my - cy) * 0.04;
+    layers.forEach(el => {
+      const d = parseFloat(el.dataset.depth) || 1;
+      el.style.transform = `translate3d(${cx * d * 8}px, ${cy * d * 8}px, 0)`;
+    });
+    requestAnimationFrame(tick);
+  })();
+}
+
+/* ============================================================
+   BURGER MENU (mobile)
+   ============================================================ */
+function setupBurger(){
+  const burger = document.getElementById('navBurger');
+  const navRight = document.getElementById('navRight');
+  if(!burger || !navRight) return;
+  burger.addEventListener('click', () => {
+    const open = navRight.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  navRight.querySelectorAll('.nav-links button').forEach(b => {
+    b.addEventListener('click', () => {
+      navRight.classList.remove('open');
+      burger.setAttribute('aria-expanded', 'false');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if(!navRight.classList.contains('open')) return;
+    if(navRight.contains(e.target) || burger.contains(e.target)) return;
+    navRight.classList.remove('open');
+    burger.setAttribute('aria-expanded', 'false');
+  });
+}
 
 /* ============================================================
    BOOT
@@ -1316,37 +1357,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     dlgEl.addEventListener('click', e => { if(e.target === dlgEl) dlgEl.close(); });
   }
 
-  /* ============================================================
-     REVEAL ON SCROLL + BURGER MENU
-     ============================================================ */
-  revealObs = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if(e.isIntersecting){ e.target.classList.add('in'); revealObs.unobserve(e.target); }
-    });
-  }, { rootMargin: '0px 0px -60px 0px', threshold: 0.05 });
-  document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
-
-  const burger = document.getElementById('navBurger');
-  const navRight = document.getElementById('navRight');
-  if(burger && navRight){
-    burger.addEventListener('click', () => {
-      const open = navRight.classList.toggle('open');
-      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-    navRight.querySelectorAll('.nav-links button').forEach(b => {
-      b.addEventListener('click', () => {
-        navRight.classList.remove('open');
-        burger.setAttribute('aria-expanded', 'false');
-      });
-    });
-    // Fecha ao clicar fora (mobile)
-    document.addEventListener('click', (e) => {
-      if(!navRight.classList.contains('open')) return;
-      if(navRight.contains(e.target) || burger.contains(e.target)) return;
-      navRight.classList.remove('open');
-      burger.setAttribute('aria-expanded', 'false');
-    });
-  }
+  setupReveal();
+  setupRoomParallax();
+  setupBurger();
 
   await carregarConfigPublica();
   verificarStatusTwitch();
