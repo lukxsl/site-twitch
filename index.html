@@ -487,119 +487,116 @@
   </div>
 </section>
 
-<!-- ==================== SUGESTÕES ==================== -->
+<!-- ==================== SUGESTÕES (V3 - TABS) ==================== -->
 <section id="sec-sugestoes" class="page-section">
   <header class="section-header reveal">
     <span class="section-kicker">💡 Sua voz conta</span>
     <h2>Sugestões & Votação</h2>
-    <p>Sugira um jogo/filme pra eu testar em live ou mande um feedback. Sua ideia pode virar conteúdo!</p>
+    <p>Vote no próximo jogo ou mande uma ideia. Sua sugestão pode virar conteúdo!</p>
+    <div class="sug-tabs" id="sugTabs">
+      <button type="button" class="sug-tab on" data-tab="votar">🗳️ Votar</button>
+      <button type="button" class="sug-tab" data-tab="sugerir">💡 Sugerir</button>
+    </div>
   </header>
 
-  <div class="sugestoes-grid">
-    <article class="setup-box reveal" id="votoBox">
-      <div class="voto-head">
-        <h3>🗳️ Qual o próximo jogo ou filme?</h3>
-        <div class="voto-info-top" id="votoInfoTop">
+  <div class="sug-shell">
+
+    <!-- ==================== PAINEL: VOTAR ==================== -->
+    <div class="sug-panel on" data-panel="votar" id="sugPanelVotar">
+
+      <div class="voto-panel-head">
+        <h3>🗳️ Qual será o próximo jogo?</h3>
+        <div class="voto-tags" id="votoInfoTop">
           <span class="vit-item vit-status" id="votoStatus"><span class="vit-dot"></span> Votação aberta</span>
           <span class="vit-item" id="votoCountdown">— </span>
         </div>
       </div>
-      <p class="sug-sub">Vote no jogo/filme que você quer ver na live. Um voto por pessoa 💜</p>
+
       <div id="destaqueBox"></div>
-      <div id="votoLista">Carregando votação...</div>
-      <div class="voto-stats" id="votoStats">
-        <div class="vs-item">
-          <b id="votoStatOpcoes">0</b>
-          <span>opções</span>
-        </div>
-        <div class="vs-item">
-          <b id="votoStatVotos">0</b>
-          <span>votos</span>
-        </div>
-        <div class="vs-item">
-          <b id="votoStatPessoas">0</b>
-          <span>pessoas votaram</span>
-        </div>
-      </div>
-    </article>
-
-    <article class="setup-box reveal" id="sugFormBox">
-      <h3>💡 Envie uma mensagem</h3>
-      <p class="sug-sub">Sua mensagem pode virar uma nova ideia, jogo ou correção no site.</p>
-      <div class="sug-form">
-        <div>
-          <label for="sugNome">Seu Nome / Apelido</label>
-          <input type="text" id="sugNome" placeholder="Ex: ViewerAnônimo" maxlength="40">
-        </div>
-        <div>
-          <label>Tipo</label>
-          <div class="sug-tipo-chips" id="sugTipoChips">
-            <button type="button" class="st-chip on" data-tipo="Sugestão / ideia">💡 Sugestão</button>
-            <button type="button" class="st-chip" data-tipo="Sugestão de jogo">🎮 Jogo</button>
-            <button type="button" class="st-chip" data-tipo="Feedback">💬 Feedback</button>
-            <button type="button" class="st-chip" data-tipo="Reportar bug do site">🐛 Bug</button>
-          </div>
-          <select id="sugTipo" hidden>
-            <option value="Sugestão / ideia">💡 Sugestão / ideia</option>
-            <option value="Sugestão de jogo">🎮 Sugestão de jogo</option>
-            <option value="Feedback">💬 Feedback</option>
-            <option value="Reportar bug do site">🐛 Reportar bug do site</option>
-          </select>
-        </div>
-        <div>
-          <label for="sugTexto">Mensagem</label>
-          <div class="sug-textarea-wrap">
-            <textarea id="sugTexto" rows="4" maxlength="1000" placeholder="Escreva sua sugestão, ideia, feedback ou bug..."></textarea>
-            <span class="sug-counter" id="sugCounter">0 / 1000</span>
-          </div>
-        </div>
-        <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
-      </div>
-      <div class="sug-actions">
-        <button class="btn big" id="sugBtn" onclick="enviarSugestao()" disabled>Enviar mensagem 🚀</button>
-        <div class="sug-success" id="sugSuccess" hidden>
-          <span>✅</span>
-          <div>
-            <b>Mensagem enviada!</b>
-            <small>Sua ideia chegou no Discord da Soso 💜</small>
-          </div>
-        </div>
+      <div class="voto-grid-lista" id="votoLista">
+        <div class="vazio-voto">Carregando votação…</div>
       </div>
 
-      <div class="sug-ideias-recentes" id="sugIdeiasRecentes">
-        <div class="sir-head">
-          <span class="sir-kicker">💡 Últimas ideias</span>
-          <div class="sir-filtros" id="sirFiltros">
-            <button class="sir-chip on" data-filtro="all">Todas</button>
-            <button class="sir-chip" data-filtro="jogo">🎮</button>
-            <button class="sir-chip" data-filtro="bug">🐛</button>
-          </div>
-        </div>
-        <div class="sir-lista" id="sirLista">
-          <div class="sir-empty">
-            <span>✨</span>
-            <small>Nenhuma ideia ainda. Seja a primeira pessoa a mandar 💜</small>
-          </div>
-        </div>
+      <div class="voto-foot">
+        <b id="votoStatOpcoes">0</b><span>opções</span>
+        <span class="dot">·</span>
+        <b id="votoStatVotos">0</b><span>votos</span>
+        <span class="dot">·</span>
+        <b id="votoStatPessoas">0</b><span>pessoas</span>
+        <button type="button" class="voto-add-btn" id="sugBtnIrSugerir">➕ Sugerir novo jogo</button>
       </div>
 
-      <div class="sug-discord-cta">
-        <span>💬</span>
-        <div>
-          <b>Prefere mandar direto?</b>
-          <small>Entra no Discord e conversa com a galera</small>
-        </div>
-        <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener" class="btn ghost">Abrir →</a>
-      </div>
-    </article>
-  </div>
-
-  <div class="cta-doacao reveal">
-    <div>
-      <b>💜 Gostou das melhorias?</b>
-      <small>Apoie o cantinho pra continuar recebendo ideias e novidades</small>
     </div>
-    <a class="btn big" href="#" id="donateCtaSugestoes" target="_blank" rel="noopener">Fazer uma doação →</a>
+
+    <!-- ==================== PAINEL: SUGERIR ==================== -->
+    <div class="sug-panel" data-panel="sugerir" id="sugPanelSugerir">
+      <div class="sugerir-cols">
+
+        <!-- Formulário -->
+        <div class="sug-form-col">
+          <h3>💡 Envie sua ideia</h3>
+          <div class="sug-form">
+            <div>
+              <label for="sugNome">Seu Nome / Apelido</label>
+              <input type="text" id="sugNome" placeholder="Deixe vazio para enviar anônimo" maxlength="40">
+            </div>
+            <div>
+              <label>Tipo</label>
+              <div class="sug-tipo-chips" id="sugTipoChips">
+                <button type="button" class="st-chip on" data-tipo="Sugestão / ideia">💡 Sugestão</button>
+                <button type="button" class="st-chip" data-tipo="Sugestão de jogo">🎮 Jogo</button>
+                <button type="button" class="st-chip" data-tipo="Feedback">💬 Feedback</button>
+                <button type="button" class="st-chip" data-tipo="Reportar bug do site">🐛 Bug</button>
+              </div>
+              <select id="sugTipo" hidden>
+                <option value="Sugestão / ideia">💡 Sugestão / ideia</option>
+                <option value="Sugestão de jogo">🎮 Sugestão de jogo</option>
+                <option value="Feedback">💬 Feedback</option>
+                <option value="Reportar bug do site">🐛 Reportar bug do site</option>
+              </select>
+            </div>
+            <div>
+              <label for="sugTexto">Mensagem</label>
+              <div class="sug-textarea-wrap">
+                <textarea id="sugTexto" rows="4" maxlength="1000" placeholder="Escreva sua sugestão, ideia, feedback ou bug..."></textarea>
+                <span class="sug-counter" id="sugCounter">0 / 1000</span>
+              </div>
+            </div>
+            <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+          </div>
+          <div class="sug-actions">
+            <button class="btn big" id="sugBtn" onclick="enviarSugestao()" disabled>🚀 Enviar Ideia</button>
+            <div class="sug-success" id="sugSuccess" hidden>
+              <span>✅</span>
+              <div>
+                <b>Ideia enviada!</b>
+                <small>A Soso vai analisar 💜</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de ideias -->
+        <div class="sir-list-col">
+          <div class="sir-head">
+            <span class="sir-kicker">💡 Últimas ideias</span>
+            <div class="sir-filtros" id="sirFiltros">
+              <button type="button" class="sir-chip on" data-filtro="all">Todas</button>
+              <button type="button" class="sir-chip" data-filtro="jogo">🎮</button>
+              <button type="button" class="sir-chip" data-filtro="bug">🐛</button>
+            </div>
+          </div>
+          <div class="sir-lista" id="sirLista">
+            <div class="sir-empty">
+              <span>✨</span>
+              <small>Nenhuma ideia ainda. Seja a primeira 💜</small>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -663,7 +660,6 @@
 </dialog>
 
 <!-- ==================== SCRIPTS ==================== -->
-<!-- Ordem de carregamento: Utils -> Módulos -> Main -->
 <script src="js/utils/dom.js"></script>
 <script src="js/utils/format.js"></script>
 <script src="js/api/client.js"></script>

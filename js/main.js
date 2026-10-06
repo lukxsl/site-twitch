@@ -93,7 +93,7 @@ function garantirAdminCarregado(){
     files.forEach(src => {
       const s = document.createElement('script');
       s.src = src;
-      s.async = false; // Garante a ordem de execução
+      s.async = false;
       s.onload = () => {
         loaded++;
         if(loaded === files.length){
@@ -958,7 +958,50 @@ async function votar(id, event){
 window.votar = votar;
 
 /* ============================================================
-   SUGESTÕES
+   SUGESTÕES — TABS (Votar / Sugerir)
+   ============================================================ */
+function sugTabIrPara(tab){
+  try { localStorage.setItem('sug:tab', tab); } catch(e){}
+  document.querySelectorAll('.sug-tab').forEach(t =>
+    t.classList.toggle('on', t.dataset.tab === tab)
+  );
+  document.querySelectorAll('.sug-panel').forEach(p =>
+    p.classList.toggle('on', p.dataset.panel === tab)
+  );
+}
+window.sugTabIrPara = sugTabIrPara;
+
+function setupSugTabs(){
+  const wrap = $('sugTabs'); if(!wrap) return;
+  if(wrap.dataset.bound) return;
+  wrap.dataset.bound = '1';
+
+  wrap.addEventListener('click', e => {
+    const b = e.target.closest('.sug-tab');
+    if(!b) return;
+    sugTabIrPara(b.dataset.tab);
+  });
+
+  const btnIr = $('sugBtnIrSugerir');
+  if(btnIr){
+    btnIr.addEventListener('click', () => {
+      sugTabIrPara('sugerir');
+      setTimeout(() => {
+        const chip = document.querySelector('.st-chip[data-tipo="Sugestão de jogo"]');
+        if(chip) chip.click();
+        const ta = $('sugTexto');
+        if(ta) ta.focus();
+      }, 180);
+    });
+  }
+
+  const salva = localStorage.getItem('sug:tab') || 'votar';
+  sugTabIrPara(salva);
+}
+window.setupSugTabs = setupSugTabs;
+
+/* ============================================================
+   SUGESTÕES — FORM
    ============================================================ */
 function setupSugForm(){
   const chips = document.querySelectorAll('#sugTipoChips .st-chip');
@@ -1091,6 +1134,8 @@ async function carregarUltimasIdeias(){
 
 function setupSirFiltros(){
   const wrap = $('sirFiltros'); if(!wrap) return;
+  if(wrap.dataset.bound) return;
+  wrap.dataset.bound = '1';
   wrap.addEventListener('click', e => {
     const b = e.target.closest('.sir-chip'); if(!b) return;
     wrap.querySelectorAll('.sir-chip').forEach(c => c.classList.toggle('on', c === b));
@@ -1196,7 +1241,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
 
-  // Setup (chamando as funções que agora estão em js/setup/setup.js)
+  // Setup
   setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
   document.querySelectorAll('.svt-btn').forEach(b => {
     const on = b.dataset.view === setupView;
@@ -1231,6 +1276,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   setupSugForm();
   setupSirFiltros();
+  setupSugTabs(); /* ← NOVA LINHA */
   carregarUltimasIdeias();
 
   musicaTab = 'playlist';
