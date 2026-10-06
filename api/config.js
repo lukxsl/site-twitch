@@ -14,7 +14,6 @@ function safeStr(v, max = 1000) {
   return String(v == null ? '' : v).trim().slice(0, max);
 }
 
-/* Sanitiza o aviso antes de mandar pro front */
 function sanitizarAviso(a) {
   if (!a || typeof a !== 'object') return null;
   return {
@@ -26,7 +25,6 @@ function sanitizarAviso(a) {
   };
 }
 
-/* Sanitiza listas (top3, hall) */
 function sanitizarLista(list, campos, max) {
   if (!Array.isArray(list)) return [];
   return list.slice(0, max).map(item => {
@@ -48,7 +46,7 @@ export default async function handler(req, res) {
   if (!URL_ || !TOKEN) return res.status(200).json({});
 
   try {
-    const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw] = await redis([
+    const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw, votosFechRaw] = await redis([
       ['GET', 'config:aviso'],
       ['GET', 'config:donate'],
       ['GET', 'config:manutencao'],
@@ -56,7 +54,8 @@ export default async function handler(req, res) {
       ['GET', 'config:horasMes'],
       ['GET', 'config:updatedAt'],
       ['GET', 'config:top3'],
-      ['GET', 'config:hall']
+      ['GET', 'config:hall'],
+      ['GET', 'config:votosFechamento']
     ]);
 
     let aviso = null, top3 = [], hall = [];
@@ -75,7 +74,8 @@ export default async function handler(req, res) {
       horasMes: safeStr(horasRaw, 30),
       updatedAt: safeStr(updatedRaw, 40) || null,
       top3: sanitizarLista(top3, ['nome', 'valor'], 3),
-      hall: sanitizarLista(hall, ['nome', 'meta'], 5)
+      hall: sanitizarLista(hall, ['nome', 'meta'], 5),
+      votosFechamento: safeStr(votosFechRaw, 40) || null
     });
   } catch (e) {
     return res.status(200).json({});

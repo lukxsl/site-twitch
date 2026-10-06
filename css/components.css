@@ -814,3 +814,166 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   .sugerir-cols{grid-template-columns:1fr}
   .voto-add-btn{margin-left:0;width:100%}
 }
+
+/* ============================================================
+   🆕 V3.1 — AJUSTES SUGESTÕES / VOTAÇÃO
+   ============================================================ */
+
+/* --- Animação suave entre abas --- */
+.sug-panel.on{animation:sugFade .3s var(--ease)}
+@keyframes sugFade{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
+}
+
+/* --- Líder: capa maior + layout equilibrado --- */
+.voto-panel-head + #destaqueBox .destaque{
+  padding:14px 18px;
+  gap:16px;
+}
+.voto-panel-head + #destaqueBox .destaque img,
+.voto-panel-head + #destaqueBox .destaque .ph2{
+  width:76px;
+}
+.voto-panel-head + #destaqueBox .destaque .d-info{gap:6px}
+.voto-panel-head + #destaqueBox .destaque b{font-size:1.15rem}
+.voto-panel-head + #destaqueBox .destaque small{font-size:.68rem}
+.voto-panel-head + #destaqueBox .destaque .d-meta{font-size:.78rem}
+.voto-panel-head + #destaqueBox .destaque .btn{
+  padding:10px 20px;
+  font-size:.82rem;
+  min-width:130px;
+}
+
+/* --- Textarea + botão destacado --- */
+.sug-form-col .sug-textarea-wrap textarea{min-height:120px}
+.sug-form-col .sug-actions{margin-top:6px}
+.sug-form-col .sug-actions .btn.big{
+  padding:14px 24px;
+  font-size:.94rem;
+}
+
+/* --- Contador com cores --- */
+.sug-counter{transition:color .25s,background .25s}
+.sug-counter.warn{
+  color:#ffb547;
+  background:rgba(255,181,71,.12);
+}
+.sug-counter.danger{
+  color:var(--red);
+  background:rgba(255,77,95,.15);
+  font-weight:800;
+}
+
+/* --- Empty state + exemplos --- */
+.sir-list-col .sir-lista > .sir-empty{
+  padding:18px 14px;
+  flex:0 0 auto;
+}
+.sir-list-col .sir-lista > .sir-empty span{font-size:1.8rem}
+.sir-list-col .sir-lista > .sir-empty small{
+  font-size:.78rem;
+  max-width:280px;
+  line-height:1.5;
+}
+.sir-item-exemplo{
+  opacity:.35;
+  pointer-events:none;
+  filter:grayscale(.4);
+}
+.sir-item-exemplo .sir-ic{opacity:.7}
+.sir-item-exemplo .sir-tx b{color:#ddd5eb}
+.sir-item-exemplo .sir-tx small{font-style:italic}
+
+/* --- Legenda dos status --- */
+.sir-legenda{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:6px;
+  margin-bottom:10px;
+  font-size:.66rem;
+  color:var(--mute);
+  font-weight:600;
+  line-height:1.4;
+}
+.sir-legenda span{
+  white-space:nowrap;
+  opacity:.85;
+  cursor:help;
+}
+
+/* --- Cards de ideia: status colorido --- */
+.sir-item{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding:10px 12px;
+  background:rgba(255,255,255,.02);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  transition:.2s;
+}
+.sir-item:hover{background:rgba(168,85,247,.05);border-color:var(--line-2)}
+
+.sir-tx-top{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:2px;
+}
+.sir-tx-top b{font-size:.8rem;font-weight:700;color:var(--white)}
+.sir-status{
+  font-size:.6rem;
+  font-weight:800;
+  padding:2px 8px;
+  border-radius:99px;
+  letter-spacing:.03em;
+  white-space:nowrap;
+  border:1px solid transparent;
+}
+.sir-status-amarelo{background:rgba(250,204,21,.15);color:#fde68a;border-color:rgba(250,204,21,.35)}
+.sir-status-azul{background:rgba(59,130,246,.15);color:#93c5fd;border-color:rgba(59,130,246,.35)}
+.sir-status-verde{background:rgba(16,185,129,.15);color:#a7f3d0;border-color:rgba(16,185,129,.4)}
+.sir-status-vermelho{background:rgba(239,68,68,.15);color:#fca5a5;border-color:rgba(239,68,68,.4)}
+.sir-status-roxo{background:rgba(168,85,247,.18);color:#ddd6fe;border-color:rgba(168,85,247,.45)}
+
+.sir-data{font-size:.62rem;color:var(--dim);margin-top:2px}
+.sir-motivo{
+  margin-top:6px;
+  padding:5px 9px;
+  background:rgba(239,68,68,.08);
+  border-left:2px solid var(--red);
+  border-radius:4px;
+  font-size:.68rem;
+  color:#fca5a5;
+  font-style:italic;
+}
+
+/* --- Badge NOVO nos itens de votação --- */
+.vt-novo{
+  position:absolute;
+  top:6px;
+  left:6px;
+  background:linear-gradient(135deg,var(--green),#8fdb00);
+  color:#0a0511;
+  font-size:.55rem;
+  font-weight:800;
+  padding:2px 7px;
+  border-radius:5px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  z-index:6;
+  box-shadow:0 4px 10px rgba(183,255,0,.35);
+  animation:novoPulse 2s ease-in-out infinite;
+}
+@keyframes novoPulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.06)}
+}
+.vt:has(.vt-novo) .vt-rank{top:22px}
+
+/* --- Ajuste fino do rodapé --- */
+.voto-foot{gap:4px}
+.voto-foot b{font-size:.95rem}

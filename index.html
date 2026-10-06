@@ -487,7 +487,7 @@
   </div>
 </section>
 
-<!-- ==================== SUGESTÕES (V3 - TABS) ==================== -->
+<!-- ==================== SUGESTÕES ==================== -->
 <section id="sec-sugestoes" class="page-section">
   <header class="section-header reveal">
     <span class="section-kicker">💡 Sua voz conta</span>
@@ -518,11 +518,11 @@
       </div>
 
       <div class="voto-foot">
-        <b id="votoStatOpcoes">0</b><span>opções</span>
+        <b id="votoStatOpcoes">0</b><span id="votoLblOpcoes">opções</span>
         <span class="dot">·</span>
-        <b id="votoStatVotos">0</b><span>votos</span>
+        <b id="votoStatVotos">0</b><span id="votoLblVotos">votos</span>
         <span class="dot">·</span>
-        <b id="votoStatPessoas">0</b><span>pessoas</span>
+        <b id="votoStatLider">—</b>
         <button type="button" class="voto-add-btn" id="sugBtnIrSugerir">➕ Sugerir novo jogo</button>
       </div>
 
@@ -532,7 +532,6 @@
     <div class="sug-panel" data-panel="sugerir" id="sugPanelSugerir">
       <div class="sugerir-cols">
 
-        <!-- Formulário -->
         <div class="sug-form-col">
           <h3>💡 Envie sua ideia</h3>
           <div class="sug-form">
@@ -576,14 +575,20 @@
           </div>
         </div>
 
-        <!-- Lista de ideias -->
         <div class="sir-list-col">
           <div class="sir-head">
-            <span class="sir-kicker">💡 Últimas ideias</span>
-            <div class="sir-filtros" id="sirFiltros">
-              <button type="button" class="sir-chip on" data-filtro="all">Todas</button>
-              <button type="button" class="sir-chip" data-filtro="jogo">🎮</button>
-              <button type="button" class="sir-chip" data-filtro="bug">🐛</button>
+            <div class="sir-head-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;width:100%">
+              <span class="sir-kicker">💡 Últimas ideias</span>
+              <div class="sir-filtros" id="sirFiltros">
+                <button type="button" class="sir-chip on" data-filtro="all">Todas</button>
+              </div>
+            </div>
+            <div class="sir-legenda" title="Cada ideia tem um status. Passe o mouse pra ver o que significa.">
+              <span title="Acabou de chegar">🟡 Nova</span>
+              <span title="A Soso viu e tá pensando">👀 Em análise</span>
+              <span title="Vai rolar!">✅ Aceita</span>
+              <span title="Não vai rolar (com motivo)">❌ Recusada</span>
+              <span title="Finalizado">🏁 Concluído</span>
             </div>
           </div>
           <div class="sir-lista" id="sirLista">

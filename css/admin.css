@@ -308,3 +308,49 @@
   .config-tab{padding:8px 12px;font-size:.76rem}
   .admin-accordion-head{padding:12px 14px}
 }
+
+/* ============================================================
+   🆕 V3.1 — Input de data dark + status atual
+   ============================================================ */
+
+/* Input de data/hora dark */
+.admin-form input[type="datetime-local"]{
+  color-scheme: dark;
+  background:rgba(26,16,45,.75);
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  padding:10px 12px;
+  font-family:inherit;
+  font-size:.86rem;
+  width:100%;
+}
+.admin-form input[type="datetime-local"]:focus{
+  border-color:var(--purple);
+  outline:none;
+  box-shadow:0 0 0 4px rgba(168,85,247,.14);
+}
+.admin-form input[type="datetime-local"]::-webkit-calendar-picker-indicator{
+  filter:invert(.85) sepia(.3) saturate(5) hue-rotate(230deg);
+  cursor:pointer;
+  opacity:.85;
+}
+
+/* Status atual: overflow visível pro badge não cortar */
+.aviso-preview{
+  overflow:visible !important;
+  margin-top:20px;
+}
+
+/* Badge de status atual da sugestão (usado na tela admin) */
+.sir-admin-status{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:.68rem;
+  font-weight:800;
+  padding:3px 10px;
+  border-radius:99px;
+  letter-spacing:.03em;
+  border:1px solid transparent;
+}

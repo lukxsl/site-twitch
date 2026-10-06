@@ -32,6 +32,22 @@ const STATUS_TOOLTIP = {
   'Assistindo': 'Estou assistindo agora', 'Assistido': 'Já assisti'
 };
 
+/* Mapa de status das sugestões */
+const STATUS_SUG = {
+  nova:     { label: '🟡 Nova',       cor: 'amarelo',   desc: 'Acabou de chegar' },
+  analise:  { label: '👀 Em análise', cor: 'azul',      desc: 'A Soso viu e tá pensando' },
+  aceita:   { label: '✅ Aceita',     cor: 'verde',     desc: 'Vai rolar!' },
+  recusada: { label: '❌ Recusada',   cor: 'vermelho',  desc: 'Não vai rolar' },
+  concluido:{ label: '🏁 Concluído',  cor: 'roxo',      desc: 'Finalizado' }
+};
+
+const ROTULO_CONCLUIDO = {
+  'Sugestão / ideia':      '🏁 Aplicada',
+  'Sugestão de jogo':      '🏁 Jogado',
+  'Feedback':              '🏁 Resolvido',
+  'Reportar bug do site':  '🏁 Corrigido'
+};
+
 /* ============================================================
    ESTADO GLOBAL
    ============================================================ */
@@ -61,6 +77,7 @@ let musicaTocando = false;
 let revealObs = null;
 let sugTipoAtual = 'Sugestão / ideia';
 let sirFiltro = 'all';
+let SIR_ITENS_CACHE = [];
 
 /* ============================================================
    HELPERS GERAIS
@@ -73,6 +90,11 @@ function temPerm(perm){
   return (USUARIO.permissoes || []).includes(perm);
 }
 window.temPerm = temPerm;
+
+/* Helper de pluralização */
+function plural(n, singular, plural){
+  return Number(n) === 1 ? singular : plural;
+}
 
 /* ============================================================
    LAZY LOAD — ADMIN FILES
@@ -774,6 +796,22 @@ async function sair(){
 window.sair = sair;
 
 /* ============================================================
+   VOTAÇÃO — BADGES "NOVO" via localStorage
+   ============================================================ */
+const VOTOS_VISTOS_KEY = 'votos:itensVistos';
+function getVotosVistos(){
+  try { return JSON.parse(localStorage.getItem(VOTOS_VISTOS_KEY) || '[]'); }
+  catch { return []; }
+}
+function marcarVotoVisto(id){
+  const atuais = getVotosVistos();
+  if(!atuais.includes(id)){
+    atuais.push(id);
+    try { localStorage.setItem(VOTOS_VISTOS_KEY, JSON.stringify(atuais.slice(-50))); } catch {}
+  }
+}
+
+/* ============================================================
    VOTAÇÃO
    ============================================================ */
 const RANKS = ['🥇','🥈','🥉'];
@@ -824,7 +862,9 @@ function renderVotacao(){
     }
   }
   if(countdownEl){
-    countdownEl.textContent = countdown ? (fechada ? '🔒 Encerrada' : '⏰ ' + countdown.texto) : '⏰ Sem prazo';
+    countdownEl.textContent = countdown
+      ? (fechada ? '🔒 Encerrada' : '⏰ ' + countdown.texto)
+      : '🔓 Sem data definida';
   }
 
   if(!USUARIO){
@@ -859,10 +899,22 @@ function renderVotacao(){
 
   const statOpcoes = $('votoStatOpcoes');
   const statVotos = $('votoStatVotos');
-  const statPessoas = $('votoStatPessoas');
+  const statLider = $('votoStatLider');
+  const lblOpcoes = $('votoLblOpcoes');
+  const lblVotos = $('votoLblVotos');
   if(statOpcoes) statOpcoes.textContent = VOTOS_DADOS.length;
+  if(lblOpcoes) lblOpcoes.textContent = plural(VOTOS_DADOS.length, 'opção', 'opções');
   if(statVotos) statVotos.textContent = total;
-  if(statPessoas) statPessoas.textContent = total === 0 ? 0 : total;
+  if(lblVotos) lblVotos.textContent = plural(total, 'voto', 'votos');
+  if(statLider){
+    if(total === 0){
+      statLider.textContent = '—';
+      statLider.parentElement.style.display = 'none';
+    } else {
+      statLider.parentElement.style.display = '';
+      statLider.textContent = 'líder com ' + pct(ord[0].votos) + '%';
+    }
+  }
 
   const btn = (it) => {
     const meu = meuVoto === it.id;
@@ -875,13 +927,23 @@ function renderVotacao(){
 
   if(total > 0){
     const l = ord[0], p = pct(l.votos);
+    const segundo = ord[1];
+    let vantagemTxt = '';
+    if(segundo && segundo.votos > 0){
+      const diff = l.votos - segundo.votos;
+      vantagemTxt = diff === 0
+        ? ' · empatado com o 2º'
+        : ` · ${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
+    } else if(l.votos > 0){
+      vantagemTxt = ' · sozinho na frente';
+    }
     destBox.innerHTML = `
       <div class="destaque ${fechada ? 'fechada' : ''}">
         ${l.capa ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">` : '<div class="ph2">🎮</div>'}
         <div class="d-info">
           <small>${fechada ? '🏆 Vencedora' : '👑 Líder da votação'}</small><b>${esc(l.nome)}</b>
           <div class="d-bar"><i style="width:${p}%"></i></div>
-          <span class="d-meta"><b>${p}%</b> · ${l.votos}/${total} votos</span>
+          <span class="d-meta"><b>${p}%</b> · ${l.votos}/${total} votos${vantagemTxt}</span>
         </div>
         ${btn(l)}
       </div>`;
@@ -900,6 +962,7 @@ function renderVotacao(){
     $('proxInfo').textContent = fechada ? 'Aguardando nova votação 💜' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
 
+  const vistos = getVotosVistos();
   const resto = total > 0 ? ord.slice(1) : ord;
   listaBox.innerHTML = resto.map((it, i) => {
     const p = pct(it.votos);
@@ -907,6 +970,7 @@ function renderVotacao(){
     const medalha = RANKS[i + 1] || `#${posicao}`;
     const meu = meuVoto === it.id;
     const votos = it.votos || 0;
+    const novo = !vistos.includes(it.id);
     const diff = (ord[0] ? ord[0].votos : 0) - votos;
     let statusTxt, statusCls;
     if (votos === 0) { statusTxt = 'Nenhum voto ainda'; statusCls = 'zero'; }
@@ -915,6 +979,7 @@ function renderVotacao(){
     else { statusTxt = `${diff} votos atrás do líder`; statusCls = ''; }
     return `
       <div class="vt ${meu ? 'meu' : ''}" data-id="${esc(it.id)}">
+        ${novo ? '<span class="vt-novo">Novo</span>' : ''}
         ${meu ? '<span class="vt-badge-meu">✓ Seu voto</span>' : ''}
         <span class="vt-rank" title="${posicao}º lugar">${medalha}</span>
         ${it.capa ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" class="vt-img" onerror="this.style.display='none'">` : '<div class="vt-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>'}
@@ -929,7 +994,9 @@ function renderVotacao(){
         </div>
         ${btn(it)}
       </div>`;
-  }).join('') + `<div class="vt-total">Total: ${total} voto${total === 1 ? '' : 's'} · ${ord.length} opç${ord.length === 1 ? 'ão' : 'ões'}</div>`;
+  }).join('');
+  // Marca os exibidos como vistos depois de um tempinho
+  setTimeout(() => resto.forEach(it => marcarVotoVisto(it.id)), 4000);
 }
 
 async function votar(id, event){
@@ -1018,7 +1085,15 @@ function setupSugForm(){
   const ta = $('sugTexto');
   const counter = $('sugCounter');
   const btn = $('sugBtn');
-  const nomeInput = $('sugNome');
+
+  function atualizarContador(){
+    if(!counter || !ta) return;
+    const n = ta.value.length;
+    counter.textContent = `${n} / 1000`;
+    counter.classList.remove('warn','danger');
+    if(n >= 1000) counter.classList.add('danger');
+    else if(n >= 900) counter.classList.add('warn');
+  }
 
   function atualizarEstadoBtn(){
     if(!btn) return;
@@ -1028,24 +1103,17 @@ function setupSugForm(){
 
   if(ta){
     ta.addEventListener('input', () => {
-      if(counter) counter.textContent = `${ta.value.length} / 1000`;
       ta.classList.remove('erro');
+      atualizarContador();
       atualizarEstadoBtn();
     });
   }
 
-  if(nomeInput){
-    nomeInput.addEventListener('input', () => {
-      nomeInput.classList.remove('erro');
-    });
-  }
-
+  atualizarContador();
   atualizarEstadoBtn();
 
   const donateCta = $('donateCtaSugestoes');
-  if(donateCta && CONFIG.donate){
-    donateCta.href = CONFIG.donate;
-  }
+  if(donateCta && CONFIG.donate) donateCta.href = CONFIG.donate;
 }
 
 async function enviarSugestao(){
@@ -1074,13 +1142,14 @@ async function enviarSugestao(){
     if(res.ok){
       $('sugNome').value = '';
       $('sugTexto').value = '';
-      if($('sugCounter')) $('sugCounter').textContent = '0 / 1000';
+      const counter = $('sugCounter');
+      if(counter){ counter.textContent = '0 / 1000'; counter.classList.remove('warn','danger'); }
 
       if(success){
         success.hidden = false;
-        setTimeout(() => { success.hidden = true; }, 5000);
+        setTimeout(() => { success.hidden = true; }, 6000);
       }
-      toast('Mensagem enviada! Obrigado 💜', 'ok');
+      toast('Ideia enviada! Obrigado 💜', 'ok');
       carregarUltimasIdeias();
     } else if(res.status === 429){ toast('Calma! Aguarde alguns segundos.', 'warn'); }
     else if(res.status === 500 && dados && dados.error === 'Webhook não configurado'){ toast('⚠️ Webhook do Discord não configurado.', 'erro'); }
@@ -1097,6 +1166,47 @@ async function enviarSugestao(){
 }
 window.enviarSugestao = enviarSugestao;
 
+/* ============================================================
+   SUGESTÕES — LISTA PÚBLICA
+   ============================================================ */
+function statusInfoSug(item){
+  const st = item.status || 'nova';
+  const base = STATUS_SUG[st] || STATUS_SUG.nova;
+  if(st === 'concluido'){
+    const rotulo = ROTULO_CONCLUIDO[item.tipo] || base.label;
+    return { ...base, label: rotulo };
+  }
+  return base;
+}
+
+function tipoInfoSug(tipo){
+  const t = String(tipo || '').toLowerCase();
+  if(t.includes('bug')) return { ic: '🐛', label: 'bug' };
+  if(t.includes('jogo')) return { ic: '🎮', label: 'jogo' };
+  if(t.includes('feedback')) return { ic: '💬', label: 'feedback' };
+  return { ic: '💡', label: 'sugestao' };
+}
+
+function renderSirFiltros(itens){
+  const wrap = $('sirFiltros'); if(!wrap) return;
+  const tipos = { 'all': true, 'sugestao': false, 'jogo': false, 'feedback': false, 'bug': false };
+  itens.forEach(i => {
+    const t = tipoInfoSug(i.tipo).label;
+    if(tipos[t] !== undefined) tipos[t] = true;
+  });
+  const opts = [
+    { id: 'all', label: 'Todas' },
+    { id: 'sugestao', label: '💡' },
+    { id: 'jogo', label: '🎮' },
+    { id: 'feedback', label: '💬' },
+    { id: 'bug', label: '🐛' }
+  ].filter(o => o.id === 'all' || tipos[o.id]);
+
+  wrap.innerHTML = opts.map(o =>
+    `<button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}">${o.label}</button>`
+  ).join('');
+}
+
 async function carregarUltimasIdeias(){
   const lista = $('sirLista'); if(!lista) return;
   try{
@@ -1104,29 +1214,57 @@ async function carregarUltimasIdeias(){
     if(!r.ok) throw new Error('falha');
     const d = await r.json();
     const itens = Array.isArray(d.itens) ? d.itens : [];
+    SIR_ITENS_CACHE = itens;
+
+    renderSirFiltros(itens);
+
     if(!itens.length){
-      lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhuma ideia ainda. Seja a primeira 💜</small></div>`;
+      lista.innerHTML = `
+        <div class="sir-empty">
+          <span>✨</span>
+          <small>Nenhuma ideia ainda. Seja a primeira 💜</small>
+        </div>
+        <div class="sir-item sir-item-exemplo">
+          <span class="sir-ic">💡</span>
+          <div class="sir-tx"><b>@exemplo</b><small>Adiciona modo hardcore no jogo X</small></div>
+        </div>
+        <div class="sir-item sir-item-exemplo">
+          <span class="sir-ic">🐛</span>
+          <div class="sir-tx"><b>@exemplo</b><small>Bug no botão de votar</small></div>
+        </div>
+        <small style="text-align:center;color:var(--dim);font-size:.66rem;font-style:italic;margin-top:4px">
+          exemplos — envie a sua acima 👆
+        </small>`;
       return;
     }
-    const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => {
-      const n = (i.nome || '').toLowerCase();
-      if(sirFiltro === 'jogo') return /jogo|game|sugest/i.test(n);
-      if(sirFiltro === 'bug') return /bug|erro|report/i.test(n);
-      return true;
-    });
+
+    const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
+
     if(!filtrados.length){
       lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada nesse filtro</small></div>`;
       return;
     }
-    lista.innerHTML = filtrados.slice(0, 5).map(i => `
-      <div class="sir-item">
-        <span class="sir-ic">💡</span>
-        <div class="sir-tx">
-          <b>@${esc(i.nome || 'alguém')}</b>
-          <small>${i.data ? tempoAtras(i.data) : 'há um tempo'}</small>
+
+    lista.innerHTML = filtrados.slice(0, 20).map(i => {
+      const st = statusInfoSug(i);
+      const ti = tipoInfoSug(i.tipo);
+      const motivoHTML = (i.status === 'recusada' && i.motivo)
+        ? `<div class="sir-motivo">${esc(i.motivo)}</div>` : '';
+      return `
+        <div class="sir-item" title="${esc(st.desc || '')}">
+          <span class="sir-ic">${ti.ic}</span>
+          <div class="sir-tx">
+            <div class="sir-tx-top">
+              <b>@${esc(i.nome || 'anônimo')}</b>
+              <span class="sir-status sir-status-${st.cor}">${st.label}</span>
+            </div>
+            <small>${esc((i.texto || '').slice(0, 90))}${(i.texto || '').length > 90 ? '…' : ''}</small>
+            <small class="sir-data">${i.data ? tempoAtras(i.data) : 'há um tempo'}</small>
+            ${motivoHTML}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }catch(e){
     lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Sugestões aparecem aqui após o primeiro envio 💜</small></div>`;
   }
@@ -1276,7 +1414,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   setupSugForm();
   setupSirFiltros();
-  setupSugTabs(); /* ← NOVA LINHA */
+  setupSugTabs();
   carregarUltimasIdeias();
 
   musicaTab = 'playlist';
