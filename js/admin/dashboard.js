@@ -14,6 +14,7 @@ async function renderAdminHome(){
   const podeTier = temPerm('ver_tierlist');
   const podeAdmins = temPerm('ver_admins');
   const podeBanidos = temPerm('ver_banidos');
+  const podeSug = temPerm('ver_sugestoes');
 
   const kpis = [];
   if(podeVotos && shared.votos){
@@ -27,6 +28,12 @@ async function renderAdminHome(){
     const total = jg + fl;
     const pulse = kpiChanged('tier', total);
     kpis.push({ icon:'🎮', value: total, label:'itens', sub: `${jg} jogos · ${fl} filmes`, href:'tierlist', accent:'amber', pulse });
+  }
+  if(podeSug && shared.sugestoes){
+    const total = (shared.sugestoes.itens || []).length;
+    const novas = (shared.sugestoes.itens || []).filter(i => (i.status || 'nova') === 'nova').length;
+    const pulse = kpiChanged('sug', total);
+    kpis.push({ icon:'💡', value: total, label:'sugestões', sub: novas === 0 ? 'nenhuma nova' : `${novas} nova${novas === 1 ? '' : 's'}`, href:'sugestoes', accent:'amber', pulse });
   }
   if(podeAdmins && shared.admins){
     const n = (shared.admins.admins || []).length;
@@ -85,6 +92,16 @@ async function renderAdminHome(){
       icon:'🖥️', title:'Setup dos sonhos',
       desc:'Editar sonhos, metas e apoiadores da vaquinha.',
       page:'setup', accent:'cyan'
+    }));
+  }
+  if(temPerm('ver_sugestoes')){
+    const novas = shared.sugestoes ? (shared.sugestoes.itens || []).filter(i => (i.status||'nova') === 'nova').length : 0;
+    cardsOperacao.push(cardAdminV2({
+      icon:'💡', title:'Sugestões',
+      desc: novas > 0
+        ? `${novas} nova${novas === 1 ? '' : 's'} aguardando análise.`
+        : 'Ver e gerenciar ideias da comunidade.',
+      page:'sugestoes', accent:'amber'
     }));
   }
   if(temPerm('ver_admins')){

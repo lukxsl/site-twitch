@@ -32,6 +32,8 @@ const STATUS_TOOLTIP = {
   'Assistindo': 'Estou assistindo agora', 'Assistido': 'Já assisti'
 };
 
+const SUG_MAX_CHARS = 300;
+
 /* Mapa de status das sugestões */
 const STATUS_SUG = {
   nova:     { label: '🟡 Nova',       cor: 'amarelo',   desc: 'Acabou de chegar' },
@@ -402,19 +404,27 @@ function setLivePulse(isLive){
 }
 
 /* ============================================================
-   NAVEGAÇÃO
+   NAVEGAÇÃO (com debounce + preserva admin:page)
    ============================================================ */
-function mudarAba(nome, salvar = true){
+let _ultimaAba = null;
+let _mudarAbaTimer = null;
+let _mudarAbaPendente = null;
+
+function _executarMudarAba(nome, salvar){
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
   document.querySelectorAll('nav ul button').forEach(b => b.classList.remove('on'));
   const section = $('sec-' + nome), button = $('btn-' + nome);
   if(section) section.classList.add('ativo');
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
-  if(nome !== 'admin'){
+
+  // Só limpa admin:page quando SAIR de fato do admin pra outra aba
+  if(nome !== 'admin' && _ultimaAba === 'admin'){
     try { localStorage.removeItem('admin:page'); } catch(e){}
     ADMIN_PAGE = 'home';
   }
+  _ultimaAba = nome;
+
   window.scrollTo({ top:0, behavior:'smooth' });
 
   if(nome === 'admin'){
@@ -436,6 +446,18 @@ function mudarAba(nome, salvar = true){
   }
 
   if(section) section.querySelectorAll('.reveal:not(.in)').forEach(el => revealObs && revealObs.observe(el));
+}
+
+function mudarAba(nome, salvar = true){
+  // Evita duplo disparo (ex: clique duplo, hash + clique)
+  if(_mudarAbaPendente === nome) return;
+  _mudarAbaPendente = nome;
+  if(_mudarAbaTimer) clearTimeout(_mudarAbaTimer);
+  _mudarAbaTimer = setTimeout(() => {
+    _mudarAbaTimer = null;
+    _mudarAbaPendente = null;
+    _executarMudarAba(nome, salvar);
+  }, 60);
 }
 window.mudarAba = mudarAba;
 
@@ -796,7 +818,7 @@ async function sair(){
 window.sair = sair;
 
 /* ============================================================
-   VOTAÇÃO — BADGES "NOVO" via localStorage
+   VOTAÇÃO — BADGES "NOVO"
    ============================================================ */
 const VOTOS_VISTOS_KEY = 'votos:itensVistos';
 function getVotosVistos(){
@@ -932,11 +954,13 @@ function renderVotacao(){
     if(segundo && segundo.votos > 0){
       const diff = l.votos - segundo.votos;
       vantagemTxt = diff === 0
-        ? ' · empatado com o 2º'
+        ? ' · Empatado com o 2º'
         : ` · ${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
-    } else if(l.votos > 0){
-      vantagemTxt = ' · sozinho na frente';
+    } else if(l.votos > 1){
+      vantagemTxt = ' · Unanimidade';
     }
+    // Se l.votos === 1 e sem segundo lugar → não mostra nada (só "1/1 votos")
+
     destBox.innerHTML = `
       <div class="destaque ${fechada ? 'fechada' : ''}">
         ${l.capa ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">` : '<div class="ph2">🎮</div>'}
@@ -995,7 +1019,6 @@ function renderVotacao(){
         ${btn(it)}
       </div>`;
   }).join('');
-  // Marca os exibidos como vistos depois de um tempinho
   setTimeout(() => resto.forEach(it => marcarVotoVisto(it.id)), 4000);
 }
 
@@ -1025,7 +1048,7 @@ async function votar(id, event){
 window.votar = votar;
 
 /* ============================================================
-   SUGESTÕES — TABS (Votar / Sugerir)
+   SUGESTÕES — TABS
    ============================================================ */
 function sugTabIrPara(tab){
   try { localStorage.setItem('sug:tab', tab); } catch(e){}
@@ -1068,7 +1091,7 @@ function setupSugTabs(){
 window.setupSugTabs = setupSugTabs;
 
 /* ============================================================
-   SUGESTÕES — FORM
+   SUGESTÕES — FORM (limite 300)
    ============================================================ */
 function setupSugForm(){
   const chips = document.querySelectorAll('#sugTipoChips .st-chip');
@@ -1089,10 +1112,10 @@ function setupSugForm(){
   function atualizarContador(){
     if(!counter || !ta) return;
     const n = ta.value.length;
-    counter.textContent = `${n} / 1000`;
+    counter.textContent = `${n} / ${SUG_MAX_CHARS}`;
     counter.classList.remove('warn','danger');
-    if(n >= 1000) counter.classList.add('danger');
-    else if(n >= 900) counter.classList.add('warn');
+    if(n >= SUG_MAX_CHARS) counter.classList.add('danger');
+    else if(n >= Math.floor(SUG_MAX_CHARS * 0.9)) counter.classList.add('warn');
   }
 
   function atualizarEstadoBtn(){
@@ -1130,6 +1153,10 @@ async function enviarSugestao(){
     toast('Escreve algo antes de enviar! 💜', 'warn');
     return;
   }
+  if(texto.length > SUG_MAX_CHARS){
+    toast(`Mensagem muito longa! Máx ${SUG_MAX_CHARS} caracteres.`, 'warn');
+    return;
+  }
 
   btn.disabled = true;
   try{
@@ -1143,7 +1170,7 @@ async function enviarSugestao(){
       $('sugNome').value = '';
       $('sugTexto').value = '';
       const counter = $('sugCounter');
-      if(counter){ counter.textContent = '0 / 1000'; counter.classList.remove('warn','danger'); }
+      if(counter){ counter.textContent = `0 / ${SUG_MAX_CHARS}`; counter.classList.remove('warn','danger'); }
 
       if(success){
         success.hidden = false;
@@ -1167,7 +1194,7 @@ async function enviarSugestao(){
 window.enviarSugestao = enviarSugestao;
 
 /* ============================================================
-   SUGESTÕES — LISTA PÚBLICA
+   SUGESTÕES — LISTA PÚBLICA (limite visível controlado por CSS)
    ============================================================ */
 function statusInfoSug(item){
   const st = item.status || 'nova';
@@ -1372,8 +1399,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   const abaSalva = isPreview ? 'inicio' : localStorage.getItem('abaAtiva');
-  if(abaSalva && document.getElementById('sec-' + abaSalva)) mudarAba(abaSalva, false);
-  else mudarAba('inicio', false);
+  if(abaSalva && document.getElementById('sec-' + abaSalva)){
+    _ultimaAba = null; // força execução sem debounce inicial
+    _executarMudarAba(abaSalva, false);
+  } else {
+    _ultimaAba = null;
+    _executarMudarAba('inicio', false);
+  }
 
   renderAviso(); renderEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();

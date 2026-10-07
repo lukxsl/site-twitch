@@ -1,5 +1,5 @@
 /* ============================================================
-   ADMIN — TABLES (Tierlist, Admins, Banidos, Logs, Backup)
+   ADMIN — TABLES (Tierlist, Admins, Banidos, Logs, Backup, Sugestões)
    ============================================================ */
 async function carregarAdminTierList(){
   const area = document.getElementById('adminArea');
@@ -348,6 +348,329 @@ async function salvarTierList(logAcao){
     carregarShared(true).then(() => renderSidebar());
   }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
+
+/* ============================================================
+   SUGESTÕES (admin)
+   ============================================================ */
+const MOTIVOS_RECUSA = [
+  { id: 'ja_joguei',      label: '🎮 Já joguei esse' },
+  { id: 'sem_verba',      label: '💸 Sem verba no momento' },
+  { id: 'nao_curto',      label: '🚫 Não curto o gênero' },
+  { id: 'nao_prioridade', label: '🕐 Não é prioridade agora' },
+  { id: 'fora_momento',   label: '📅 Fora do momento' },
+  { id: 'outro',          label: '✏️ Outro (escrever)' }
+];
+
+function _sugStatusInfo(item){
+  const st = item.status || 'nova';
+  const base = STATUS_SUG[st] || STATUS_SUG.nova;
+  if(st === 'concluido'){
+    const rotulo = ROTULO_CONCLUIDO[item.tipo] || base.label;
+    return { ...base, label: rotulo };
+  }
+  return base;
+}
+
+function _sugTipoInfo(tipo){
+  const t = String(tipo || '').toLowerCase();
+  if(t.includes('bug')) return { ic: '🐛', label: 'Bug' };
+  if(t.includes('jogo')) return { ic: '🎮', label: 'Jogo' };
+  if(t.includes('feedback')) return { ic: '💬', label: 'Feedback' };
+  return { ic: '💡', label: 'Sugestão' };
+}
+
+async function carregarAdminSugestoes(){
+  const area = document.getElementById('adminArea'); if(!area) return;
+  area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<p class="admin-vazio">Carregando…</p>`;
+  try{
+    const r = await fetch('/api/admin?action=sugestoes-ver');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    ADMIN_SHARED.sugestoes = d;
+    renderAdminSugestoes();
+  }catch(e){
+    area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+  }
+}
+window.carregarAdminSugestoes = carregarAdminSugestoes;
+
+function renderAdminSugestoes(){
+  const area = document.getElementById('adminArea'); if(!area) return;
+  const itens = (ADMIN_SHARED.sugestoes && ADMIN_SHARED.sugestoes.itens) || [];
+  const podeEditar = temPerm('editar_config');
+
+  // Filtros
+  const filtrados = itens.filter(i => {
+    if(ADMIN_SUG_STATUS !== 'all' && (i.status || 'nova') !== ADMIN_SUG_STATUS) return false;
+    if(ADMIN_SUG_TIPO !== 'all'){
+      const t = _sugTipoInfo(i.tipo).label.toLowerCase();
+      if(t !== ADMIN_SUG_TIPO) return false;
+    }
+    return true;
+  });
+
+  const contagem = { all: itens.length, nova: 0, analise: 0, aceita: 0, recusada: 0, concluido: 0 };
+  itens.forEach(i => {
+    const st = i.status || 'nova';
+    if(contagem[st] !== undefined) contagem[st]++;
+  });
+
+  // Filtros por tipo disponíveis (só os que existem)
+  const tiposDisponiveis = { all: true };
+  itens.forEach(i => {
+    const t = _sugTipoInfo(i.tipo).label.toLowerCase();
+    tiposDisponiveis[t] = true;
+  });
+
+  const chipStatus = (id, label, count) => `
+    <button type="button" class="sug-filter-chip ${ADMIN_SUG_STATUS === id ? 'on' : ''}"
+            onclick="adminIrSugFiltro('${id}')">
+      ${label}${count !== undefined ? ` <b>${count}</b>` : ''}
+    </button>
+  `;
+  const chipTipo = (id, label) => `
+    <button type="button" class="sug-filter-chip ${ADMIN_SUG_TIPO === id ? 'on' : ''}"
+            onclick="ADMIN_SUG_TIPO='${id}';renderAdminSugestoes()">
+      ${label}
+    </button>
+  `;
+
+  const cardsHTML = filtrados.length ? filtrados.map(i => {
+    const st = _sugStatusInfo(i);
+    const ti = _sugTipoInfo(i.tipo);
+    const motivoHTML = (i.status === 'recusada' && i.motivo)
+      ? `<div class="sir-motivo" style="margin-top:8px">${esc(i.motivo)}</div>` : '';
+    const metaInfo = [
+      i.data ? tempoAtras(i.data) : null,
+      i.atualizadoEm ? `atualizada ${tempoAtras(i.atualizadoEm)}` : null,
+      i.atualizadoPor ? `por ${esc(i.atualizadoPor)}` : null
+    ].filter(Boolean).join(' · ');
+
+    const dropdown = podeEditar ? `
+      <div class="sug-status-actions">
+        <select class="sug-status-select" onchange="mudarStatusSug('${esc(i.id)}', this.value)">
+          <option value="">Mudar status…</option>
+          <option value="nova">🟡 Nova</option>
+          <option value="analise">👀 Em análise</option>
+          <option value="aceita">✅ Aceita</option>
+          <option value="recusada">❌ Recusada</option>
+          <option value="concluido">🏁 Concluído</option>
+        </select>
+        <button class="btn-mini danger" onclick="excluirSugestao('${esc(i.id)}')">🗑️</button>
+      </div>` : '';
+
+    return `
+      <div class="admin-sug-card" data-status="${st.cor}">
+        <div class="admin-sug-head">
+          <span class="admin-sug-ic">${ti.ic}</span>
+          <div class="admin-sug-tx">
+            <div class="admin-sug-top">
+              <b>@${esc(i.nome || 'anônimo')}</b>
+              <span class="sir-status sir-status-${st.cor}">${st.label}</span>
+              <span class="admin-sug-tipo">${ti.label}</span>
+            </div>
+            <small class="admin-sug-meta">${metaInfo}</small>
+          </div>
+        </div>
+        <p class="admin-sug-texto">${esc(i.texto || '')}</p>
+        ${motivoHTML}
+        ${dropdown}
+      </div>
+    `;
+  }).join('') : `<div class="logs-empty"><b>Nenhuma sugestão</b>Quando alguém enviar, aparece aqui.</div>`;
+
+  area.innerHTML = adminVoltarHTML('💡 Sugestões') + `
+    <div class="admin-card">
+      <h3>💡 Sugestões <span class="cont">${itens.length}</span></h3>
+
+      <div class="admin-sug-filters">
+        <div class="admin-sug-filters-row">
+          <span class="admin-sug-filter-label">Status:</span>
+          ${chipStatus('all', 'Todas', contagem.all)}
+          ${chipStatus('nova', '🟡 Novas', contagem.nova)}
+          ${chipStatus('analise', '👀 Análise', contagem.analise)}
+          ${chipStatus('aceita', '✅ Aceitas', contagem.aceita)}
+          ${chipStatus('recusada', '❌ Recusadas', contagem.recusada)}
+          ${chipStatus('concluido', '🏁 Concluídas', contagem.concluido)}
+        </div>
+        <div class="admin-sug-filters-row">
+          <span class="admin-sug-filter-label">Tipo:</span>
+          ${chipTipo('all', 'Todas')}
+          ${tiposDisponiveis['sugestão'] ? chipTipo('sugestão', '💡 Sugestão') : ''}
+          ${tiposDisponiveis['jogo'] ? chipTipo('jogo', '🎮 Jogo') : ''}
+          ${tiposDisponiveis['feedback'] ? chipTipo('feedback', '💬 Feedback') : ''}
+          ${tiposDisponiveis['bug'] ? chipTipo('bug', '🐛 Bug') : ''}
+        </div>
+      </div>
+
+      <div class="admin-sug-list">
+        ${cardsHTML}
+      </div>
+
+      <div class="admin-actions">
+        <button class="admin-btn ghost" onclick="carregarAdminSugestoes()">🔄 Recarregar</button>
+        ${podeEditar ? `
+          <button class="admin-btn ghost" onclick="limparSugestoes('concluidas')">🧹 Limpar concluídas</button>
+          <button class="admin-btn ghost" onclick="limparSugestoes('recusadas')">🧹 Limpar recusadas</button>
+          <button class="admin-btn perigo" onclick="limparSugestoes('tudo')">🚨 Limpar TUDO</button>
+        ` : ''}
+      </div>
+    </div>`;
+}
+window.renderAdminSugestoes = renderAdminSugestoes;
+
+async function mudarStatusSug(id, novoStatus){
+  if(!novoStatus) return;
+  const itens = (ADMIN_SHARED.sugestoes && ADMIN_SHARED.sugestoes.itens) || [];
+  const item = itens.find(i => i.id === id);
+  if(!item) return;
+
+  let motivo = null, motivoTipo = null;
+
+  if(novoStatus === 'recusada'){
+    // Modal de motivo
+    const escolha = await _abrirModalMotivoRecusa();
+    if(!escolha) return; // cancelou
+    motivoTipo = escolha.tipo;
+    motivo = escolha.motivo;
+  }
+
+  try{
+    const r = await fetch('/api/admin?action=sugestoes-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status: novoStatus, motivo, motivoTipo })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    toast('Status atualizado! ✅', 'ok');
+    await carregarAdminSugestoes();
+    carregarShared(true).then(() => renderSidebar());
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.mudarStatusSug = mudarStatusSug;
+
+function _abrirModalMotivoRecusa(){
+  return new Promise(resolve => {
+    const dlg = document.getElementById('dlg');
+    const dhTitle = document.getElementById('dTitle');
+    const dBody = document.getElementById('dBody');
+    dhTitle.textContent = '❌ Motivo da recusa';
+
+    const botoes = MOTIVOS_RECUSA.map(m =>
+      `<button type="button" class="sug-motivo-btn" data-tipo="${esc(m.id)}">${m.label}</button>`
+    ).join('');
+
+    dBody.innerHTML = `
+      <p style="color:var(--mute);font-size:.86rem;margin-bottom:10px">
+        Escolhe um motivo. Isso ajuda a pessoa a entender o porquê.
+      </p>
+      <div class="sug-motivo-grid">${botoes}</div>
+      <div id="sugMotivoCustomWrap" style="display:none;margin-top:12px">
+        <label style="display:block;font-size:.72rem;font-weight:800;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Motivo</label>
+        <input id="sugMotivoCustom" type="text" maxlength="200" placeholder="Escreve o motivo..."
+               style="width:100%;background:rgba(26,16,45,.75);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font-family:inherit;font-size:.88rem">
+      </div>
+      <div class="admin-actions" style="justify-content:flex-end;margin-top:16px">
+        <button class="admin-btn ghost" id="sugMotivoCancel">Cancelar</button>
+        <button class="admin-btn perigo" id="sugMotivoOk" disabled>Recusar</button>
+      </div>
+    `;
+
+    let escolhidoTipo = null;
+    const wrap = dBody.querySelector('#sugMotivoCustomWrap');
+    const inputCustom = dBody.querySelector('#sugMotivoCustom');
+    const btnOk = dBody.querySelector('#sugMotivoOk');
+    const btnCancel = dBody.querySelector('#sugMotivoCancel');
+
+    function atualizarOk(){
+      const texto = inputCustom.value.trim();
+      if(escolhidoTipo === 'outro') btnOk.disabled = texto.length < 3;
+      else btnOk.disabled = !escolhidoTipo;
+    }
+
+    dBody.querySelectorAll('.sug-motivo-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        dBody.querySelectorAll('.sug-motivo-btn').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+        escolhidoTipo = b.dataset.tipo;
+        if(escolhidoTipo === 'outro'){ wrap.style.display = ''; inputCustom.focus(); }
+        else wrap.style.display = 'none';
+        atualizarOk();
+      });
+    });
+    inputCustom.addEventListener('input', atualizarOk);
+
+    const fechar = (resultado) => {
+      dlg.close();
+      btnOk.removeEventListener('click', onOk);
+      btnCancel.removeEventListener('click', onCancel);
+      dlg.removeEventListener('cancel', onCancel);
+      resolve(resultado);
+    };
+    const onOk = () => {
+      const motivoTxt = escolhidoTipo === 'outro'
+        ? `✏️ ${inputCustom.value.trim()}`
+        : (MOTIVOS_RECUSA.find(m => m.id === escolhidoTipo)?.label || 'Recusada');
+      fechar({ tipo: escolhidoTipo, motivo: motivoTxt });
+    };
+    const onCancel = (e) => { if(e) e.preventDefault(); fechar(null); };
+
+    btnOk.addEventListener('click', onOk);
+    btnCancel.addEventListener('click', onCancel);
+    dlg.addEventListener('cancel', onCancel);
+    dlg.showModal();
+  });
+}
+
+async function excluirSugestao(id){
+  const ok = await confirmar('Excluir sugestão?', 'Essa ideia some pra sempre. Não tem como desfazer.', '🗑️');
+  if(!ok) return;
+  try{
+    const r = await fetch('/api/admin?action=sugestoes-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    toast('Sugestão excluída ✅', 'ok');
+    await carregarAdminSugestoes();
+    carregarShared(true).then(() => renderSidebar());
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.excluirSugestao = excluirSugestao;
+
+async function limparSugestoes(modo){
+  const config = {
+    concluidas: { titulo: 'Limpar concluídas?', texto: 'Todas as sugestões 🏁 Concluído somem.', icone: '🧹' },
+    recusadas:  { titulo: 'Limpar recusadas?',  texto: 'Todas as sugestões ❌ Recusadas somem.', icone: '🧹' },
+    tudo:       { titulo: 'APAGAR TUDO?',       texto: 'TODAS as sugestões (novas, em análise, aceitas, recusadas e concluídas) serão apagadas. Essa ação não volta.', icone: '🚨' }
+  }[modo];
+  if(!config) return;
+
+  const ok1 = await confirmar(config.titulo, config.texto, config.icone);
+  if(!ok1) return;
+
+  if(modo === 'tudo'){
+    const ok2 = await confirmar('TEM CERTEZA MESMO?', 'Última chance. Não tem como recuperar.', '⚠️');
+    if(!ok2) return;
+  }
+
+  try{
+    const r = await fetch('/api/admin?action=sugestoes-limpar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modo })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    toast(`🧹 ${d.apagados} sugestões apagadas`, 'ok');
+    await carregarAdminSugestoes();
+    carregarShared(true).then(() => renderSidebar());
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.limparSugestoes = limparSugestoes;
 
 /* ============================================================
    ADMINS
@@ -705,14 +1028,15 @@ async function removerBanido(id){
 window.removerBanido = removerBanido;
 
 /* ============================================================
-   LOGS
+   LOGS (mostra 20 por padrão + "carregar mais")
    ============================================================ */
-const LOGS_STATE = { busca: '', periodo: 'all', tipo: 'all' };
+const LOGS_STATE = { busca: '', periodo: 'all', tipo: 'all', limite: 20 };
 
 function categoriaLog(acao){
   const a = (acao || '').toLowerCase();
   if(/resetou|resetar|votaç|voto|opç/.test(a))    return { ic:'🗳️', accent:'purple' };
   if(/tier|moveu|removeu|importou|editou item/.test(a)) return { ic:'🎮', accent:'amber'  };
+  if(/sugest|sugeriu/.test(a))                     return { ic:'💡', accent:'amber'  };
   if(/admin/.test(a))                              return { ic:'👥', accent:'blue'   };
   if(/bani|desbaniu/.test(a))                      return { ic:'🚫', accent:'red'    };
   if(/config|manuten|aviso|recado|doaç/.test(a))   return { ic:'⚙️', accent:'green'  };
@@ -773,6 +1097,8 @@ async function renderAdminLogs(){
     return;
   }
 
+  LOGS_STATE.limite = 20;
+
   area.innerHTML = adminVoltarHTML('📋 Logs') + `
     <div class="admin-card">
       <h3>📋 Histórico de ações</h3>
@@ -804,10 +1130,12 @@ async function renderAdminLogs(){
 
   document.getElementById('logsBusca')?.addEventListener('input', e => {
     LOGS_STATE.busca = e.target.value;
+    LOGS_STATE.limite = 20;
     renderLogsLista(aplicarFiltrosLogs(logs));
   });
   document.getElementById('logsPeriodo')?.addEventListener('change', e => {
     LOGS_STATE.periodo = e.target.value;
+    LOGS_STATE.limite = 20;
     renderLogsLista(aplicarFiltrosLogs(logs));
   });
 }
@@ -818,7 +1146,9 @@ function renderLogsLista(filtrados){
     lista.innerHTML = `<div class="logs-empty"><b>Nenhum log com esses filtros</b>Tenta limpar a busca.</div>`;
     return;
   }
-  const { grupos, ordem } = agruparLogsPorDia(filtrados);
+  const mostrados = filtrados.slice(0, LOGS_STATE.limite);
+  const temMais = filtrados.length > LOGS_STATE.limite;
+  const { grupos, ordem } = agruparLogsPorDia(mostrados);
   lista.innerHTML = ordem.map(dia => `
     <div class="logs-day">
       <div class="logs-day-head"><span>${esc(dia)}</span></div>
@@ -837,7 +1167,12 @@ function renderLogsLista(filtrados){
         `;
       }).join('')}
     </div>
-  `).join('');
+  `).join('') + (temMais ? `
+    <div style="text-align:center;margin-top:12px">
+      <button class="admin-btn ghost" onclick="LOGS_STATE.limite += 20; renderLogsLista(aplicarFiltrosLogs(window.__logsCache||[]))">
+        ⬇️ Carregar mais (${filtrados.length - LOGS_STATE.limite} restantes)
+      </button>
+    </div>` : '');
 }
 window.renderAdminLogs = renderAdminLogs;
 

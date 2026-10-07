@@ -3,6 +3,7 @@
    ============================================================ */
 function adminIrPara(pagina){
   if(pagina === 'votacao') ADMIN_TAB = 'votos';
+  if(pagina === 'sugestoes') ADMIN_SUG_STATUS = 'all';
   ADMIN_PAGE = pagina;
   localStorage.setItem('admin:page', pagina);
   carregarAdmin();
@@ -14,10 +15,12 @@ function adminIrTierTab(tab){
   renderAdminTierList();
 }
 function adminIrConfigTab(tab){ ADMIN_CONFIG_TAB = tab; renderAdminConfig(); }
+function adminIrSugFiltro(f){ ADMIN_SUG_STATUS = f; renderAdminSugestoes(); }
 window.adminIrPara = adminIrPara;
 window.adminIrAba = adminIrAba;
 window.adminIrTierTab = adminIrTierTab;
 window.adminIrConfigTab = adminIrConfigTab;
+window.adminIrSugFiltro = adminIrSugFiltro;
 
 const PERM_GRUPOS = {
   'Votação': ['ver_votos','editar_opcoes','resetar_votos'],
@@ -32,6 +35,8 @@ let PERMS_DADOS = null;
 let PERMS_LABELS = null;
 
 let ADMIN_CONFIG_TAB = 'aviso';
+let ADMIN_SUG_STATUS = 'all';
+let ADMIN_SUG_TIPO = 'all';
 let ADMIN_SHARED = {
   votos: null, tier: null, admins: null, banidos: null, logs: null, backup: null,
   fetchedAt: 0
@@ -40,15 +45,16 @@ let _sharedPromise = null;
 const _KPI_LAST = {};
 
 const ADMIN_NAV = [
-  { id: 'home',     label: 'Home',      icon: '📊', perm: null,            accent: 'purple', badgeKey: null       },
-  { id: 'votacao',  label: 'Votação',   icon: '🗳️', perm: 'ver_votos',     accent: 'purple', badgeKey: 'votacao'  },
-  { id: 'tierlist', label: 'Tier List', icon: '🎮', perm: 'ver_tierlist',  accent: 'amber',  badgeKey: 'tierlist' },
-  { id: 'setup',    label: 'Setup',     icon: '🖥️', perm: 'ver_tierlist',  accent: 'cyan',   badgeKey: null       },
-  { id: 'admins',   label: 'Admins',    icon: '👥', perm: 'ver_admins',    accent: 'blue',   badgeKey: 'admins'   },
-  { id: 'banidos',  label: 'Banidos',   icon: '🚫', perm: 'ver_banidos',   accent: 'red',    badgeKey: 'banidos'  },
-  { id: 'config',   label: 'Config',    icon: '⚙️', perm: 'ver_config',    accent: 'green',  badgeKey: null       },
-  { id: 'logs',     label: 'Logs',      icon: '📋', perm: 'ver_logs',      accent: 'pink',   badgeKey: 'logs'     },
-  { id: 'backup',   label: 'Backup',    icon: '💾', perm: 'editar_config', accent: 'cyan',   badgeKey: 'backup'   }
+  { id: 'home',      label: 'Home',      icon: '📊', perm: null,            accent: 'purple', badgeKey: null       },
+  { id: 'votacao',   label: 'Votação',   icon: '🗳️', perm: 'ver_votos',     accent: 'purple', badgeKey: 'votacao'  },
+  { id: 'tierlist',  label: 'Tier List', icon: '🎮', perm: 'ver_tierlist',  accent: 'amber',  badgeKey: 'tierlist' },
+  { id: 'setup',     label: 'Setup',     icon: '🖥️', perm: 'ver_tierlist',  accent: 'cyan',   badgeKey: null       },
+  { id: 'sugestoes', label: 'Sugestões', icon: '💡', perm: 'ver_sugestoes', accent: 'amber',  badgeKey: 'sugestoes'},
+  { id: 'admins',    label: 'Admins',    icon: '👥', perm: 'ver_admins',    accent: 'blue',   badgeKey: 'admins'   },
+  { id: 'banidos',   label: 'Banidos',   icon: '🚫', perm: 'ver_banidos',   accent: 'red',    badgeKey: 'banidos'  },
+  { id: 'config',    label: 'Config',    icon: '⚙️', perm: 'ver_config',    accent: 'green',  badgeKey: null       },
+  { id: 'logs',      label: 'Logs',      icon: '📋', perm: 'ver_logs',      accent: 'pink',   badgeKey: 'logs'     },
+  { id: 'backup',    label: 'Backup',    icon: '💾', perm: 'editar_config', accent: 'cyan',   badgeKey: 'backup'   }
 ];
 const VALID_ADMIN_PAGES = ADMIN_NAV.map(it => it.id);
 
@@ -65,6 +71,8 @@ function renderSidebar(){
         count = Object.values(ADMIN_SHARED.votos.contagem || {}).reduce((a,b)=>a+(Number(b)||0),0);
       } else if(it.badgeKey === 'tierlist' && ADMIN_SHARED.tier){
         count = (ADMIN_SHARED.tier.jogos||[]).length + (ADMIN_SHARED.tier.filmes||[]).length;
+      } else if(it.badgeKey === 'sugestoes' && ADMIN_SHARED.sugestoes){
+        count = (ADMIN_SHARED.sugestoes.itens||[]).length;
       } else if(it.badgeKey === 'admins' && ADMIN_SHARED.admins){
         count = (ADMIN_SHARED.admins.admins||[]).length;
       } else if(it.badgeKey === 'banidos' && ADMIN_SHARED.banidos){
@@ -129,15 +137,16 @@ async function carregarShared(force = false){
 
   _sharedPromise = (async () => {
     const safeFetch = (url) => fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
-    const [votos, tier, admins, banidos, logs, backup] = await Promise.all([
-      temPerm('ver_votos')     ? safeFetch('/api/admin?action=votos')        : null,
-      temPerm('ver_tierlist')  ? safeFetch('/api/admin?action=tierlist-get') : null,
-      temPerm('ver_admins')    ? safeFetch('/api/admin?action=admins-ver')   : null,
-      temPerm('ver_banidos')   ? safeFetch('/api/admin?action=banidos-ver')  : null,
-      temPerm('ver_logs')      ? safeFetch('/api/admin?action=logs-ver')     : null,
-      temPerm('editar_config') ? safeFetch('/api/backup?action=list')        : null
+    const [votos, tier, sugestoes, admins, banidos, logs, backup] = await Promise.all([
+      temPerm('ver_votos')      ? safeFetch('/api/admin?action=votos')          : null,
+      temPerm('ver_tierlist')   ? safeFetch('/api/admin?action=tierlist-get')   : null,
+      temPerm('ver_sugestoes')  ? safeFetch('/api/admin?action=sugestoes-ver')  : null,
+      temPerm('ver_admins')     ? safeFetch('/api/admin?action=admins-ver')     : null,
+      temPerm('ver_banidos')    ? safeFetch('/api/admin?action=banidos-ver')    : null,
+      temPerm('ver_logs')       ? safeFetch('/api/admin?action=logs-ver')       : null,
+      temPerm('editar_config')  ? safeFetch('/api/backup?action=list')          : null
     ]);
-    ADMIN_SHARED = { votos, tier, admins, banidos, logs, backup, fetchedAt: Date.now() };
+    ADMIN_SHARED = { votos, tier, sugestoes, admins, banidos, logs, backup, fetchedAt: Date.now() };
     _sharedPromise = null;
     return ADMIN_SHARED;
   })();
@@ -186,6 +195,7 @@ async function carregarAdmin(){
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
   else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
   else if(ADMIN_PAGE === 'setup') await renderAdminSetup();
+  else if(ADMIN_PAGE === 'sugestoes') await carregarAdminSugestoes();
   else if(ADMIN_PAGE === 'admins') await renderAdminAdmins();
   else if(ADMIN_PAGE === 'banidos') await renderAdminBanidos();
   else if(ADMIN_PAGE === 'config') await renderAdminConfig();

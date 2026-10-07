@@ -74,7 +74,6 @@
 .admin-section-kicker{font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
 .admin-section-count{margin-left:auto;font-size:.68rem;font-weight:700;color:var(--dim);font-family:'JetBrains Mono',monospace}
 
-/* GRID FIX — !important mata conflito */
 .admin-section-grid{
   display:grid !important;
   grid-template-columns:repeat(2,minmax(0,1fr)) !important;
@@ -138,7 +137,7 @@
 .config-panel{display:none}
 .config-panel.on{display:block}
 
-.aviso-preview{margin-top:12px;padding:14px 18px;border-radius:var(--r);background:linear-gradient(135deg,rgba(168,85,247,.18),rgba(168,85,247,.03));border:1px solid var(--line-2);display:flex;gap:14px;align-items:center;position:relative;overflow:hidden}
+.aviso-preview{margin-top:12px;padding:14px 18px;border-radius:var(--r);background:linear-gradient(135deg,rgba(168,85,247,.18),rgba(168,85,247,.03));border:1px solid var(--line-2);display:flex;gap:14px;align-items:center;position:relative;overflow:visible}
 .aviso-preview::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--purple-2),var(--purple-3))}
 .aviso-preview.warn{background:linear-gradient(135deg,rgba(255,166,0,.14),rgba(255,166,0,.03));border-color:rgba(255,166,0,.4)}
 .aviso-preview.warn::before{background:linear-gradient(180deg,#ffb547,#ff8c00)}
@@ -216,7 +215,7 @@
 .ver-visitante:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(59,130,246,.5)}
 
 /* ============================================================
-   ADMIN — pequenas classes usadas internamente
+   ADMIN — pequenas classes internas
    ============================================================ */
 .admin-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;margin-bottom:14px;backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),var(--sh),var(--sh-floor)}
 .admin-card h3{color:var(--white);margin-bottom:14px;font-size:1.05rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -258,6 +257,9 @@
 .admin-form textarea{resize:vertical;min-height:70px}
 .admin-form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .admin-form .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.admin-form input[type="datetime-local"]{color-scheme:dark;background:rgba(26,16,45,.75);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;font-family:inherit;font-size:.86rem;width:100%}
+.admin-form input[type="datetime-local"]:focus{border-color:var(--purple);outline:none;box-shadow:0 0 0 4px rgba(168,85,247,.14)}
+.admin-form input[type="datetime-local"]::-webkit-calendar-picker-indicator{filter:invert(.85) sepia(.3) saturate(5) hue-rotate(230deg);cursor:pointer;opacity:.85}
 
 .busca-row{display:flex;gap:8px;align-items:stretch}
 .busca-row input{flex:1}
@@ -312,37 +314,6 @@
 /* ============================================================
    🆕 V3.1 — Input de data dark + status atual
    ============================================================ */
-
-/* Input de data/hora dark */
-.admin-form input[type="datetime-local"]{
-  color-scheme: dark;
-  background:rgba(26,16,45,.75);
-  color:var(--ink);
-  border:1px solid var(--line);
-  border-radius:var(--r-sm);
-  padding:10px 12px;
-  font-family:inherit;
-  font-size:.86rem;
-  width:100%;
-}
-.admin-form input[type="datetime-local"]:focus{
-  border-color:var(--purple);
-  outline:none;
-  box-shadow:0 0 0 4px rgba(168,85,247,.14);
-}
-.admin-form input[type="datetime-local"]::-webkit-calendar-picker-indicator{
-  filter:invert(.85) sepia(.3) saturate(5) hue-rotate(230deg);
-  cursor:pointer;
-  opacity:.85;
-}
-
-/* Status atual: overflow visível pro badge não cortar */
-.aviso-preview{
-  overflow:visible !important;
-  margin-top:20px;
-}
-
-/* Badge de status atual da sugestão (usado na tela admin) */
 .sir-admin-status{
   display:inline-flex;
   align-items:center;
@@ -353,4 +324,185 @@
   border-radius:99px;
   letter-spacing:.03em;
   border:1px solid transparent;
+}
+
+/* ============================================================
+   🆕 V3.2 — ADMIN SUGESTÕES
+   ============================================================ */
+.admin-sug-filters{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--line);
+}
+.admin-sug-filters-row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.admin-sug-filter-label{
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-right: 4px;
+}
+.sug-filter-chip{
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--mute);
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-family: inherit;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.sug-filter-chip b{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .68rem;
+  opacity: .8;
+}
+.sug-filter-chip:hover{
+  color: var(--white);
+  border-color: var(--purple);
+  background: rgba(168,85,247,.08);
+}
+.sug-filter-chip.on{
+  background: linear-gradient(135deg, var(--purple-2), var(--purple-3));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 12px -2px rgba(168,85,247,.5);
+}
+.sug-filter-chip.on b{ opacity: 1; }
+
+.admin-sug-list{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-sug-card{
+  padding: 14px 16px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-2);
+  border-radius: var(--r-sm);
+  transition: .2s;
+}
+.admin-sug-card:hover{
+  background: rgba(168,85,247,.04);
+  border-color: var(--line-2);
+}
+.admin-sug-card[data-status="amarelo"]{ border-left-color:#facc15; }
+.admin-sug-card[data-status="azul"]{ border-left-color:#3b82f6; }
+.admin-sug-card[data-status="verde"]{ border-left-color:#10b981; }
+.admin-sug-card[data-status="vermelho"]{ border-left-color:#ef4444; }
+.admin-sug-card[data-status="roxo"]{ border-left-color:#a855f7; }
+
+.admin-sug-head{
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.admin-sug-ic{
+  font-size: 1.3rem;
+  flex: none;
+  line-height: 1;
+  margin-top: 2px;
+}
+.admin-sug-tx{ flex: 1; min-width: 0; }
+.admin-sug-top{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+.admin-sug-top b{ color: var(--white); font-size: .88rem; }
+.admin-sug-tipo{
+  font-size: .62rem;
+  color: var(--mute);
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--line);
+  font-weight: 700;
+}
+.admin-sug-meta{
+  color: var(--mute);
+  font-size: .68rem;
+}
+.admin-sug-texto{
+  color: #ddd5eb;
+  font-size: .86rem;
+  line-height: 1.5;
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.sug-status-actions{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.sug-status-select{
+  flex: 1;
+  max-width: 260px;
+  background: rgba(26,16,45,.75);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+}
+.sug-status-select:focus{
+  border-color: var(--purple);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(168,85,247,.14);
+}
+
+/* Modal de motivo de recusa */
+.sug-motivo-grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.sug-motivo-btn{
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  color: #ddd5eb;
+  font-family: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s;
+  text-align: left;
+}
+.sug-motivo-btn:hover{
+  border-color: var(--purple);
+  background: rgba(168,85,247,.08);
+  color: #fff;
+}
+.sug-motivo-btn.on{
+  background: linear-gradient(135deg, rgba(239,68,68,.18), rgba(239,68,68,.05));
+  border-color: #ef4444;
+  color: #ffd0d0;
+  box-shadow: 0 0 0 3px rgba(239,68,68,.14);
 }

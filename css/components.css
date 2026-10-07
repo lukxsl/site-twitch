@@ -87,7 +87,7 @@
 .aviso.warn .aviso-tx b{color:#ffd08a}
 
 /* ============================================================
-   HOME COMPONENTS (Profile, Twitch, Monitor, Focus, Music)
+   HOME COMPONENTS
    ============================================================ */
 .profile-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:22px 20px;gap:8px}
 .profile-avatar-container{position:relative;width:96px;height:96px;margin-bottom:4px}
@@ -369,7 +369,7 @@ body.sou-admin .g[draggable="true"]{cursor:grab}
 .info-grid .rules-grid{grid-template-columns:1fr}
 
 /* ============================================================
-   SUGESTÕES & VOTAÇÃO (antigas - mantidas para compatibilidade)
+   SUGESTÕES & VOTAÇÃO (compat)
    ============================================================ */
 .sugestoes-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;align-items:start}
 .setup-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:14px;transition:.2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),var(--sh),var(--sh-floor)}
@@ -544,7 +544,7 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 .counter-up{animation:counterGlow 1.3s ease-out}
 
 /* ============================================================
-   RESPONSIVE (Components)
+   RESPONSIVE
    ============================================================ */
 @media (max-width:1100px){
   .sugestoes-grid{grid-template-columns:1fr}
@@ -598,9 +598,7 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 }
 
 /* ============================================================
-   ============================================================
    🆕 SUGESTÕES & VOTAÇÃO — V3 (TABS + GRID COMPACTO)
-   ============================================================
    ============================================================ */
 
 /* --- Abas internas --- */
@@ -658,25 +656,29 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 }
 .voto-tags{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
-/* --- Painel VOTAR: destaque do líder (compacto) --- */
+/* --- Painel VOTAR: destaque do líder --- */
 .voto-panel-head + #destaqueBox{margin-bottom:12px}
 .voto-panel-head + #destaqueBox .destaque{
-  padding:12px 14px;
-  gap:12px;
+  padding:14px 18px;
+  gap:16px;
   margin-bottom:0;
 }
 .voto-panel-head + #destaqueBox .destaque img,
 .voto-panel-head + #destaqueBox .destaque .ph2{
-  width:56px;
+  width:76px;
   aspect-ratio:2/3;
 }
-.voto-panel-head + #destaqueBox .destaque b{font-size:1rem}
+.voto-panel-head + #destaqueBox .destaque .d-info{gap:6px}
+.voto-panel-head + #destaqueBox .destaque b{font-size:1.15rem}
+.voto-panel-head + #destaqueBox .destaque small{font-size:.68rem}
+.voto-panel-head + #destaqueBox .destaque .d-meta{font-size:.78rem}
 .voto-panel-head + #destaqueBox .destaque .btn{
-  padding:8px 16px;
-  font-size:.78rem;
+  padding:10px 20px;
+  font-size:.82rem;
+  min-width:130px;
 }
 
-/* --- Painel VOTAR: grid 2x2 de opções --- */
+/* --- Painel VOTAR: grid 2x2 --- */
 .voto-grid-lista{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -744,7 +746,7 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   color:var(--purple-2);
   font-weight:700;
   font-family:'JetBrains Mono',monospace;
-  font-size:.9rem;
+  font-size:.95rem;
 }
 .voto-foot .dot{opacity:.4}
 .voto-add-btn{
@@ -766,7 +768,7 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   color:var(--white);
 }
 
-/* --- Painel SUGERIR: 2 colunas --- */
+/* --- Painel SUGERIR --- */
 .sugerir-cols{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -782,7 +784,12 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   margin-bottom:12px;
 }
 .sug-form-col .sug-form{gap:10px}
-.sug-form-col .sug-textarea-wrap textarea{min-height:88px}
+.sug-form-col .sug-textarea-wrap textarea{min-height:120px}
+.sug-form-col .sug-actions{margin-top:6px}
+.sug-form-col .sug-actions .btn.big{
+  padding:14px 24px;
+  font-size:.94rem;
+}
 
 .sir-list-col{display:flex;flex-direction:column;min-height:0}
 .sir-list-col .sir-head{
@@ -795,7 +802,7 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   border-bottom:1px dashed var(--line);
 }
 .sir-list-col .sir-lista{
-  max-height:340px;
+  max-height:420px;
   overflow-y:auto;
   padding-right:6px;
 }
@@ -805,85 +812,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   background:var(--line-2);
   border-radius:99px;
 }
-
-/* --- Responsive (mobile futuro) --- */
-@media (max-width:720px){
-  .sug-tabs{width:100%;justify-content:center}
-  .sug-tab{flex:1;justify-content:center}
-  .voto-grid-lista{grid-template-columns:1fr}
-  .sugerir-cols{grid-template-columns:1fr}
-  .voto-add-btn{margin-left:0;width:100%}
-}
-
-/* ============================================================
-   🆕 V3.1 — AJUSTES SUGESTÕES / VOTAÇÃO
-   ============================================================ */
-
-/* --- Animação suave entre abas --- */
-.sug-panel.on{animation:sugFade .3s var(--ease)}
-@keyframes sugFade{
-  from{opacity:0;transform:translateY(6px)}
-  to{opacity:1;transform:none}
-}
-
-/* --- Líder: capa maior + layout equilibrado --- */
-.voto-panel-head + #destaqueBox .destaque{
-  padding:14px 18px;
-  gap:16px;
-}
-.voto-panel-head + #destaqueBox .destaque img,
-.voto-panel-head + #destaqueBox .destaque .ph2{
-  width:76px;
-}
-.voto-panel-head + #destaqueBox .destaque .d-info{gap:6px}
-.voto-panel-head + #destaqueBox .destaque b{font-size:1.15rem}
-.voto-panel-head + #destaqueBox .destaque small{font-size:.68rem}
-.voto-panel-head + #destaqueBox .destaque .d-meta{font-size:.78rem}
-.voto-panel-head + #destaqueBox .destaque .btn{
-  padding:10px 20px;
-  font-size:.82rem;
-  min-width:130px;
-}
-
-/* --- Textarea + botão destacado --- */
-.sug-form-col .sug-textarea-wrap textarea{min-height:120px}
-.sug-form-col .sug-actions{margin-top:6px}
-.sug-form-col .sug-actions .btn.big{
-  padding:14px 24px;
-  font-size:.94rem;
-}
-
-/* --- Contador com cores --- */
-.sug-counter{transition:color .25s,background .25s}
-.sug-counter.warn{
-  color:#ffb547;
-  background:rgba(255,181,71,.12);
-}
-.sug-counter.danger{
-  color:var(--red);
-  background:rgba(255,77,95,.15);
-  font-weight:800;
-}
-
-/* --- Empty state + exemplos --- */
-.sir-list-col .sir-lista > .sir-empty{
-  padding:18px 14px;
-  flex:0 0 auto;
-}
-.sir-list-col .sir-lista > .sir-empty span{font-size:1.8rem}
-.sir-list-col .sir-lista > .sir-empty small{
-  font-size:.78rem;
-  max-width:280px;
-  line-height:1.5;
-}
-.sir-item-exemplo{
-  opacity:.35;
-  pointer-events:none;
-  filter:grayscale(.4);
-}
-.sir-item-exemplo .sir-ic{opacity:.7}
-.sir-item-exemplo .sir-tx b{color:#ddd5eb}
-.sir-item-exemplo .sir-tx small{font-style:italic}
 
 /* --- Legenda dos status --- */
 .sir-legenda{
@@ -897,13 +825,9 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   font-weight:600;
   line-height:1.4;
 }
-.sir-legenda span{
-  white-space:nowrap;
-  opacity:.85;
-  cursor:help;
-}
+.sir-legenda span{white-space:nowrap;opacity:.85;cursor:help}
 
-/* --- Cards de ideia: status colorido --- */
+/* --- Cards de ideia --- */
 .sir-item{
   display:flex;
   gap:10px;
@@ -951,6 +875,26 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   font-style:italic;
 }
 
+/* --- Empty state --- */
+.sir-list-col .sir-lista > .sir-empty{
+  padding:18px 14px;
+  flex:0 0 auto;
+}
+.sir-list-col .sir-lista > .sir-empty span{font-size:1.8rem}
+.sir-list-col .sir-lista > .sir-empty small{
+  font-size:.78rem;
+  max-width:280px;
+  line-height:1.5;
+}
+.sir-item-exemplo{
+  opacity:.35;
+  pointer-events:none;
+  filter:grayscale(.4);
+}
+.sir-item-exemplo .sir-ic{opacity:.7}
+.sir-item-exemplo .sir-tx b{color:#ddd5eb}
+.sir-item-exemplo .sir-tx small{font-style:italic}
+
 /* --- Badge NOVO nos itens de votação --- */
 .vt-novo{
   position:absolute;
@@ -974,6 +918,16 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 }
 .vt:has(.vt-novo) .vt-rank{top:22px}
 
-/* --- Ajuste fino do rodapé --- */
-.voto-foot{gap:4px}
-.voto-foot b{font-size:.95rem}
+/* --- Contador com cores --- */
+.sug-counter{transition:color .25s,background .25s}
+.sug-counter.warn{color:#ffb547;background:rgba(255,181,71,.12)}
+.sug-counter.danger{color:var(--red);background:rgba(255,77,95,.15);font-weight:800}
+
+/* --- Responsive (mobile futuro) --- */
+@media (max-width:720px){
+  .sug-tabs{width:100%;justify-content:center}
+  .sug-tab{flex:1;justify-content:center}
+  .voto-grid-lista{grid-template-columns:1fr}
+  .sugerir-cols{grid-template-columns:1fr}
+  .voto-add-btn{margin-left:0;width:100%}
+}

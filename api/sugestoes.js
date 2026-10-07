@@ -1,7 +1,7 @@
 // Vercel serverless: /api/sugestoes.js
 // GET  → lista sugestões (com status)
 // POST → envia sugestão (salva no Redis + log + Discord webhook)
-import { createHash, randomUUID } from 'crypto';
+import { createHash, randomUUID, createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -9,6 +9,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 const COOKIE_NAME = 'sessao_site';
 const LIST_KEY = 'sugestoes:lista';
 const MAX_ITENS = 200;
+const MAX_TEXTO = 300;
 
 const recentes = new Map();
 const RATE_MS = 30000;
@@ -43,7 +44,6 @@ function lerSessao(req){
     return d;
   } catch { return null; }
 }
-import { createHmac } from 'crypto';
 
 function limparMapas(){
   const now = Date.now();
@@ -83,10 +83,11 @@ export default async function handler(req, res){
   if (site) return res.status(200).json({ ok: true });
 
   const categoria = safeStr(tipo, 40) || 'Sugestão / ideia';
-  const msg = safeStr(texto, 1000);
+  const msg = safeStr(texto, MAX_TEXTO);
   const autor = safeStr(nome, 40) || 'Anônimo';
 
   if (!msg) return res.status(400).json({ error: 'Escreva uma sugestão' });
+  if (msg.length > MAX_TEXTO) return res.status(400).json({ error: `Mensagem muito longa (máx ${MAX_TEXTO})` });
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
   const agora = Date.now();
@@ -103,12 +104,10 @@ export default async function handler(req, res){
   }
   dupCache.set(hash, agora);
 
-  /* Sessão (se logado) */
   const sessao = lerSessao(req);
   const userId = sessao?.id || null;
   const usernameLogado = sessao?.username || null;
 
-  /* Cria item */
   const item = {
     id: randomUUID(),
     nome: autor,
@@ -122,7 +121,6 @@ export default async function handler(req, res){
     atualizadoEm: null
   };
 
-  /* Salva no Redis */
   try {
     if (URL_ && TOKEN) {
       await redis([
@@ -132,7 +130,6 @@ export default async function handler(req, res){
     }
   } catch (e) { /* silencioso */ }
 
-  /* Log admin */
   try {
     if (URL_ && TOKEN) {
       const logItem = JSON.stringify({
@@ -141,11 +138,10 @@ export default async function handler(req, res){
         acao: `Nova sugestão (${categoria}): "${msg.slice(0, 60)}${msg.length > 60 ? '…' : ''}"`,
         ts: Date.now()
       });
-      await redis([['LPUSH', 'admin:logs', logItem], ['LTRIM', 'admin:logs', '0', '99']]);
+      await redis([['LPUSH', 'admin:logs', logItem], ['LTRIM', 'admin:logs', '0', '199']]);
     }
   } catch (e) { /* silencioso */ }
 
-  /* Envia pro Discord */
   const r = await fetch(hook, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -12,6 +12,8 @@ const STEAM_KEY = process.env.STEAM_API_KEY || process.env.STEAM;
 const STEAM_ID = '76561199823015081';
 const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 const SUG_KEY = 'sugestoes:lista';
+const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
+const LOGS_MAX = 199; // 200 itens
 
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
 
@@ -46,8 +48,16 @@ const FILMES_PADRAO = [
     comentario: 'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas.' }
 ];
 
-/* Status válidos pra sugestões */
 const STATUS_SUG_VALIDOS = ['nova','analise','aceita','recusada','concluido'];
+const ROTULO_CONCLUIDO = {
+  'Sugestão / ideia':      'Aplicada',
+  'Sugestão de jogo':      'Jogado',
+  'Feedback':              'Resolvido',
+  'Reportar bug do site':  'Corrigido'
+};
+const LABEL_STATUS = {
+  nova:'Nova', analise:'Em análise', aceita:'Aceita', recusada:'Recusada', concluido:'Concluído'
+};
 
 /* ============ SESSÃO ============ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
@@ -95,7 +105,7 @@ async function temPermissao(sessao, perm){
 async function logAcao(quem, cargo, acao){
   try {
     const item = JSON.stringify({ quem, cargo, acao, ts: Date.now() });
-    await redis([['LPUSH', 'admin:logs', item], ['LTRIM', 'admin:logs', '0', '99']]);
+    await redis([['LPUSH', 'admin:logs', item], ['LTRIM', 'admin:logs', '0', String(LOGS_MAX)]]);
   } catch(e){}
 }
 
@@ -261,6 +271,35 @@ async function importarSteam(){
   }
   await redis([['SET', 'tierlist:jogos', JSON.stringify(atuais)]]);
   return { ok: true, adicionados, pulados, total: jogados.length };
+}
+
+/* ============ NOTIFICAÇÃO DISCORD: status mudou ============ */
+async function notificarStatus(item, novoStatus, motivo, quemMudou){
+  if(!DISCORD_WEBHOOK) return;
+  const tipoLabel = ROTULO_CONCLUIDO[item.tipo] || LABEL_STATUS[novoStatus] || novoStatus;
+  const labelFinal = novoStatus === 'concluido' ? `🏁 ${tipoLabel}` : (LABEL_STATUS[novoStatus] || novoStatus);
+  const color = novoStatus === 'recusada' ? 0xef4444
+             : novoStatus === 'aceita' ? 0x10b981
+             : novoStatus === 'concluido' ? 0xa855f7
+             : novoStatus === 'analise' ? 0x3b82f6
+             : 0xf59e0b;
+  const motivoTxt = novoStatus === 'recusada' && motivo ? `\n**Motivo:** ${motivo}` : '';
+  try {
+    await fetch(DISCORD_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        allowed_mentions: { parse: [] },
+        embeds: [{
+          title: `💡 Sua ideia foi atualizada: ${labelFinal}`,
+          description: `**"${(item.texto || '').slice(0, 180)}${(item.texto||'').length > 180 ? '…' : ''}"**${motivoTxt}`,
+          color,
+          footer: { text: `De: ${item.nome} · por ${quemMudou}` },
+          timestamp: new Date().toISOString()
+        }]
+      })
+    });
+  } catch(e){ /* silencioso */ }
 }
 
 /* ============ HANDLER ============ */
@@ -633,7 +672,7 @@ export default async function handler(req, res){
     /* -------- LOGS -------- */
     if(req.method === 'GET' && action === 'logs-ver'){
       if(!(await temPermissao(sessao, 'ver_logs'))) return res.status(403).json({ error: 'Sem permissão' });
-      const [flat] = await redis([['LRANGE', 'admin:logs', '0', '99']]);
+      const [flat] = await redis([['LRANGE', 'admin:logs', '0', String(LOGS_MAX)]]);
       const logs = (flat || []).map(x => { try { return JSON.parse(x); } catch { return null; } }).filter(Boolean);
       return res.status(200).json({ logs });
     }
@@ -668,13 +707,14 @@ export default async function handler(req, res){
       itens[idx].atualizadoEm = new Date().toISOString();
       itens[idx].atualizadoPor = quem;
 
-      await redis([['SET', SUG_KEY + ':tmp', '1']]); // noop
       const cmds = [['DEL', SUG_KEY]];
-      // Repush na ordem (mais novo primeiro)
       for(let i = itens.length - 1; i >= 0; i--){
         cmds.push(['RPUSH', SUG_KEY, JSON.stringify(itens[i])]);
       }
       await redis(cmds);
+
+      // Notifica no Discord
+      await notificarStatus(itens[idx], status, itens[idx].motivo, quem);
 
       const label = status === 'recusada'
         ? `recusou (motivo: ${itens[idx].motivo})`
@@ -682,6 +722,59 @@ export default async function handler(req, res){
       await logAcao(quem, sessao.cargo, `Sugestão de @${itens[idx].nome}: ${label}`);
 
       return res.status(200).json({ ok: true, item: itens[idx] });
+    }
+
+    /* -------- SUGESTÕES: EXCLUIR -------- */
+    if(req.method === 'POST' && action === 'sugestoes-delete'){
+      if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
+      const { id } = req.body || {};
+      if(!id) return res.status(400).json({ error: 'ID obrigatório' });
+
+      const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
+      const itens = (flat || [])
+        .map(x => { try { return JSON.parse(x); } catch { return null; } })
+        .filter(Boolean);
+      const antes = itens.length;
+      const restantes = itens.filter(i => i.id !== id);
+      if(restantes.length === antes) return res.status(404).json({ error: 'Sugestão não encontrada' });
+
+      const cmds = [['DEL', SUG_KEY]];
+      for(let i = restantes.length - 1; i >= 0; i--){
+        cmds.push(['RPUSH', SUG_KEY, JSON.stringify(restantes[i])]);
+      }
+      await redis(cmds);
+      await logAcao(quem, sessao.cargo, `Excluiu uma sugestão (ID ${id.slice(0,8)})`);
+      return res.status(200).json({ ok: true, restantes: restantes.length });
+    }
+
+    /* -------- SUGESTÕES: LIMPAR EM MASSA -------- */
+    if(req.method === 'POST' && action === 'sugestoes-limpar'){
+      if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
+      const { modo } = req.body || {};
+      if(!['concluidas','recusadas','tudo'].includes(modo)){
+        return res.status(400).json({ error: 'Modo inválido (concluidas | recusadas | tudo)' });
+      }
+
+      const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
+      const itens = (flat || [])
+        .map(x => { try { return JSON.parse(x); } catch { return null; } })
+        .filter(Boolean);
+      const antes = itens.length;
+
+      let restantes;
+      if(modo === 'tudo') restantes = [];
+      else if(modo === 'concluidas') restantes = itens.filter(i => i.status !== 'concluido');
+      else restantes = itens.filter(i => i.status !== 'recusada');
+
+      const apagados = antes - restantes.length;
+
+      const cmds = [['DEL', SUG_KEY]];
+      for(let i = restantes.length - 1; i >= 0; i--){
+        cmds.push(['RPUSH', SUG_KEY, JSON.stringify(restantes[i])]);
+      }
+      await redis(cmds);
+      await logAcao(quem, sessao.cargo, `Limpou ${apagados} sugestões (modo: ${modo})`);
+      return res.status(200).json({ ok: true, apagados, restantes: restantes.length });
     }
 
     return res.status(400).json({ error: 'Ação inválida: ' + action });
