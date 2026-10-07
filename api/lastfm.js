@@ -1,9 +1,7 @@
 // Vercel serverless: /api/lastfm.js
-// GET  → ouvindo agora + cadeia de capas
+// GET → ouvindo agora + cadeia de capas (Last.fm → MusicBrainz → iTunes → Deezer)
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
-const SPOTIFY_ID = process.env.SPOTIFY_CLIENT_ID;
-const SPOTIFY_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
 function safeStr(v, max = 200) {
   return String(v == null ? '' : v).trim().slice(0, max);
@@ -13,25 +11,6 @@ function safeUrl(v) {
   if (!s) return null;
   if (!/^https?:\/\//i.test(s)) return null;
   return s;
-}
-
-/* --- Cache Spotify --- */
-let spotifyCache = { token: null, exp: 0 };
-async function spotifyToken(){
-  if(!SPOTIFY_ID || !SPOTIFY_SECRET) return null;
-  if(spotifyCache.token && Date.now() < spotifyCache.exp) return spotifyCache.token;
-  try {
-    const auth = Buffer.from(`${SPOTIFY_ID}:${SPOTIFY_SECRET}`).toString('base64');
-    const r = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'grant_type=client_credentials'
-    });
-    const d = await r.json();
-    if(!d.access_token) return null;
-    spotifyCache = { token: d.access_token, exp: Date.now() + (d.expires_in - 60) * 1000 };
-    return spotifyCache.token;
-  } catch(e){ return null; }
 }
 
 /* --- Fallback 1: MusicBrainz + CoverArtArchive --- */
@@ -62,18 +41,20 @@ async function capaITunes(faixa, artista){
   } catch(e){ return null; }
 }
 
-/* --- Fallback 3: Spotify Search --- */
-async function capaSpotify(faixa, artista){
+/* --- Fallback 3: Deezer Search (grátis, sem token) --- */
+async function capaDeezer(faixa, artista){
   try {
-    const token = await spotifyToken();
-    if(!token) return null;
     const q = encodeURIComponent(`track:"${faixa}" artist:"${artista}"`);
-    const r = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=1`, {
-      headers: { Authorization: `Bearer ${token}` }
+    const r = await fetch(`https://api.deezer.com/search?q=${q}&limit=1`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
     });
     const d = await r.json();
-    const imgs = d?.tracks?.items?.[0]?.album?.images;
-    return Array.isArray(imgs) && imgs[0]?.url ? imgs[0].url : null;
+    if(d && Array.isArray(d.data) && d.data.length > 0){
+      const album = d.data[0].album;
+      if(!album) return null;
+      return album.cover_xl || album.cover_big || album.cover_medium || null;
+    }
+    return null;
   } catch(e){ return null; }
 }
 
@@ -96,7 +77,7 @@ export default async function handler(req, res) {
     const artista = safeStr(track.artist?.['#text'] || track.artist, 200);
     const album = safeStr(track.album?.['#text'], 200);
 
-    /* Cadeia de capas */
+    /* Cadeia de capas: Last.fm → MusicBrainz → iTunes → Deezer */
     let capa = null;
     const lastfmImg = Array.isArray(track.image)
       ? (track.image.find(i => i.size === 'extralarge')?.['#text']
@@ -108,7 +89,7 @@ export default async function handler(req, res) {
     if(!capa && faixa && artista){
       capa = await capaMusicBrainz(faixa, artista);
       if(!capa) capa = await capaITunes(faixa, artista);
-      if(!capa) capa = await capaSpotify(faixa, artista);
+      if(!capa) capa = await capaDeezer(faixa, artista);
     }
 
     return res.status(200).json({
