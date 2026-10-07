@@ -13,7 +13,7 @@ const STEAM_ID = '76561199823015081';
 const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 const SUG_KEY = 'sugestoes:lista';
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
-const LOGS_MAX = 199; // 200 itens
+const LOGS_MAX = 199;
 
 const NIVEIS = { dev: 4, dono: 3, administrador: 2, moderador: 1 };
 
@@ -45,7 +45,7 @@ const JOGOS_PADRAO = [
 const FILMES_PADRAO = [
   { id: 'interestelar', nome: 'Interestelar', tier: 'S', status: 'Assistido', nota: 9, duracao: 169, ano: 2014,
     capa: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario: 'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas.' }
+    comentario: 'As reservas naturais da Terra estão chegando ao fim.' }
 ];
 
 const STATUS_SUG_VALIDOS = ['nova','analise','aceita','recusada','concluido'];
@@ -276,30 +276,76 @@ async function importarSteam(){
 /* ============ NOTIFICAÇÃO DISCORD: status mudou ============ */
 async function notificarStatus(item, novoStatus, motivo, quemMudou){
   if(!DISCORD_WEBHOOK) return;
+
   const tipoLabel = ROTULO_CONCLUIDO[item.tipo] || LABEL_STATUS[novoStatus] || novoStatus;
   const labelFinal = novoStatus === 'concluido' ? `🏁 ${tipoLabel}` : (LABEL_STATUS[novoStatus] || novoStatus);
-  const color = novoStatus === 'recusada' ? 0xef4444
-             : novoStatus === 'aceita' ? 0x10b981
-             : novoStatus === 'concluido' ? 0xa855f7
-             : novoStatus === 'analise' ? 0x3b82f6
-             : 0xf59e0b;
-  const motivoTxt = novoStatus === 'recusada' && motivo ? `\n**Motivo:** ${motivo}` : '';
+
+  const cores = {
+    recusada:  0xef4444,
+    aceita:    0x10b981,
+    concluido: 0xa855f7,
+    analise:   0x3b82f6,
+    nova:      0xf59e0b
+  };
+  const color = cores[novoStatus] || 0xa855f7;
+
+  const menciona = item.userId ? `<@${item.userId}> ` : '';
+  const primeiroNome = item.nome ? `@${item.nome}` : 'você';
+
+  let titulo, descricao;
+  if(novoStatus === 'concluido'){
+    titulo = `🎉 Boa notícia!`;
+    descricao = `${menciona}Sua sugestão foi **${tipoLabel.toLowerCase()}**!`;
+  } else if(novoStatus === 'aceita'){
+    titulo = `✅ Sua ideia foi aceita!`;
+    descricao = `${menciona}Boa, ${primeiroNome}! Sua ideia vai rolar 💜`;
+  } else if(novoStatus === 'recusada'){
+    titulo = `❌ Sua ideia foi recusada`;
+    descricao = `${menciona}Infelizmente essa não vai rolar dessa vez.`;
+  } else if(novoStatus === 'analise'){
+    titulo = `👀 Sua ideia tá em análise`;
+    descricao = `${menciona}A Soso viu sua ideia e tá pensando!`;
+  } else {
+    titulo = `🟡 Status atualizado: ${labelFinal}`;
+    descricao = `${menciona}Sua ideia mudou de status.`;
+  }
+
+  const fields = [
+    { name: '💬 Ideia original', value: `> ${(item.texto || '').slice(0, 180)}${(item.texto||'').length > 180 ? '…' : ''}` },
+    { name: '🏷️ Novo status', value: labelFinal, inline: true },
+    { name: '👤 Por', value: `@${quemMudou}`, inline: true }
+  ];
+
+  if(novoStatus === 'recusada' && motivo){
+    fields.push({ name: '💸 Motivo', value: motivo });
+  }
+
+  const payload = {
+    embeds: [{
+      author: item.avatar ? { name: item.nome ? `@${item.nome}` : 'Usuário', icon_url: item.avatar } : { name: item.nome ? `@${item.nome}` : 'Usuário' },
+      title: titulo,
+      description: descricao,
+      color,
+      fields,
+      footer: { text: `ID: ${item.id.slice(0,8)}` },
+      timestamp: new Date().toISOString()
+    }]
+  };
+
+  if(item.userId){
+    payload.content = `<@${item.userId}>`;
+    payload.allowed_mentions = { users: [item.userId] };
+  } else {
+    payload.allowed_mentions = { parse: [] };
+  }
+
   try {
     await fetch(DISCORD_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        allowed_mentions: { parse: [] },
-        embeds: [{
-          title: `💡 Sua ideia foi atualizada: ${labelFinal}`,
-          description: `**"${(item.texto || '').slice(0, 180)}${(item.texto||'').length > 180 ? '…' : ''}"**${motivoTxt}`,
-          color,
-          footer: { text: `De: ${item.nome} · por ${quemMudou}` },
-          timestamp: new Date().toISOString()
-        }]
-      })
+      body: JSON.stringify(payload)
     });
-  } catch(e){ /* silencioso */ }
+  } catch(e){}
 }
 
 /* ============ HANDLER ============ */
@@ -317,7 +363,6 @@ export default async function handler(req, res){
   const quem = sessao.username || 'anônimo';
 
   try {
-    /* -------- PERMISSÕES -------- */
     if(req.method === 'GET' && action === 'permissoes-minhas'){
       const perms = await pegarPermissoes();
       return res.status(200).json({ permissoes: perms[sessao.cargo] || [], cargo: sessao.cargo });
@@ -345,7 +390,6 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, permissoes: limpo });
     }
 
-    /* -------- VOTAÇÃO -------- */
     if(req.method === 'GET' && action === 'votos'){
       if(!(await temPermissao(sessao, 'ver_votos'))) return res.status(403).json({ error: 'Sem permissão' });
       const ciclo = (await redis([['GET','votos:ciclo_atual']]))[0] || '1';
@@ -379,11 +423,12 @@ export default async function handler(req, res){
         const tipo = (o.tipo === 'filme') ? 'filme' : 'jogo';
         const id = String(o.id || '').trim().slice(0,40) || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40);
         let capa = String(o.capa || '').trim();
+        let appid = Number(o.appid) || null;
         if(!capa){
           const busca = tipo === 'filme' ? await tmdbBuscar(nome) : await igdbBuscar(nome);
           capa = busca.capa || null;
         }
-        processadas.push({ id, nome, tipo, capa: capa || null });
+        processadas.push({ id, nome, tipo, capa: capa || null, appid });
       }
       if(!processadas.length) return res.status(400).json({ error: 'Nenhuma opção válida' });
       await redis([['SET', 'votos:config', JSON.stringify(processadas)]]);
@@ -404,7 +449,6 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, novoCiclo: novo });
     }
 
-    /* -------- ADMINS -------- */
     if(req.method === 'GET' && (action === 'admins' || action === 'admins-ver')){
       if(!(await temPermissao(sessao, 'ver_admins'))) return res.status(403).json({ error: 'Sem permissão' });
       const [flat, perfisFlat] = await redis([['HGETALL', 'admins'], ['HGETALL', 'user_profiles']]);
@@ -485,37 +529,30 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- TIER LIST -------- */
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
       if(!(await temPermissao(sessao, 'ver_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
-
       const [jogosRaw, filmesRaw, seedFeitoRaw] = await redis([
         ['GET','tierlist:jogos'],
         ['GET','tierlist:filmes'],
         ['GET','tierlist:seedFeito']
       ]);
-
       const seedFeito = seedFeitoRaw === '1';
       let jogos = [], filmes = [];
       const cmdsSalvar = [];
-
       if(jogosRaw === null || jogosRaw === undefined){
         if(!seedFeito){ jogos = JOGOS_PADRAO; cmdsSalvar.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]); }
         else jogos = [];
       } else {
         try { jogos = JSON.parse(jogosRaw); if(!Array.isArray(jogos)) jogos = []; } catch(e){ jogos = []; }
       }
-
       if(filmesRaw === null || filmesRaw === undefined){
         if(!seedFeito){ filmes = FILMES_PADRAO; cmdsSalvar.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]); }
         else filmes = [];
       } else {
         try { filmes = JSON.parse(filmesRaw); if(!Array.isArray(filmes)) filmes = []; } catch(e){ filmes = []; }
       }
-
       if(!seedFeito) cmdsSalvar.push(['SET', 'tierlist:seedFeito', '1']);
       if(cmdsSalvar.length) await redis(cmdsSalvar);
-
       return res.status(200).json({ jogos, filmes });
     }
 
@@ -547,7 +584,6 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, apagados, restantes: lista.length });
     }
 
-    /* -------- BUSCAS -------- */
     if(req.method === 'GET' && action === 'buscar-jogo'){
       if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const nome = String(req.query?.nome || '').trim();
@@ -581,7 +617,6 @@ export default async function handler(req, res){
       return res.status(200).json({ traduzido });
     }
 
-    /* -------- IMPORTAR STEAM -------- */
     if(req.method === 'POST' && action === 'importar-steam'){
       if(!(await temPermissao(sessao, 'importar_steam'))) return res.status(403).json({ error: 'Sem permissão' });
       const r = await importarSteam();
@@ -590,7 +625,6 @@ export default async function handler(req, res){
       return res.status(200).json(r);
     }
 
-    /* -------- BANIDOS -------- */
     if(req.method === 'GET' && action === 'banidos-ver'){
       if(!(await temPermissao(sessao, 'ver_banidos'))) return res.status(403).json({ error: 'Sem permissão' });
       const [flat] = await redis([['HGETALL', 'banidos']]);
@@ -624,18 +658,19 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true });
     }
 
-    /* -------- CONFIG -------- */
     if(req.method === 'GET' && action === 'config-get'){
       if(!(await temPermissao(sessao, 'ver_config'))) return res.status(403).json({ error: 'Sem permissão' });
-      const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw, votosFechRaw] = await redis([
+      const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw, votosFechRaw, metasRaw] = await redis([
         ['GET', 'config:aviso'],['GET', 'config:donate'],['GET', 'config:manutencao'],
         ['GET', 'config:recado'],['GET', 'config:horasMes'],['GET', 'config:updatedAt'],
-        ['GET', 'config:top3'],['GET', 'config:hall'],['GET', 'config:votosFechamento']
+        ['GET', 'config:top3'],['GET', 'config:hall'],['GET', 'config:votosFechamento'],
+        ['GET', 'config:metas']
       ]);
-      let aviso = null, top3 = [], hall = [];
+      let aviso = null, top3 = [], hall = [], metas = null;
       try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
       try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){ top3 = []; }
       try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){ hall = []; }
+      try { metas = metasRaw ? JSON.parse(metasRaw) : null; } catch(e){}
       return res.status(200).json({
         aviso, donate: donateRaw || null,
         manutencao: manutRaw === '1',
@@ -643,13 +678,14 @@ export default async function handler(req, res){
         updatedAt: updatedRaw || null,
         top3: Array.isArray(top3) ? top3 : [],
         hall: Array.isArray(hall) ? hall : [],
-        votosFechamento: votosFechRaw || null
+        votosFechamento: votosFechRaw || null,
+        metas: metas || null
       });
     }
 
     if(req.method === 'POST' && action === 'config-set'){
       if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
-      const { aviso, donate, manutencao, recado, horasMes, top3, hall, votosFechamento } = req.body || {};
+      const { aviso, donate, manutencao, recado, horasMes, top3, hall, votosFechamento, metas } = req.body || {};
       const agora = new Date().toISOString();
       const cmds = [];
       if(aviso !== undefined) cmds.push(['SET', 'config:aviso', JSON.stringify(aviso)]);
@@ -662,14 +698,16 @@ export default async function handler(req, res){
       if(votosFechamento !== undefined){
         cmds.push(['SET', 'config:votosFechamento', votosFechamento ? String(votosFechamento) : '']);
       }
+      if(metas !== undefined && metas && typeof metas === 'object'){
+        cmds.push(['SET', 'config:metas', JSON.stringify(metas)]);
+      }
       cmds.push(['SET', 'config:updatedAt', agora]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
       await redis(cmds);
-      await logAcao(quem, sessao.cargo, `Salvou config geral${manutencao ? ' (manutenção LIGADA)' : ''}${votosFechamento ? ' (prazo votação)' : ''}`);
+      await logAcao(quem, sessao.cargo, `Salvou config geral${manutencao ? ' (manutenção)' : ''}`);
       return res.status(200).json({ ok: true, updatedAt: agora });
     }
 
-    /* -------- LOGS -------- */
     if(req.method === 'GET' && action === 'logs-ver'){
       if(!(await temPermissao(sessao, 'ver_logs'))) return res.status(403).json({ error: 'Sem permissão' });
       const [flat] = await redis([['LRANGE', 'admin:logs', '0', String(LOGS_MAX)]]);
@@ -677,7 +715,6 @@ export default async function handler(req, res){
       return res.status(200).json({ logs });
     }
 
-    /* -------- SUGESTÕES (admin) -------- */
     if(req.method === 'GET' && action === 'sugestoes-ver'){
       if(!(await temPermissao(sessao, 'ver_sugestoes'))) return res.status(403).json({ error: 'Sem permissão' });
       const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
@@ -692,12 +729,10 @@ export default async function handler(req, res){
       const { id, status, motivo, motivoTipo } = req.body || {};
       if(!id) return res.status(400).json({ error: 'ID obrigatório' });
       if(!STATUS_SUG_VALIDOS.includes(status)) return res.status(400).json({ error: 'Status inválido' });
-      if(status === 'recusada' && !motivo) return res.status(400).json({ error: 'Motivo obrigatório para recusar' });
+      if(status === 'recusada' && !motivo) return res.status(400).json({ error: 'Motivo obrigatório' });
 
       const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
-      const itens = (flat || [])
-        .map(x => { try { return JSON.parse(x); } catch { return null; } })
-        .filter(Boolean);
+      const itens = (flat || []).map(x => { try { return JSON.parse(x); } catch { return null; } }).filter(Boolean);
       const idx = itens.findIndex(i => i.id === id);
       if(idx < 0) return res.status(404).json({ error: 'Sugestão não encontrada' });
 
@@ -712,32 +747,22 @@ export default async function handler(req, res){
         cmds.push(['RPUSH', SUG_KEY, JSON.stringify(itens[i])]);
       }
       await redis(cmds);
-
-      // Notifica no Discord
       await notificarStatus(itens[idx], status, itens[idx].motivo, quem);
 
-      const label = status === 'recusada'
-        ? `recusou (motivo: ${itens[idx].motivo})`
-        : `mudou para ${status}`;
+      const label = status === 'recusada' ? `recusou (motivo: ${itens[idx].motivo})` : `mudou para ${status}`;
       await logAcao(quem, sessao.cargo, `Sugestão de @${itens[idx].nome}: ${label}`);
-
       return res.status(200).json({ ok: true, item: itens[idx] });
     }
 
-    /* -------- SUGESTÕES: EXCLUIR -------- */
     if(req.method === 'POST' && action === 'sugestoes-delete'){
       if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
       const { id } = req.body || {};
       if(!id) return res.status(400).json({ error: 'ID obrigatório' });
-
       const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
-      const itens = (flat || [])
-        .map(x => { try { return JSON.parse(x); } catch { return null; } })
-        .filter(Boolean);
+      const itens = (flat || []).map(x => { try { return JSON.parse(x); } catch { return null; } }).filter(Boolean);
       const antes = itens.length;
       const restantes = itens.filter(i => i.id !== id);
       if(restantes.length === antes) return res.status(404).json({ error: 'Sugestão não encontrada' });
-
       const cmds = [['DEL', SUG_KEY]];
       for(let i = restantes.length - 1; i >= 0; i--){
         cmds.push(['RPUSH', SUG_KEY, JSON.stringify(restantes[i])]);
@@ -747,27 +772,20 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, restantes: restantes.length });
     }
 
-    /* -------- SUGESTÕES: LIMPAR EM MASSA -------- */
     if(req.method === 'POST' && action === 'sugestoes-limpar'){
       if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
       const { modo } = req.body || {};
       if(!['concluidas','recusadas','tudo'].includes(modo)){
-        return res.status(400).json({ error: 'Modo inválido (concluidas | recusadas | tudo)' });
+        return res.status(400).json({ error: 'Modo inválido' });
       }
-
       const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
-      const itens = (flat || [])
-        .map(x => { try { return JSON.parse(x); } catch { return null; } })
-        .filter(Boolean);
+      const itens = (flat || []).map(x => { try { return JSON.parse(x); } catch { return null; } }).filter(Boolean);
       const antes = itens.length;
-
       let restantes;
       if(modo === 'tudo') restantes = [];
       else if(modo === 'concluidas') restantes = itens.filter(i => i.status !== 'concluido');
       else restantes = itens.filter(i => i.status !== 'recusada');
-
       const apagados = antes - restantes.length;
-
       const cmds = [['DEL', SUG_KEY]];
       for(let i = restantes.length - 1; i >= 0; i--){
         cmds.push(['RPUSH', SUG_KEY, JSON.stringify(restantes[i])]);

@@ -1,6 +1,4 @@
 // Vercel serverless: /api/sugestoes.js
-// GET  → lista sugestões (com status)
-// POST → envia sugestão (salva no Redis + log + Discord webhook)
 import { createHash, randomUUID, createHmac } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -15,6 +13,14 @@ const recentes = new Map();
 const RATE_MS = 30000;
 const dupCache = new Map();
 const DUP_MS = 120000;
+
+function tipoConfig(categoria){
+  const t = String(categoria || '').toLowerCase();
+  if(t.includes('bug'))      return { key:'bug',      cor: 0xef4444, icone: '🐛', titulo: 'Novo bug reportado',    label: 'Bug' };
+  if(t.includes('jogo'))     return { key:'jogo',     cor: 0x3b82f6, icone: '🎮', titulo: 'Nova sugestão de jogo', label: 'Jogo' };
+  if(t.includes('feedback')) return { key:'feedback', cor: 0x10b981, icone: '💬', titulo: 'Novo feedback',         label: 'Feedback' };
+  return { key:'sugestao', cor: 0xa855f7, icone: '💡', titulo: 'Nova ideia', label: 'Sugestão' };
+}
 
 async function redis(cmds){
   const r = await fetch(`${URL_}/pipeline`, {
@@ -58,7 +64,6 @@ function limparMapas(){
 export default async function handler(req, res){
   res.setHeader('Cache-Control', 'no-store');
 
-  /* ---------- GET: lista ---------- */
   if (req.method === 'GET') {
     if (!URL_ || !TOKEN) return res.status(200).json({ itens: [] });
     try {
@@ -79,7 +84,6 @@ export default async function handler(req, res){
   if (!hook) return res.status(500).json({ error: 'Webhook não configurado' });
 
   const { nome, texto, site, tipo } = req.body || {};
-
   if (site) return res.status(200).json({ ok: true });
 
   const categoria = safeStr(tipo, 40) || 'Sugestão / ideia';
@@ -107,12 +111,14 @@ export default async function handler(req, res){
   const sessao = lerSessao(req);
   const userId = sessao?.id || null;
   const usernameLogado = sessao?.username || null;
+  const avatarLogado = sessao?.avatar || null;
 
   const item = {
     id: randomUUID(),
     nome: autor,
     userId,
     username: usernameLogado,
+    avatar: avatarLogado,
     tipo: categoria,
     texto: msg,
     data: new Date().toISOString(),
@@ -128,7 +134,7 @@ export default async function handler(req, res){
         ['LTRIM', LIST_KEY, '0', String(MAX_ITENS - 1)]
       ]);
     }
-  } catch (e) { /* silencioso */ }
+  } catch (e) {}
 
   try {
     if (URL_ && TOKEN) {
@@ -140,22 +146,33 @@ export default async function handler(req, res){
       });
       await redis([['LPUSH', 'admin:logs', logItem], ['LTRIM', 'admin:logs', '0', '199']]);
     }
-  } catch (e) { /* silencioso */ }
+  } catch (e) {}
+
+  const conf = tipoConfig(categoria);
+
+  const embed = {
+    author: {
+      name: `@${autor}${userId ? '' : ' (anônimo)'}`,
+      ...(avatarLogado ? { icon_url: avatarLogado } : {})
+    },
+    title: `${conf.icone} ${conf.titulo}`,
+    description: msg,
+    color: conf.cor,
+    fields: [
+      { name: '🏷️ Tipo',    value: `${conf.icone} ${conf.label}`,       inline: true },
+      { name: '📊 Status',  value: '🟡 Nova',                           inline: true },
+      { name: '👤 Canal',   value: userId ? '🔒 Logado' : '👤 Anônimo', inline: true }
+    ],
+    footer: { text: `ID: ${item.id.slice(0, 8)}` },
+    timestamp: new Date().toISOString()
+  };
 
   const r = await fetch(hook, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      allowed_mentions: { parse: [] },
-      embeds: [{
-        title: `💡 Nova ideia · ${categoria}`,
-        description: msg,
-        color: 0xa855f7,
-        footer: { text: `De: ${autor}${userId ? ' (logado)' : ' (anônimo)'} · ID: ${item.id.slice(0,8)}` },
-        timestamp: new Date().toISOString()
-      }]
-    })
+    body: JSON.stringify({ allowed_mentions: { parse: [] }, embeds: [embed] })
   });
+
   return r.ok
     ? res.status(200).json({ ok: true, id: item.id })
     : res.status(502).json({ error: 'Falha ao enviar' });

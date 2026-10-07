@@ -26,6 +26,53 @@ function tickUptime(){
 setInterval(tickUptime, 30000);
 
 let toastLiveMostrado = false;
+
+/* 🔧 Atualiza header do player (label + live dot) */
+function _atualizarPlayerHeader(isLive){
+  const titleEl = document.querySelector('.twitch-player-title');
+  if(!titleEl) return;
+  const labelEl = titleEl.childNodes[titleEl.childNodes.length - 1];
+  if(labelEl && labelEl.nodeType === 3){
+    labelEl.textContent = isLive ? ' AO VIVO NA TWITCH' : ' CANAL DA SOSO';
+  } else {
+    // fallback: re-monta o título
+    titleEl.innerHTML = `<span class="live-indicator" id="headerLiveDot"></span>${isLive ? ' AO VIVO NA TWITCH' : ' CANAL DA SOSO'}`;
+    if(typeof setLivePulse === 'function') setLivePulse(isLive);
+  }
+}
+
+/* 🎵 Faixa "Ouvindo agora" abaixo do player */
+async function _atualizarFaixaOuvindo(){
+  const el = document.getElementById('ouvindoTicker');
+  if(!el) return;
+  try {
+    const r = await fetch('/api/lastfm', { cache: 'no-store' });
+    if(!r.ok) { el.style.display = 'none'; return; }
+    const d = await r.json();
+    if(!d || !d.tocando || !d.faixa){
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'flex';
+    const capaEl = el.querySelector('.ouvindo-ticker-capa');
+    const txEl = el.querySelector('.ouvindo-ticker-tx');
+    const linkEl = el.querySelector('.ouvindo-ticker-link');
+    if(txEl){
+      txEl.innerHTML = `<b>${esc(d.faixa || '—')}</b><small>${esc(d.artista || '')}${d.album ? ' · ' + esc(d.album) : ''}</small>`;
+    }
+    if(capaEl){
+      if(d.capa){ capaEl.src = d.capa; capaEl.style.display = ''; }
+      else { capaEl.removeAttribute('src'); capaEl.style.display = 'none'; }
+    }
+    if(linkEl){
+      if(d.url){ linkEl.href = d.url; linkEl.style.display = ''; }
+      else linkEl.style.display = 'none';
+    }
+  } catch(e){
+    el.style.display = 'none';
+  }
+}
+
 async function verificarStatusTwitch() {
   const g = id => document.getElementById(id);
   const iframe = g('twitchIframe'), panel = g('offlinePanel'), badge = g('bannerLiveBadge');
@@ -40,6 +87,9 @@ async function verificarStatusTwitch() {
     const live = !!data.stream;
     inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
     tickUptime();
+
+    // 🔧 Label dinâmico no header do player
+    _atualizarPlayerHeader(live);
 
     if (live && !toastLiveMostrado) {
       toastLiveMostrado = true;
@@ -100,6 +150,7 @@ async function verificarStatusTwitch() {
     atualizarFoco(null, false);
     ['goalSeg','goalDc'].forEach(p => { const el = $(p+'Num'); if (el && el.textContent === '…') atualizarMeta(p, null); });
     setLivePulse(false);
+    _atualizarPlayerHeader(false);
   }
 }
 
@@ -156,4 +207,12 @@ function fecharClip(){ if(dlgClip){ dlgClip.querySelector('#clipIframe').src = '
 document.addEventListener('click', e => {
   const b = e.target.closest('.clip');
   if(b && b.dataset.id) abrirClip(b.dataset.id);
+});
+
+/* ============================================================
+   BOOT EXTRA — roda o ticker do "ouvindo agora"
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  _atualizarFaixaOuvindo();
+  setInterval(_atualizarFaixaOuvindo, 30000);
 });

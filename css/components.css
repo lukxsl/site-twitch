@@ -93,7 +93,8 @@
 .profile-avatar-container{position:relative;width:96px;height:96px;margin-bottom:4px}
 .profile-avatar-container img{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#1a102d;position:relative;z-index:2;border:2px solid rgba(168,85,247,.4)}
 .av-ring{position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 90deg,var(--purple-2),var(--pink),var(--cyan),var(--purple-2));animation:spinRing 6s linear infinite;filter:blur(2px);z-index:1}
-.av-status{position:absolute;bottom:4px;right:4px;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2px solid var(--surface-solid);z-index:3;box-shadow:0 0 10px rgba(34,197,94,.7)}
+.av-status{position:absolute;bottom:4px;right:4px;width:14px;height:14px;border-radius:50%;background:#6b6080;border:2px solid var(--surface-solid);z-index:3;transition:background .4s,box-shadow .4s}
+.av-status.online{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.7)}
 .profile-card h2{font-size:1.45rem;font-weight:800;color:var(--white);margin-top:6px}
 .h2-emoji{font-size:1.1rem}
 .profile-card .subloc{font-size:.76rem;color:var(--mute);margin-bottom:8px}
@@ -121,6 +122,73 @@
 .offline-panel p{font-size:.78rem;color:var(--mute);max-width:340px}
 .offline-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px}
 .player-note{padding:10px 14px;background:rgba(168,85,247,.06);color:var(--mute);font-size:.7rem;text-align:center;border-top:1px solid var(--line)}
+
+/* 🆕 Ticker "Ouvindo agora" — abaixo do player */
+.ouvindo-ticker{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  background:linear-gradient(90deg,rgba(30,215,96,.1),rgba(30,215,96,.02) 70%);
+  border-top:1px solid rgba(30,215,96,.3);
+  font-size:.82rem;
+  color:#ddd5eb;
+  animation:slideDown .35s var(--ease);
+}
+.ouvindo-ticker-ic{
+  flex:none;
+  font-size:1rem;
+  filter:drop-shadow(0 0 8px rgba(30,215,96,.5));
+}
+.ouvindo-ticker-capa{
+  width:32px;height:32px;
+  border-radius:6px;
+  flex:none;
+  object-fit:cover;
+  background:#1d1433;
+  border:1px solid var(--line);
+}
+.ouvindo-ticker-tx{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+}
+.ouvindo-ticker-tx b{
+  color:var(--white);
+  font-size:.82rem;
+  font-weight:700;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ouvindo-ticker-tx small{
+  color:var(--mute);
+  font-size:.7rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ouvindo-ticker-link{
+  flex:none;
+  width:28px;height:28px;
+  display:grid;
+  place-items:center;
+  background:rgba(30,215,96,.15);
+  border:1px solid rgba(30,215,96,.4);
+  border-radius:8px;
+  color:#1ed760;
+  font-size:.75rem;
+  font-weight:800;
+  text-decoration:none;
+  transition:.2s;
+}
+.ouvindo-ticker-link:hover{
+  background:rgba(30,215,96,.3);
+  transform:scale(1.06);
+  color:#fff;
+}
 
 .tmon{display:flex;flex-direction:column;overflow:hidden;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.09),var(--sh),var(--sh-floor)}
 .tmon-h{display:flex;align-items:center;gap:10px;padding:12px 16px;background:linear-gradient(135deg,rgba(168,85,247,.7),rgba(124,58,237,.75));font-size:.72rem;letter-spacing:.1em;font-weight:800;color:#fff}
@@ -369,7 +437,7 @@ body.sou-admin .g[draggable="true"]{cursor:grab}
 .info-grid .rules-grid{grid-template-columns:1fr}
 
 /* ============================================================
-   SUGESTÕES & VOTAÇÃO (compat)
+   SUGESTÕES & VOTAÇÃO (compat antigo)
    ============================================================ */
 .sugestoes-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;align-items:start}
 .setup-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:14px;transition:.2s;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),var(--sh),var(--sh-floor)}
@@ -601,7 +669,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
    🆕 SUGESTÕES & VOTAÇÃO — V3 (TABS + GRID COMPACTO)
    ============================================================ */
 
-/* --- Abas internas --- */
 .sug-tabs{
   display:inline-flex;
   gap:4px;
@@ -633,12 +700,10 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   box-shadow:0 6px 16px -4px rgba(168,85,247,.55);
 }
 
-/* --- Shell (painéis) --- */
 .sug-shell{display:flex;flex-direction:column;min-height:0}
 .sug-panel{display:none}
 .sug-panel.on{display:block;animation:pageIn .35s var(--ease)}
 
-/* --- Painel VOTAR: header --- */
 .voto-panel-head{
   display:flex;
   align-items:center;
@@ -656,7 +721,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 }
 .voto-tags{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
-/* --- Painel VOTAR: destaque do líder --- */
 .voto-panel-head + #destaqueBox{margin-bottom:12px}
 .voto-panel-head + #destaqueBox .destaque{
   padding:14px 18px;
@@ -678,7 +742,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   min-width:130px;
 }
 
-/* --- Painel VOTAR: grid 2x2 --- */
 .voto-grid-lista{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -730,7 +793,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 }
 .voto-grid-lista .vt-total{display:none}
 
-/* --- Rodapé do painel votar --- */
 .voto-foot{
   display:flex;
   align-items:center;
@@ -768,7 +830,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   color:var(--white);
 }
 
-/* --- Painel SUGERIR --- */
 .sugerir-cols{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -813,7 +874,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   border-radius:99px;
 }
 
-/* --- Legenda dos status --- */
 .sir-legenda{
   display:flex;
   flex-wrap:wrap;
@@ -827,7 +887,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 }
 .sir-legenda span{white-space:nowrap;opacity:.85;cursor:help}
 
-/* --- Cards de ideia --- */
 .sir-item{
   display:flex;
   gap:10px;
@@ -875,7 +934,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   font-style:italic;
 }
 
-/* --- Empty state --- */
 .sir-list-col .sir-lista > .sir-empty{
   padding:18px 14px;
   flex:0 0 auto;
@@ -895,7 +953,6 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 .sir-item-exemplo .sir-tx b{color:#ddd5eb}
 .sir-item-exemplo .sir-tx small{font-style:italic}
 
-/* --- Badge NOVO nos itens de votação --- */
 .vt-novo{
   position:absolute;
   top:6px;
@@ -918,12 +975,10 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 }
 .vt:has(.vt-novo) .vt-rank{top:22px}
 
-/* --- Contador com cores --- */
 .sug-counter{transition:color .25s,background .25s}
 .sug-counter.warn{color:#ffb547;background:rgba(255,181,71,.12)}
 .sug-counter.danger{color:var(--red);background:rgba(255,77,95,.15);font-weight:800}
 
-/* --- Responsive (mobile futuro) --- */
 @media (max-width:720px){
   .sug-tabs{width:100%;justify-content:center}
   .sug-tab{flex:1;justify-content:center}

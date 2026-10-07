@@ -5,7 +5,7 @@ function adminIrPara(pagina){
   if(pagina === 'votacao') ADMIN_TAB = 'votos';
   if(pagina === 'sugestoes') ADMIN_SUG_STATUS = 'all';
   ADMIN_PAGE = pagina;
-  localStorage.setItem('admin:page', pagina);
+  try { localStorage.setItem('admin:page', pagina); } catch(e){}
   carregarAdmin();
 }
 function adminIrAba(aba){ ADMIN_TAB = aba; renderAdminVotacao(); }
@@ -38,7 +38,7 @@ let ADMIN_CONFIG_TAB = 'aviso';
 let ADMIN_SUG_STATUS = 'all';
 let ADMIN_SUG_TIPO = 'all';
 let ADMIN_SHARED = {
-  votos: null, tier: null, admins: null, banidos: null, logs: null, backup: null,
+  votos: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null,
   fetchedAt: 0
 };
 let _sharedPromise = null;
@@ -159,6 +159,8 @@ function kpiChanged(key, valor){
   return prev !== undefined && prev !== valor;
 }
 
+let _carregarAdminToken = 0;
+
 async function carregarAdmin(){
   const area = document.getElementById('adminArea');
   if(!area) return;
@@ -183,13 +185,24 @@ async function carregarAdmin(){
   const shell = document.querySelector('.admin-shell');
   if(shell) shell.classList.remove('admin-shell--locked');
 
-  ADMIN_PAGE = localStorage.getItem('admin:page') || 'home';
+  // 🔧 FIX: só lê do localStorage no primeiro carregamento da sessão
+  if(!window.__adminBootDone){
+    const saved = localStorage.getItem('admin:page');
+    if(saved && VALID_ADMIN_PAGES.includes(saved)) ADMIN_PAGE = saved;
+    else ADMIN_PAGE = 'home';
+    window.__adminBootDone = true;
+  }
   if(!VALID_ADMIN_PAGES.includes(ADMIN_PAGE)) ADMIN_PAGE = 'home';
+
   ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
 
   bindSidebarOnce();
   renderSidebar();
-  carregarShared().then(() => renderSidebar()).catch(() => {});
+  carregarShared().then(() => {
+    renderSidebar();
+  }).catch(() => {});
+
+  const token = ++_carregarAdminToken;
 
   if(ADMIN_PAGE === 'home') await renderAdminHome();
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
@@ -201,6 +214,8 @@ async function carregarAdmin(){
   else if(ADMIN_PAGE === 'config') await renderAdminConfig();
   else if(ADMIN_PAGE === 'logs') await renderAdminLogs();
   else if(ADMIN_PAGE === 'backup') await renderAdminBackup();
+
+  if(token !== _carregarAdminToken) return;
 }
 window.carregarAdmin = carregarAdmin;
 

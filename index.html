@@ -16,7 +16,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-<!-- ==================== CSS ==================== -->
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/components.css">
@@ -112,7 +111,7 @@
       <div class="profile-avatar-container">
         <span class="av-ring"></span>
         <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
-        <span class="av-status" title="Online"></span>
+        <span class="av-status" id="profileStatus" title="Carregando..."></span>
       </div>
       <h2>asemtet0 <span class="h2-emoji">💜</span></h2>
       <div class="subloc">📍 Maceió – AL · Streamer desde 2025</div>
@@ -160,6 +159,12 @@
           </div>
         </div>
         <iframe id="twitchIframe" style="display:none" src="" allowfullscreen scrolling="no" title="Live da Soso na Twitch"></iframe>
+      </div>
+      <div class="ouvindo-ticker" id="ouvindoTicker" style="display:none">
+        <span class="ouvindo-ticker-ic">🎵</span>
+        <img class="ouvindo-ticker-capa" alt="" loading="lazy">
+        <div class="ouvindo-ticker-tx"></div>
+        <a class="ouvindo-ticker-link" href="#" target="_blank" rel="noopener">▶</a>
       </div>
       <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
     </article>
@@ -501,7 +506,6 @@
 
   <div class="sug-shell">
 
-    <!-- ==================== PAINEL: VOTAR ==================== -->
     <div class="sug-panel on" data-panel="votar" id="sugPanelVotar">
 
       <div class="voto-panel-head">
@@ -528,7 +532,6 @@
 
     </div>
 
-    <!-- ==================== PAINEL: SUGERIR ==================== -->
     <div class="sug-panel" data-panel="sugerir" id="sugPanelSugerir">
       <div class="sugerir-cols">
 
@@ -588,7 +591,7 @@
               <span title="A Soso viu e tá pensando">👀 Em análise</span>
               <span title="Vai rolar!">✅ Aceita</span>
               <span title="Não vai rolar (com motivo)">❌ Recusada</span>
-              <span title="Finalizado">🏁 Concluído</span>
+              <span title="Finalizado (Bug→Corrigido · Jogo→Jogado · Ideia→Aplicada)">🏁 Finalizado</span>
             </div>
           </div>
           <div class="sir-lista" id="sirLista">
@@ -664,7 +667,6 @@
   </div>
 </dialog>
 
-<!-- ==================== SCRIPTS ==================== -->
 <script src="js/utils/dom.js"></script>
 <script src="js/utils/format.js"></script>
 <script src="js/api/client.js"></script>
