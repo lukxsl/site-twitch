@@ -121,6 +121,9 @@ export default async function handler(req, res) {
     const followersTotal = typeof f.total === 'number' ? f.total : 0;
     const discordTotal = typeof dc.approximate_member_count === 'number' ? dc.approximate_member_count : 0;
 
+    // 🆕 Detectar conteúdo adulto (Twitch bloqueia embed desses casos)
+    const isMature = !!(stream && stream.is_mature);
+
     res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=30');
     return res.status(200).json({
       user: {
@@ -132,7 +135,8 @@ export default async function handler(req, res) {
         game_name: safeStr(stream.game_name, 200),
         viewer_count: Number(stream.viewer_count) || 0,
         uptime,
-        started_at: safeStr(stream.started_at, 40)
+        started_at: safeStr(stream.started_at, 40),
+        is_mature: isMature
       },
       followers: followersTotal || null,
       discord: discordTotal || null,

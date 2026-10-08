@@ -34,7 +34,6 @@ const STATUS_TOOLTIP = {
 
 const SUG_MAX_CHARS = 300;
 
-/* Mapa de status das sugestões */
 const STATUS_SUG = {
   nova:     { label: '🟡 Nova',       cor: 'amarelo',   desc: 'Acabou de chegar' },
   analise:  { label: '👀 Em análise', cor: 'azul',      desc: 'A Soso viu e tá pensando' },
@@ -93,7 +92,6 @@ function temPerm(perm){
 }
 window.temPerm = temPerm;
 
-/* Helper de pluralização */
 function plural(n, singular, plural){
   return Number(n) === 1 ? singular : plural;
 }
@@ -113,7 +111,7 @@ function garantirAdminCarregado(){
       'js/admin/tables.js'
     ];
     let loaded = 0;
-    
+
     files.forEach(src => {
       const s = document.createElement('script');
       s.src = src;
@@ -410,7 +408,11 @@ let _ultimaAba = null;
 let _mudarAbaTimer = null;
 let _mudarAbaPendente = null;
 
+const ABAS_VALIDAS = ['inicio','tierlist','comunidade','setup','sugestoes','admin'];
+
 function _executarMudarAba(nome, salvar){
+  if(!ABAS_VALIDAS.includes(nome)) nome = 'inicio';
+
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
   document.querySelectorAll('nav ul button').forEach(b => b.classList.remove('on'));
   const section = $('sec-' + nome), button = $('btn-' + nome);
@@ -418,12 +420,29 @@ function _executarMudarAba(nome, salvar){
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
 
-  // Só limpa admin:page quando SAIR de fato do admin pra outra aba
+  // 🔧 Só limpa admin:page quando SAIR de fato do admin pra outra aba
   if(nome !== 'admin' && _ultimaAba === 'admin'){
     try { localStorage.removeItem('admin:page'); } catch(e){}
     ADMIN_PAGE = 'home';
   }
+  // 🔧 Quando entra no admin, restaura a página salva (hash manda)
+  if(nome === 'admin'){
+    const hash = (location.hash || '').replace(/^#/, '');
+    if(hash.startsWith('admin/')){
+      const p = hash.slice(6);
+      if(typeof VALID_ADMIN_PAGES !== 'undefined' && VALID_ADMIN_PAGES.includes(p)) ADMIN_PAGE = p;
+    }
+  }
   _ultimaAba = nome;
+
+  // 🆕 Atualiza hash da URL
+  try {
+    if(nome === 'admin'){
+      // mantém o hash da página interna
+    } else {
+      history.replaceState(null, '', '#' + nome);
+    }
+  } catch(e){}
 
   window.scrollTo({ top:0, behavior:'smooth' });
 
@@ -449,7 +468,6 @@ function _executarMudarAba(nome, salvar){
 }
 
 function mudarAba(nome, salvar = true){
-  // Evita duplo disparo (ex: clique duplo, hash + clique)
   if(_mudarAbaPendente === nome) return;
   _mudarAbaPendente = nome;
   if(_mudarAbaTimer) clearTimeout(_mudarAbaTimer);
@@ -959,7 +977,6 @@ function renderVotacao(){
     } else if(l.votos > 1){
       vantagemTxt = ' · Unanimidade';
     }
-    // Se l.votos === 1 e sem segundo lugar → não mostra nada (só "1/1 votos")
 
     destBox.innerHTML = `
       <div class="destaque ${fechada ? 'fechada' : ''}">
@@ -1332,7 +1349,7 @@ async function carregarConfigPublica(){
 window.carregarConfigPublica = carregarConfigPublica;
 
 /* ============================================================
-   REVEAL + PARALLAX + BURGER
+   REVEAL + PARALLAX + BURGER + SCROLL DO BANNER
    ============================================================ */
 function setupReveal(){
   revealObs = new IntersectionObserver((entries) => {
@@ -1389,6 +1406,25 @@ function setupBurger(){
   });
 }
 
+/* 🆕 Botão flutuante "voltar pra live" */
+function setupFloatingLive(){
+  const btn = document.getElementById('floatLiveBtn');
+  if(!btn) return;
+  window.addEventListener('scroll', () => {
+    if(!ultVivo) { btn.classList.remove('show'); return; }
+    const player = document.querySelector('.twitch-player-box');
+    if(!player) { btn.classList.remove('show'); return; }
+    const r = player.getBoundingClientRect();
+    if(r.bottom < 100) btn.classList.add('show');
+    else btn.classList.remove('show');
+  }, { passive: true });
+
+  btn.addEventListener('click', () => {
+    const player = document.querySelector('.twitch-player-box');
+    if(player) player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
 /* ============================================================
    BOOT
    ============================================================ */
@@ -1398,14 +1434,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     try { localStorage.removeItem('abaAtiva'); } catch(e){}
   }
 
-  const abaSalva = isPreview ? 'inicio' : localStorage.getItem('abaAtiva');
-  if(abaSalva && document.getElementById('sec-' + abaSalva)){
-    _ultimaAba = null; // força execução sem debounce inicial
-    _executarMudarAba(abaSalva, false);
-  } else {
-    _ultimaAba = null;
-    _executarMudarAba('inicio', false);
+  // 🔧 Detecta se deve abrir admin pelo hash
+  const hashRaw = (location.hash || '').replace(/^#/, '');
+  let abaInicial = null;
+  if(!isPreview){
+    if(hashRaw === 'admin' || hashRaw.startsWith('admin/')) abaInicial = 'admin';
+    else if(hashRaw && ABAS_VALIDAS.includes(hashRaw)) abaInicial = hashRaw;
+    else abaInicial = localStorage.getItem('abaAtiva');
   }
+  if(!abaInicial || !document.getElementById('sec-' + abaInicial)) abaInicial = 'inicio';
+
+  _ultimaAba = null;
+  _executarMudarAba(abaInicial, false);
 
   renderAviso(); renderEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
@@ -1539,6 +1579,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupReveal();
   setupRoomParallax();
   setupBurger();
+  setupFloatingLive();
 
   await carregarConfigPublica();
   verificarStatusTwitch();

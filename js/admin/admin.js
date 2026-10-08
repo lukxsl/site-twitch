@@ -6,6 +6,8 @@ function adminIrPara(pagina){
   if(pagina === 'sugestoes') ADMIN_SUG_STATUS = 'all';
   ADMIN_PAGE = pagina;
   try { localStorage.setItem('admin:page', pagina); } catch(e){}
+  // 🆕 Escreve no hash da URL (sobrevive a reload/re-render)
+  try { history.replaceState(null, '', '#admin/' + pagina); } catch(e){}
   carregarAdmin();
 }
 function adminIrAba(aba){ ADMIN_TAB = aba; renderAdminVotacao(); }
@@ -161,6 +163,21 @@ function kpiChanged(key, valor){
 
 let _carregarAdminToken = 0;
 
+function _resolverPaginaInicial(){
+  // 1) Hash da URL tem prioridade: #admin/sugestoes
+  const hash = (location.hash || '').replace(/^#/, '');
+  if(hash.startsWith('admin/')){
+    const p = hash.slice(6);
+    if(VALID_ADMIN_PAGES.includes(p)) return p;
+  }
+  // 2) Depois localStorage
+  try {
+    const saved = localStorage.getItem('admin:page');
+    if(saved && VALID_ADMIN_PAGES.includes(saved)) return saved;
+  } catch(e){}
+  return 'home';
+}
+
 async function carregarAdmin(){
   const area = document.getElementById('adminArea');
   if(!area) return;
@@ -185,14 +202,20 @@ async function carregarAdmin(){
   const shell = document.querySelector('.admin-shell');
   if(shell) shell.classList.remove('admin-shell--locked');
 
-  // 🔧 FIX: só lê do localStorage no primeiro carregamento da sessão
+  // 🔧 FIX: resolve a página inicial SÓ na 1ª vez do boot
   if(!window.__adminBootDone){
-    const saved = localStorage.getItem('admin:page');
-    if(saved && VALID_ADMIN_PAGES.includes(saved)) ADMIN_PAGE = saved;
-    else ADMIN_PAGE = 'home';
+    ADMIN_PAGE = _resolverPaginaInicial();
     window.__adminBootDone = true;
   }
   if(!VALID_ADMIN_PAGES.includes(ADMIN_PAGE)) ADMIN_PAGE = 'home';
+
+  // 🆕 Sincroniza hash com a página atual
+  try {
+    const hashAtual = (location.hash || '').replace(/^#/, '');
+    if(hashAtual !== 'admin/' + ADMIN_PAGE){
+      history.replaceState(null, '', '#admin/' + ADMIN_PAGE);
+    }
+  } catch(e){}
 
   ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
 
@@ -218,6 +241,19 @@ async function carregarAdmin(){
   if(token !== _carregarAdminToken) return;
 }
 window.carregarAdmin = carregarAdmin;
+
+// 🆕 Ouve mudanças de hash pra navegar quando o usuário muda manualmente
+window.addEventListener('hashchange', () => {
+  const hash = (location.hash || '').replace(/^#/, '');
+  if(hash.startsWith('admin/')){
+    const p = hash.slice(6);
+    if(VALID_ADMIN_PAGES.includes(p) && p !== ADMIN_PAGE){
+      ADMIN_PAGE = p;
+      try { localStorage.setItem('admin:page', p); } catch(e){}
+      if(typeof carregarAdmin === 'function') carregarAdmin();
+    }
+  }
+});
 
 function cardAdminV2({ icon, title, desc, page, accent = 'purple', actions = [] }){
   const actionsHTML = actions.map(a =>

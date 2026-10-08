@@ -1,5 +1,5 @@
 // Vercel serverless: /api/sugestoes.js
-import { createHash, randomUUID, createHmac } from 'crypto';
+import { createHash, randomUUID, createHmac, timingSafeEqual } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -8,19 +8,7 @@ const COOKIE_NAME = 'sessao_site';
 const LIST_KEY = 'sugestoes:lista';
 const MAX_ITENS = 200;
 const MAX_TEXTO = 300;
-
-const recentes = new Map();
-const RATE_MS = 30000;
-const dupCache = new Map();
-const DUP_MS = 120000;
-
-function tipoConfig(categoria){
-  const t = String(categoria || '').toLowerCase();
-  if(t.includes('bug'))      return { key:'bug',      cor: 0xef4444, icone: '🐛', titulo: 'Novo bug reportado',    label: 'Bug' };
-  if(t.includes('jogo'))     return { key:'jogo',     cor: 0x3b82f6, icone: '🎮', titulo: 'Nova sugestão de jogo', label: 'Jogo' };
-  if(t.includes('feedback')) return { key:'feedback', cor: 0x10b981, icone: '💬', titulo: 'Novo feedback',         label: 'Feedback' };
-  return { key:'sugestao', cor: 0xa855f7, icone: '💡', titulo: 'Nova ideia', label: 'Sugestão' };
-}
+const AUTO_TRANSICAO_MS = 90 * 1000; // 90 segundos
 
 async function redis(cmds){
   const r = await fetch(`${URL_}/pipeline`, {
@@ -31,19 +19,36 @@ async function redis(cmds){
   return (await r.json()).map(x => x.result);
 }
 
+async function rateLimitOk(chave, limite, janelaSeg){
+  try {
+    const [n] = await redis([['INCR', chave]]);
+    if(Number(n) === 1) await redis([['EXPIRE', chave, String(janelaSeg)]]);
+    return Number(n) <= limite;
+  } catch(e){ return true; }
+}
+
 function safeStr(v, max = 1000){
   return String(v == null ? '' : v).trim().slice(0, max);
 }
 
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
+function assinarValido(p, sig){
+  const esperado = assinar(p);
+  try {
+    const a = Buffer.from(esperado);
+    const b = Buffer.from(String(sig));
+    if(a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch { return false; }
+}
 function lerSessao(req){
   if(!SESSION_SECRET) return null;
   const c = req.headers.cookie || '';
   const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
   if(!m) return null;
   const [payload, sig] = m[1].split('.');
-  if(!payload || !sig || assinar(payload) !== sig) return null;
+  if(!payload || !sig || !assinarValido(payload, sig)) return null;
   try {
     const d = JSON.parse(b64urlDecode(payload));
     if(d.exp && Date.now() > d.exp) return null;
@@ -51,14 +56,37 @@ function lerSessao(req){
   } catch { return null; }
 }
 
-function limparMapas(){
-  const now = Date.now();
-  if (recentes.size > 500) {
-    for (const [k, t] of recentes) if (now - t > 300000) recentes.delete(k);
+function tipoConfig(categoria){
+  const t = String(categoria || '').toLowerCase();
+  if(t.includes('bug'))      return { key:'bug',      cor: 0xef4444, icone: '🐛', titulo: 'Novo bug reportado',    label: 'Bug' };
+  if(t.includes('jogo'))     return { key:'jogo',     cor: 0x3b82f6, icone: '🎮', titulo: 'Nova sugestão de jogo', label: 'Jogo' };
+  if(t.includes('feedback')) return { key:'feedback', cor: 0x10b981, icone: '💬', titulo: 'Novo feedback',         label: 'Feedback' };
+  return { key:'sugestao', cor: 0xa855f7, icone: '💡', titulo: 'Nova ideia', label: 'Sugestão' };
+}
+
+/* Aplica auto-transição: nova -> analise após 90s */
+async function aplicarAutoTransicao(itens){
+  const agora = Date.now();
+  let mudou = false;
+  for(const i of itens){
+    if((i.status || 'nova') === 'nova' && i.data){
+      const idade = agora - new Date(i.data).getTime();
+      if(idade >= AUTO_TRANSICAO_MS){
+        i.status = 'analise';
+        i.atualizadoEm = new Date().toISOString();
+        i.atualizadoPor = 'auto';
+        mudou = true;
+      }
+    }
   }
-  if (dupCache.size > 500) {
-    for (const [k, t] of dupCache) if (now - t > 600000) dupCache.delete(k);
+  if(mudou && URL_ && TOKEN){
+    const cmds = [['DEL', LIST_KEY]];
+    for(let k = itens.length - 1; k >= 0; k--){
+      cmds.push(['RPUSH', LIST_KEY, JSON.stringify(itens[k])]);
+    }
+    try { await redis(cmds); } catch(e){}
   }
+  return mudou;
 }
 
 export default async function handler(req, res){
@@ -71,6 +99,9 @@ export default async function handler(req, res){
       const itens = (flat || [])
         .map(x => { try { return JSON.parse(x); } catch { return null; } })
         .filter(Boolean);
+
+      await aplicarAutoTransicao(itens);
+
       res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=30');
       return res.status(200).json({ itens });
     } catch (e) {
@@ -94,19 +125,17 @@ export default async function handler(req, res){
   if (msg.length > MAX_TEXTO) return res.status(400).json({ error: `Mensagem muito longa (máx ${MAX_TEXTO})` });
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
-  const agora = Date.now();
-  limparMapas();
 
-  if (agora - (recentes.get(ip) || 0) < RATE_MS) {
+  // Rate-limit por IP via Redis: 1 sugestão a cada 30s
+  if(!(await rateLimitOk(`ratelimit:sug:${ip}`, 1, 30))) {
     return res.status(429).json({ error: 'Aguarde um pouco antes de enviar de novo' });
   }
-  recentes.set(ip, agora);
 
-  const hash = createHash('sha256').update(ip + '|' + msg.toLowerCase()).digest('hex');
-  if (agora - (dupCache.get(hash) || 0) < DUP_MS) {
+  // Anti-duplicata via Redis: mesmo IP + mesma mensagem em 2min
+  const hash = createHash('sha256').update(ip + '|' + msg.toLowerCase()).digest('hex').slice(0, 24);
+  if(!(await rateLimitOk(`ratelimit:sugdup:${hash}`, 1, 120))) {
     return res.status(429).json({ error: 'Você já enviou essa mensagem. Aguarde.' });
   }
-  dupCache.set(hash, agora);
 
   const sessao = lerSessao(req);
   const userId = sessao?.id || null;

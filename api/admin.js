@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -62,13 +62,22 @@ const LABEL_STATUS = {
 /* ============ SESSÃO ============ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
+function assinarValido(p, sig){
+  const esperado = assinar(p);
+  try {
+    const a = Buffer.from(esperado);
+    const b = Buffer.from(String(sig));
+    if(a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch { return false; }
+}
 function lerSessao(req){
   if(!SESSION_SECRET) return null;
   const c = req.headers.cookie || '';
   const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
   if(!m) return null;
   const [payload, sig] = m[1].split('.');
-  if(!payload || !sig || assinar(payload) !== sig) return null;
+  if(!payload || !sig || !assinarValido(payload, sig)) return null;
   try {
     const d = JSON.parse(b64urlDecode(payload));
     if(d.exp && Date.now() > d.exp) return null;
@@ -290,20 +299,28 @@ async function notificarStatus(item, novoStatus, motivo, quemMudou){
   const color = cores[novoStatus] || 0xa855f7;
 
   const menciona = item.userId ? `<@${item.userId}> ` : '';
-  const primeiroNome = item.nome ? `@${item.nome}` : 'você';
+
+  // 🆕 Frases prontas por tipo (concordância correta)
+  const FRASES_CONCLUIDO = {
+    'Sugestão / ideia':     { titulo: '💡 Anotado!',        desc: 'Sua sugestão foi anotada pela Soso!' },
+    'Sugestão de jogo':     { titulo: '🎮 Jogo anotado!',   desc: 'Anotamos sua sugestão de jogo!' },
+    'Feedback':             { titulo: '💬 Recebido!',       desc: 'Obrigada pelo feedback! 💜' },
+    'Reportar bug do site': { titulo: '🐛 Bug registrado!', desc: 'Registramos o bug, já vamos olhar!' }
+  };
 
   let titulo, descricao;
   if(novoStatus === 'concluido'){
-    titulo = `🎉 Boa notícia!`;
-    descricao = `${menciona}Sua sugestão foi **${tipoLabel.toLowerCase()}**!`;
+    const frase = FRASES_CONCLUIDO[item.tipo] || { titulo: '🎉 Boa notícia!', desc: 'Sua sugestão foi finalizada!' };
+    titulo = frase.titulo;
+    descricao = `${menciona}${frase.desc}`;
   } else if(novoStatus === 'aceita'){
-    titulo = `✅ Sua ideia foi aceita!`;
-    descricao = `${menciona}Boa, ${primeiroNome}! Sua ideia vai rolar 💜`;
+    titulo = '✅ Sua ideia foi aceita!';
+    descricao = `${menciona}Boa! Sua ideia vai rolar 💜`;
   } else if(novoStatus === 'recusada'){
-    titulo = `❌ Sua ideia foi recusada`;
+    titulo = '❌ Sua ideia foi recusada';
     descricao = `${menciona}Infelizmente essa não vai rolar dessa vez.`;
   } else if(novoStatus === 'analise'){
-    titulo = `👀 Sua ideia tá em análise`;
+    titulo = '👀 Sua ideia tá em análise';
     descricao = `${menciona}A Soso viu sua ideia e tá pensando!`;
   } else {
     titulo = `🟡 Status atualizado: ${labelFinal}`;
@@ -356,6 +373,24 @@ export default async function handler(req, res){
   const sessao = lerSessao(req);
   if(!sessao) return res.status(401).json({ error: 'Faça login' });
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
+
+  // 🆕 Revalida o cargo a CADA request (não confia só no cookie)
+  let cargoAtual = null;
+  if(ENV_ADMINS.includes(String(sessao.id))){
+    cargoAtual = 'dev';
+  } else {
+    try {
+      const [raw] = await redis([['HGET', 'admins', String(sessao.id)]]);
+      if(raw){
+        const d = JSON.parse(raw);
+        if(d && NIVEIS[d.cargo]) cargoAtual = d.cargo;
+      }
+    } catch(e){}
+  }
+  if(!cargoAtual){
+    return res.status(403).json({ error: 'Acesso revogado. Faça login de novo.' });
+  }
+  sessao.cargo = cargoAtual;
 
   res.setHeader('Cache-Control', 'no-store');
   const action = req.query?.action || '';
