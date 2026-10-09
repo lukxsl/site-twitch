@@ -31,9 +31,7 @@ const STATUS_TOOLTIP = {
   'Dropado': 'Comecei mas não vou continuar', 'Na fila': 'Quero jogar/assistir em breve',
   'Assistindo': 'Estou assistindo agora', 'Assistido': 'Já assisti'
 };
-
 const SUG_MAX_CHARS = 300;
-
 const STATUS_SUG = {
   nova:     { label: '🟡 Nova',       cor: 'amarelo',   desc: 'Acabou de chegar' },
   analise:  { label: '👀 Em análise', cor: 'azul',      desc: 'A Soso viu e tá pensando' },
@@ -41,7 +39,6 @@ const STATUS_SUG = {
   recusada: { label: '❌ Recusada',   cor: 'vermelho',  desc: 'Não vai rolar' },
   concluido:{ label: '🏁 Concluído',  cor: 'roxo',      desc: 'Finalizado' }
 };
-
 const ROTULO_CONCLUIDO = {
   'Sugestão / ideia':      '🏁 Aplicada',
   'Sugestão de jogo':      '🏁 Jogado',
@@ -79,6 +76,7 @@ let revealObs = null;
 let sugTipoAtual = 'Sugestão / ideia';
 let sirFiltro = 'all';
 let SIR_ITENS_CACHE = [];
+let _musicaAtual = null;
 
 /* ============================================================
    HELPERS GERAIS
@@ -234,10 +232,6 @@ function renderAviso(){
     box.className = 'aviso reveal in ' + (AVISO.tipo === 'warn' ? 'warn' : '');
     box.style.display = 'flex';
   } else box.style.display = 'none';
-  const recadoWrap = document.querySelector('.ap-recado');
-  if(recadoWrap){
-    recadoWrap.style.display = (AVISO && AVISO.ativo && AVISO.texto) ? 'none' : '';
-  }
 }
 
 function renderEmotes(){
@@ -300,6 +294,37 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
+   CARD TABS (Abas internas)
+   ============================================================ */
+function setupCardTabs(){
+  document.querySelectorAll('.card-tabs').forEach(tabs => {
+    if(tabs.dataset.bound) return;
+    tabs.dataset.bound = '1';
+    tabs.addEventListener('click', e => {
+      const btn = e.target.closest('.card-tab');
+      if(!btn) return;
+      const card = tabs.closest('.card');
+      if(!card) return;
+      card.querySelectorAll('.card-tab').forEach(t => t.classList.toggle('on', t === btn));
+      card.querySelectorAll('.card-tab-content').forEach(c =>
+        c.classList.toggle('on', c.dataset.content === btn.dataset.tab)
+      );
+    });
+  });
+}
+
+/* ============================================================
+   MODO FOCO
+   ============================================================ */
+function toggleFocusMode(){
+  document.body.classList.toggle('focus-mode');
+  const btn = document.getElementById('focusModeBtn');
+  if(btn) btn.classList.toggle('on', document.body.classList.contains('focus-mode'));
+  try { localStorage.setItem('focusMode', document.body.classList.contains('focus-mode') ? '1' : '0'); } catch(e){}
+}
+window.toggleFocusMode = toggleFocusMode;
+
+/* ============================================================
    MÚSICA
    ============================================================ */
 function renderPlaylist(){
@@ -326,74 +351,99 @@ function trocarMusicaTab(tab){
 }
 window.trocarMusicaTab = trocarMusicaTab;
 
+function _iniciaisFaixa(nome){
+  if(!nome) return '♪';
+  const palavras = String(nome).trim().split(/\s+/).filter(Boolean);
+  if(!palavras.length) return '♪';
+  if(palavras.length === 1) return palavras[0].slice(0, 2).toUpperCase();
+  return (palavras[0][0] + palavras[1][0]).toUpperCase();
+}
+
+function _fmtMs(ms){
+  if(!ms && ms !== 0) return '--:--';
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
 function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
   if(!musicaTocando){
     painel.innerHTML = `<div class="ouvindo-vazio">🎧 Não estou ouvindo nada agora 💜</div>`;
     return;
   }
+  const d = _musicaAtual || {};
+  const iniciais = _iniciaisFaixa(d.faixa);
+  const pct = (d.duracao && d.progresso) ? Math.min(100, (d.progresso / d.duracao) * 100) : 0;
+
   painel.innerHTML = `
-    <div class="ouvindo-now">
-      <img class="ouvindo-capa" id="ouvindoCapa" alt="" loading="lazy">
+    <div class="ouvindo-wrap" id="ouvindoWrap">
+      <div class="vinyl" id="ouvindoVinyl">
+        ${d.capa ? `<img src="${esc(d.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'vinyl-fallback',textContent:'${iniciais}'}))">` : `<div class="vinyl-fallback">${iniciais}</div>`}
+        <div class="vinyl-center"></div>
+      </div>
       <div class="ouvindo-info">
-        <b id="ouvindoFaixa">—</b>
-        <span id="ouvindoArtista">—</span>
-        <a class="ouvindo-link" id="ouvindoLink" href="#" target="_blank" rel="noopener">▶ Ouvir no Spotify</a>
+        <b id="ouvindoFaixa">${esc(d.faixa || '—')}</b>
+        <span id="ouvindoArtista">${esc(d.artista || '')}${d.album ? ' · ' + esc(d.album) : ''}</span>
+        ${d.duracao ? `
+          <div class="ouvindo-progress">
+            <i id="ouvindoProgress" style="width:${pct}%"></i>
+          </div>
+          <div class="ouvindo-times">
+            <span id="ouvindoAtual">${_fmtMs(d.progresso || 0)}</span>
+            <span id="ouvindoTotal">${_fmtMs(d.duracao)}</span>
+          </div>
+        ` : ''}
+        ${d.url ? `<a class="ouvindo-link" href="${esc(d.url)}" target="_blank" rel="noopener">▶ Ouvir no Spotify</a>` : ''}
+        <span class="ouvindo-fonte">via ${esc(d.fonte || 'last.fm')}</span>
       </div>
     </div>`;
-  if(window.__ultimaMusica) pintarOuvindo(window.__ultimaMusica);
 }
 
 function pintarOuvindo(d){
   if(!d || !d.tocando) return;
-  const faixa = $('ouvindoFaixa');
-  const artista = $('ouvindoArtista');
-  const capa = $('ouvindoCapa');
-  const link = $('ouvindoLink');
-  if(faixa) faixa.textContent = d.faixa || '—';
-  if(artista) artista.textContent = d.artista ? `${d.artista}${d.album ? ' · ' + d.album : ''}` : '';
-  if(capa){
-    if(d.capa){
-      capa.src = d.capa; capa.style.display = '';
-      capa.classList.remove('ouvindo-capa-ph'); capa.textContent = '';
-      capa.onerror = () => {
-        capa.removeAttribute('src');
-        capa.classList.add('ouvindo-capa-ph');
-        capa.textContent = gerarIniciaisFaixa(d.faixa);
-      };
-    } else {
-      capa.removeAttribute('src');
-      capa.classList.add('ouvindo-capa-ph');
-      capa.textContent = gerarIniciaisFaixa(d.faixa);
-      capa.style.display = '';
-    }
-  }
-  if(link){
-    if(d.url){ link.href = d.url; link.style.display = ''; }
-    else link.style.display = 'none';
+  _musicaAtual = d;
+  const wrap = $('ouvindoWrap');
+  if(wrap){
+    // fade rápido ao trocar de música
+    wrap.classList.add('fade');
+    setTimeout(() => renderOuvindo(), 220);
+  } else {
+    renderOuvindo();
   }
 }
 
 async function carregarOuvindoAgora(){
   try {
     const r = await fetch('/api/lastfm', { cache: 'no-store' });
-    if(!r.ok) { musicaTocando = false; return; }
+    if(!r.ok) { musicaTocando = false; _atualizarFaixaTicker(null); return; }
     const d = await r.json();
     if(!d || !d.tocando || !d.faixa){
       musicaTocando = false;
-      window.__ultimaMusica = null;
+      _musicaAtual = null;
+      _atualizarFaixaTicker(null);
       if(musicaTab === 'ouvindo') trocarMusicaTab('playlist');
       else renderOuvindo();
       return;
     }
+    const musicaMudou = !_musicaAtual || _musicaAtual.faixa !== d.faixa || _musicaAtual.artista !== d.artista;
     musicaTocando = true;
-    window.__ultimaMusica = d;
+    _musicaAtual = d;
     if(musicaTab === null) trocarMusicaTab('ouvindo');
-    if(musicaTab === 'ouvindo'){ renderOuvindo(); pintarOuvindo(d); }
+    if(musicaTab === 'ouvindo'){
+      if(musicaMudou) pintarOuvindo(d);
+      else renderOuvindo();
+    }
+    _atualizarFaixaTicker(d);
   } catch(e) {
     musicaTocando = false;
+    _atualizarFaixaTicker(null);
   }
 }
+
+/* Ticker antigo (não usado agora, mas mantido por segurança) */
+function _atualizarFaixaTicker(){ /* desativado */ }
 
 function setLivePulse(isLive){
   document.querySelectorAll('.live-indicator').forEach(el => el.classList.toggle('live', !!isLive));
@@ -402,7 +452,7 @@ function setLivePulse(isLive){
 }
 
 /* ============================================================
-   NAVEGAÇÃO (com debounce + preserva admin:page)
+   NAVEGAÇÃO
    ============================================================ */
 let _ultimaAba = null;
 let _mudarAbaTimer = null;
@@ -420,12 +470,10 @@ function _executarMudarAba(nome, salvar){
   if(button) button.classList.add('on');
   if(salvar) localStorage.setItem('abaAtiva', nome);
 
-  // 🔧 Só limpa admin:page quando SAIR de fato do admin pra outra aba
   if(nome !== 'admin' && _ultimaAba === 'admin'){
     try { localStorage.removeItem('admin:page'); } catch(e){}
     ADMIN_PAGE = 'home';
   }
-  // 🔧 Quando entra no admin, restaura a página salva (hash manda)
   if(nome === 'admin'){
     const hash = (location.hash || '').replace(/^#/, '');
     if(hash.startsWith('admin/')){
@@ -435,10 +483,9 @@ function _executarMudarAba(nome, salvar){
   }
   _ultimaAba = nome;
 
-  // 🆕 Atualiza hash da URL
   try {
     if(nome === 'admin'){
-      // mantém o hash da página interna
+      // mantém
     } else {
       history.replaceState(null, '', '#' + nome);
     }
@@ -450,7 +497,6 @@ function _executarMudarAba(nome, salvar){
     garantirAdminCarregado()
       .then(() => {
         if(typeof carregarAdmin === 'function') carregarAdmin();
-        else console.error('carregarAdmin não definido após carregar admin files');
       })
       .catch(err => {
         console.error('Erro ao carregar admin:', err);
@@ -762,7 +808,6 @@ async function checarLogin(){
     aplicarManutencao();
     return;
   }
-
   try{
     const r = await fetch('/api/auth?action=me');
     const d = await r.json();
@@ -836,7 +881,7 @@ async function sair(){
 window.sair = sair;
 
 /* ============================================================
-   VOTAÇÃO — BADGES "NOVO"
+   VOTAÇÃO
    ============================================================ */
 const VOTOS_VISTOS_KEY = 'votos:itensVistos';
 function getVotosVistos(){
@@ -851,9 +896,6 @@ function marcarVotoVisto(id){
   }
 }
 
-/* ============================================================
-   VOTAÇÃO
-   ============================================================ */
 const RANKS = ['🥇','🥈','🥉'];
 
 function aplicarVotos(d){
@@ -1108,7 +1150,7 @@ function setupSugTabs(){
 window.setupSugTabs = setupSugTabs;
 
 /* ============================================================
-   SUGESTÕES — FORM (limite 300)
+   SUGESTÕES — FORM
    ============================================================ */
 function setupSugForm(){
   const chips = document.querySelectorAll('#sugTipoChips .st-chip');
@@ -1211,7 +1253,7 @@ async function enviarSugestao(){
 window.enviarSugestao = enviarSugestao;
 
 /* ============================================================
-   SUGESTÕES — LISTA PÚBLICA (limite visível controlado por CSS)
+   SUGESTÕES — LISTA PÚBLICA
    ============================================================ */
 function statusInfoSug(item){
   const st = item.status || 'nova';
@@ -1222,7 +1264,6 @@ function statusInfoSug(item){
   }
   return base;
 }
-
 function tipoInfoSug(tipo){
   const t = String(tipo || '').toLowerCase();
   if(t.includes('bug')) return { ic: '🐛', label: 'bug' };
@@ -1230,7 +1271,6 @@ function tipoInfoSug(tipo){
   if(t.includes('feedback')) return { ic: '💬', label: 'feedback' };
   return { ic: '💡', label: 'sugestao' };
 }
-
 function renderSirFiltros(itens){
   const wrap = $('sirFiltros'); if(!wrap) return;
   const tipos = { 'all': true, 'sugestao': false, 'jogo': false, 'feedback': false, 'bug': false };
@@ -1267,23 +1307,11 @@ async function carregarUltimasIdeias(){
         <div class="sir-empty">
           <span>✨</span>
           <small>Nenhuma ideia ainda. Seja a primeira 💜</small>
-        </div>
-        <div class="sir-item sir-item-exemplo">
-          <span class="sir-ic">💡</span>
-          <div class="sir-tx"><b>@exemplo</b><small>Adiciona modo hardcore no jogo X</small></div>
-        </div>
-        <div class="sir-item sir-item-exemplo">
-          <span class="sir-ic">🐛</span>
-          <div class="sir-tx"><b>@exemplo</b><small>Bug no botão de votar</small></div>
-        </div>
-        <small style="text-align:center;color:var(--dim);font-size:.66rem;font-style:italic;margin-top:4px">
-          exemplos — envie a sua acima 👆
-        </small>`;
+        </div>`;
       return;
     }
 
     const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
-
     if(!filtrados.length){
       lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada nesse filtro</small></div>`;
       return;
@@ -1313,7 +1341,6 @@ async function carregarUltimasIdeias(){
     lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Sugestões aparecem aqui após o primeiro envio 💜</small></div>`;
   }
 }
-
 function setupSirFiltros(){
   const wrap = $('sirFiltros'); if(!wrap) return;
   if(wrap.dataset.bound) return;
@@ -1406,7 +1433,6 @@ function setupBurger(){
   });
 }
 
-/* 🆕 Botão flutuante "voltar pra live" */
 function setupFloatingLive(){
   const btn = document.getElementById('floatLiveBtn');
   if(!btn) return;
@@ -1434,7 +1460,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     try { localStorage.removeItem('abaAtiva'); } catch(e){}
   }
 
-  // 🔧 Detecta se deve abrir admin pelo hash
   const hashRaw = (location.hash || '').replace(/^#/, '');
   let abaInicial = null;
   if(!isPreview){
@@ -1447,9 +1472,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   _ultimaAba = null;
   _executarMudarAba(abaInicial, false);
 
+  // Modo Foco persistente
+  try {
+    if(localStorage.getItem('focusMode') === '1') {
+      document.body.classList.add('focus-mode');
+      document.getElementById('focusModeBtn')?.classList.add('on');
+    }
+  } catch(e){}
+
+  const focusBtn = document.getElementById('focusModeBtn');
+  if(focusBtn) focusBtn.addEventListener('click', toggleFocusMode);
+
   renderAviso(); renderEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
+  setupCardTabs();
 
   // Setup
   setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';

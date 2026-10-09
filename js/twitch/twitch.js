@@ -33,9 +33,9 @@ function _atualizarPlayerHeader(isLive){
   if(!titleEl) return;
   const labelEl = titleEl.childNodes[titleEl.childNodes.length - 1];
   if(labelEl && labelEl.nodeType === 3){
-    labelEl.textContent = isLive ? ' AO VIVO NA TWITCH' : ' CANAL DA SOSO';
+    labelEl.textContent = isLive ? ' AO VIVO NA TWITCH' : ' CANAL DA SOSA';
   } else {
-    titleEl.innerHTML = `<span class="live-indicator" id="headerLiveDot"></span>${isLive ? ' AO VIVO NA TWITCH' : ' CANAL DA SOSO'}`;
+    titleEl.innerHTML = `<span class="live-indicator" id="headerLiveDot"></span>${isLive ? ' AO VIVO NA TWITCH' : ' CANAL DA SOSA'}`;
     if(typeof setLivePulse === 'function') setLivePulse(isLive);
   }
 }
@@ -48,48 +48,23 @@ function _atualizarProfileStatus(isLive){
   el.title = isLive ? '🟢 Online agora' : '⚫ Offline';
 }
 
-/* 🆕 Contador de seguidores no banner (linha fina abaixo do título) */
-function _atualizarBannerCounter(data){
-  const el = document.getElementById('bannerCounter');
-  if(!el) return;
-  const partes = [];
-  if(data.followers != null) partes.push(`💜 ${Number(data.followers).toLocaleString('pt-BR')} seguidores`);
-  if(data.horasMes != null) partes.push(`📺 ${Number(data.horasMes).toLocaleString('pt-BR')}h esse mês`);
-  if(data.discord != null) partes.push(`🟢 ${Number(data.discord).toLocaleString('pt-BR')} no Discord`);
-  el.textContent = partes.join(' · ');
-  el.style.display = partes.length ? '' : 'none';
-}
+/* 🆕 Faixa de estatísticas compacta (Ideia B) */
+function _atualizarStatsStrip(data){
+  const seg = document.getElementById('stripSeg');
+  const horas = document.getElementById('stripHoras');
+  const discord = document.getElementById('stripDiscord');
+  const live = document.getElementById('stripLive');
+  const liveSep = document.getElementById('stripLiveSep');
+  const viewers = document.getElementById('stripViewers');
 
-/* 🎵 Faixa "Ouvindo agora" abaixo do player */
-async function _atualizarFaixaOuvindo(){
-  const el = document.getElementById('ouvindoTicker');
-  if(!el) return;
-  try {
-    const r = await fetch('/api/lastfm', { cache: 'no-store' });
-    if(!r.ok) { el.style.display = 'none'; return; }
-    const d = await r.json();
-    if(!d || !d.tocando || !d.faixa){
-      el.style.display = 'none';
-      return;
-    }
-    el.style.display = 'flex';
-    const capaEl = el.querySelector('.ouvindo-ticker-capa');
-    const txEl = el.querySelector('.ouvindo-ticker-tx');
-    const linkEl = el.querySelector('.ouvindo-ticker-link');
-    if(txEl){
-      txEl.innerHTML = `<b>${esc(d.faixa || '—')}</b><small>${esc(d.artista || '')}${d.album ? ' · ' + esc(d.album) : ''}</small>`;
-    }
-    if(capaEl){
-      if(d.capa){ capaEl.src = d.capa; capaEl.style.display = ''; }
-      else { capaEl.removeAttribute('src'); capaEl.style.display = 'none'; }
-    }
-    if(linkEl){
-      if(d.url){ linkEl.href = d.url; linkEl.style.display = ''; }
-      else linkEl.style.display = 'none';
-    }
-  } catch(e){
-    el.style.display = 'none';
-  }
+  if(seg) seg.textContent = data.followers != null ? Number(data.followers).toLocaleString('pt-BR') : '—';
+  if(horas) horas.textContent = data.horasMes != null ? Number(data.horasMes).toLocaleString('pt-BR') : '—';
+  if(discord) discord.textContent = data.discord != null ? Number(data.discord).toLocaleString('pt-BR') : '—';
+
+  const isLive = !!(data.stream && data.stream.viewer_count != null);
+  if(live) live.style.display = isLive ? '' : 'none';
+  if(liveSep) liveSep.style.display = isLive ? '' : 'none';
+  if(viewers && isLive) viewers.textContent = Number(data.stream.viewer_count).toLocaleString('pt-BR');
 }
 
 async function verificarStatusTwitch() {
@@ -102,16 +77,14 @@ async function verificarStatusTwitch() {
 
     atualizarMeta('goalSeg', data.followers, MARCOS, true);
     atualizarMeta('goalDc', data.discord, MARCOS, true);
+    _atualizarStatsStrip(data);
 
     const live = !!data.stream;
     inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
-    tickUptime();
 
     _atualizarPlayerHeader(live);
     _atualizarProfileStatus(live);
-    _atualizarBannerCounter(data);
 
-    // 🆕 Conteúdo adulto — Twitch bloqueia embed. Mostra painel customizado.
     const isMature = !!(data.stream && data.stream.is_mature);
 
     if (live && !toastLiveMostrado) {
@@ -119,39 +92,18 @@ async function verificarStatusTwitch() {
       setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
     }
 
-    if (data.horasMes != null && g('tmHoras')) {
-      g('tmHoras').textContent = (typeof data.horasMes === 'number' ? data.horasMes : Number(data.horasMes)).toLocaleString('pt-BR') + 'h';
-    } else if (g('tmHoras')) {
-      g('tmHoras').textContent = '—';
-    }
-
     if (data.discord && $('dcMembros'))
       $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
 
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
-    g('tmStatus').textContent = live ? '● AO VIVO' : 'OFFLINE';
-    g('tmSeg').textContent = data.followers != null ? data.followers.toLocaleString('pt-BR') : '—';
-    g('tmLbl').textContent = live ? 'AO VIVO AGORA' : 'ÚLTIMA LIVE';
-    g('tmSub').textContent = live
-      ? `${data.stream.title} · ${data.stream.game_name || ''} · ${data.stream.viewer_count} assistindo`
-      : (videosTw[0] && videosTw[0].created_at ? `${tempoAtras(videosTw[0].created_at)} · ${videosTw[0].title}` : 'Canal offline no momento.');
-    g('tmVods').innerHTML = videosTw.slice(0, 3).map((v, i) =>
-      `<button class="tm-vod" data-i="${i}">${v.thumbnail ? `<img src="${esc(v.thumbnail)}" alt="" loading="lazy" onerror="this.remove()">` : ''}<div><b>${esc(v.title || 'Live')}</b><span>${v.created_at ? tempoAtras(v.created_at) : ''}${v.duration ? ' · ' + durTw(v.duration) : ''}${v.views != null ? ' · 👁 ' + v.views : ''}</span></div><em>▶</em></button>`
-    ).join('') || '<span class="tm-h4">Nenhuma live gravada ainda.</span>';
-
-    atualizarFoco(data.game, !!data.stream);
-    renderClips(data.clips);
-    g('btnVod').style.display = vodAtual ? '' : 'none';
-    setLivePulse(live);
 
     if (data.user) {
       if (data.user.profile_image_url) { const av = g('offlineAvatarImg'); if(av) av.src = data.user.profile_image_url; }
-      if (data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.7),rgba(10,5,17,.9)),url(${data.user.offline_image_url})`;
+      if (data.user.offline_image_url && panel) panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.7),rgba(10,5,17,.9)),url(${data.user.offline_image_url})`;
     }
 
     if (data.stream && isMature) {
-      // 🆕 Live marcada como conteúdo adulto
       assistindoVod = false;
       iframe.style.display = 'none'; iframe.src = '';
       badge.style.display = 'flex';
@@ -196,6 +148,10 @@ async function verificarStatusTwitch() {
         g('playerNoteText').textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
       }
     }
+
+    atualizarFoco(data.game, !!data.stream);
+    renderClips(data.clips);
+    setLivePulse(live);
   } catch (err) {
     console.error('Erro ao buscar dados da Twitch:', err);
     atualizarFoco(null, false);
@@ -259,12 +215,4 @@ function fecharClip(){ if(dlgClip){ dlgClip.querySelector('#clipIframe').src = '
 document.addEventListener('click', e => {
   const b = e.target.closest('.clip');
   if(b && b.dataset.id) abrirClip(b.dataset.id);
-});
-
-/* ============================================================
-   BOOT EXTRA — roda o ticker do "ouvindo agora"
-   ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-  _atualizarFaixaOuvindo();
-  setInterval(_atualizarFaixaOuvindo, 30000);
 });

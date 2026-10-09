@@ -6,15 +6,15 @@
 .room-wall{
   position:absolute;inset:0;
   background:
-    radial-gradient(ellipse 60% 45% at 52% 38%, rgba(168,85,247,.35) 0%, rgba(168,85,247,.08) 40%, transparent 70%),
-    radial-gradient(ellipse 40% 55% at 92% 55%, rgba(255,179,122,.22) 0%, transparent 55%),
-    radial-gradient(ellipse 45% 60% at 6% 40%, rgba(125,211,252,.16) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 52% 38%, rgba(168,85,247,.30) 0%, rgba(168,85,247,.06) 40%, transparent 70%),
+    radial-gradient(ellipse 40% 55% at 92% 55%, rgba(255,179,122,.18) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 60% at 6% 40%, rgba(125,211,252,.14) 0%, transparent 55%),
     linear-gradient(180deg, var(--wall-1) 0%, var(--wall-2) 55%, #0a0511 100%);
   transition:transform .8s var(--ease);
 }
 
 .room-wallpaper{
-  position:absolute;inset:0;opacity:.08;
+  position:absolute;inset:0;opacity:.06;
   background-image:
     repeating-linear-gradient(90deg, rgba(168,85,247,.5) 0 1px, transparent 1px 42px),
     repeating-linear-gradient(0deg, rgba(168,85,247,.35) 0 1px, transparent 1px 42px);
@@ -28,23 +28,23 @@
 }
 .rw-frame{
   position:absolute;inset:0;
-  border:6px solid rgba(168,85,247,.35);
+  border:6px solid rgba(168,85,247,.3);
   border-radius:6px;
-  background:linear-gradient(160deg, rgba(125,211,252,.4) 0%, rgba(125,211,252,.15) 50%, rgba(125,211,252,.05) 100%);
+  background:linear-gradient(160deg, rgba(125,211,252,.35) 0%, rgba(125,211,252,.12) 50%, rgba(125,211,252,.04) 100%);
   box-shadow:
-    inset 0 0 40px rgba(125,211,252,.4),
-    0 0 60px rgba(125,211,252,.3),
-    0 0 100px rgba(125,211,252,.15);
+    inset 0 0 40px rgba(125,211,252,.3),
+    0 0 60px rgba(125,211,252,.18),
+    0 0 100px rgba(125,211,252,.08);
 }
 .rw-frame::before,.rw-frame::after{
-  content:'';position:absolute;background:rgba(168,85,247,.5);
+  content:'';position:absolute;background:rgba(168,85,247,.45);
 }
 .rw-frame::before{left:50%;top:0;bottom:0;width:4px;transform:translateX(-50%)}
 .rw-frame::after{top:50%;left:0;right:0;height:4px;transform:translateY(-50%)}
 .rw-light{
   position:absolute;left:50%;top:50%;width:180%;height:180%;
   transform:translate(-30%,-30%);
-  background:radial-gradient(ellipse at 30% 30%, rgba(125,211,252,.18) 0%, transparent 60%);
+  background:radial-gradient(ellipse at 30% 30%, rgba(125,211,252,.14) 0%, transparent 60%);
   filter:blur(30px);pointer-events:none;
 }
 
@@ -84,13 +84,13 @@
 }
 .rt-obj{
   font-size:clamp(1.2rem,1.6vw,1.6rem);
-  filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 12px rgba(255,209,102,.3));
+  filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 12px rgba(255,209,102,.25));
   transform:translateY(-2px);
 }
-.rt-cup{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(255,209,102,.55))}
-.rt-heart{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(168,85,247,.55))}
-.rt-game{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(125,211,252,.45))}
-.rt-star{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(255,110,199,.55))}
+.rt-cup{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(255,209,102,.45))}
+.rt-heart{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(168,85,247,.45))}
+.rt-game{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(125,211,252,.35))}
+.rt-star{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(255,110,199,.45))}
 .rt-board{
   position:absolute;left:0;right:0;bottom:0;height:6px;
   background:linear-gradient(180deg, #4a3660 0%, #1a1030 100%);
@@ -100,20 +100,20 @@
 
 .room-floor{
   position:absolute;left:0;right:0;bottom:0;height:26%;pointer-events:none;
-  background:linear-gradient(180deg, rgba(60,35,95,.35) 0%, rgba(30,18,50,.7) 40%, #06030e 100%);
-  border-top:1px solid rgba(168,85,247,.35);
+  background:linear-gradient(180deg, rgba(60,35,95,.3) 0%, rgba(30,18,50,.6) 40%, #06030e 100%);
+  border-top:1px solid rgba(168,85,247,.28);
   box-shadow:inset 0 8px 30px -8px rgba(0,0,0,.85);
   transition:transform .9s var(--ease);
 }
 .room-floor::before{
   content:'';position:absolute;left:0;right:0;top:-2px;height:4px;
-  background:linear-gradient(90deg, transparent, rgba(192,132,252,.45), rgba(255,110,199,.35), rgba(192,132,252,.45), transparent);
+  background:linear-gradient(90deg, transparent, rgba(192,132,252,.35), rgba(255,110,199,.25), rgba(192,132,252,.35), transparent);
   filter:blur(1.5px);
 }
 .rf-glow{
   position:absolute;left:50%;top:-30px;transform:translateX(-50%);
   width:60%;height:120px;
-  background:radial-gradient(ellipse at center, rgba(168,85,247,.4) 0%, rgba(168,85,247,.1) 40%, transparent 75%);
+  background:radial-gradient(ellipse at center, rgba(168,85,247,.3) 0%, rgba(168,85,247,.06) 40%, transparent 75%);
   filter:blur(28px);
 }
 
@@ -149,10 +149,10 @@ nav .wrapper{display:flex;align-items:center;justify-content:space-between;min-h
 .logo-container:hover{background:rgba(168,85,247,.1)}
 .logo-mark{position:relative;width:38px;height:38px;display:grid;place-items:center;flex:none}
 .twitch-logo-img{width:32px;height:32px;object-fit:contain;border-radius:9px;position:relative;z-index:2}
-.logo-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 180deg,rgba(168,85,247,.9),rgba(255,110,199,.7),rgba(125,211,252,.7),rgba(168,85,247,.9));filter:blur(9px);opacity:.75;animation:spinRing 8s linear infinite}
+.logo-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 180deg,rgba(168,85,247,.9),rgba(255,110,199,.7),rgba(125,211,252,.7),rgba(168,85,247,.9));filter:blur(9px);opacity:.7;animation:spinRing 8s linear infinite}
 @keyframes spinRing{to{transform:rotate(360deg)}}
 .logo-text{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.24rem;letter-spacing:-.03em;color:var(--white)}
-.logo-text span{color:var(--purple-2);text-shadow:0 0 24px rgba(192,132,252,.7)}
+.logo-text span{color:var(--purple-2);text-shadow:0 0 24px rgba(192,132,252,.6)}
 
 .nav-right{display:flex;align-items:center;gap:14px}
 .nav-links{display:flex;gap:2px;list-style:none;align-items:center}
@@ -184,6 +184,18 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
 .nav-user-sair{background:transparent;border:0;color:var(--mute);padding:5px 8px;border-radius:99px;font-size:.7rem;font-weight:700;cursor:pointer;transition:.2s}
 .nav-user-sair:hover{color:var(--red);background:rgba(255,77,95,.1)}
 
+.nav-actions{display:flex;align-items:center;gap:8px}
+
+.focus-mode-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.03);border:1px solid var(--line);
+  color:var(--mute);padding:8px 14px;border-radius:10px;
+  font-family:inherit;font-weight:700;font-size:.76rem;cursor:pointer;
+  transition:.2s;white-space:nowrap;
+}
+.focus-mode-btn:hover{color:var(--white);border-color:var(--purple);background:rgba(168,85,247,.1)}
+.focus-mode-btn.on{background:linear-gradient(135deg,var(--purple-2),var(--purple-3));color:#fff;border-color:transparent}
+
 .nav-burger{display:none;background:none;border:1px solid var(--line);width:40px;height:40px;border-radius:10px;flex-direction:column;gap:4px;justify-content:center;align-items:center;cursor:pointer;transition:.2s}
 .nav-burger:hover{border-color:var(--purple)}
 .nav-burger span{display:block;width:18px;height:2px;background:var(--ink);border-radius:2px;transition:.25s}
@@ -204,36 +216,61 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
 .section-kicker{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--purple-2);margin-bottom:10px;padding:4px 10px;border-radius:99px;background:rgba(168,85,247,.1);border:1px solid var(--line)}
 
 /* ============================================================
-   BENTO GRID (HOME)
+   BENTO GRID (HOME) — REFORMULADO
    ============================================================ */
 .bento{
   display:grid;
-  grid-template-columns:minmax(0,340px) minmax(0,1fr) minmax(0,340px);
+  grid-template-columns:minmax(0,320px) minmax(0,1.4fr) minmax(0,1fr);
   grid-template-areas:
-    "profile player player"
-    "profile player player"
-    "profile monitor monitor"
-    "focus monitor monitor"
-    "focus music music"
-    "next music music";
-  gap:14px; grid-auto-rows:min-content;
-}
-@media (min-width:1280px){
-  .bento{
-    grid-template-columns:340px minmax(0,1.4fr) minmax(0,1fr);
-    grid-template-areas:
-      "profile player monitor"
-      "profile player monitor"
-      "profile player monitor"
-      "focus music next";
-  }
+    "profile player music"
+    "profile player music"
+    "focus   spotify music"
+    "next    apoie    music"
+    "next    apoie    sub";
+  gap:14px;
+  align-items:start;
 }
 .profile-card{grid-area:profile}
 .twitch-player-box{grid-area:player}
-.tmon{grid-area:monitor}
-.focus-box{grid-area:focus}
 .music-box{grid-area:music}
+.focus-box{grid-area:focus}
 .proximo{grid-area:next}
+.apoie{grid-area:apoie}
+.sub-hero-box{grid-area:sub}
+.spotify-card{grid-area:spotify}
+
+@media (min-width:1600px){
+  .bento{
+    grid-template-columns:minmax(0,340px) minmax(0,1.4fr) minmax(0,1.05fr);
+  }
+}
+
+@media (max-width:1280px){
+  .bento{
+    grid-template-columns:minmax(0,300px) minmax(0,1fr);
+    grid-template-areas:
+      "profile player"
+      "profile player"
+      "focus   music"
+      "spotify music"
+      "next    apoie"
+      "sub     apoie";
+  }
+}
+@media (max-width:960px){
+  .bento{
+    grid-template-columns:1fr;
+    grid-template-areas:
+      "player"
+      "profile"
+      "focus"
+      "music"
+      "spotify"
+      "next"
+      "apoie"
+      "sub";
+  }
+}
 
 /* ============================================================
    FOOTER
@@ -248,18 +285,10 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
 .footer-updated{font-size:.72rem;opacity:.7;display:inline-flex;align-items:center;gap:6px}
 .footer-updated b{color:var(--purple-2);font-weight:700}
 
-/* ============================================================
-   RESPONSIVE (Layout Global)
-   ============================================================ */
-@media (max-width:1280px){
-  .bento{grid-template-columns:minmax(0,320px) minmax(0,1fr);grid-template-areas:"profile player" "profile player" "monitor monitor" "focus focus" "music music" "next next"}
-}
-@media (max-width:960px){
-  .bento{grid-template-columns:1fr;grid-template-areas:"player" "profile" "monitor" "focus" "music" "next"}
-}
 @media (max-width:720px){
   nav .wrapper{min-height:60px}
   .nav-burger{display:flex}
+  .focus-mode-btn span:not(:first-child){display:none}
   .nav-right{position:fixed;top:60px;left:0;right:0;background:rgba(10,5,17,.98);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:16px;flex-direction:column;align-items:stretch;gap:14px;transform:translateY(-110%);transition:transform .35s var(--ease);z-index:99;max-height:calc(100vh - 60px);overflow-y:auto}
   .nav-right.open{transform:none}
   .nav-links{flex-direction:column;width:100%}
@@ -275,4 +304,30 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
   .logo-text{font-size:1.08rem}
   .twitch-logo-img{width:28px;height:28px}
   .logo-mark{width:34px;height:34px}
+}
+
+/* ============================================================
+   MODO FOCO
+   ============================================================ */
+body.focus-mode .hero-banner,
+body.focus-mode .stats-strip,
+body.focus-mode .aviso,
+body.focus-mode .profile-card,
+body.focus-mode .focus-box,
+body.focus-mode .proximo,
+body.focus-mode .music-box,
+body.focus-mode .apoie,
+body.focus-mode .sub-hero-box,
+body.focus-mode .apoio-home,
+body.focus-mode footer,
+body.focus-mode .section-header{display:none !important}
+
+body.focus-mode .page-section{padding-top:20px}
+
+body.focus-mode .bento{
+  display:block !important;
+}
+body.focus-mode .twitch-player-box{
+  max-width:1100px;
+  margin:0 auto;
 }

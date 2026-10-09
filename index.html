@@ -74,9 +74,14 @@
       <div class="nav-user" id="navUser"></div>
     </div>
 
-    <button class="nav-burger" id="navBurger" aria-label="Abrir menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="nav-actions">
+      <button class="focus-mode-btn" id="focusModeBtn" type="button" title="Modo Foco (esconde distrações)">
+        <span>👁️</span> Foco
+      </button>
+      <button class="nav-burger" id="navBurger" aria-label="Abrir menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
 </nav>
 
@@ -95,8 +100,19 @@
     <div class="banner-overlay">
       <span class="banner-kicker">💜 Bem-vindo ao cantinho</span>
       <h1 class="banner-title">Games, caos & <em>gameplay duvidosa</em>.</h1>
-      <div class="banner-counter" id="bannerCounter" style="display:none"></div>
     </div>
+  </div>
+
+  <div class="stats-strip reveal" id="statsStrip">
+    <span class="strip-item"><span class="strip-ic">👥</span> <b id="stripSeg">—</b> seguidores</span>
+    <span class="strip-sep">·</span>
+    <span class="strip-item"><span class="strip-ic">⏱️</span> <b id="stripHoras">—</b>h esse mês</span>
+    <span class="strip-sep">·</span>
+    <span class="strip-item"><span class="strip-ic">🟢</span> <b id="stripDiscord">—</b> no Discord</span>
+    <span class="strip-sep" id="stripLiveSep" style="display:none">·</span>
+    <span class="strip-item strip-live" id="stripLive" style="display:none">
+      <span class="live-indicator live"></span> <b>AO VIVO</b> · <span id="stripViewers">0</span> assistindo
+    </span>
   </div>
 
   <div class="aviso reveal" id="avisoBox" style="display:none">
@@ -145,7 +161,7 @@
       <div class="twitch-player-header">
         <div class="twitch-player-title">
           <span class="live-indicator" id="headerLiveDot"></span>
-          AO VIVO NA TWITCH
+          CANAL DA SOSO
         </div>
         <div class="twitch-player-status" id="viewerCountStatus">@asemtet0</div>
       </div>
@@ -161,53 +177,7 @@
         </div>
         <iframe id="twitchIframe" style="display:none" src="" allowfullscreen scrolling="no" title="Live da Soso na Twitch"></iframe>
       </div>
-      <div class="ouvindo-ticker" id="ouvindoTicker" style="display:none">
-        <span class="ouvindo-ticker-ic">🎵</span>
-        <img class="ouvindo-ticker-capa" alt="" loading="lazy">
-        <div class="ouvindo-ticker-tx"></div>
-        <a class="ouvindo-ticker-link" href="#" target="_blank" rel="noopener">▶</a>
-      </div>
       <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
-    </article>
-
-    <article class="tmon reveal">
-      <div class="tmon-h">
-        <span class="live-indicator" id="panelLiveDot"></span>
-        <b>PAINEL DO CANAL</b>
-        <span class="pill" id="tmStatus">OFFLINE</span>
-      </div>
-      <div class="tmon-b">
-        <div class="tm-three">
-          <div class="tm-t"><small>SEGUIDORES</small><b id="tmSeg">—</b></div>
-          <div class="tm-t"><small>UPTIME</small><b id="tmUp">—</b></div>
-          <div class="tm-t"><small>HORAS / MÊS</small><b id="tmHoras">—</b></div>
-        </div>
-        <div class="tm-t"><small id="tmLbl">ÚLTIMA LIVE</small><p id="tmSub">Carregando…</p></div>
-        <div id="tmFeedWrap" style="display:none">
-          <div class="tm-h4">ATIVIDADE RECENTE</div>
-          <div class="tm-feed" id="tmFeed"></div>
-        </div>
-        <div class="tm-h4">ÚLTIMAS LIVES · CLIQUE PARA REVER</div>
-        <div class="tm-vods" id="tmVods"></div>
-      </div>
-    </article>
-
-    <article class="card focus-box foco reveal">
-      <img class="foco-cover skeleton" id="focoCover" alt="">
-      <div class="foco-info">
-        <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
-        <h3 id="focoNome">Carregando…</h3>
-        <div class="foco-meta" id="focoMeta"></div>
-        <div class="foco-bar" id="focoBar" style="display:none">
-          <small><span>Progresso</span><b id="focoPct"></b></small>
-          <div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div>
-        </div>
-        <p class="foco-last" id="focoHoras"></p>
-        <div class="foco-btns">
-          <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
-          <a class="btn ghost" id="focoTwitchLink" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="display:none">Ver na Twitch →</a>
-        </div>
-      </div>
     </article>
 
     <article class="card music-box reveal">
@@ -234,6 +204,24 @@
       </div>
     </article>
 
+    <article class="card focus-box foco reveal">
+      <img class="foco-cover skeleton" id="focoCover" alt="">
+      <div class="foco-info">
+        <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
+        <h3 id="focoNome">Carregando…</h3>
+        <div class="foco-meta" id="focoMeta"></div>
+        <div class="foco-bar" id="focoBar" style="display:none">
+          <small><span>Progresso</span><b id="focoPct"></b></small>
+          <div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div>
+        </div>
+        <p class="foco-last" id="focoHoras"></p>
+        <div class="foco-btns">
+          <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
+          <a class="btn ghost" id="focoTwitchLink" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="display:none">Ver na Twitch →</a>
+        </div>
+      </div>
+    </article>
+
     <article class="card proximo foco reveal">
       <img class="foco-cover" id="proxCover" alt="" style="display:none">
       <div class="foco-info">
@@ -248,9 +236,7 @@
         </div>
       </div>
     </article>
-  </div>
 
-  <div class="apoio-home">
     <article class="card apoie reveal">
       <div class="apoie-head">
         <h3>💜 Apoie o cantinho</h3>
@@ -258,13 +244,13 @@
       </div>
       <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
 
-      <div class="ap-sec ap-recado">
-        <span class="ap-h">💌 Recado da Soso</span>
-        <p id="recadoSoso" class="mini-recado">Sem recadinho no momento. Volte mais tarde! 💜</p>
+      <div class="card-tabs" data-tabs="apoie">
+        <button type="button" class="card-tab on" data-tab="top3">🏆 Top 3</button>
+        <button type="button" class="card-tab" data-tab="hall">👑 Hall</button>
+        <button type="button" class="card-tab" data-tab="recado">💌 Recado</button>
       </div>
 
-      <div class="ap-sec ap-top3">
-        <span class="ap-h">🏆 Top 3 apoiadores</span>
+      <div class="card-tab-content on" data-content="top3">
         <div class="top3" id="top3Lista">
           <div class="top3-card top3-em-breve" onclick="toast('Em breve 💜', 'info')">
             <span class="t3-medal">🥇</span><span class="t3-name">Em breve</span>
@@ -278,11 +264,14 @@
         </div>
       </div>
 
-      <div class="ap-sec ap-hall">
-        <span class="ap-h">👑 Hall da fama · maiores subs</span>
+      <div class="card-tab-content" data-content="hall">
         <div class="hall" id="hallLista">
           <p class="ap-vazio">Em breve os maiores subs da história. 👑</p>
         </div>
+      </div>
+
+      <div class="card-tab-content" data-content="recado">
+        <p id="recadoSoso" class="mini-recado">Sem recadinho no momento. Volte mais tarde! 💜</p>
       </div>
     </article>
 
@@ -292,19 +281,28 @@
       <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho.</p>
       <div class="sub-hero-btns">
         <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
-        <a href="#" onclick="abrirSejaSub();return false;" class="btn ghost block">Ver todos os benefícios →</a>
       </div>
-      <div class="como-funciona">
-        <span class="cf-titulo">✨ Como funciona</span>
-        <ol class="cf-lista">
-          <li><b>1.</b> Vai na Twitch e clica em Inscrever</li>
-          <li><b>2.</b> Escolhe o plano mensal</li>
-          <li><b>3.</b> Volta aqui e usa os emotes no chat 💜</li>
-        </ol>
+
+      <div class="card-tabs" data-tabs="sub">
+        <button type="button" class="card-tab on" data-tab="como">✨ Como funciona</button>
+        <button type="button" class="card-tab" data-tab="emotes">🎨 Emotes</button>
       </div>
-      <div class="emotes-preview">
-        <small>Preview dos emotes de sub</small>
-        <div class="emotes-grid" id="emotesGrid"></div>
+
+      <div class="card-tab-content on" data-content="como">
+        <div class="como-funciona">
+          <ol class="cf-lista">
+            <li><b>1.</b> Vai na Twitch e clica em Inscrever</li>
+            <li><b>2.</b> Escolhe o plano mensal</li>
+            <li><b>3.</b> Volta aqui e usa os emotes no chat 💜</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card-tab-content" data-content="emotes">
+        <div class="emotes-preview">
+          <small>Preview dos emotes de sub</small>
+          <div class="emotes-grid" id="emotesGrid"></div>
+        </div>
       </div>
     </article>
   </div>
@@ -506,9 +504,7 @@
   </header>
 
   <div class="sug-shell">
-
     <div class="sug-panel on" data-panel="votar" id="sugPanelVotar">
-
       <div class="voto-panel-head">
         <h3>🗳️ Qual será o próximo jogo?</h3>
         <div class="voto-tags" id="votoInfoTop">
@@ -530,12 +526,10 @@
         <b id="votoStatLider">—</b>
         <button type="button" class="voto-add-btn" id="sugBtnIrSugerir">➕ Sugerir novo jogo</button>
       </div>
-
     </div>
 
     <div class="sug-panel" data-panel="sugerir" id="sugPanelSugerir">
       <div class="sugerir-cols">
-
         <div class="sug-form-col">
           <h3>💡 Envie sua ideia</h3>
           <div class="sug-form">
@@ -602,10 +596,8 @@
             </div>
           </div>
         </div>
-
       </div>
     </div>
-
   </div>
 </section>
 
