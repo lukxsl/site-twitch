@@ -70,7 +70,7 @@ let modo = 'jogos', filtro = 'Todos';
 let CONFIG_GERAL = {
   aviso: null, donate: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, top3: [], hall: [], votosFechamento: null
 };
-let musicaTab = 'playlist';
+let musicaTab = 'ouvindo';
 let musicaTocando = false;
 let revealObs = null;
 let sugTipoAtual = 'Sugestão / ideia';
@@ -294,7 +294,7 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
-   CARD TABS (Abas internas)
+   CARD TABS
    ============================================================ */
 function setupCardTabs(){
   document.querySelectorAll('.card-tabs').forEach(tabs => {
@@ -314,15 +314,36 @@ function setupCardTabs(){
 }
 
 /* ============================================================
-   MODO FOCO
+   MODO FOCO (com chat da Twitch)
    ============================================================ */
 function toggleFocusMode(){
-  document.body.classList.toggle('focus-mode');
+  const ativo = document.body.classList.toggle('focus-mode');
   const btn = document.getElementById('focusModeBtn');
-  if(btn) btn.classList.toggle('on', document.body.classList.contains('focus-mode'));
-  try { localStorage.setItem('focusMode', document.body.classList.contains('focus-mode') ? '1' : '0'); } catch(e){}
+  if(btn) btn.classList.toggle('on', ativo);
+  const chat = document.getElementById('focusChatIframe');
+  if(chat){
+    if(ativo){
+      chat.src = `https://www.twitch.tv/embed/asemtet0/chat?parent=${HOST}&darkpopout`;
+    } else {
+      chat.src = 'about:blank';
+    }
+  }
+  try { localStorage.setItem('focusMode', ativo ? '1' : '0'); } catch(e){}
+  // scroll pro topo, senão pode ficar em meio de rolagem
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.toggleFocusMode = toggleFocusMode;
+
+function restaurarFocusMode(){
+  try {
+    if(localStorage.getItem('focusMode') === '1'){
+      document.body.classList.add('focus-mode');
+      document.getElementById('focusModeBtn')?.classList.add('on');
+      const chat = document.getElementById('focusChatIframe');
+      if(chat) chat.src = `https://www.twitch.tv/embed/asemtet0/chat?parent=${HOST}&darkpopout`;
+    }
+  } catch(e){}
+}
 
 /* ============================================================
    MÚSICA
@@ -344,8 +365,8 @@ function trocarMusicaTab(tab){
   document.querySelectorAll('.music-tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
   const painelPlaylist = $('musicPainelPlaylist');
   const painelOuvindo = $('musicPainelOuvindo');
-  if(painelPlaylist) painelPlaylist.style.display = tab === 'playlist' ? '' : 'none';
-  if(painelOuvindo) painelOuvindo.style.display = tab === 'ouvindo' ? '' : 'none';
+  if(painelPlaylist) painelPlaylist.classList.toggle('on', tab === 'playlist');
+  if(painelOuvindo) painelOuvindo.classList.toggle('on', tab === 'ouvindo');
   if(tab === 'playlist') renderPlaylist();
   if(tab === 'ouvindo') renderOuvindo();
 }
@@ -396,7 +417,6 @@ function renderOuvindo(){
           </div>
         ` : ''}
         ${d.url ? `<a class="ouvindo-link" href="${esc(d.url)}" target="_blank" rel="noopener">▶ Ouvir no Spotify</a>` : ''}
-        <span class="ouvindo-fonte">via ${esc(d.fonte || 'last.fm')}</span>
       </div>
     </div>`;
 }
@@ -406,7 +426,6 @@ function pintarOuvindo(d){
   _musicaAtual = d;
   const wrap = $('ouvindoWrap');
   if(wrap){
-    // fade rápido ao trocar de música
     wrap.classList.add('fade');
     setTimeout(() => renderOuvindo(), 220);
   } else {
@@ -417,33 +436,25 @@ function pintarOuvindo(d){
 async function carregarOuvindoAgora(){
   try {
     const r = await fetch('/api/lastfm', { cache: 'no-store' });
-    if(!r.ok) { musicaTocando = false; _atualizarFaixaTicker(null); return; }
+    if(!r.ok) { musicaTocando = false; return; }
     const d = await r.json();
     if(!d || !d.tocando || !d.faixa){
       musicaTocando = false;
       _musicaAtual = null;
-      _atualizarFaixaTicker(null);
-      if(musicaTab === 'ouvindo') trocarMusicaTab('playlist');
-      else renderOuvindo();
+      renderOuvindo();
       return;
     }
     const musicaMudou = !_musicaAtual || _musicaAtual.faixa !== d.faixa || _musicaAtual.artista !== d.artista;
     musicaTocando = true;
     _musicaAtual = d;
-    if(musicaTab === null) trocarMusicaTab('ouvindo');
     if(musicaTab === 'ouvindo'){
       if(musicaMudou) pintarOuvindo(d);
       else renderOuvindo();
     }
-    _atualizarFaixaTicker(d);
   } catch(e) {
     musicaTocando = false;
-    _atualizarFaixaTicker(null);
   }
 }
-
-/* Ticker antigo (não usado agora, mas mantido por segurança) */
-function _atualizarFaixaTicker(){ /* desativado */ }
 
 function setLivePulse(isLive){
   document.querySelectorAll('.live-indicator').forEach(el => el.classList.toggle('live', !!isLive));
@@ -468,7 +479,6 @@ function _executarMudarAba(nome, salvar){
   const section = $('sec-' + nome), button = $('btn-' + nome);
   if(section) section.classList.add('ativo');
   if(button) button.classList.add('on');
-  if(salvar) localStorage.setItem('abaAtiva', nome);
 
   if(nome !== 'admin' && _ultimaAba === 'admin'){
     try { localStorage.removeItem('admin:page'); } catch(e){}
@@ -1193,9 +1203,6 @@ function setupSugForm(){
 
   atualizarContador();
   atualizarEstadoBtn();
-
-  const donateCta = $('donateCtaSugestoes');
-  if(donateCta && CONFIG.donate) donateCta.href = CONFIG.donate;
 }
 
 async function enviarSugestao(){
@@ -1460,26 +1467,21 @@ window.addEventListener('DOMContentLoaded', async () => {
     try { localStorage.removeItem('abaAtiva'); } catch(e){}
   }
 
+  // 🔧 REGRA NOVA: só usa hash da URL pra decidir a aba inicial.
+  // Sem hash → sempre Home. Não usa mais localStorage.
   const hashRaw = (location.hash || '').replace(/^#/, '');
-  let abaInicial = null;
+  let abaInicial = 'inicio';
   if(!isPreview){
     if(hashRaw === 'admin' || hashRaw.startsWith('admin/')) abaInicial = 'admin';
     else if(hashRaw && ABAS_VALIDAS.includes(hashRaw)) abaInicial = hashRaw;
-    else abaInicial = localStorage.getItem('abaAtiva');
   }
-  if(!abaInicial || !document.getElementById('sec-' + abaInicial)) abaInicial = 'inicio';
+  if(!document.getElementById('sec-' + abaInicial)) abaInicial = 'inicio';
 
   _ultimaAba = null;
   _executarMudarAba(abaInicial, false);
 
   // Modo Foco persistente
-  try {
-    if(localStorage.getItem('focusMode') === '1') {
-      document.body.classList.add('focus-mode');
-      document.getElementById('focusModeBtn')?.classList.add('on');
-    }
-  } catch(e){}
-
+  restaurarFocusMode();
   const focusBtn = document.getElementById('focusModeBtn');
   if(focusBtn) focusBtn.addEventListener('click', toggleFocusMode);
 
@@ -1526,8 +1528,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupSugTabs();
   carregarUltimasIdeias();
 
-  musicaTab = 'playlist';
-  trocarMusicaTab('playlist');
+  // Música: aba padrão agora é "ouvindo"
+  musicaTab = 'ouvindo';
+  trocarMusicaTab('ouvindo');
 
   document.addEventListener('click', e => {
     const t = e.target.closest('.music-tab');
@@ -1622,7 +1625,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   verificarStatusTwitch();
   setInterval(verificarStatusTwitch, 60000);
   carregarOuvindoAgora();
-  setInterval(carregarOuvindoAgora, 30000);
+  setInterval(carregarOuvindoAgora, 15000);
   carregarBiblioteca();
   carregarVotosApi();
 

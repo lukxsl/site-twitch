@@ -216,17 +216,17 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
 .section-kicker{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--purple-2);margin-bottom:10px;padding:4px 10px;border-radius:99px;background:rgba(168,85,247,.1);border:1px solid var(--line)}
 
 /* ============================================================
-   BENTO GRID (HOME) — REFORMULADO
+   BENTO GRID (HOME) — SEM BURACOS
    ============================================================ */
 .bento{
   display:grid;
-  grid-template-columns:minmax(0,320px) minmax(0,1.4fr) minmax(0,1fr);
+  grid-template-columns:minmax(0,320px) minmax(0,1fr) minmax(0,340px);
   grid-template-areas:
     "profile player music"
     "profile player music"
-    "focus   spotify music"
-    "next    apoie    music"
-    "next    apoie    sub";
+    "focus   focus  music"
+    "next    apoie  music"
+    "next    apoie  sub";
   gap:14px;
   align-items:start;
 }
@@ -237,11 +237,11 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
 .proximo{grid-area:next}
 .apoie{grid-area:apoie}
 .sub-hero-box{grid-area:sub}
-.spotify-card{grid-area:spotify}
+.focus-chat{display:none}
 
 @media (min-width:1600px){
   .bento{
-    grid-template-columns:minmax(0,340px) minmax(0,1.4fr) minmax(0,1.05fr);
+    grid-template-columns:minmax(0,340px) minmax(0,1.4fr) minmax(0,360px);
   }
 }
 
@@ -251,10 +251,10 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
     grid-template-areas:
       "profile player"
       "profile player"
-      "focus   music"
-      "spotify music"
+      "focus   focus"
+      "music   music"
       "next    apoie"
-      "sub     apoie";
+      "next    sub";
   }
 }
 @media (max-width:960px){
@@ -265,7 +265,6 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
       "profile"
       "focus"
       "music"
-      "spotify"
       "next"
       "apoie"
       "sub";
@@ -307,7 +306,7 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
 }
 
 /* ============================================================
-   MODO FOCO
+   MODO FOCO (com chat)
    ============================================================ */
 body.focus-mode .hero-banner,
 body.focus-mode .stats-strip,
@@ -318,16 +317,60 @@ body.focus-mode .proximo,
 body.focus-mode .music-box,
 body.focus-mode .apoie,
 body.focus-mode .sub-hero-box,
-body.focus-mode .apoio-home,
 body.focus-mode footer,
 body.focus-mode .section-header{display:none !important}
 
 body.focus-mode .page-section{padding-top:20px}
 
 body.focus-mode .bento{
-  display:block !important;
+  display:grid !important;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  grid-template-areas: "player chat";
+  gap: 14px;
+  min-height: calc(100vh - 130px);
+  align-items: stretch;
 }
 body.focus-mode .twitch-player-box{
-  max-width:1100px;
-  margin:0 auto;
+  grid-area: player;
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  margin: 0;
+}
+body.focus-mode .twitch-player-box .twitch-player{
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+body.focus-mode .twitch-player-box .twitch-player iframe,
+body.focus-mode .twitch-player-box .twitch-player .offline-panel{
+  height: 100%;
+}
+body.focus-mode .focus-chat{
+  display: flex;
+  grid-area: chat;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), var(--sh), var(--sh-floor);
+}
+body.focus-mode .focus-chat iframe{
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  border: 0;
+  display: block;
+}
+
+@media (max-width:960px){
+  body.focus-mode .bento{
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "player"
+      "chat";
+    min-height: auto;
+  }
+  body.focus-mode .focus-chat iframe{ min-height: 400px; }
 }

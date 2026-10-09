@@ -1,6 +1,6 @@
 // Vercel serverless: /api/lastfm.js
 // GET → ouvindo agora + cadeia de capas (Spotify → Last.fm → MusicBrainz → iTunes → Deezer)
-// Cache Redis de 60s para economizar chamadas de API.
+// Cache Redis de 10s (quase tempo real).
 
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
@@ -11,7 +11,7 @@ const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN_R = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
 const CACHE_KEY = 'cache:musica';
-const CACHE_TTL = 60;
+const CACHE_TTL = 10;
 const SPOTIFY_TOKEN_KEY = 'cache:spotify_token';
 
 function safeStr(v, max = 200) {
