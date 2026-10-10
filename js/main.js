@@ -1,5 +1,5 @@
 /* ============================================================
-   CONFIGURAÇÕES GLOBAIS
+   CONFIG GLOBAL
    ============================================================ */
 const CONFIG = {
   subs: null,
@@ -70,7 +70,6 @@ let modo = 'jogos', filtro = 'Todos';
 let CONFIG_GERAL = {
   aviso: null, donate: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, top3: [], hall: [], votosFechamento: null
 };
-let musicaTab = 'ouvindo';
 let musicaTocando = false;
 let revealObs = null;
 let sugTipoAtual = 'Sugestão / ideia';
@@ -84,7 +83,7 @@ let HALL_ABA = 'gift';
 let HALL_TIMER = null;
 
 /* ============================================================
-   HELPERS GERAIS
+   HELPERS
    ============================================================ */
 const nivel = cargo => NIVEIS[cargo] || 0;
 
@@ -100,37 +99,19 @@ function plural(n, singular, plural){
 }
 
 /* ============================================================
-   LAZY LOAD — ADMIN FILES
+   LAZY LOAD — ADMIN
    ============================================================ */
 function garantirAdminCarregado(){
   if(window.__adminCarregado) return Promise.resolve();
   if(window.__adminCarregando) return window.__adminCarregando;
-
   window.__adminCarregando = new Promise((resolve, reject) => {
-    const files = [
-      'js/admin/admin.js',
-      'js/admin/dashboard.js',
-      'js/admin/forms.js',
-      'js/admin/tables.js'
-    ];
+    const files = ['js/admin/admin.js','js/admin/dashboard.js','js/admin/forms.js','js/admin/tables.js'];
     let loaded = 0;
-
     files.forEach(src => {
       const s = document.createElement('script');
-      s.src = src;
-      s.async = false;
-      s.onload = () => {
-        loaded++;
-        if(loaded === files.length){
-          window.__adminCarregado = true;
-          window.__adminCarregando = null;
-          resolve();
-        }
-      };
-      s.onerror = () => {
-        window.__adminCarregando = null;
-        reject(new Error(`Falha ao carregar ${src}`));
-      };
+      s.src = src; s.async = false;
+      s.onload = () => { loaded++; if(loaded === files.length){ window.__adminCarregado = true; window.__adminCarregando = null; resolve(); } };
+      s.onerror = () => { window.__adminCarregando = null; reject(new Error(`Falha: ${src}`)); };
       document.head.appendChild(s);
     });
   });
@@ -147,10 +128,7 @@ function toast(msg, tipo = 'ok'){
   el.textContent = msg;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('toast-on'));
-  setTimeout(() => {
-    el.classList.remove('toast-on');
-    setTimeout(() => el.remove(), 400);
-  }, 4600);
+  setTimeout(() => { el.classList.remove('toast-on'); setTimeout(() => el.remove(), 400); }, 4600);
 }
 window.toast = toast;
 
@@ -179,7 +157,7 @@ function confirmar(titulo = 'Confirmar?', texto = 'Tem certeza?', icone = '⚠�
 window.confirmar = confirmar;
 
 /* ============================================================
-   ANIMAÇÕES & RENDER BÁSICO
+   ANIMAÇÕES
    ============================================================ */
 function animarNumero(el, alvo, duracao = 1200){
   if(!el) return;
@@ -254,23 +232,6 @@ function renderSiteUpdate(){
   el.textContent = iso ? fmtDataHora(iso) : (CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR'));
 }
 
-function renderTop3(){
-  const box = $('top3Lista'); if(!box) return;
-  const lista = Array.isArray(CONFIG_GERAL.top3) ? CONFIG_GERAL.top3.slice(0,3) : [];
-  if(!lista.length){
-    box.innerHTML = `<p class="ap-vazio">O pódio ainda está vazio. 💜</p>`;
-    return;
-  }
-  const medalhas = ['🥇','🥈','🥉'];
-  box.innerHTML = lista.map((p, i) => `
-    <div class="top3-card">
-      <span class="t3-medal">${medalhas[i]}</span>
-      <span class="t3-name">${esc(p.nome || '—')}</span>
-      ${p.valor ? `<span class="t3-val">${esc(p.valor)}</span>` : ''}
-    </div>
-  `).join('');
-}
-
 function renderRecado(){
   const noteEl = $('playerNoteText');
   if(!noteEl) return;
@@ -280,7 +241,6 @@ function renderRecado(){
     noteEl.innerHTML = `💌 Recado da Soso: <strong>${esc(recado)}</strong>`;
   } else {
     noteEl.classList.remove('recado');
-    // Se não estiver assistindo VOD, mostra texto padrão
     if(!assistindoVod){
       noteEl.textContent = ultVivo ? 'Transmitindo ao vivo agora 💜' : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
     }
@@ -288,36 +248,11 @@ function renderRecado(){
 }
 
 function renderHomeExtras(){
-  renderTop3();
   renderRecado();
 }
 
 /* ============================================================
-   CARD TABS (Apoie)
-   ============================================================ */
-function setupCardTabs(){
-  document.querySelectorAll('.card-tabs').forEach(tabs => {
-    if(tabs.dataset.bound) return;
-    tabs.dataset.bound = '1';
-    tabs.addEventListener('click', e => {
-      const btn = e.target.closest('.card-tab');
-      if(!btn) return;
-      const card = tabs.closest('.card');
-      if(!card) return;
-      card.querySelectorAll('.card-tab').forEach(t => t.classList.toggle('on', t === btn));
-      card.querySelectorAll('.card-tab-content').forEach(c =>
-        c.classList.toggle('on', c.dataset.content === btn.dataset.tab)
-      );
-      // Se abrir a aba Hall, garante que carregou
-      if(btn.dataset.tab === 'hall' && !HALL_DADOS){
-        carregarHall();
-      }
-    });
-  });
-}
-
-/* ============================================================
-   SUB SHORTCUTS (Ver Emotes no header)
+   SUB SHORTCUTS
    ============================================================ */
 function setupSubShortcuts(){
   const wrap = document.querySelector('.sub-shortcuts');
@@ -332,7 +267,6 @@ function setupSubShortcuts(){
     card.querySelectorAll('.sub-shortcut-content').forEach(c =>
       c.classList.toggle('on', c.dataset.subContent === btn.dataset.subTab)
     );
-    // Highlight dos emotes
     if(btn.dataset.subTab === 'emotes'){
       const grid = document.getElementById('emotesGrid');
       if(grid){
@@ -344,7 +278,7 @@ function setupSubShortcuts(){
 }
 
 /* ============================================================
-   HALL DA FAMA — 3 abas + polling do "atualizado há X min"
+   HALL DA FAMA
    ============================================================ */
 async function carregarHall(){
   const lista = $('hallLista'); if(!lista) return;
@@ -354,7 +288,7 @@ async function carregarHall(){
     HALL_DADOS = d;
     renderHall();
   } catch(e){
-    lista.innerHTML = `<div class="hall-empty">✨ Em breve…</div>`;
+    lista.innerHTML = `<div class="hall-empty">✨ Em breve...<small>Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small></div>`;
   }
 }
 
@@ -364,14 +298,12 @@ function renderHall(){
   if(!lista) return;
   const d = HALL_DADOS;
 
-  // Estado vazio (sem token ou sem dados)
   if(!d || d.vazio){
-    lista.innerHTML = `<div class="hall-empty">✨ Em breve...<br><small style="opacity:.8">Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty">✨ Em breve...<small>Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small></div>`;
     if(updated) updated.style.display = 'none';
     return;
   }
 
-  // Escolhe a aba
   const itens = HALL_ABA === 'gift' ? (d.gift || [])
               : HALL_ABA === 'fieis' ? (d.fieis || [])
               : (d.doadores || []);
@@ -397,7 +329,6 @@ function renderHall(){
     }).join('');
   }
 
-  // Atualiza "atualizado há X min"
   if(updated && d.updatedAt){
     atualizarTextoHallUpdated(d.updatedAt);
     updated.style.display = '';
@@ -435,7 +366,6 @@ function setupHallTabs(){
 function iniciarHall(){
   setupHallTabs();
   carregarHall();
-  // Atualiza o "há X min" a cada 60s
   if(HALL_TIMER) clearInterval(HALL_TIMER);
   HALL_TIMER = setInterval(() => {
     if(HALL_DADOS && HALL_DADOS.updatedAt){
@@ -445,7 +375,7 @@ function iniciarHall(){
 }
 
 /* ============================================================
-   MODO FOCO (com chat sempre carregado)
+   MODO FOCO
    ============================================================ */
 function toggleFocusMode(){
   const ativo = document.body.classList.toggle('focus-mode');
@@ -466,32 +396,8 @@ function restaurarFocusMode(){
 }
 
 /* ============================================================
-   MÚSICA
+   MÚSICA (Compacto — disco opção B)
    ============================================================ */
-function renderPlaylist(){
-  const embed = $('musicEmbed'); if(!embed) return;
-  const url = CONFIG.spotifyPlaylist;
-  if(!url){ embed.innerHTML = `<p class="music-placeholder">🎧 Playlist em breve — a Soso está montando!</p>`; return; }
-  const m = url.match(/playlist\/([a-zA-Z0-9]+)/);
-  if(!m){ embed.innerHTML = `<p class="music-placeholder">🎧 Link da playlist inválido.</p>`; return; }
-  embed.innerHTML = `<iframe src="https://open.spotify.com/embed/playlist/${m[1]}?theme=0"
-    width="100%" height="380" frameborder="0" allowtransparency="true"
-    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-    loading="lazy" title="Playlist do Spotify"></iframe>`;
-}
-
-function trocarMusicaTab(tab){
-  musicaTab = tab;
-  document.querySelectorAll('.music-tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
-  const painelPlaylist = $('musicPainelPlaylist');
-  const painelOuvindo = $('musicPainelOuvindo');
-  if(painelPlaylist) painelPlaylist.classList.toggle('on', tab === 'playlist');
-  if(painelOuvindo) painelOuvindo.classList.toggle('on', tab === 'ouvindo');
-  if(tab === 'playlist') renderPlaylist();
-  if(tab === 'ouvindo') renderOuvindo();
-}
-window.trocarMusicaTab = trocarMusicaTab;
-
 function _iniciaisFaixa(nome){
   if(!nome) return '♪';
   const palavras = String(nome).trim().split(/\s+/).filter(Boolean);
@@ -517,23 +423,28 @@ function renderOuvindo(){
   const d = _musicaAtual || {};
   const iniciais = _iniciaisFaixa(d.faixa);
   const pct = (d.duracao && d.progresso) ? Math.min(100, (d.progresso / d.duracao) * 100) : 0;
+  const urlAbrir = d.url || '#';
+  const target = d.url ? '_blank' : '_self';
+
+  const capaHTML = d.capa
+    ? `<img src="${esc(d.capa)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'disco-fallback',textContent:'${iniciais}'}))">`
+    : `<div class="disco-fallback">${iniciais}</div>`;
 
   painel.innerHTML = `
     <div class="ouvindo-wrap" id="ouvindoWrap">
-      <div class="vinyl" id="ouvindoVinyl">
-        ${d.capa ? `<img src="${esc(d.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'vinyl-fallback',textContent:'${iniciais}'}))">` : `<div class="vinyl-fallback">${iniciais}</div>`}
-        <div class="vinyl-center"></div>
-      </div>
+      <a class="disco" href="${esc(urlAbrir)}" target="${target}" rel="noopener" title="${d.url ? 'Abrir no Spotify' : d.faixa || ''}">
+        <div class="disco-inner">${capaHTML}</div>
+      </a>
       <div class="ouvindo-info">
         <b id="ouvindoFaixa">${esc(d.faixa || '—')}</b>
         <span id="ouvindoArtista">${esc(d.artista || '')}${d.album ? ' · ' + esc(d.album) : ''}</span>
         ${d.duracao ? `
           <div class="ouvindo-progress">
-            <i id="ouvindoProgress" style="width:${pct}%"></i>
+            <i style="width:${pct}%"></i>
           </div>
           <div class="ouvindo-times">
-            <span id="ouvindoAtual">${_fmtMs(d.progresso || 0)}</span>
-            <span id="ouvindoTotal">${_fmtMs(d.duracao)}</span>
+            <span>${_fmtMs(d.progresso || 0)}</span>
+            <span>${_fmtMs(d.duracao)}</span>
           </div>
         ` : ''}
         ${d.url ? `<a class="ouvindo-link" href="${esc(d.url)}" target="_blank" rel="noopener">▶ Ouvir no Spotify</a>` : ''}
@@ -567,14 +478,31 @@ async function carregarOuvindoAgora(){
     const musicaMudou = !_musicaAtual || _musicaAtual.faixa !== d.faixa || _musicaAtual.artista !== d.artista;
     musicaTocando = true;
     _musicaAtual = d;
-    if(musicaTab === 'ouvindo'){
-      if(musicaMudou) pintarOuvindo(d);
-      else renderOuvindo();
-    }
-  } catch(e) {
-    musicaTocando = false;
-  }
+    if(musicaMudou) pintarOuvindo(d);
+    else renderOuvindo();
+  } catch(e) { musicaTocando = false; }
 }
+
+function renderPlaylistComunidade(){
+  const embed = $('musicEmbedComunidade'); if(!embed) return;
+  const url = CONFIG.spotifyPlaylist;
+  if(!url){ embed.innerHTML = `<p class="music-placeholder">🎧 Playlist em breve!</p>`; return; }
+  const m = url.match(/playlist\/([a-zA-Z0-9]+)/);
+  if(!m){ embed.innerHTML = `<p class="music-placeholder">🎧 Link inválido</p>`; return; }
+  embed.innerHTML = `<iframe src="https://open.spotify.com/embed/playlist/${m[1]}?theme=0"
+    width="100%" height="380" frameborder="0" allowtransparency="true"
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+    loading="lazy" title="Playlist do Spotify"></iframe>`;
+}
+
+function irParaPlaylist(){
+  mudarAba('comunidade');
+  setTimeout(() => {
+    const tab = document.querySelector('.sub-tab[data-tab="playlist"]');
+    if(tab) tab.click();
+  }, 150);
+}
+window.irParaPlaylist = irParaPlaylist;
 
 function setLivePulse(isLive){
   document.querySelectorAll('.live-indicator').forEach(el => el.classList.toggle('live', !!isLive));
@@ -588,12 +516,10 @@ function setLivePulse(isLive){
 let _ultimaAba = null;
 let _mudarAbaTimer = null;
 let _mudarAbaPendente = null;
-
 const ABAS_VALIDAS = ['inicio','tierlist','comunidade','setup','sugestoes','admin'];
 
 function _executarMudarAba(nome, salvar){
   if(!ABAS_VALIDAS.includes(nome)) nome = 'inicio';
-
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
   document.querySelectorAll('nav ul button').forEach(b => b.classList.remove('on'));
   const section = $('sec-' + nome), button = $('btn-' + nome);
@@ -625,18 +551,11 @@ function _executarMudarAba(nome, salvar){
 
   if(nome === 'admin'){
     garantirAdminCarregado()
-      .then(() => {
-        if(typeof carregarAdmin === 'function') carregarAdmin();
-      })
+      .then(() => { if(typeof carregarAdmin === 'function') carregarAdmin(); })
       .catch(err => {
-        console.error('Erro ao carregar admin:', err);
+        console.error('Erro admin:', err);
         const area = $('adminArea');
-        if(area){
-          area.innerHTML = `<div class="admin-vazio">
-            <b>Erro ao carregar o painel admin</b>
-            Verifique sua conexão e recarregue a página.
-          </div>`;
-        }
+        if(area) area.innerHTML = `<div class="admin-vazio"><b>Erro ao carregar</b>Recarregue a página.</div>`;
       });
   }
 
@@ -672,6 +591,7 @@ function setupComunidadeTabs(){
     document.querySelectorAll('#sec-comunidade .sub-panel').forEach(p => {
       p.classList.toggle('on', p.dataset.panel === tab);
     });
+    if(tab === 'playlist') renderPlaylistComunidade();
   };
   const salva = localStorage.getItem('comunidade:tab') || 'discord';
   ativarTab(salva);
@@ -698,7 +618,6 @@ function renderComandos(filtroTxt = ''){
    TIER LIST
    ============================================================ */
 const TIERS = ['S','A','B','C'];
-
 const JOGOS_FALLBACK = [
   { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando', horas:50, nota:8,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
@@ -711,7 +630,7 @@ const JOGOS_FALLBACK = [
 const FILMES_FALLBACK = [
   { id:'interestelar', nome:'Interestelar', tier:'S', status:'Assistido', nota:9, duracao:169, ano:2014,
     capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario:'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas.' }
+    comentario:'As reservas naturais da Terra estão chegando ao fim.' }
 ];
 
 async function carregarBiblioteca(){
@@ -720,10 +639,7 @@ async function carregarBiblioteca(){
     const d = r.ok ? await r.json() : {};
     JOGOS = (Array.isArray(d.jogos) && d.jogos.length) ? d.jogos : JOGOS_FALLBACK;
     FILMES = (Array.isArray(d.filmes) && d.filmes.length) ? d.filmes : FILMES_FALLBACK;
-  }catch(e){
-    JOGOS = JOGOS_FALLBACK;
-    FILMES = FILMES_FALLBACK;
-  }
+  }catch(e){ JOGOS = JOGOS_FALLBACK; FILMES = FILMES_FALLBACK; }
   desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
 }
 window.carregarBiblioteca = carregarBiblioteca;
@@ -734,7 +650,7 @@ const MODOS = {
     status:['Todos','Jogando','Zerado','Dropado','Na fila'],
     feito:'Zerado', plural:'jogos', hrs:'horas jogadas', hl:'horas jogadas',
     l4:'jogos zerados', titulo:'Tier List de Jogos',
-    sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.',
+    sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior.',
     busca:'Buscar jogo...', vazio:'Nenhum jogo aqui'
   },
   filmes: {
@@ -742,7 +658,7 @@ const MODOS = {
     status:['Todos','Assistindo','Assistido','Na fila'],
     feito:'Assistido', plural:'filmes', hrs:'duração total', hl:'duração',
     l4:'filmes assistidos', titulo:'Tier List de Filmes',
-    sub:'Tudo o que eu já assisti ou pretendo assistir, do melhor ao pior. Clique em um filme para ver os detalhes.',
+    sub:'Tudo o que eu já assisti ou pretendo assistir.',
     busca:'Buscar filme...', vazio:'Nenhum filme aqui'
   }
 };
@@ -803,11 +719,9 @@ function atualizarFoco(game, aoVivo){
   $('focoBar').style.display = pr ? '' : 'none';
   if(pr){ $('focoPct').textContent = j.progresso + '%'; $('focoBarI').style.width = j.progresso + '%'; }
 
-  // Linha do "última live / ao vivo há Xh"
   const v = vodAtual;
   let linhaTempo = '';
   if(aoVivo && window.__uptimeLiveSeg && window.__uptimeLiveTs){
-    // recalcula uptime desde o último fetch
     const passou = Math.floor((Date.now() - window.__uptimeLiveTs) / 1000);
     const total = window.__uptimeLiveSeg + passou;
     const fmt = _fmtUptime(total);
@@ -1014,7 +928,7 @@ function renderLogin(){
       </div>`;
   } else {
     area.innerHTML = `
-      <a class="nav-user-deslogado" href="/api/auth?action=login" title="Entrar com Discord para votar">
+      <a class="nav-user-deslogado" href="/api/auth?action=login" title="Entrar com Discord">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
         Entrar
       </a>`;
@@ -1036,10 +950,7 @@ window.sair = sair;
    VOTAÇÃO
    ============================================================ */
 const VOTOS_VISTOS_KEY = 'votos:itensVistos';
-function getVotosVistos(){
-  try { return JSON.parse(localStorage.getItem(VOTOS_VISTOS_KEY) || '[]'); }
-  catch { return []; }
-}
+function getVotosVistos(){ try { return JSON.parse(localStorage.getItem(VOTOS_VISTOS_KEY) || '[]'); } catch { return []; } }
 function marcarVotoVisto(id){
   const atuais = getVotosVistos();
   if(!atuais.includes(id)){
@@ -1121,7 +1032,7 @@ function renderVotacao(){
   if(!VOTOS_DADOS.length){
     if(infoTop) infoTop.style.display = 'none';
     destBox.innerHTML = '';
-    listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível no momento' : 'Carregando votação…'}</b>${votoStatus === 'erro' ? ' Tente de novo em instantes.' : ''}</div>`;
+    listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível' : 'Carregando votação…'}</b></div>`;
     return;
   }
 
@@ -1141,20 +1052,13 @@ function renderVotacao(){
   if(statVotos) statVotos.textContent = total;
   if(lblVotos) lblVotos.textContent = plural(total, 'voto', 'votos');
   if(statLider){
-    if(total === 0){
-      statLider.textContent = '—';
-      statLider.parentElement.style.display = 'none';
-    } else {
-      statLider.parentElement.style.display = '';
-      statLider.textContent = 'líder com ' + pct(ord[0].votos) + '%';
-    }
+    if(total === 0){ statLider.textContent = '—'; statLider.parentElement.style.display = 'none'; }
+    else { statLider.parentElement.style.display = ''; statLider.textContent = 'líder com ' + pct(ord[0].votos) + '%'; }
   }
 
   const btn = (it) => {
     const meu = meuVoto === it.id;
-    if(fechada){
-      return `<button class="btn ghost" disabled>Encerrada</button>`;
-    }
+    if(fechada) return `<button class="btn ghost" disabled>Encerrada</button>`;
     if(meu) return `<button class="btn ghost" disabled>Votado ✓</button>`;
     return `<button class="btn" onclick="votar('${it.id}', event)">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
   };
@@ -1165,12 +1069,8 @@ function renderVotacao(){
     let vantagemTxt = '';
     if(segundo && segundo.votos > 0){
       const diff = l.votos - segundo.votos;
-      vantagemTxt = diff === 0
-        ? ' · Empatado com o 2º'
-        : ` · ${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
-    } else if(l.votos > 1){
-      vantagemTxt = ' · Unanimidade';
-    }
+      vantagemTxt = diff === 0 ? ' · Empatado com o 2º' : ` · ${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
+    } else if(l.votos > 1){ vantagemTxt = ' · Unanimidade'; }
 
     destBox.innerHTML = `
       <div class="destaque ${fechada ? 'fechada' : ''}">
@@ -1223,9 +1123,7 @@ function renderVotacao(){
           <span class="vt-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
         </div>
         <div class="vt-bar-wrap">
-          <div class="vt-bar">
-            <i style="width:${votos > 0 ? Math.max(p, 8) : 0}%"></i>
-          </div>
+          <div class="vt-bar"><i style="width:${votos > 0 ? Math.max(p, 8) : 0}%"></i></div>
         </div>
         ${btn(it)}
       </div>`;
@@ -1239,8 +1137,7 @@ async function votar(id, event){
   if(card) card.classList.add('voting');
   try{
     const r = await fetch('/api/votos', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+      method:'POST', headers:{ 'Content-Type':'application/json' },
       body:JSON.stringify({ id })
     });
     if(r.status === 401){ await checarLogin(); return; }
@@ -1249,40 +1146,29 @@ async function votar(id, event){
       toast(d.error || 'Você foi banido de votar', 'erro');
       return;
     }
-    if(r.ok){
-      aplicarVotos(await r.json());
-      toast('Voto registrado! 💜', 'ok');
-    }
+    if(r.ok){ aplicarVotos(await r.json()); toast('Voto registrado! 💜', 'ok'); }
   }catch(e){}
   renderVotacao();
 }
 window.votar = votar;
 
 /* ============================================================
-   SUGESTÕES — TABS
+   SUGESTÕES
    ============================================================ */
 function sugTabIrPara(tab){
   try { localStorage.setItem('sug:tab', tab); } catch(e){}
-  document.querySelectorAll('.sug-tab').forEach(t =>
-    t.classList.toggle('on', t.dataset.tab === tab)
-  );
-  document.querySelectorAll('.sug-panel').forEach(p =>
-    p.classList.toggle('on', p.dataset.panel === tab)
-  );
+  document.querySelectorAll('.sug-tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+  document.querySelectorAll('.sug-panel').forEach(p => p.classList.toggle('on', p.dataset.panel === tab));
 }
 window.sugTabIrPara = sugTabIrPara;
 
 function setupSugTabs(){
-  const wrap = $('sugTabs'); if(!wrap) return;
-  if(wrap.dataset.bound) return;
+  const wrap = $('sugTabs'); if(!wrap || wrap.dataset.bound) return;
   wrap.dataset.bound = '1';
-
   wrap.addEventListener('click', e => {
-    const b = e.target.closest('.sug-tab');
-    if(!b) return;
+    const b = e.target.closest('.sug-tab'); if(!b) return;
     sugTabIrPara(b.dataset.tab);
   });
-
   const btnIr = $('sugBtnIrSugerir');
   if(btnIr){
     btnIr.addEventListener('click', () => {
@@ -1290,20 +1176,15 @@ function setupSugTabs(){
       setTimeout(() => {
         const chip = document.querySelector('.st-chip[data-tipo="Sugestão de jogo"]');
         if(chip) chip.click();
-        const ta = $('sugTexto');
-        if(ta) ta.focus();
+        const ta = $('sugTexto'); if(ta) ta.focus();
       }, 180);
     });
   }
-
   const salva = localStorage.getItem('sug:tab') || 'votar';
   sugTabIrPara(salva);
 }
 window.setupSugTabs = setupSugTabs;
 
-/* ============================================================
-   SUGESTÕES — FORM
-   ============================================================ */
 function setupSugForm(){
   const chips = document.querySelectorAll('#sugTipoChips .st-chip');
   chips.forEach(chip => {
@@ -1311,8 +1192,7 @@ function setupSugForm(){
       chips.forEach(c => c.classList.remove('on'));
       chip.classList.add('on');
       sugTipoAtual = chip.dataset.tipo;
-      const sel = $('sugTipo');
-      if(sel) sel.value = sugTipoAtual;
+      const sel = $('sugTipo'); if(sel) sel.value = sugTipoAtual;
     });
   });
 
@@ -1328,23 +1208,13 @@ function setupSugForm(){
     if(n >= SUG_MAX_CHARS) counter.classList.add('danger');
     else if(n >= Math.floor(SUG_MAX_CHARS * 0.9)) counter.classList.add('warn');
   }
-
   function atualizarEstadoBtn(){
     if(!btn) return;
     const txt = (ta?.value || '').trim();
     btn.disabled = txt.length < 3;
   }
-
-  if(ta){
-    ta.addEventListener('input', () => {
-      ta.classList.remove('erro');
-      atualizarContador();
-      atualizarEstadoBtn();
-    });
-  }
-
-  atualizarContador();
-  atualizarEstadoBtn();
+  if(ta){ ta.addEventListener('input', () => { ta.classList.remove('erro'); atualizarContador(); atualizarEstadoBtn(); }); }
+  atualizarContador(); atualizarEstadoBtn();
 }
 
 async function enviarSugestao(){
@@ -1355,16 +1225,12 @@ async function enviarSugestao(){
   const success = $('sugSuccess');
 
   if($('sugSite').value) return;
-
   if(!texto || texto.length < 3){
     $('sugTexto').classList.add('erro');
     toast('Escreve algo antes de enviar! 💜', 'warn');
     return;
   }
-  if(texto.length > SUG_MAX_CHARS){
-    toast(`Mensagem muito longa! Máx ${SUG_MAX_CHARS} caracteres.`, 'warn');
-    return;
-  }
+  if(texto.length > SUG_MAX_CHARS){ toast(`Máx ${SUG_MAX_CHARS} caracteres.`, 'warn'); return; }
 
   btn.disabled = true;
   try{
@@ -1375,35 +1241,19 @@ async function enviarSugestao(){
     let dados = null;
     try { dados = await res.json(); } catch(e){}
     if(res.ok){
-      $('sugNome').value = '';
-      $('sugTexto').value = '';
+      $('sugNome').value = ''; $('sugTexto').value = '';
       const counter = $('sugCounter');
       if(counter){ counter.textContent = `0 / ${SUG_MAX_CHARS}`; counter.classList.remove('warn','danger'); }
-
-      if(success){
-        success.hidden = false;
-        setTimeout(() => { success.hidden = true; }, 6000);
-      }
+      if(success){ success.hidden = false; setTimeout(() => { success.hidden = true; }, 6000); }
       toast('Ideia enviada! Obrigado 💜', 'ok');
       carregarUltimasIdeias();
     } else if(res.status === 429){ toast('Calma! Aguarde alguns segundos.', 'warn'); }
-    else if(res.status === 500 && dados && dados.error === 'Webhook não configurado'){ toast('⚠️ Webhook do Discord não configurado.', 'erro'); }
-    else if(res.status === 502){ toast('⚠️ Discord recusou o envio.', 'erro'); }
     else { toast('Não consegui enviar agora.', 'erro'); }
-  }catch(e){
-    toast('Sem conexão com o servidor.', 'erro');
-  }finally{
-    setTimeout(() => {
-      const txt = ($('sugTexto')?.value || '').trim();
-      if(btn) btn.disabled = txt.length < 3;
-    }, 100);
-  }
+  }catch(e){ toast('Sem conexão com o servidor.', 'erro'); }
+  finally { setTimeout(() => { const txt = ($('sugTexto')?.value || '').trim(); if(btn) btn.disabled = txt.length < 3; }, 100); }
 }
 window.enviarSugestao = enviarSugestao;
 
-/* ============================================================
-   SUGESTÕES — LISTA PÚBLICA
-   ============================================================ */
 function statusInfoSug(item){
   const st = item.status || 'nova';
   const base = STATUS_SUG[st] || STATUS_SUG.nova;
@@ -1434,10 +1284,7 @@ function renderSirFiltros(itens){
     { id: 'feedback', label: '💬' },
     { id: 'bug', label: '🐛' }
   ].filter(o => o.id === 'all' || tipos[o.id]);
-
-  wrap.innerHTML = opts.map(o =>
-    `<button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}">${o.label}</button>`
-  ).join('');
+  wrap.innerHTML = opts.map(o => `<button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}">${o.label}</button>`).join('');
 }
 
 async function carregarUltimasIdeias(){
@@ -1448,29 +1295,20 @@ async function carregarUltimasIdeias(){
     const d = await r.json();
     const itens = Array.isArray(d.itens) ? d.itens : [];
     SIR_ITENS_CACHE = itens;
-
     renderSirFiltros(itens);
-
     if(!itens.length){
-      lista.innerHTML = `
-        <div class="sir-empty">
-          <span>✨</span>
-          <small>Nenhuma ideia ainda. Seja a primeira 💜</small>
-        </div>`;
+      lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhuma ideia ainda. Seja a primeira 💜</small></div>`;
       return;
     }
-
     const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
     if(!filtrados.length){
       lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada nesse filtro</small></div>`;
       return;
     }
-
     lista.innerHTML = filtrados.slice(0, 20).map(i => {
       const st = statusInfoSug(i);
       const ti = tipoInfoSug(i.tipo);
-      const motivoHTML = (i.status === 'recusada' && i.motivo)
-        ? `<div class="sir-motivo">${esc(i.motivo)}</div>` : '';
+      const motivoHTML = (i.status === 'recusada' && i.motivo) ? `<div class="sir-motivo">${esc(i.motivo)}</div>` : '';
       return `
         <div class="sir-item" title="${esc(st.desc || '')}">
           <span class="sir-ic">${ti.ic}</span>
@@ -1491,8 +1329,7 @@ async function carregarUltimasIdeias(){
   }
 }
 function setupSirFiltros(){
-  const wrap = $('sirFiltros'); if(!wrap) return;
-  if(wrap.dataset.bound) return;
+  const wrap = $('sirFiltros'); if(!wrap || wrap.dataset.bound) return;
   wrap.dataset.bound = '1';
   wrap.addEventListener('click', e => {
     const b = e.target.closest('.sir-chip'); if(!b) return;
@@ -1508,7 +1345,7 @@ function setupSirFiltros(){
 async function carregarConfigPublica(){
   try{
     const r = await fetch('/api/config', { cache: 'no-store' });
-    if(!r.ok){ console.warn('[config] HTTP', r.status); return; }
+    if(!r.ok) return;
     const d = await r.json();
     if(d.aviso){
       Object.assign(AVISO, d.aviso);
@@ -1525,7 +1362,7 @@ async function carregarConfigPublica(){
 window.carregarConfigPublica = carregarConfigPublica;
 
 /* ============================================================
-   REVEAL + PARALLAX + BURGER + SCROLL DO BANNER
+   REVEAL + PARALLAX + BURGER + FLOATING LIVE
    ============================================================ */
 function setupReveal(){
   revealObs = new IntersectionObserver((entries) => {
@@ -1542,13 +1379,11 @@ function setupRoomParallax(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const layers = room.querySelectorAll('[data-depth]');
   if(!layers.length) return;
-
   let mx = 0, my = 0, cx = 0, cy = 0;
   window.addEventListener('mousemove', (e) => {
     mx = (e.clientX / window.innerWidth - 0.5) * 2;
     my = (e.clientY / window.innerHeight - 0.5) * 2;
   }, { passive: true });
-
   (function tick(){
     cx += (mx - cx) * 0.06;
     cy += (my - cy) * 0.06;
@@ -1593,7 +1428,6 @@ function setupFloatingLive(){
     if(r.bottom < 100) btn.classList.add('show');
     else btn.classList.remove('show');
   }, { passive: true });
-
   btn.addEventListener('click', () => {
     const player = document.querySelector('.twitch-player-box');
     if(player) player.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1605,11 +1439,8 @@ function setupFloatingLive(){
    ============================================================ */
 window.addEventListener('DOMContentLoaded', async () => {
   const isPreview = location.search.includes('preview=1');
-  if(isPreview){
-    try { localStorage.removeItem('abaAtiva'); } catch(e){}
-  }
+  if(isPreview){ try { localStorage.removeItem('abaAtiva'); } catch(e){} }
 
-  // REGRA: só usa hash da URL pra decidir a aba inicial. Sem hash → Home.
   const hashRaw = (location.hash || '').replace(/^#/, '');
   let abaInicial = 'inicio';
   if(!isPreview){
@@ -1621,7 +1452,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   _ultimaAba = null;
   _executarMudarAba(abaInicial, false);
 
-  // Modo Foco persistente
   restaurarFocusMode();
   const focusBtn = document.getElementById('focusModeBtn');
   if(focusBtn) focusBtn.addEventListener('click', toggleFocusMode);
@@ -1629,33 +1459,20 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderAviso(); renderEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
-  setupCardTabs();
   setupSubShortcuts();
   iniciarHall();
 
-  // Setup
   setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
   document.querySelectorAll('.svt-btn').forEach(b => {
     const on = b.dataset.view === setupView;
     b.classList.toggle('on', on);
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
-  setupRender();
-  renderSonhos();
-  renderApoiadores();
-  setupSetup3D();
+  setupRender(); renderSonhos(); renderApoiadores(); setupSetup3D();
 
   const setupBuscaEl = $('setupBusca');
-  if(setupBuscaEl){
-    setupBuscaEl.addEventListener('input', e => {
-      setupBusca = e.target.value;
-      setupRender();
-    });
-  }
-
-  document.querySelectorAll('.svt-btn').forEach(b => {
-    b.addEventListener('click', () => setupSetView(b.dataset.view));
-  });
+  if(setupBuscaEl) setupBuscaEl.addEventListener('input', e => { setupBusca = e.target.value; setupRender(); });
+  document.querySelectorAll('.svt-btn').forEach(b => { b.addEventListener('click', () => setupSetView(b.dataset.view)); });
 
   const setupGridEl = $('setupGrid');
   if(setupGridEl){
@@ -1670,15 +1487,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupSirFiltros();
   setupSugTabs();
   carregarUltimasIdeias();
-
-  // Música: aba padrão é "ouvindo agora"
-  musicaTab = 'ouvindo';
-  trocarMusicaTab('ouvindo');
-
-  document.addEventListener('click', e => {
-    const t = e.target.closest('.music-tab');
-    if(t) trocarMusicaTab(t.dataset.tab);
-  });
 
   const buscaCmd = $('buscaCmd');
   if(buscaCmd){
@@ -1714,11 +1522,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   if(qEl) qEl.addEventListener('input', desenhar);
 
   try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
-
-  document.addEventListener('click', e => {
-    const b = e.target.closest('.si-btn[data-produto]');
-    if(b) abrirBuscaItem(b.dataset.produto);
-  });
 
   const tiersEl = $('tiers');
   if(tiersEl) tiersEl.addEventListener('click', e => {
@@ -1772,15 +1575,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   carregarBiblioteca();
   carregarVotosApi();
 
-  setInterval(() => {
-    if(VOTOS_FECHAMENTO) renderVotacao();
-  }, 60000);
+  setInterval(() => { if(VOTOS_FECHAMENTO) renderVotacao(); }, 60000);
 
-  // Atualiza "ao vivo há Xh" a cada 30s
+  // Recalcula uptime do foco a cada 30s
   setInterval(() => {
-    if(ultVivo && ultGame){
-      atualizarFoco(ultGame, ultVivo);
-    }
+    if(ultVivo && ultGame) atualizarFoco(ultGame, ultVivo);
   }, 30000);
 });
 

@@ -1,6 +1,6 @@
 // Vercel serverless: /api/lastfm.js
-// GET → ouvindo agora + cadeia de capas (Spotify → Last.fm → MusicBrainz → iTunes → Deezer)
-// Cache Redis de 10s para ficar quase em tempo real.
+// GET → ouvindo agora + cadeia de capas (oEmbed Spotify → iTunes → Deezer → MusicBrainz)
+// Cache Redis de 10s.
 
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
@@ -14,9 +14,7 @@ const CACHE_KEY = 'cache:musica';
 const CACHE_TTL = 10;
 const SPOTIFY_TOKEN_KEY = 'cache:spotify_token';
 
-function safeStr(v, max = 200) {
-  return String(v == null ? '' : v).trim().slice(0, max);
-}
+function safeStr(v, max = 200) { return String(v == null ? '' : v).trim().slice(0, max); }
 function safeUrl(v) {
   const s = safeStr(v, 500);
   if (!s) return null;
@@ -39,8 +37,7 @@ async function redis(cmds) {
 async function getCache() {
   try {
     const [raw] = await redis([['GET', CACHE_KEY]]);
-    if (!raw) return null;
-    return JSON.parse(raw);
+    return raw ? JSON.parse(raw) : null;
   } catch(e) { return null; }
 }
 
@@ -50,10 +47,9 @@ async function setCache(data) {
   } catch(e) {}
 }
 
-/* ===== SPOTIFY ===== */
+/* ===== SPOTIFY TOKEN (opcional) ===== */
 async function spotifyToken() {
   if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET || !SPOTIFY_REFRESH_TOKEN) return null;
-
   try {
     const [raw] = await redis([['GET', SPOTIFY_TOKEN_KEY]]);
     if (raw) {
@@ -61,7 +57,6 @@ async function spotifyToken() {
       if (cached.exp && cached.exp > Date.now()) return cached.token;
     }
   } catch(e) {}
-
   try {
     const basic = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64');
     const r = await fetch('https://accounts.spotify.com/api/token', {
@@ -139,7 +134,53 @@ async function lastfmNowPlaying() {
   } catch(e) { return null; }
 }
 
+/* ===== SPOTIFY oEMBED (capa em alta sem token) ===== */
+async function capaSpotifyOEmbed(url) {
+  if (!url) return null;
+  // Só tenta se for URL do Spotify
+  if (!/open\.spotify\.com\/track\//.test(url)) return null;
+  try {
+    const r = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return safeUrl(d?.thumbnail_url);
+  } catch(e) { return null; }
+}
+
 /* ===== FALLBACK DE CAPAS ===== */
+async function capaITunes(faixa, artista) {
+  try {
+    // Limpa sufixos comuns que atrapalham a busca
+    const limpo = (s) => String(s || '')
+      .replace(/\(.*?\)/g, '')
+      .replace(/\[.*?\]/g, '')
+      .replace(/- (Remaster(ed)?|Radio Edit|Live|Acoustic|Version).*/i, '')
+      .trim();
+    const term = encodeURIComponent(`${limpo(faixa)} ${limpo(artista)}`);
+    const r = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=1`);
+    const d = await r.json();
+    const url = d?.results?.[0]?.artworkUrl100;
+    return url ? url.replace('100x100bb', '600x600bb') : null;
+  } catch(e) { return null; }
+}
+
+async function capaDeezer(faixa, artista) {
+  try {
+    const limpo = (s) => String(s || '')
+      .replace(/\(.*?\)/g, '')
+      .replace(/\[.*?\]/g, '')
+      .trim();
+    const q = encodeURIComponent(`track:"${limpo(faixa)}" artist:"${limpo(artista)}"`);
+    const r = await fetch(`https://api.deezer.com/search?q=${q}&limit=1`, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    const d = await r.json();
+    const album = d?.data?.[0]?.album;
+    if (!album) return null;
+    return album.cover_xl || album.cover_big || album.cover_medium || null;
+  } catch(e) { return null; }
+}
+
 async function capaMusicBrainz(faixa, artista) {
   try {
     const q = encodeURIComponent(`recording:"${faixa}" AND artist:"${artista}"`);
@@ -154,34 +195,16 @@ async function capaMusicBrainz(faixa, artista) {
   } catch(e) { return null; }
 }
 
-async function capaITunes(faixa, artista) {
-  try {
-    const term = encodeURIComponent(`${faixa} ${artista}`);
-    const r = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=1`);
-    const d = await r.json();
-    const url = d?.results?.[0]?.artworkUrl100;
-    return url ? url.replace('100x100bb', '600x600bb') : null;
-  } catch(e) { return null; }
-}
-
-async function capaDeezer(faixa, artista) {
-  try {
-    const q = encodeURIComponent(`track:"${faixa}" artist:"${artista}"`);
-    const r = await fetch(`https://api.deezer.com/search?q=${q}&limit=1`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-    const d = await r.json();
-    const album = d?.data?.[0]?.album;
-    if (!album) return null;
-    return album.cover_xl || album.cover_big || album.cover_medium || null;
-  } catch(e) { return null; }
-}
-
-async function buscarCapa(faixa, artista) {
+async function buscarCapa(faixa, artista, urlLastfm) {
   if (!faixa) return null;
-  let capa = await capaMusicBrainz(faixa, artista);
+  // 1) Spotify oEmbed (só se a URL for do Spotify)
+  let capa = await capaSpotifyOEmbed(urlLastfm);
+  // 2) iTunes (mais confiável pra capa bonita)
   if (!capa) capa = await capaITunes(faixa, artista);
+  // 3) Deezer
   if (!capa) capa = await capaDeezer(faixa, artista);
+  // 4) MusicBrainz (último recurso)
+  if (!capa) capa = await capaMusicBrainz(faixa, artista);
   return capa;
 }
 
@@ -202,7 +225,7 @@ export default async function handler(req, res) {
       return res.status(200).json(vazio);
     }
 
-    if (!data.capa) data.capa = await buscarCapa(data.faixa, data.artista);
+    if (!data.capa) data.capa = await buscarCapa(data.faixa, data.artista, data.url);
 
     await setCache(data);
     return res.status(200).json(data);
