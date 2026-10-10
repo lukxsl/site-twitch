@@ -1,6 +1,6 @@
 // Vercel serverless: /api/lastfm.js
 // GET → ouvindo agora + cadeia de capas (Spotify → Last.fm → MusicBrainz → iTunes → Deezer)
-// Cache Redis de 10s (quase tempo real).
+// Cache Redis de 10s para ficar quase em tempo real.
 
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;

@@ -2,12 +2,18 @@
 // GET  → config pública
 // GET  ?action=apoiadores → top 3 apoiadores (automático dos sonhos)
 // GET  ?action=metas      → metas + valores atuais
+// GET  ?action=hall       → hall da fama (StreamElements + cache persistente)
+
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMLABS_TOKEN = process.env.STREAMLABS_TOKEN || '';
 const STREAMELEMENTS_JWT = process.env.STREAMELEMENTS_JWT || '';
+
+const HALL_CACHE_KEY = 'cache:hall';
+const HALL_CACHE_TS_KEY = 'cache:hall_at';
+const HALL_CACHE_TTL = 15 * 60; // 15 minutos
 
 async function redis(cmds) {
   const r = await fetch(`${URL_}/pipeline`, {
@@ -46,16 +52,16 @@ function sanitizarLista(list, campos, max) {
 }
 
 /* ============ Top 3 apoiadores ============ */
-function calcularTopApoiadores(sonhos){
-  if(!Array.isArray(sonhos)) return [];
+function calcularTopApoiadores(sonhos) {
+  if (!Array.isArray(sonhos)) return [];
   const porPessoa = {};
   sonhos.forEach(s => {
     (s.contribuintes || []).forEach(c => {
       const nome = safeStr(c.nome, 40);
-      if(!nome) return;
-      if(!porPessoa[nome]) porPessoa[nome] = { nome, total: 0, sonhos: [] };
+      if (!nome) return;
+      if (!porPessoa[nome]) porPessoa[nome] = { nome, total: 0, sonhos: [] };
       porPessoa[nome].total += Number(c.valor) || 0;
-      if(!porPessoa[nome].sonhos.includes(s.nome)) porPessoa[nome].sonhos.push(s.nome);
+      if (!porPessoa[nome].sonhos.includes(s.nome)) porPessoa[nome].sonhos.push(s.nome);
     });
   });
   return Object.values(porPessoa)
@@ -66,65 +72,63 @@ function calcularTopApoiadores(sonhos){
 
 /* ============ Twitch: seguidores totais ============ */
 let twitchCache = { token: null, exp: 0 };
-async function twitchToken(){
-  if(twitchCache.token && Date.now() < twitchCache.exp) return twitchCache.token;
+async function twitchToken() {
+  if (twitchCache.token && Date.now() < twitchCache.exp) return twitchCache.token;
   const r = await fetch('https://id.twitch.tv/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ client_id: TWITCH_ID, client_secret: TWITCH_SECRET, grant_type: 'client_credentials' })
   });
   const d = await r.json();
-  if(!d.access_token) throw new Error('Twitch token fail');
+  if (!d.access_token) throw new Error('Twitch token fail');
   twitchCache = { token: d.access_token, exp: Date.now() + (d.expires_in - 60) * 1000 };
   return twitchCache.token;
 }
 
-async function twitchSeguidores(){
-  if(!TWITCH_ID || !TWITCH_SECRET) return null;
+async function twitchSeguidores() {
+  if (!TWITCH_ID || !TWITCH_SECRET) return null;
   try {
     const token = await twitchToken();
     const headers = { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` };
     const u = await (await fetch('https://api.twitch.tv/helix/users?login=asemtet0', { headers })).json();
     const id = u?.data?.[0]?.id;
-    if(!id) return null;
+    if (!id) return null;
     const f = await (await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${id}&first=1`, { headers })).json();
     return typeof f.total === 'number' ? f.total : null;
-  } catch(e){ return null; }
+  } catch(e) { return null; }
 }
 
 /* ============ Streamlabs: subs + doações ============ */
-async function streamlabsBuscar(){
-  if(!STREAMLABS_TOKEN) return null;
+async function streamlabsBuscar() {
+  if (!STREAMLABS_TOKEN) return null;
   try {
     const h = { Authorization: `Bearer ${STREAMLABS_TOKEN}`, Accept: 'application/json' };
     const subs = await (await fetch('https://streamlabs.com/api/v2.0/subscriptions?limit=1', { headers: h })).json();
     const totalSubs = Array.isArray(subs?.data) ? subs.data.length : null;
 
-    // donations do mês atual
     const inicioMes = new Date();
     inicioMes.setDate(1);
-    inicioMes.setHours(0,0,0,0);
+    inicioMes.setHours(0, 0, 0, 0);
     const dons = await (await fetch('https://streamlabs.com/api/v2.0/donations?limit=100', { headers: h })).json();
     let totalDoacoes = 0;
-    if(Array.isArray(dons?.data)){
+    if (Array.isArray(dons?.data)) {
       dons.data.forEach(d => {
         const t = new Date(d.created_at).getTime();
-        if(t >= inicioMes.getTime()) totalDoacoes += Number(d.amount) || 0;
+        if (t >= inicioMes.getTime()) totalDoacoes += Number(d.amount) || 0;
       });
     }
     return { totalSubs, totalDoacoes };
-  } catch(e){ return null; }
+  } catch(e) { return null; }
 }
 
 /* ============ StreamElements: subs + doações ============ */
-async function streamElementsBuscar(){
-  if(!STREAMELEMENTS_JWT) return null;
+async function streamElementsBuscar() {
+  if (!STREAMELEMENTS_JWT) return null;
   try {
     const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
-    // canal (precisa do id do broadcaster — usa o "me" do SE)
     const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
     const cid = me?._id;
-    if(!cid) return null;
+    if (!cid) return null;
 
     const subs = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=1`, { headers: h })).json();
     const totalSubs = typeof subs?.total === 'number' ? subs.total : null;
@@ -132,16 +136,101 @@ async function streamElementsBuscar(){
     const tips = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
     const inicioMes = new Date();
     inicioMes.setDate(1);
-    inicioMes.setHours(0,0,0,0);
+    inicioMes.setHours(0, 0, 0, 0);
     let totalDoacoes = 0;
     (tips?.docs || []).forEach(t => {
       const ts = new Date(t.createdAt).getTime();
-      if(ts >= inicioMes.getTime()) totalDoacoes += Number(t.amount) || 0;
+      if (ts >= inicioMes.getTime()) totalDoacoes += Number(t.amount) || 0;
     });
     return { totalSubs, totalDoacoes };
-  } catch(e){ return null; }
+  } catch(e) { return null; }
 }
 
+/* ============ HALL — StreamElements ============ */
+async function hallStreamElements() {
+  if (!STREAMELEMENTS_JWT) return null;
+  try {
+    const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
+    const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
+    const cid = me?._id;
+    if (!cid) return null;
+
+    // 1) Subs (para gifts + fiéis)
+    const subsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h })).json();
+    const subsList = subsResp?.docs || subsResp?.data || [];
+
+    // ---- Gift Subs: agrupa por giftedBy ----
+    const gifts = {};
+    subsList.forEach(s => {
+      const giftedBy = s.giftedBy || s.gifted_by || s.gifter;
+      if (!giftedBy) return;
+      const nome = typeof giftedBy === 'string' ? giftedBy : (giftedBy.username || giftedBy.displayName || '');
+      if (!nome) return;
+      gifts[nome] = (gifts[nome] || 0) + 1;
+    });
+    const giftRanking = Object.entries(gifts)
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    // ---- Subs Fiéis: quem assina há mais tempo ----
+    const fieis = subsList
+      .map(s => {
+        const username = s.username || s.displayName || '';
+        const desde = s.subscribedAt || s.subscribed_at || s.createdAt || s.created_at;
+        if (!username || !desde) return null;
+        const ts = new Date(desde).getTime();
+        if (isNaN(ts)) return null;
+        const meses = Math.max(1, Math.round((Date.now() - ts) / (30 * 24 * 60 * 60 * 1000)));
+        return { nome: username, meses, ts };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.ts - b.ts)
+      .slice(0, 5)
+      .map(p => ({ nome: p.nome, meses: p.meses }));
+
+    // 2) Tips (doadores)
+    const tipsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
+    const tipsList = tipsResp?.docs || [];
+    const doadores = {};
+    tipsList.forEach(t => {
+      const nome = t.username || t.displayName || t.name || '';
+      if (!nome) return;
+      doadores[nome] = (doadores[nome] || 0) + (Number(t.amount) || 0);
+    });
+    const doadoresRanking = Object.entries(doadores)
+      .map(([nome, total]) => ({ nome, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    return {
+      vazio: !giftRanking.length && !fieis.length && !doadoresRanking.length,
+      gift: giftRanking,
+      fieis: fieis,
+      doadores: doadoresRanking
+    };
+  } catch(e) { return null; }
+}
+
+async function salvarHallCache(dados) {
+  try {
+    await redis([
+      ['SET', HALL_CACHE_KEY, JSON.stringify(dados), 'EX', String(60 * 60 * 24)], // 24h
+      ['SET', HALL_CACHE_TS_KEY, String(Date.now()), 'EX', String(60 * 60 * 24)]
+    ]);
+  } catch(e) {}
+}
+
+async function lerHallCache() {
+  try {
+    const [raw, ts] = await redis([['GET', HALL_CACHE_KEY], ['GET', HALL_CACHE_TS_KEY]]);
+    if (!raw) return null;
+    const dados = JSON.parse(raw);
+    return { dados, ts: Number(ts) || 0 };
+  } catch(e) { return null; }
+}
+
+/* ============ HANDLER ============ */
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.setHeader('CDN-Cache-Control', 'no-store');
@@ -154,67 +243,64 @@ export default async function handler(req, res) {
 
   try {
     /* ---------- GET ?action=apoiadores ---------- */
-    if(action === 'apoiadores'){
+    if (action === 'apoiadores') {
       const [sonhosRaw] = await redis([['GET', 'setup:sonhos']]);
       let sonhos = [];
-      try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e){}
+      try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e) {}
       const top = calcularTopApoiadores(sonhos);
       res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=60');
       return res.status(200).json({ top });
     }
 
     /* ---------- GET ?action=metas ---------- */
-    if(action === 'metas'){
+    if (action === 'metas') {
       const [metasRaw, sonhosRaw] = await redis([
         ['GET', 'config:metas'],
         ['GET', 'setup:sonhos']
       ]);
       let metas = null, sonhos = [];
-      try { metas = metasRaw ? JSON.parse(metasRaw) : null; } catch(e){}
-      try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e){}
+      try { metas = metasRaw ? JSON.parse(metasRaw) : null; } catch(e) {}
+      try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e) {}
 
-      if(!metas || typeof metas !== 'object'){
+      if (!metas || typeof metas !== 'object') {
         metas = {
           seguidores: { ativo: false, meta: 0 },
-          subs:       { ativo: false, meta: 0, plataforma: 'manual', atualManual: 0 },
-          doacoes:    { ativo: false, meta: 0, plataforma: 'manual', atualManual: 0 },
-          bits:       { ativo: false, meta: 0, atualManual: 0 }
+          subs: { ativo: false, meta: 0, plataforma: 'manual', atualManual: 0 },
+          doacoes: { ativo: false, meta: 0, plataforma: 'manual', atualManual: 0 },
+          bits: { ativo: false, meta: 0, atualManual: 0 }
         };
       }
 
       const out = { ...metas, valores: {} };
 
-      // Seguidores: Twitch
-      if(metas.seguidores?.ativo){
+      if (metas.seguidores?.ativo) {
         out.valores.seguidores = await twitchSeguidores();
       }
 
-      // Subs + Doações
       let sl = null, se = null;
-      if(metas.subs?.plataforma === 'streamlabs' || metas.doacoes?.plataforma === 'streamlabs'){
+      if (metas.subs?.plataforma === 'streamlabs' || metas.doacoes?.plataforma === 'streamlabs') {
         sl = await streamlabsBuscar();
       }
-      if(metas.subs?.plataforma === 'streamelements' || metas.doacoes?.plataforma === 'streamelements'){
-        se = await streamelementsBuscar();
+      if (metas.subs?.plataforma === 'streamelements' || metas.doacoes?.plataforma === 'streamelements') {
+        se = await streamElementsBuscar();
       }
 
-      if(metas.subs?.ativo){
-        if(metas.subs.plataforma === 'streamlabs' && sl) out.valores.subs = sl.totalSubs;
-        else if(metas.subs.plataforma === 'streamelements' && se) out.valores.subs = se.totalSubs;
+      if (metas.subs?.ativo) {
+        if (metas.subs.plataforma === 'streamlabs' && sl) out.valores.subs = sl.totalSubs;
+        else if (metas.subs.plataforma === 'streamelements' && se) out.valores.subs = se.totalSubs;
         else out.valores.subs = Number(metas.subs.atualManual) || 0;
       }
 
-      if(metas.doacoes?.ativo){
-        if(metas.doacoes.plataforma === 'streamlabs' && sl) out.valores.doacoes = sl.totalDoacoes;
-        else if(metas.doacoes.plataforma === 'streamelements' && se) out.valores.doacoes = se.totalDoacoes;
-        else if(metas.doacoes.plataforma === 'sonhos'){
-          // soma dos apoiadores do mês
+      if (metas.doacoes?.ativo) {
+        if (metas.doacoes.plataforma === 'streamlabs' && sl) out.valores.doacoes = sl.totalDoacoes;
+        else if (metas.doacoes.plataforma === 'streamelements' && se) out.valores.doacoes = se.totalDoacoes;
+        else if (metas.doacoes.plataforma === 'sonhos') {
           const top = calcularTopApoiadores(sonhos);
-          out.valores.doacoes = top.reduce((a,p) => a + p.total, 0);
+          out.valores.doacoes = top.reduce((a, p) => a + p.total, 0);
         } else out.valores.doacoes = Number(metas.doacoes.atualManual) || 0;
       }
 
-      if(metas.bits?.ativo){
+      if (metas.bits?.ativo) {
         out.valores.bits = Number(metas.bits.atualManual) || 0;
       }
 
@@ -222,18 +308,77 @@ export default async function handler(req, res) {
       return res.status(200).json(out);
     }
 
+    /* ---------- GET ?action=hall ---------- */
+    if (action === 'hall') {
+      const cache = await lerHallCache();
+      const agora = Date.now();
+      const idade = cache ? (agora - cache.ts) / 1000 : Infinity;
+
+      // Sem token: retorna vazio com texto
+      if (!STREAMELEMENTS_JWT) {
+        return res.status(200).json({
+          vazio: true,
+          mensagem: '✨ Em breve... Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜',
+          gift: [],
+          fieis: [],
+          doadores: [],
+          updatedAt: null
+        });
+      }
+
+      // Tem cache fresco (< 15 min): retorna
+      if (cache && idade < HALL_CACHE_TTL) {
+        return res.status(200).json({
+          ...cache.dados,
+          updatedAt: cache.ts
+        });
+      }
+
+      // Tem cache velho: retorna o cache e atualiza em background
+      if (cache) {
+        // Dispara atualização em background (fire and forget)
+        (async () => {
+          try {
+            const novos = await hallStreamElements();
+            if (novos) await salvarHallCache(novos);
+          } catch(e) {}
+        })();
+
+        return res.status(200).json({
+          ...cache.dados,
+          updatedAt: cache.ts
+        });
+      }
+
+      // Sem cache: busca agora (esperando)
+      const dados = await hallStreamElements();
+      if (dados) {
+        await salvarHallCache(dados);
+        return res.status(200).json({ ...dados, updatedAt: Date.now() });
+      }
+
+      return res.status(200).json({
+        vazio: true,
+        mensagem: '✨ Em breve... Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜',
+        gift: [],
+        fieis: [],
+        doadores: [],
+        updatedAt: null
+      });
+    }
+
     /* ---------- GET ?action=status-perfil ---------- */
-    if(action === 'status-perfil'){
+    if (action === 'status-perfil') {
       try {
         const token = await twitchToken();
         const headers = { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` };
         const u = await (await fetch('https://api.twitch.tv/helix/users?login=asemtet0', { headers })).json();
         const id = u?.data?.[0]?.id;
-        if(!id) return res.status(200).json({ online: false });
+        if (!id) return res.status(200).json({ online: false });
         const s = await (await fetch(`https://api.twitch.tv/helix/streams?user_id=${id}`, { headers })).json();
         const online = Array.isArray(s?.data) && s.data.length > 0;
         return res.status(200).json({ online });
-      } catch(e){ return res.status(200).json({ online: false }); }
+      } catch(e) { return res.status(200).json({ online: false }); }
     }
 
     /* ---------- GET normal (config pública) ---------- */

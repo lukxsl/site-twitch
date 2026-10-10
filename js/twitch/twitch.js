@@ -11,7 +11,10 @@ function assistirVod(v){
   f.style.display = 'block';
   f.src = `https://player.twitch.tv/?video=v${vodAtual.id}&parent=${HOST}&autoplay=false`;
   const noteEl = document.getElementById('playerNoteText');
-  if(noteEl) noteEl.textContent = `Reprise: ${vodAtual.title}`;
+  if(noteEl){
+    noteEl.classList.remove('recado');
+    noteEl.textContent = `Reprise: ${vodAtual.title}`;
+  }
   const box = document.querySelector('.twitch-player-box');
   if(box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -49,9 +52,21 @@ function _atualizarStatsStrip(data){
   const liveSep = document.getElementById('stripLiveSep');
   const viewers = document.getElementById('stripViewers');
 
-  if(seg) seg.textContent = data.followers != null ? Number(data.followers).toLocaleString('pt-BR') : '—';
-  if(horas) horas.textContent = data.horasMes != null ? Number(data.horasMes).toLocaleString('pt-BR') : '—';
-  if(discord) discord.textContent = data.discord != null ? Number(data.discord).toLocaleString('pt-BR') : '—';
+  const flash = (el, novoValor) => {
+    if(!el) return;
+    const valorAntigo = el.dataset.valor || el.textContent;
+    const novo = String(novoValor);
+    el.textContent = novo;
+    el.dataset.valor = novo;
+    if(valorAntigo && valorAntigo !== '—' && valorAntigo !== novo){
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 1200);
+    }
+  };
+
+  if(seg) flash(seg, data.followers != null ? Number(data.followers).toLocaleString('pt-BR') : '—');
+  if(horas) flash(horas, data.horasMes != null ? Number(data.horasMes).toLocaleString('pt-BR') : '—');
+  if(discord) flash(discord, data.discord != null ? Number(data.discord).toLocaleString('pt-BR') : '—');
 
   const isLive = !!(data.stream && data.stream.viewer_count != null);
   if(live) live.style.display = isLive ? '' : 'none';
@@ -59,7 +74,6 @@ function _atualizarStatsStrip(data){
   if(viewers && isLive) viewers.textContent = Number(data.stream.viewer_count).toLocaleString('pt-BR');
 }
 
-/* 🆕 Banner dinâmico: mostra só quando ao vivo */
 function _atualizarBanner(data){
   const overlay = document.getElementById('bannerOverlay');
   const badge = document.getElementById('bannerLiveBadge');
@@ -104,6 +118,13 @@ async function verificarStatusTwitch() {
 
     const live = !!data.stream;
     inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
+    // Guarda uptime em segundos para calcular "ao vivo há Xh" no card
+    if(data.stream && data.stream.uptime_seconds){
+      window.__uptimeLiveSeg = data.stream.uptime_seconds;
+      window.__uptimeLiveTs = Date.now();
+    } else {
+      window.__uptimeLiveSeg = 0;
+    }
 
     _atualizarPlayerHeader(live);
     _atualizarProfileStatus(live);
@@ -128,7 +149,6 @@ async function verificarStatusTwitch() {
     }
 
     if (data.stream && isMature) {
-      // 🔞 +18: NUNCA carregar iframe. Sempre limpar com about:blank.
       assistindoVod = false;
       if(iframe){
         iframe.style.display = 'none';
@@ -146,7 +166,11 @@ async function verificarStatusTwitch() {
         `;
       }
       g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
-      g('playerNoteText').textContent = `🔞 Conteúdo +18 — clica em "Assistir na Twitch" acima.`;
+      const noteEl = g('playerNoteText');
+      if(noteEl){
+        noteEl.classList.remove('recado');
+        noteEl.textContent = `🔞 Conteúdo +18 — clica em "Assistir na Twitch" acima.`;
+      }
     } else if (data.stream) {
       assistindoVod = false;
       if(panel) panel.style.display = 'none';
@@ -156,7 +180,13 @@ async function verificarStatusTwitch() {
         if (iframe.src !== novoSrc) iframe.src = novoSrc;
       }
       g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
-      g('playerNoteText').textContent = `Transmitindo: ${data.stream.title}`;
+      const noteEl = g('playerNoteText');
+      if(noteEl){
+        // Só sobrescreve se não tem recado visível
+        if(!noteEl.classList.contains('recado')){
+          noteEl.textContent = `Transmitindo: ${data.stream.title}`;
+        }
+      }
     } else {
       g('viewerCountStatus').textContent = '@asemtet0';
       if (!assistindoVod) {
@@ -178,7 +208,12 @@ async function verificarStatusTwitch() {
           const btnVodEl = g('btnVod');
           if(btnVodEl) btnVodEl.style.display = vodAtual ? '' : 'none';
         }
-        g('playerNoteText').textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
+        const noteEl = g('playerNoteText');
+        if(noteEl){
+          if(!noteEl.classList.contains('recado')){
+            noteEl.textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
+          }
+        }
       }
     }
 
@@ -253,7 +288,3 @@ document.addEventListener('click', e => {
   const b = e.target.closest('.clip');
   if(b && b.dataset.id) abrirClip(b.dataset.id);
 });
-
-/* ============================================================
-   BOOT EXTRA — ticker antigo desativado (não usamos mais)
-   ============================================================ */

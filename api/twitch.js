@@ -77,8 +77,10 @@ export default async function handler(req, res) {
     const stream = s.data && s.data[0] ? s.data[0] : null;
 
     let uptime = null;
+    let uptimeSeconds = 0;
     if (stream && stream.started_at) {
       const diff = Date.now() - new Date(stream.started_at).getTime();
+      uptimeSeconds = Math.max(0, Math.floor(diff / 1000));
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       uptime = `${h}h ${m}m`;
@@ -121,7 +123,6 @@ export default async function handler(req, res) {
     const followersTotal = typeof f.total === 'number' ? f.total : 0;
     const discordTotal = typeof dc.approximate_member_count === 'number' ? dc.approximate_member_count : 0;
 
-    // 🆕 Detectar conteúdo adulto (Twitch bloqueia embed desses casos)
     const isMature = !!(stream && stream.is_mature);
 
     res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=30');
@@ -135,6 +136,7 @@ export default async function handler(req, res) {
         game_name: safeStr(stream.game_name, 200),
         viewer_count: Number(stream.viewer_count) || 0,
         uptime,
+        uptime_seconds: uptimeSeconds,
         started_at: safeStr(stream.started_at, 40),
         is_mature: isMature
       },

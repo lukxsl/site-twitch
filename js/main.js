@@ -78,6 +78,11 @@ let sirFiltro = 'all';
 let SIR_ITENS_CACHE = [];
 let _musicaAtual = null;
 
+/* Hall da Fama */
+let HALL_DADOS = null;
+let HALL_ABA = 'gift';
+let HALL_TIMER = null;
+
 /* ============================================================
    HELPERS GERAIS
    ============================================================ */
@@ -266,35 +271,29 @@ function renderTop3(){
   `).join('');
 }
 
-function renderHall(){
-  const box = $('hallLista'); if(!box) return;
-  const lista = Array.isArray(CONFIG_GERAL.hall) ? CONFIG_GERAL.hall.slice(0,5) : [];
-  if(!lista.length){
-    box.innerHTML = `<p class="ap-vazio">Em breve os maiores subs da história. 👑</p>`;
-    return;
+function renderRecado(){
+  const noteEl = $('playerNoteText');
+  if(!noteEl) return;
+  const recado = (CONFIG_GERAL.recado || '').trim();
+  if(recado){
+    noteEl.classList.add('recado');
+    noteEl.innerHTML = `💌 Recado da Soso: <strong>${esc(recado)}</strong>`;
+  } else {
+    noteEl.classList.remove('recado');
+    // Se não estiver assistindo VOD, mostra texto padrão
+    if(!assistindoVod){
+      noteEl.textContent = ultVivo ? 'Transmitindo ao vivo agora 💜' : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
+    }
   }
-  box.innerHTML = lista.map((p, i) => `
-    <div class="hall-row">
-      <span class="hr-pos">${i + 1}</span>
-      <span class="hr-name">@${esc(p.nome || '—')}</span>
-      <span class="hr-meta">${esc(p.meta || '')}</span>
-    </div>
-  `).join('');
 }
 
 function renderHomeExtras(){
-  const recadoEl = $('recadoSoso');
-  if(recadoEl){
-    const r = (CONFIG_GERAL.recado || '').trim();
-    recadoEl.textContent = r || 'Sem recadinho no momento. Volte mais tarde! 💜';
-    recadoEl.style.fontStyle = r ? 'italic' : 'normal';
-  }
   renderTop3();
-  renderHall();
+  renderRecado();
 }
 
 /* ============================================================
-   CARD TABS
+   CARD TABS (Apoie)
    ============================================================ */
 function setupCardTabs(){
   document.querySelectorAll('.card-tabs').forEach(tabs => {
@@ -309,27 +308,150 @@ function setupCardTabs(){
       card.querySelectorAll('.card-tab-content').forEach(c =>
         c.classList.toggle('on', c.dataset.content === btn.dataset.tab)
       );
+      // Se abrir a aba Hall, garante que carregou
+      if(btn.dataset.tab === 'hall' && !HALL_DADOS){
+        carregarHall();
+      }
     });
   });
 }
 
 /* ============================================================
-   MODO FOCO (com chat da Twitch)
+   SUB SHORTCUTS (Ver Emotes no header)
+   ============================================================ */
+function setupSubShortcuts(){
+  const wrap = document.querySelector('.sub-shortcuts');
+  if(!wrap || wrap.dataset.bound) return;
+  wrap.dataset.bound = '1';
+  wrap.addEventListener('click', e => {
+    const btn = e.target.closest('.sub-shortcut');
+    if(!btn) return;
+    const card = btn.closest('.sub-hero-box');
+    if(!card) return;
+    card.querySelectorAll('.sub-shortcut').forEach(t => t.classList.toggle('on', t === btn));
+    card.querySelectorAll('.sub-shortcut-content').forEach(c =>
+      c.classList.toggle('on', c.dataset.subContent === btn.dataset.subTab)
+    );
+    // Highlight dos emotes
+    if(btn.dataset.subTab === 'emotes'){
+      const grid = document.getElementById('emotesGrid');
+      if(grid){
+        grid.classList.add('counter-up');
+        setTimeout(() => grid.classList.remove('counter-up'), 1200);
+      }
+    }
+  });
+}
+
+/* ============================================================
+   HALL DA FAMA — 3 abas + polling do "atualizado há X min"
+   ============================================================ */
+async function carregarHall(){
+  const lista = $('hallLista'); if(!lista) return;
+  try{
+    const r = await fetch('/api/config?action=hall', { cache: 'no-store' });
+    const d = await r.json();
+    HALL_DADOS = d;
+    renderHall();
+  } catch(e){
+    lista.innerHTML = `<div class="hall-empty">✨ Em breve…</div>`;
+  }
+}
+
+function renderHall(){
+  const lista = $('hallLista');
+  const updated = $('hallUpdated');
+  if(!lista) return;
+  const d = HALL_DADOS;
+
+  // Estado vazio (sem token ou sem dados)
+  if(!d || d.vazio){
+    lista.innerHTML = `<div class="hall-empty">✨ Em breve...<br><small style="opacity:.8">Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small></div>`;
+    if(updated) updated.style.display = 'none';
+    return;
+  }
+
+  // Escolhe a aba
+  const itens = HALL_ABA === 'gift' ? (d.gift || [])
+              : HALL_ABA === 'fieis' ? (d.fieis || [])
+              : (d.doadores || []);
+
+  if(!itens.length){
+    lista.innerHTML = `<div class="hall-empty">✨ Em breve…</div>`;
+  } else {
+    const medalhas = ['🥇','🥈','🥉'];
+    lista.innerHTML = itens.map((p, i) => {
+      const pos = i + 1;
+      const medalha = medalhas[i] || `${pos}º`;
+      let meta = '';
+      if(HALL_ABA === 'gift') meta = `${p.total} gift sub${p.total === 1 ? '' : 's'}`;
+      else if(HALL_ABA === 'fieis') meta = `Sub há ${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
+      else meta = fmtBRL(p.total);
+      return `
+        <div class="hall-row">
+          <span class="hr-pos">${medalha}</span>
+          <span class="hr-name">@${esc(p.nome || '—')}</span>
+          <span class="hr-meta">${esc(meta)}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Atualiza "atualizado há X min"
+  if(updated && d.updatedAt){
+    atualizarTextoHallUpdated(d.updatedAt);
+    updated.style.display = '';
+  } else if(updated){
+    updated.style.display = 'none';
+  }
+}
+
+function atualizarTextoHallUpdated(ts){
+  const el = $('hallUpdated'); if(!el) return;
+  const diffMin = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+  let texto;
+  if(diffMin < 1) texto = '🔄 Atualizado agora';
+  else if(diffMin === 1) texto = '🔄 Atualizado há 1 min';
+  else if(diffMin < 60) texto = `🔄 Atualizado há ${diffMin} min`;
+  else {
+    const horas = Math.floor(diffMin / 60);
+    texto = `🔄 Atualizado há ${horas}h`;
+  }
+  el.textContent = texto;
+}
+
+function setupHallTabs(){
+  const wrap = $('hallTabs'); if(!wrap || wrap.dataset.bound) return;
+  wrap.dataset.bound = '1';
+  wrap.addEventListener('click', e => {
+    const btn = e.target.closest('.hall-tab');
+    if(!btn) return;
+    wrap.querySelectorAll('.hall-tab').forEach(t => t.classList.toggle('on', t === btn));
+    HALL_ABA = btn.dataset.hall || 'gift';
+    renderHall();
+  });
+}
+
+function iniciarHall(){
+  setupHallTabs();
+  carregarHall();
+  // Atualiza o "há X min" a cada 60s
+  if(HALL_TIMER) clearInterval(HALL_TIMER);
+  HALL_TIMER = setInterval(() => {
+    if(HALL_DADOS && HALL_DADOS.updatedAt){
+      atualizarTextoHallUpdated(HALL_DADOS.updatedAt);
+    }
+  }, 60000);
+}
+
+/* ============================================================
+   MODO FOCO (com chat sempre carregado)
    ============================================================ */
 function toggleFocusMode(){
   const ativo = document.body.classList.toggle('focus-mode');
   const btn = document.getElementById('focusModeBtn');
   if(btn) btn.classList.toggle('on', ativo);
-  const chat = document.getElementById('focusChatIframe');
-  if(chat){
-    if(ativo){
-      chat.src = `https://www.twitch.tv/embed/asemtet0/chat?parent=${HOST}&darkpopout`;
-    } else {
-      chat.src = 'about:blank';
-    }
-  }
   try { localStorage.setItem('focusMode', ativo ? '1' : '0'); } catch(e){}
-  // scroll pro topo, senão pode ficar em meio de rolagem
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.toggleFocusMode = toggleFocusMode;
@@ -339,8 +461,6 @@ function restaurarFocusMode(){
     if(localStorage.getItem('focusMode') === '1'){
       document.body.classList.add('focus-mode');
       document.getElementById('focusModeBtn')?.classList.add('on');
-      const chat = document.getElementById('focusChatIframe');
-      if(chat) chat.src = `https://www.twitch.tv/embed/asemtet0/chat?parent=${HOST}&darkpopout`;
     }
   } catch(e){}
 }
@@ -355,7 +475,7 @@ function renderPlaylist(){
   const m = url.match(/playlist\/([a-zA-Z0-9]+)/);
   if(!m){ embed.innerHTML = `<p class="music-placeholder">🎧 Link da playlist inválido.</p>`; return; }
   embed.innerHTML = `<iframe src="https://open.spotify.com/embed/playlist/${m[1]}?theme=0"
-    width="100%" height="152" frameborder="0" allowtransparency="true"
+    width="100%" height="380" frameborder="0" allowtransparency="true"
     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
     loading="lazy" title="Playlist do Spotify"></iframe>`;
 }
@@ -653,6 +773,14 @@ function desenharStats(){
   if(bEls[3] && !isNaN(Number(dados[3][0]))) animarNumero(bEls[3], Number(dados[3][0]));
 }
 
+function _fmtUptime(segundos){
+  if(!segundos || segundos <= 0) return '';
+  const h = Math.floor(segundos / 3600);
+  const m = Math.floor((segundos % 3600) / 60);
+  if(h > 0) return `${h}h ${String(m).padStart(2,'0')}m`;
+  return `${m}m`;
+}
+
 function atualizarFoco(game, aoVivo){
   ultGame = game; ultVivo = aoVivo;
   const j = game ? JOGOS.find(x => norm(x.nome) === norm(game.name)) : (JOGOS.find(x => x.status === 'Jogando') || JOGOS[0]);
@@ -674,8 +802,22 @@ function atualizarFoco(game, aoVivo){
   const pr = j && j.progresso != null && j.progresso > 0;
   $('focoBar').style.display = pr ? '' : 'none';
   if(pr){ $('focoPct').textContent = j.progresso + '%'; $('focoBarI').style.width = j.progresso + '%'; }
+
+  // Linha do "última live / ao vivo há Xh"
   const v = vodAtual;
-  $('focoHoras').textContent = aoVivo ? 'Entra no chat e vem jogar junto! 💜' : (v && v.created_at ? `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}` : '');
+  let linhaTempo = '';
+  if(aoVivo && window.__uptimeLiveSeg && window.__uptimeLiveTs){
+    // recalcula uptime desde o último fetch
+    const passou = Math.floor((Date.now() - window.__uptimeLiveTs) / 1000);
+    const total = window.__uptimeLiveSeg + passou;
+    const fmt = _fmtUptime(total);
+    if(fmt) linhaTempo = `🔴 Ao vivo há ${fmt}`;
+  }
+  if(!linhaTempo && v && v.created_at){
+    linhaTempo = `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}`;
+  }
+  $('focoHoras').textContent = linhaTempo;
+
   if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
   else c.style.display = 'none';
   const twLink = $('focoTwitchLink');
@@ -1467,8 +1609,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     try { localStorage.removeItem('abaAtiva'); } catch(e){}
   }
 
-  // 🔧 REGRA NOVA: só usa hash da URL pra decidir a aba inicial.
-  // Sem hash → sempre Home. Não usa mais localStorage.
+  // REGRA: só usa hash da URL pra decidir a aba inicial. Sem hash → Home.
   const hashRaw = (location.hash || '').replace(/^#/, '');
   let abaInicial = 'inicio';
   if(!isPreview){
@@ -1489,6 +1630,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
   setupCardTabs();
+  setupSubShortcuts();
+  iniciarHall();
 
   // Setup
   setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
@@ -1528,7 +1671,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupSugTabs();
   carregarUltimasIdeias();
 
-  // Música: aba padrão agora é "ouvindo"
+  // Música: aba padrão é "ouvindo agora"
   musicaTab = 'ouvindo';
   trocarMusicaTab('ouvindo');
 
@@ -1632,6 +1775,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => {
     if(VOTOS_FECHAMENTO) renderVotacao();
   }, 60000);
+
+  // Atualiza "ao vivo há Xh" a cada 30s
+  setInterval(() => {
+    if(ultVivo && ultGame){
+      atualizarFoco(ultGame, ultVivo);
+    }
+  }, 30000);
 });
 
 /* ============================================================

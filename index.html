@@ -90,7 +90,7 @@
 <!-- ==================== INÍCIO ==================== -->
 <section id="sec-inicio" class="page-section ativo">
 
-  <div class="hero-banner reveal" id="heroBanner">
+  <a class="hero-banner reveal" id="heroBanner" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" aria-label="Abrir canal na Twitch">
     <img class="banner-bg" src="img/banner.png" alt="" aria-hidden="true">
     <img id="bannerImg" src="img/banner.png" alt="Bem-vindo ao meu cantinho - asemtet0">
     <div class="banner-live-badge" id="bannerLiveBadge">
@@ -99,9 +99,9 @@
     </div>
     <div class="banner-overlay" id="bannerOverlay" style="display:none">
       <span class="banner-kicker" id="bannerKicker">🎮 Jogando</span>
-      <h1 class="banner-title" id="bannerTitle">Games, caos & <em>gameplay duvidosa</em>.</h1>
+      <h1 class="banner-title" id="bannerTitle">Assistindo agora com <em>0 viewers</em></h1>
     </div>
-  </div>
+  </a>
 
   <div class="stats-strip reveal" id="statsStrip">
     <span class="strip-item"><span class="strip-ic">👥</span> <b id="stripSeg">—</b> seguidores</span>
@@ -181,7 +181,14 @@
     </article>
 
     <aside class="focus-chat" id="focusChat" aria-hidden="true">
-      <iframe id="focusChatIframe" src="about:blank" title="Chat da Twitch"></iframe>
+      <div class="focus-chat-iframe-wrap">
+        <iframe id="focusChatIframe" src="https://www.twitch.tv/embed/asemtet0/chat?parent=asemtet0.vercel.app&parent=localhost&darkpopout" title="Chat da Twitch"></iframe>
+        <div class="focus-chat-overlay">
+          <a class="focus-chat-cta" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">
+            💬 Pra conversar, vai pra Twitch →
+          </a>
+        </div>
+      </div>
     </aside>
 
     <article class="card music-box reveal" id="musicBox">
@@ -269,9 +276,15 @@
       </div>
 
       <div class="card-tab-content" data-content="hall">
-        <div class="hall" id="hallLista">
-          <p class="ap-vazio">Em breve os maiores subs da história. 👑</p>
+        <div class="hall-tabs" id="hallTabs">
+          <button type="button" class="hall-tab on" data-hall="gift">🎁 Gift Subs</button>
+          <button type="button" class="hall-tab" data-hall="fieis">⏱️ Fiéis</button>
+          <button type="button" class="hall-tab" data-hall="doadores">💜 Doadores</button>
         </div>
+        <div class="hall-lista" id="hallLista">
+          <p class="ap-vazio">Carregando…</p>
+        </div>
+        <p class="hall-updated" id="hallUpdated" style="display:none"></p>
       </div>
 
       <div class="card-tab-content" data-content="recado">
@@ -287,12 +300,12 @@
         <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
       </div>
 
-      <div class="card-tabs" data-tabs="sub">
-        <button type="button" class="card-tab on" data-tab="como">✨ Como funciona</button>
-        <button type="button" class="card-tab" data-tab="emotes">🎨 Emotes</button>
+      <div class="sub-shortcuts">
+        <button type="button" class="sub-shortcut on" data-sub-tab="como">✨ Como funciona</button>
+        <button type="button" class="sub-shortcut" data-sub-tab="emotes">🎨 Ver Emotes</button>
       </div>
 
-      <div class="card-tab-content on" data-content="como">
+      <div class="sub-shortcut-content on" data-sub-content="como">
         <div class="como-funciona">
           <ol class="cf-lista">
             <li><b>1.</b> Vai na Twitch e clica em Inscrever</li>
@@ -302,7 +315,7 @@
         </div>
       </div>
 
-      <div class="card-tab-content" data-content="emotes">
+      <div class="sub-shortcut-content" data-sub-content="emotes">
         <div class="emotes-preview">
           <small>Preview dos emotes de sub</small>
           <div class="emotes-grid" id="emotesGrid"></div>
