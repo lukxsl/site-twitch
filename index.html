@@ -118,7 +118,7 @@
   </div>
 
   <div class="bento">
-    <!-- COLUNA ESQUERDA: perfil + último jogo -->
+    <!-- COLUNA ESQUERDA: perfil + spotify -->
     <div class="bento-col bento-left">
       <article class="card profile-card reveal">
         <div class="profile-avatar-container">
@@ -152,28 +152,26 @@
           </a>
         </div>
       </article>
-
-      <article class="card focus-box foco reveal">
-        <img class="foco-cover skeleton" id="focoCover" alt="">
-        <div class="foco-info">
-          <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
-          <h3 id="focoNome">Carregando…</h3>
-          <div class="foco-meta" id="focoMeta"></div>
-          <div class="foco-bar" id="focoBar" style="display:none">
-            <small><span>Progresso</span><b id="focoPct"></b></small>
-            <div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div>
-          </div>
-          <p class="foco-last" id="focoHoras"></p>
-          <div class="foco-btns">
-            <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
-            <a class="btn ghost" id="focoTwitchLink" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="display:none">Ver na Twitch →</a>
+      <article class="card music-box reveal" id="musicBox">
+        <div class="music-head">
+          <span class="music-ic" aria-hidden="true">
+            <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
+          </span>
+          <div class="music-info">
+            <h3>Spotify da Soso</h3>
+            <p>A trilha sonora que rola nas lives. 💜</p>
           </div>
         </div>
+        <div class="music-panel on" id="musicPainelOuvindo">
+          <div class="ouvindo-vazio">🎧 Não estou ouvindo nada agora 💜</div>
+        </div>
+        <button type="button" class="music-link-playlist" onclick="irParaPlaylist()">
+          🎵 Ver playlist completa →
+        </button>
       </article>
-
     </div>
 
-    <!-- COLUNA CENTRAL (palco): player + apoie -->
+    <!-- COLUNA CENTRAL (palco): player + jogos -->
     <div class="bento-col bento-center">
       <article class="card twitch-player-box reveal">
         <div class="twitch-player-header">
@@ -197,7 +195,63 @@
         </div>
         <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
       </article>
+      <article class="card jogos-card reveal">
+        <div class="jogo-half">
+          <img class="foco-cover skeleton" id="focoCover" alt="">
+          <div class="foco-info">
+            <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
+            <h3 id="focoNome">Carregando…</h3>
+            <div class="foco-meta" id="focoMeta"></div>
+            <div class="foco-bar" id="focoBar" style="display:none">
+              <small><span>Progresso</span><b id="focoPct"></b></small>
+              <div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div>
+            </div>
+            <p class="foco-last" id="focoHoras"></p>
+            <div class="foco-btns">
+              <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
+              <a class="btn ghost" id="focoTwitchLink" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="display:none">Ver na Twitch →</a>
+            </div>
+          </div>
+        </div>
+        <div class="jogo-half">
+          <img class="foco-cover" id="proxCover" alt="" style="display:none">
+          <div class="foco-info">
+            <span class="foco-label">🗳️ Próximo na votação</span>
+            <h3 id="proxNome">Votação aberta</h3>
+            <div class="prox-bar" id="proxBarWrap" style="display:none">
+              <div class="goal-bar"><i id="proxBarI" style="width:0%"></i></div>
+            </div>
+            <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
+            <div class="foco-btns">
+              <button class="btn" onclick="mudarAba('sugestoes')">Votar agora →</button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
 
+    <!-- COLUNA DIREITA: seja sub + apoie/hall -->
+    <div class="bento-col bento-right">
+      <article class="card sub-hero-box reveal">
+        <div class="sub-hero-head">
+          <span class="sub-hero-crown">👑</span>
+          <div>
+            <h3>Seja Sub</h3>
+            <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho.</p>
+          </div>
+        </div>
+        <ul class="beneficios-lista">
+          <li><b>🎁 Emotes exclusivos</b> no chat</li>
+          <li><b>💬 Canal privado</b> no Discord</li>
+          <li><b>🎖️ Cargo de destaque</b> no servidor</li>
+          <li><b>💜 Lives sem anúncios</b></li>
+        </ul>
+        <div class="emotes-preview">
+          <small>Preview dos emotes de sub</small>
+          <div class="emotes-grid" id="emotesGrid"></div>
+        </div>
+        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
+      </article>
       <article class="card apoie reveal">
         <div class="apoie-head">
           <h3>💜 Apoie o cantinho</h3>
@@ -217,73 +271,6 @@
           </div>
         </div>
         <p class="hall-updated" id="hallUpdated" style="display:none"></p>
-      </article>
-
-    </div>
-
-    <!-- COLUNA DIREITA: spotify + sub + próxima votação -->
-    <div class="bento-col bento-right">
-      <article class="card music-box reveal" id="musicBox">
-        <div class="music-head">
-          <span class="music-ic" aria-hidden="true">
-            <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
-          </span>
-          <div class="music-info">
-            <h3>Spotify da Soso</h3>
-            <p>A trilha sonora que rola nas lives. 💜</p>
-          </div>
-        </div>
-        <div class="music-panel on" id="musicPainelOuvindo">
-          <div class="ouvindo-vazio">🎧 Não estou ouvindo nada agora 💜</div>
-        </div>
-        <button type="button" class="music-link-playlist" onclick="irParaPlaylist()">
-          🎵 Ver playlist completa →
-        </button>
-      </article>
-
-      <article class="card sub-hero-box reveal">
-        <span class="sub-hero-crown">👑</span>
-        <h3>Seja Sub</h3>
-        <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho.</p>
-        <div class="sub-hero-btns">
-          <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
-        </div>
-
-        <div class="sub-shortcuts">
-          <button type="button" class="sub-shortcut on" data-sub-tab="beneficios">✨ Benefícios</button>
-          <button type="button" class="sub-shortcut" data-sub-tab="emotes">🎨 Ver Emotes</button>
-        </div>
-
-        <div class="sub-shortcut-content on" data-sub-content="beneficios">
-          <ul class="beneficios-lista">
-            <li><b>🎁 Emotes exclusivos</b> no chat</li>
-            <li><b>💬 Canal privado</b> no Discord</li>
-            <li><b>🎖️ Cargo de destaque</b> no servidor</li>
-            <li><b>💜 Lives sem anúncios</b></li>
-          </ul>
-        </div>
-
-        <div class="sub-shortcut-content" data-sub-content="emotes">
-          <div class="emotes-preview">
-            <small>Preview dos emotes de sub</small>
-            <div class="emotes-grid" id="emotesGrid"></div>
-          </div>
-        </div>
-      </article>
-    
-      <article class="card proximo foco reveal">
-        <img class="foco-cover" id="proxCover" alt="" style="display:none">
-        <div class="foco-info">
-          <span class="foco-label">🗳️ Próximo na votação</span>
-          <h3 id="proxNome">Votação aberta</h3>
-          <div class="prox-bar" id="proxBarWrap" style="display:none">
-            <div class="goal-bar"><i id="proxBarI" style="width:0%"></i></div>
-          </div>
-          <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
-          <div class="foco-btns">
-            <button class="btn" onclick="mudarAba('sugestoes')">Votar agora →</button>
-          </div>
-        </div>
       </article>
     </div>
   </div>

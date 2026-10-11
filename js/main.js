@@ -303,9 +303,9 @@ function renderHall(){
     return;
   }
 
-  const itens = HALL_ABA === 'gift' ? (d.gift || [])
+  const itens = (HALL_ABA === 'gift' ? (d.gift || [])
               : HALL_ABA === 'fieis' ? (d.fieis || [])
-              : (d.doadores || []);
+              : (d.doadores || [])).slice(0, 5);
 
   if(!itens.length){
     lista.innerHTML = `<div class="hall-empty">✨ Em breve…</div>`;

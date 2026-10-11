@@ -124,9 +124,12 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
 
 /* ============================================================
    BENTO GRID (HOME) — 3 colunas, cada uma uma "pilha" de cards.
+     Esquerda: Perfil + Spotify          (quem é a Soso)
+     Centro:   Player + Jogos            (o que está rolando)
+     Direita:  Seja Sub + Apoie/Hall     (como apoiar)
    - O grid estica as 3 colunas pra mesma altura (align-items:stretch)
    - O ÚLTIMO card de cada coluna cresce (flex:1), então os 3 fundos
-     terminam exatamente na mesma linha. Sem buracos.
+     terminam exatamente na mesma linha.
    ============================================================ */
 .bento{
   --gap:14px;
@@ -142,26 +145,24 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
   .bento{grid-template-columns:minmax(0,320px) minmax(0,1fr) minmax(0,360px)}
 }
 
-/* Tablet largo: palco (player + apoie) em cima, lado a lado; depois as duas laterais */
+/* Tablet largo: palco (player + jogos) ocupa a linha de cima; depois as duas laterais lado a lado */
 @media (max-width:1280px){
   .bento{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  .bento-center{
-    grid-column:1 / -1; order:-1;
-    display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:var(--gap); align-items:stretch;
-  }
+  .bento-center{grid-column:1 / -1;order:-1}
+  .bento-center .twitch-player{max-height:520px}
 }
 
 /* Mobile / tablet estreito: 1 coluna, ordem definida card a card */
 @media (max-width:960px){
   .bento{grid-template-columns:1fr}
-  .bento-col,.bento-center{display:contents}
+  .bento-col{display:contents}
+  .bento-center{display:contents}
   .bento .twitch-player-box{order:1}
   .bento .profile-card{order:2}
   .bento .music-box{order:3}
-  .bento .sub-hero-box{order:4}
-  .bento .focus-box{order:5}
+  .bento .jogos-card{order:4}
+  .bento .sub-hero-box{order:5}
   .bento .apoie{order:6}
-  .bento .proximo{order:7}
 }
 
 /* ============================================================
