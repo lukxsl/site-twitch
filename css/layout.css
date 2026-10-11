@@ -56,8 +56,13 @@
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.9'/></svg>");
   mix-blend-mode:overlay}
 
+/* Decoração lateral só aparece onde sobra espaço fora do conteúdo (wrapper = 1440px).
+   Em telas menores ela ficava aparecendo cortada atrás dos cards. */
+.room-topShelf{display:none}
+@media (max-width:1699px){
+  .room-window,.room-shelf{display:none}
+}
 @media (max-width:900px){
-  .room-window,.room-shelf,.room-topShelf{display:none}
   .room-floor{height:18%}
 }
 
@@ -108,7 +113,7 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
 /* ============================================================
    PAGES
    ============================================================ */
-.page-section{display:none;padding:28px 0 60px;animation:pageIn .5s var(--ease)}
+.page-section{display:none;padding:24px 0 32px;animation:pageIn .5s var(--ease)}
 .page-section.ativo{display:block}
 @keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
@@ -118,62 +123,51 @@ body.sou-admin .nav-links li.admin-nav{display:list-item}
 .section-kicker{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--purple-2);margin-bottom:10px;padding:4px 10px;border-radius:99px;background:rgba(168,85,247,.1);border:1px solid var(--line)}
 
 /* ============================================================
-   BENTO GRID (HOME) — Cenário 1
+   BENTO GRID (HOME) — 3 colunas, cada uma uma "pilha" de cards.
+   - O grid estica as 3 colunas pra mesma altura (align-items:stretch)
+   - O ÚLTIMO card de cada coluna cresce (flex:1), então os 3 fundos
+     terminam exatamente na mesma linha. Sem buracos.
    ============================================================ */
 .bento{
+  --gap:14px;
   display:grid;
-  grid-template-columns: minmax(0, 280px) minmax(0, 1fr) minmax(0, 320px);
-  grid-template-areas:
-    "profile player  right"
-    "jogo    apoie   proximo";
-  gap: 14px;
-  align-items: start;
+  grid-template-columns:minmax(0,300px) minmax(0,1fr) minmax(0,340px);
+  gap:var(--gap);
+  align-items:stretch;
+}
+.bento-col{display:flex;flex-direction:column;gap:var(--gap);min-width:0}
+.bento-col > .card:last-child{flex:1 1 auto}
+
+@media (min-width:1600px){
+  .bento{grid-template-columns:minmax(0,320px) minmax(0,1fr) minmax(0,360px)}
 }
 
-.profile-card   { grid-area: profile; align-self: stretch; }
-.twitch-player-box { grid-area: player; }
-.bento-right    { grid-area: right; display: flex; flex-direction: column; gap: 14px; }
-.bento-right .music-box { flex: 0 0 auto; }
-.bento-right .sub-hero-box { flex: 0 0 auto; }
-
-.foco      { grid-area: jogo; }
-.apoie     { grid-area: apoie; }
-.proximo   { grid-area: proximo; }
-
-@media (min-width: 1600px){
-  .bento{
-    grid-template-columns: minmax(0, 300px) minmax(0, 1.4fr) minmax(0, 340px);
+/* Tablet largo: palco (player + apoie) em cima, lado a lado; depois as duas laterais */
+@media (max-width:1280px){
+  .bento{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .bento-center{
+    grid-column:1 / -1; order:-1;
+    display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:var(--gap); align-items:stretch;
   }
 }
 
-@media (max-width: 1280px){
-  .bento{
-    grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
-    grid-template-areas:
-      "profile player"
-      "jogo    right"
-      "apoie   right"
-      "proximo proximo";
-  }
-}
-
-@media (max-width: 960px){
-  .bento{
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "player"
-      "profile"
-      "right"
-      "jogo"
-      "apoie"
-      "proximo";
-  }
+/* Mobile / tablet estreito: 1 coluna, ordem definida card a card */
+@media (max-width:960px){
+  .bento{grid-template-columns:1fr}
+  .bento-col,.bento-center{display:contents}
+  .bento .twitch-player-box{order:1}
+  .bento .profile-card{order:2}
+  .bento .music-box{order:3}
+  .bento .sub-hero-box{order:4}
+  .bento .focus-box{order:5}
+  .bento .apoie{order:6}
+  .bento .proximo{order:7}
 }
 
 /* ============================================================
    FOOTER
    ============================================================ */
-footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line);backdrop-filter:blur(10px);position:relative;z-index:1;margin-top:40px}
+footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line);backdrop-filter:blur(10px);position:relative;z-index:1;margin-top:24px}
 .footer-top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line)}
 .footer-links{display:flex;gap:20px;flex-wrap:wrap}
 .footer-links a{color:var(--mute);font-size:.85rem;font-weight:600;transition:.2s}

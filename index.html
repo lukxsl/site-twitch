@@ -118,64 +118,112 @@
   </div>
 
   <div class="bento">
-    <article class="card profile-card reveal">
-      <div class="profile-avatar-container">
-        <span class="av-ring"></span>
-        <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
-        <span class="av-status" id="profileStatus" title="Carregando..."></span>
-      </div>
-      <h2>asemtet0 <span class="h2-emoji">💜</span></h2>
-      <div class="subloc">📍 Maceió – AL · Streamer desde 2025</div>
-      <p class="profile-description">
-        Oie! Eu sou a Soso, também conhecida como Sophs ou Teto.
-        Aqui você encontra games, caos, conversa e muita gameplay duvidosa. 💜
-      </p>
-      <div class="profile-stats-grid">
-        <div class="profile-stat-row"><span>🎮 Foco</span><span>Games & Chat</span></div>
-        <div class="profile-stat-row"><span>✨ Vibe</span><span>Caos & Diversão</span></div>
-        <div class="profile-stat-row"><span>⚡ Frequência</span><span>Quase todo dia</span></div>
-      </div>
-      <div class="profile-socials">
-        <a class="profile-social-btn" href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener" title="Instagram">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z"/><path d="M16 2H8a6 6 0 0 0-6 6v8a6 6 0 0 0 6 6h8a6 6 0 0 0 6-6V8a6 6 0 0 0-6-6Zm4.2 14a4.2 4.2 0 0 1-4.2 4.2H8A4.2 4.2 0 0 1 3.8 16V8A4.2 4.2 0 0 1 8 3.8h8A4.2 4.2 0 0 1 20.2 8v8Z"/></svg>
-          <span>Instagram</span>
-        </a>
-        <a class="profile-social-btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener" title="Discord">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
-          <span>Discord</span>
-        </a>
-        <a class="profile-social-btn" href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener" title="TikTok">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 2h-3.3v13.2a2.9 2.9 0 1 1-2-2.8V9a6.2 6.2 0 1 0 5.3 6.2V8.6a7.5 7.5 0 0 0 4.4 1.4V6.7a4.4 4.4 0 0 1-4.4-4.7Z"/></svg>
-          <span>TikTok</span>
-        </a>
-      </div>
-    </article>
-
-    <article class="card twitch-player-box reveal">
-      <div class="twitch-player-header">
-        <div class="twitch-player-title">
-          <span class="live-indicator" id="headerLiveDot"></span>
-          CANAL DA SOSO
+    <!-- COLUNA ESQUERDA: perfil + último jogo -->
+    <div class="bento-col bento-left">
+      <article class="card profile-card reveal">
+        <div class="profile-avatar-container">
+          <span class="av-ring"></span>
+          <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+          <span class="av-status" id="profileStatus" title="Carregando..."></span>
         </div>
-        <div class="twitch-player-status" id="viewerCountStatus">@asemtet0</div>
-      </div>
-      <div class="twitch-player">
-        <div class="offline-panel" id="offlinePanel">
-          <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
-          <h4>Estamos offline por agora 💜</h4>
-          <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
-          <div class="offline-actions">
-            <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
-            <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
+        <h2>asemtet0 <span class="h2-emoji">💜</span></h2>
+        <div class="subloc">📍 Maceió – AL · Streamer desde 2025</div>
+        <p class="profile-description">
+          Oie! Eu sou a Soso, também conhecida como Sophs ou Teto.
+          Aqui você encontra games, caos, conversa e muita gameplay duvidosa. 💜
+        </p>
+        <div class="profile-stats-grid">
+          <div class="profile-stat-row"><span>🎮 Foco</span><span>Games & Chat</span></div>
+          <div class="profile-stat-row"><span>✨ Vibe</span><span>Caos & Diversão</span></div>
+          <div class="profile-stat-row"><span>⚡ Frequência</span><span>Quase todo dia</span></div>
+        </div>
+        <div class="profile-socials">
+          <a class="profile-social-btn" href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener" title="Instagram">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z"/><path d="M16 2H8a6 6 0 0 0-6 6v8a6 6 0 0 0 6 6h8a6 6 0 0 0 6-6V8a6 6 0 0 0-6-6Zm4.2 14a4.2 4.2 0 0 1-4.2 4.2H8A4.2 4.2 0 0 1 3.8 16V8A4.2 4.2 0 0 1 8 3.8h8A4.2 4.2 0 0 1 20.2 8v8Z"/></svg>
+            <span>Instagram</span>
+          </a>
+          <a class="profile-social-btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener" title="Discord">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
+            <span>Discord</span>
+          </a>
+          <a class="profile-social-btn" href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener" title="TikTok">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 2h-3.3v13.2a2.9 2.9 0 1 1-2-2.8V9a6.2 6.2 0 1 0 5.3 6.2V8.6a7.5 7.5 0 0 0 4.4 1.4V6.7a4.4 4.4 0 0 1-4.4-4.7Z"/></svg>
+            <span>TikTok</span>
+          </a>
+        </div>
+      </article>
+
+      <article class="card focus-box foco reveal">
+        <img class="foco-cover skeleton" id="focoCover" alt="">
+        <div class="foco-info">
+          <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
+          <h3 id="focoNome">Carregando…</h3>
+          <div class="foco-meta" id="focoMeta"></div>
+          <div class="foco-bar" id="focoBar" style="display:none">
+            <small><span>Progresso</span><b id="focoPct"></b></small>
+            <div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div>
+          </div>
+          <p class="foco-last" id="focoHoras"></p>
+          <div class="foco-btns">
+            <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
+            <a class="btn ghost" id="focoTwitchLink" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="display:none">Ver na Twitch →</a>
           </div>
         </div>
-        <iframe id="twitchIframe" style="display:none" src="about:blank" allowfullscreen scrolling="no" title="Live da Soso na Twitch"></iframe>
-      </div>
-      <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
-    </article>
+      </article>
 
-    <div class="bento-right reveal">
-      <article class="card music-box" id="musicBox">
+    </div>
+
+    <!-- COLUNA CENTRAL (palco): player + apoie -->
+    <div class="bento-col bento-center">
+      <article class="card twitch-player-box reveal">
+        <div class="twitch-player-header">
+          <div class="twitch-player-title">
+            <span class="live-indicator" id="headerLiveDot"></span>
+            CANAL DA SOSO
+          </div>
+          <div class="twitch-player-status" id="viewerCountStatus">@asemtet0</div>
+        </div>
+        <div class="twitch-player">
+          <div class="offline-panel" id="offlinePanel">
+            <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+            <h4>Estamos offline por agora 💜</h4>
+            <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
+            <div class="offline-actions">
+              <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
+              <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
+            </div>
+          </div>
+          <iframe id="twitchIframe" style="display:none" src="about:blank" allowfullscreen scrolling="no" title="Live da Soso na Twitch"></iframe>
+        </div>
+        <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
+      </article>
+
+      <article class="card apoie reveal">
+        <div class="apoie-head">
+          <h3>💜 Apoie o cantinho</h3>
+          <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
+        </div>
+        <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
+
+        <div class="hall-tabs" id="hallTabs">
+          <button type="button" class="hall-tab on" data-hall="gift">🎁 Gift Subs</button>
+          <button type="button" class="hall-tab" data-hall="fieis">⏱️ Fiéis</button>
+          <button type="button" class="hall-tab" data-hall="doadores">💜 Doadores</button>
+        </div>
+        <div class="hall-lista" id="hallLista">
+          <div class="hall-empty">
+            ✨ Em breve...
+            <small>Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small>
+          </div>
+        </div>
+        <p class="hall-updated" id="hallUpdated" style="display:none"></p>
+      </article>
+
+    </div>
+
+    <!-- COLUNA DIREITA: spotify + sub + próxima votação -->
+    <div class="bento-col bento-right">
+      <article class="card music-box reveal" id="musicBox">
         <div class="music-head">
           <span class="music-ic" aria-hidden="true">
             <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
@@ -193,7 +241,7 @@
         </button>
       </article>
 
-      <article class="card sub-hero-box">
+      <article class="card sub-hero-box reveal">
         <span class="sub-hero-crown">👑</span>
         <h3>Seja Sub</h3>
         <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho.</p>
@@ -222,61 +270,22 @@
           </div>
         </div>
       </article>
+    
+      <article class="card proximo foco reveal">
+        <img class="foco-cover" id="proxCover" alt="" style="display:none">
+        <div class="foco-info">
+          <span class="foco-label">🗳️ Próximo na votação</span>
+          <h3 id="proxNome">Votação aberta</h3>
+          <div class="prox-bar" id="proxBarWrap" style="display:none">
+            <div class="goal-bar"><i id="proxBarI" style="width:0%"></i></div>
+          </div>
+          <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
+          <div class="foco-btns">
+            <button class="btn" onclick="mudarAba('sugestoes')">Votar agora →</button>
+          </div>
+        </div>
+      </article>
     </div>
-
-    <article class="card focus-box foco reveal">
-      <img class="foco-cover skeleton" id="focoCover" alt="">
-      <div class="foco-info">
-        <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
-        <h3 id="focoNome">Carregando…</h3>
-        <div class="foco-meta" id="focoMeta"></div>
-        <div class="foco-bar" id="focoBar" style="display:none">
-          <small><span>Progresso</span><b id="focoPct"></b></small>
-          <div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div>
-        </div>
-        <p class="foco-last" id="focoHoras"></p>
-        <div class="foco-btns">
-          <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
-          <a class="btn ghost" id="focoTwitchLink" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="display:none">Ver na Twitch →</a>
-        </div>
-      </div>
-    </article>
-
-    <article class="card apoie reveal">
-      <div class="apoie-head">
-        <h3>💜 Apoie o cantinho</h3>
-        <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
-      </div>
-      <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
-
-      <div class="hall-tabs" id="hallTabs">
-        <button type="button" class="hall-tab on" data-hall="gift">🎁 Gift Subs</button>
-        <button type="button" class="hall-tab" data-hall="fieis">⏱️ Fiéis</button>
-        <button type="button" class="hall-tab" data-hall="doadores">💜 Doadores</button>
-      </div>
-      <div class="hall-lista" id="hallLista">
-        <div class="hall-empty">
-          ✨ Em breve...
-          <small>Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small>
-        </div>
-      </div>
-      <p class="hall-updated" id="hallUpdated" style="display:none"></p>
-    </article>
-
-    <article class="card proximo foco reveal">
-      <img class="foco-cover" id="proxCover" alt="" style="display:none">
-      <div class="foco-info">
-        <span class="foco-label">🗳️ Próximo na votação</span>
-        <h3 id="proxNome">Votação aberta</h3>
-        <div class="prox-bar" id="proxBarWrap" style="display:none">
-          <div class="goal-bar"><i id="proxBarI" style="width:0%"></i></div>
-        </div>
-        <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
-        <div class="foco-btns">
-          <button class="btn" onclick="mudarAba('sugestoes')">Votar agora →</button>
-        </div>
-      </div>
-    </article>
   </div>
 </section>
 
