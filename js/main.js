@@ -77,7 +77,6 @@ let sirFiltro = 'all';
 let SIR_ITENS_CACHE = [];
 let _musicaAtual = null;
 
-/* Hall da Fama */
 let HALL_DADOS = null;
 let HALL_ABA = 'gift';
 let HALL_TIMER = null;
@@ -375,28 +374,7 @@ function iniciarHall(){
 }
 
 /* ============================================================
-   MODO FOCO
-   ============================================================ */
-function toggleFocusMode(){
-  const ativo = document.body.classList.toggle('focus-mode');
-  const btn = document.getElementById('focusModeBtn');
-  if(btn) btn.classList.toggle('on', ativo);
-  try { localStorage.setItem('focusMode', ativo ? '1' : '0'); } catch(e){}
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-window.toggleFocusMode = toggleFocusMode;
-
-function restaurarFocusMode(){
-  try {
-    if(localStorage.getItem('focusMode') === '1'){
-      document.body.classList.add('focus-mode');
-      document.getElementById('focusModeBtn')?.classList.add('on');
-    }
-  } catch(e){}
-}
-
-/* ============================================================
-   MÚSICA (Compacto — disco opção B)
+   MÚSICA
    ============================================================ */
 function _iniciaisFaixa(nome){
   if(!nome) return '♪';
@@ -439,9 +417,7 @@ function renderOuvindo(){
         <b id="ouvindoFaixa">${esc(d.faixa || '—')}</b>
         <span id="ouvindoArtista">${esc(d.artista || '')}${d.album ? ' · ' + esc(d.album) : ''}</span>
         ${d.duracao ? `
-          <div class="ouvindo-progress">
-            <i style="width:${pct}%"></i>
-          </div>
+          <div class="ouvindo-progress"><i style="width:${pct}%"></i></div>
           <div class="ouvindo-times">
             <span>${_fmtMs(d.progresso || 0)}</span>
             <span>${_fmtMs(d.duracao)}</span>
@@ -1452,10 +1428,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   _ultimaAba = null;
   _executarMudarAba(abaInicial, false);
 
-  restaurarFocusMode();
-  const focusBtn = document.getElementById('focusModeBtn');
-  if(focusBtn) focusBtn.addEventListener('click', toggleFocusMode);
-
   renderAviso(); renderEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
@@ -1577,7 +1549,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   setInterval(() => { if(VOTOS_FECHAMENTO) renderVotacao(); }, 60000);
 
-  // Recalcula uptime do foco a cada 30s
   setInterval(() => {
     if(ultVivo && ultGame) atualizarFoco(ultGame, ultVivo);
   }, 30000);
