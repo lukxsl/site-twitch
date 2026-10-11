@@ -251,7 +251,7 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
-   SUB SHORTCUTS
+   SUB SHORTCUTS (legado — mantido por segurança)
    ============================================================ */
 function setupSubShortcuts(){
   const wrap = document.querySelector('.sub-shortcuts');
@@ -287,7 +287,7 @@ async function carregarHall(){
     HALL_DADOS = d;
     renderHall();
   } catch(e){
-    lista.innerHTML = `<div class="hall-empty">✨ Em breve...<small>Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">✨</span><small>Aguardando os primeiros dados</small></div>`;
   }
 }
 
@@ -298,7 +298,7 @@ function renderHall(){
   const d = HALL_DADOS;
 
   if(!d || d.vazio){
-    lista.innerHTML = `<div class="hall-empty">✨ Em breve...<small>Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">✨</span><small>Aguardando os primeiros dados</small></div>`;
     if(updated) updated.style.display = 'none';
     return;
   }
@@ -308,7 +308,7 @@ function renderHall(){
               : (d.doadores || [])).slice(0, 5);
 
   if(!itens.length){
-    lista.innerHTML = `<div class="hall-empty">✨ Em breve…</div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">✨</span><small>Aguardando os primeiros dados</small></div>`;
   } else {
     const medalhas = ['🥇','🥈','🥉'];
     lista.innerHTML = itens.map((p, i) => {
@@ -394,10 +394,22 @@ function _fmtMs(ms){
 
 function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
+
+  // Estado vazio: disco fantasma "dorminhoco"
   if(!musicaTocando){
-    painel.innerHTML = `<div class="ouvindo-vazio">🎧 Não estou ouvindo nada agora 💜</div>`;
+    painel.innerHTML = `
+      <div class="ouvindo-wrap">
+        <div class="disco-fantasma" aria-hidden="true">
+          <span class="df-ic">💤</span>
+        </div>
+        <div class="ouvindo-vazio-txt">
+          Sem música rolando agora
+        </div>
+      </div>
+    `;
     return;
   }
+
   const d = _musicaAtual || {};
   const iniciais = _iniciaisFaixa(d.faixa);
   const pct = (d.duracao && d.progresso) ? Math.min(100, (d.progresso / d.duracao) * 100) : 0;
@@ -443,7 +455,7 @@ function pintarOuvindo(d){
 async function carregarOuvindoAgora(){
   try {
     const r = await fetch('/api/lastfm', { cache: 'no-store' });
-    if(!r.ok) { musicaTocando = false; return; }
+    if(!r.ok) { musicaTocando = false; renderOuvindo(); return; }
     const d = await r.json();
     if(!d || !d.tocando || !d.faixa){
       musicaTocando = false;
@@ -456,7 +468,10 @@ async function carregarOuvindoAgora(){
     _musicaAtual = d;
     if(musicaMudou) pintarOuvindo(d);
     else renderOuvindo();
-  } catch(e) { musicaTocando = false; }
+  } catch(e) {
+    musicaTocando = false;
+    renderOuvindo();
+  }
 }
 
 function renderPlaylistComunidade(){
@@ -1433,6 +1448,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupComunidadeTabs();
   setupSubShortcuts();
   iniciarHall();
+  renderOuvindo();
 
   setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
   document.querySelectorAll('.svt-btn').forEach(b => {

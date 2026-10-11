@@ -162,9 +162,7 @@
             <p>A trilha sonora que rola nas lives. 💜</p>
           </div>
         </div>
-        <div class="music-panel on" id="musicPainelOuvindo">
-          <div class="ouvindo-vazio">🎧 Não estou ouvindo nada agora 💜</div>
-        </div>
+        <div class="music-panel on" id="musicPainelOuvindo"></div>
         <button type="button" class="music-link-playlist" onclick="irParaPlaylist()">
           🎵 Ver playlist completa →
         </button>
@@ -246,11 +244,10 @@
           <li><b>🎖️ Cargo de destaque</b> no servidor</li>
           <li><b>💜 Lives sem anúncios</b></li>
         </ul>
-        <div class="emotes-preview">
-          <small>Preview dos emotes de sub</small>
-          <div class="emotes-grid" id="emotesGrid"></div>
-        </div>
-        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">Assinar na Twitch →</a>
+        <button type="button" class="sub-ver-emotes" onclick="abrirSejaSub()">
+          🎨 Ver todos os emotes →
+        </button>
+        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">👑 Assinar na Twitch →</a>
       </article>
       <article class="card apoie reveal">
         <div class="apoie-head">
@@ -266,8 +263,8 @@
         </div>
         <div class="hall-lista" id="hallLista">
           <div class="hall-empty">
-            ✨ Em breve...
-            <small>Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜</small>
+            <span class="hall-empty-ic">✨</span>
+            <small>Aguardando os primeiros dados</small>
           </div>
         </div>
         <p class="hall-updated" id="hallUpdated" style="display:none"></p>
