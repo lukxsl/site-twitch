@@ -148,7 +148,7 @@ async function verificarStatusTwitch() {
     }
 
     _atualizarPlayerHeader(live);
-    _atualizarProfileStatus(live, data);   // 🆕 passa data junto
+    _atualizarProfileStatus(live, data);
     _atualizarBanner(data);
 
     const isMature = !!(data.stream && data.stream.is_mature);
@@ -226,6 +226,10 @@ async function verificarStatusTwitch() {
             <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
             <h4>Estamos offline por agora 💜</h4>
             <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
+            <div class="offline-info">
+              <span>📅 Lives toda semana</span>
+              <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
+            </div>
             <div class="offline-actions">
               <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
               <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
@@ -256,7 +260,7 @@ async function verificarStatusTwitch() {
     ['goalSeg','goalDc'].forEach(p => { const el = $(p+'Num'); if (el && el.textContent === '…') atualizarMeta(p, null); });
     setLivePulse(false);
     _atualizarPlayerHeader(false);
-    _atualizarProfileStatus(false, null);   // 🆕 garante status offline em caso de erro
+    _atualizarProfileStatus(false, null);
     const overlay = document.getElementById('bannerOverlay');
     if(overlay) overlay.style.display = 'none';
     const badge = document.getElementById('bannerLiveBadge');
