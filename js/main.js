@@ -205,6 +205,31 @@ function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
   elDesc.textContent = `Faltam ${(alvo - atual).toLocaleString('pt-BR')} para alcançar a próxima meta!`;
 }
 
+/* 🆕 Renderiza o recado no card dedicado E na nota do player */
+function renderRecado(){
+  const noteEl = $('playerNoteText');
+  if(noteEl){
+    noteEl.classList.remove('recado');
+    if(!assistindoVod){
+      noteEl.textContent = ultVivo
+        ? 'Transmitindo ao vivo agora 💜'
+        : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
+    }
+  }
+
+  const card = $('recadoCard');
+  const texto = $('recadoTexto');
+  if(card && texto){
+    const recado = (CONFIG_GERAL.recado || '').trim();
+    if(recado){
+      texto.textContent = recado;
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  }
+}
+
 function renderAviso(){
   const box = $('avisoBox'); if(!box) return;
   if(AVISO && AVISO.ativo && AVISO.texto){
@@ -223,27 +248,13 @@ function renderEmotes(){
   }).join('');
   const g1 = $('emotesGrid'); if(g1) g1.innerHTML = html;
   const g2 = $('emotesGridComunidade'); if(g2) g2.innerHTML = html;
+  const g3 = $('emotesMiniGrid'); if(g3) g3.innerHTML = html; // 🆕 card Seja Sub
 }
 
 function renderSiteUpdate(){
   const el = $('siteUpdated'); if(!el) return;
   const iso = CONFIG_GERAL.updatedAt;
   el.textContent = iso ? fmtDataHora(iso) : (CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR'));
-}
-
-function renderRecado(){
-  const noteEl = $('playerNoteText');
-  if(!noteEl) return;
-  const recado = (CONFIG_GERAL.recado || '').trim();
-  if(recado){
-    noteEl.classList.add('recado');
-    noteEl.innerHTML = `💌 Recado da Soso: <strong>${esc(recado)}</strong>`;
-  } else {
-    noteEl.classList.remove('recado');
-    if(!assistindoVod){
-      noteEl.textContent = ultVivo ? 'Transmitindo ao vivo agora 💜' : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
-    }
-  }
 }
 
 function renderHomeExtras(){
@@ -277,7 +288,7 @@ function setupSubShortcuts(){
 }
 
 /* ============================================================
-   HALL DA FAMA
+   HALL DA FAMA (compacto — top 3)
    ============================================================ */
 async function carregarHall(){
   const lista = $('hallLista'); if(!lista) return;
@@ -303,9 +314,10 @@ function renderHall(){
     return;
   }
 
+  // 🆕 só top 3 (compacto)
   const itens = (HALL_ABA === 'gift' ? (d.gift || [])
               : HALL_ABA === 'fieis' ? (d.fieis || [])
-              : (d.doadores || [])).slice(0, 5);
+              : (d.doadores || [])).slice(0, 3);
 
   if(!itens.length){
     lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">✨</span><small>Aguardando os primeiros dados</small></div>`;
@@ -315,8 +327,8 @@ function renderHall(){
       const pos = i + 1;
       const medalha = medalhas[i] || `${pos}º`;
       let meta = '';
-      if(HALL_ABA === 'gift') meta = `${p.total} gift sub${p.total === 1 ? '' : 's'}`;
-      else if(HALL_ABA === 'fieis') meta = `Sub há ${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
+      if(HALL_ABA === 'gift') meta = `${p.total} gift${p.total === 1 ? '' : 's'}`;
+      else if(HALL_ABA === 'fieis') meta = `${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
       else meta = fmtBRL(p.total);
       return `
         <div class="hall-row">
@@ -517,6 +529,10 @@ function _executarMudarAba(nome, salvar){
   if(section) section.classList.add('ativo');
   if(button) button.classList.add('on');
 
+  // 🆕 marca/desmarca o botão admin (canto direito)
+  const adminBtn = $('btn-admin');
+  if(adminBtn) adminBtn.classList.toggle('on', nome === 'admin');
+
   if(nome !== 'admin' && _ultimaAba === 'admin'){
     try { localStorage.removeItem('admin:page'); } catch(e){}
     ADMIN_PAGE = 'home';
@@ -531,11 +547,7 @@ function _executarMudarAba(nome, salvar){
   _ultimaAba = nome;
 
   try {
-    if(nome === 'admin'){
-      // mantém
-    } else {
-      history.replaceState(null, '', '#' + nome);
-    }
+    if(nome !== 'admin') history.replaceState(null, '', '#' + nome);
   } catch(e){}
 
   window.scrollTo({ top:0, behavior:'smooth' });
@@ -1047,11 +1059,12 @@ function renderVotacao(){
     else { statLider.parentElement.style.display = ''; statLider.textContent = 'líder com ' + pct(ord[0].votos) + '%'; }
   }
 
+  // 🆕 botão com pulse quando o usuário ainda não votou
   const btn = (it) => {
     const meu = meuVoto === it.id;
     if(fechada) return `<button class="btn ghost" disabled>Encerrada</button>`;
     if(meu) return `<button class="btn ghost" disabled>Votado ✓</button>`;
-    return `<button class="btn" onclick="votar('${it.id}', event)">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
+    return `<button class="btn pulse-vote" onclick="votar('${it.id}', event)">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
   };
 
   if(total > 0){
@@ -1353,16 +1366,52 @@ async function carregarConfigPublica(){
 window.carregarConfigPublica = carregarConfigPublica;
 
 /* ============================================================
-   REVEAL + PARALLAX + BURGER + FLOATING LIVE
+   REVEAL + TILT + PARALLAX + BURGER + FLOATING LIVE
    ============================================================ */
 function setupReveal(){
   revealObs = new IntersectionObserver((entries) => {
     entries.forEach(e => {
-      if(e.isIntersecting){ e.target.classList.add('in'); revealObs.unobserve(e.target); }
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        revealObs.unobserve(e.target);
+        const d = parseFloat(e.target.style.transitionDelay) || 0;
+        setTimeout(() => { e.target.style.transitionDelay = ''; }, 800 + d * 1000);
+      }
     });
   }, { rootMargin: '0px 0px -60px 0px', threshold: 0.05 });
+
+  // 🆕 Cascade nos cards da Home
+  document.querySelectorAll('.bento-col').forEach(col => {
+    col.querySelectorAll('.card.reveal').forEach((card, i) => {
+      if(i > 0) card.style.transitionDelay = (i * 70) + 'ms';
+    });
+  });
+
   document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+  setupCardTilt();
 }
+
+/* 🆕 Efeito Tilt 3D nos cards da Home */
+function setupCardTilt(){
+  if(matchMedia('(max-width: 960px)').matches) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  document.querySelectorAll('.bento-col > .card.reveal').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.setProperty('--tilt-ry', (x * 5) + 'deg');
+      card.style.setProperty('--tilt-rx', (-y * 5) + 'deg');
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.setProperty('--tilt-ry', '0deg');
+      card.style.setProperty('--tilt-rx', '0deg');
+    });
+  });
+}
+window.setupCardTilt = setupCardTilt;
 
 function setupRoomParallax(){
   const room = document.querySelector('.room');

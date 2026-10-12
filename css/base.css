@@ -9,7 +9,7 @@
   --surface:rgba(22,13,40,.72);
   --surface-solid:#181028;
   --ink:#f5f3ff;
-  --mute:#b0a5c9;
+  --mute:#c4bcd9;   /* 🆕 clareado pra melhor leitura */
   --dim:#6b6080;
   --white:#fff;
 
@@ -55,7 +55,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,
 
 .wrapper{width:100%;max-width:1440px;margin:0 auto;padding:0 clamp(16px,3vw,40px);position:relative;z-index:1}
 
-.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:var(--reveal-delay,0ms)}
 .reveal.in{opacity:1;transform:none}
 
 @media (prefers-reduced-motion: reduce){

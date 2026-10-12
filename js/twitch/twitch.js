@@ -118,7 +118,6 @@ async function verificarStatusTwitch() {
 
     const live = !!data.stream;
     inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
-    // Guarda uptime em segundos para calcular "ao vivo há Xh" no card
     if(data.stream && data.stream.uptime_seconds){
       window.__uptimeLiveSeg = data.stream.uptime_seconds;
       window.__uptimeLiveTs = Date.now();
@@ -143,9 +142,15 @@ async function verificarStatusTwitch() {
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
 
+    // 🆕 Foto de capa offline da Twitch como background do player
     if (data.user) {
-      if (data.user.profile_image_url) { const av = g('offlineAvatarImg'); if(av) av.src = data.user.profile_image_url; }
-      if (data.user.offline_image_url && panel) panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.7),rgba(10,5,17,.9)),url(${data.user.offline_image_url})`;
+      if (data.user.profile_image_url) {
+        const av = g('offlineAvatarImg');
+        if (av) av.src = data.user.profile_image_url;
+      }
+      if (data.user.offline_image_url && panel) {
+        panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
+      }
     }
 
     if (data.stream && isMature) {
@@ -182,7 +187,6 @@ async function verificarStatusTwitch() {
       g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
       const noteEl = g('playerNoteText');
       if(noteEl){
-        // Só sobrescreve se não tem recado visível
         if(!noteEl.classList.contains('recado')){
           noteEl.textContent = `Transmitindo: ${data.stream.title}`;
         }
@@ -196,15 +200,20 @@ async function verificarStatusTwitch() {
         }
         if(panel){
           panel.style.display = 'flex';
+          // 🆕 background fica sendo a offline_image_url (setada acima)
           panel.innerHTML = `
             <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
             <h4>Estamos offline por agora 💜</h4>
             <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
             <div class="offline-actions">
-              <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
+              <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
               <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
             </div>
           `;
+          // reaplica a foto de capa offline depois de recriar o innerHTML
+          if(data.user && data.user.offline_image_url){
+            panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
+          }
           const btnVodEl = g('btnVod');
           if(btnVodEl) btnVodEl.style.display = vodAtual ? '' : 'none';
         }

@@ -66,12 +66,12 @@
         <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
         <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
         <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
-        <li class="admin-nav"><button onclick="mudarAba('admin')" id="btn-admin">⚙️ Admin</button></li>
       </ul>
       <div class="nav-user" id="navUser"></div>
     </div>
 
     <div class="nav-actions">
+      <button class="nav-admin-btn" onclick="mudarAba('admin')" id="btn-admin" type="button" title="Painel Admin" aria-label="Painel Admin">⚙️</button>
       <button class="nav-burger" id="navBurger" aria-label="Abrir menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
@@ -185,7 +185,7 @@
             <h4>Estamos offline por agora 💜</h4>
             <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
             <div class="offline-actions">
-              <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
+              <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
               <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
             </div>
           </div>
@@ -228,14 +228,14 @@
       </article>
     </div>
 
-    <!-- COLUNA DIREITA: seja sub + apoie/hall -->
+    <!-- COLUNA DIREITA: seja sub + recado + apoie/hall -->
     <div class="bento-col bento-right">
       <article class="card sub-hero-box reveal">
         <div class="sub-hero-head">
           <span class="sub-hero-crown">👑</span>
           <div>
             <h3>Seja Sub</h3>
-            <p>Apoie o canal e desbloqueie vantagens exclusivas no cantinho.</p>
+            <p>Vem pro cantinho! 💜 Vire Sub e desbloqueie recompensas como emotes exclusivos e lives sem anúncios.</p>
           </div>
         </div>
         <ul class="beneficios-lista">
@@ -244,11 +244,22 @@
           <li><b>🎖️ Cargo de destaque</b> no servidor</li>
           <li><b>💜 Lives sem anúncios</b></li>
         </ul>
-        <button type="button" class="sub-ver-emotes" onclick="abrirSejaSub()">
-          🎨 Ver todos os emotes →
-        </button>
-        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block">👑 Assinar na Twitch →</a>
+        <div class="emotes-mini-grid" id="emotesMiniGrid"></div>
+        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block twitch-accent">👑 Assinar na Twitch →</a>
       </article>
+
+      <!-- 🆕 CARD RECADO DA SOSO -->
+      <article class="card recado-card reveal" id="recadoCard" style="display:none">
+        <div class="recado-head">
+          <span class="recado-ic">💌</span>
+          <div>
+            <h3>Recado da Soso</h3>
+            <small>Pra você, com carinho 💜</small>
+          </div>
+        </div>
+        <p class="recado-texto" id="recadoTexto"></p>
+      </article>
+
       <article class="card apoie reveal">
         <div class="apoie-head">
           <h3>💜 Apoie o cantinho</h3>
