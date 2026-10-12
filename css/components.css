@@ -28,37 +28,33 @@
 }
 
 /* ============================================================
-   CARDS
+   CARDS — com TILT em todos
    ============================================================ */
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
   backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);padding:18px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 0 rgba(255,255,255,.02), var(--sh), var(--sh-floor);
-  transition:border-color .25s,transform .3s var(--ease),box-shadow .3s;position:relative;overflow:hidden}
+  transition:border-color .25s, transform .3s var(--ease), box-shadow .3s;
+  position:relative;overflow:hidden;
+  /* 🆕 Tilt vars */
+  --tilt-rx:0deg; --tilt-ry:0deg; --tilt-ty:0px;
+  transform:perspective(1000px) rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry)) translateY(var(--tilt-ty));
+  transform-style:preserve-3d;
+}
 .card::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;
   background:linear-gradient(140deg,rgba(168,85,247,.22),transparent 45%);
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.65}
-.card:hover{border-color:var(--line-2);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 32px -14px rgba(168,85,247,.22), var(--sh-lg),var(--sh-floor)}
-
-.bento-col > .card.reveal{
-  --tilt-rx:0deg; --tilt-ry:0deg; --tilt-ty:0px;
-  transform:perspective(1000px) rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry)) translateY(var(--tilt-ty));
-  transform-style:preserve-3d;
-  transition:transform .3s var(--ease),border-color .25s,box-shadow .3s;
-}
-.bento-col > .card.reveal:hover{
+.card:hover{
   --tilt-ty:-3px;
   border-color:var(--line-2);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 18px 40px -18px rgba(168,85,247,.35), var(--sh-lg),var(--sh-floor);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 32px -14px rgba(168,85,247,.22), var(--sh-lg),var(--sh-floor);
 }
-@media (max-width:960px){
-  .bento-col > .card.reveal{transform:none !important}
-}
-@media (prefers-reduced-motion: reduce){
-  .bento-col > .card.reveal{transform:none !important}
-}
+/* Desliga tilt em mobile, em reduced-motion, e em dialogs */
+@media (max-width:960px){ .card{transform:none !important} }
+@media (prefers-reduced-motion: reduce){ .card{transform:none !important} }
+dialog .card{transform:none !important}
 
 /* ============================================================
    BANNER
@@ -202,7 +198,7 @@
    ============================================================ */
 .music-box{
   display:flex;flex-direction:column;gap:12px;padding:18px;
-  min-height:360px; /* fixo */
+  min-height:360px;
 }
 .music-head{display:flex;align-items:center;gap:12px;flex:none}
 .music-ic{width:42px;height:42px;display:grid;place-items:center;background:rgba(30,215,96,.1);border:1px solid rgba(30,215,96,.25);border-radius:11px;padding:8px;flex:none}
@@ -304,7 +300,7 @@
 .ap-vazio{color:var(--mute);font-size:.78rem;text-align:center;padding:12px;font-style:italic;opacity:.8}
 
 /* ============================================================
-   HALL DA FAMA (compacto, top 3, com avatar)
+   HALL DA FAMA
    ============================================================ */
 .hall-tabs{display:flex;gap:4px;margin:6px 0 10px}
 .hall-tab{flex:1;background:rgba(255,255,255,.02);border:1px solid var(--line);color:var(--mute);font-family:inherit;font-weight:700;font-size:.7rem;padding:8px 6px;border-radius:8px;cursor:pointer;transition:.2s;white-space:nowrap}
@@ -313,7 +309,6 @@
 
 .hall-lista{display:flex;flex-direction:column;gap:6px;flex:none;min-height:auto}
 
-/* Linha do hall com avatar */
 .hall-row{
   display:grid;
   grid-template-columns:26px 34px 1fr auto;
@@ -384,7 +379,7 @@
 .sub-hero-box h3{color:var(--white);font-size:1.15rem;margin-bottom:2px}
 .sub-hero-box .sub-hero-top p{color:#e0d9ec;font-size:.78rem;line-height:1.45}
 .sub-hero-box .btn{width:100%;margin-top:auto}
-.sub-cta{margin-top:4px}
+.sub-hero-cta{margin-top:4px}
 
 .beneficios-lista{list-style:none;display:grid;gap:4px;text-align:left;padding:8px 10px;background:rgba(255,255,255,.03);border:1px dashed var(--line);border-radius:var(--r-sm)}
 .beneficios-lista li{color:#ddd5eb;font-size:.76rem;line-height:1.4;display:flex;gap:8px;align-items:baseline}
@@ -905,31 +900,3 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 @media (max-width:400px){
   .sub-perks-grid{grid-template-columns:1fr}
 }
-
-/* ============================================================
-   SEJA SUB — visual final (cabeçalho com brilho, perks sem caixa,
-   emotes sobrepostos, botão dourado)
-   ============================================================ */
-.sub-hero-box{padding:0;gap:0;overflow:hidden;border-color:rgba(255,209,102,.3)}
-.sub-hero-box .sub-hero-top{padding:20px 20px 14px;gap:0;
-  background:radial-gradient(ellipse at 15% 0,rgba(255,209,102,.22),transparent 60%),linear-gradient(160deg,rgba(168,85,247,.28),transparent)}
-.sub-hero-box .sub-kicker{font-size:.64rem;letter-spacing:.1em;padding:3px 10px;margin:0;background:rgba(255,209,102,.08)}
-.sub-hero-box h3{font-size:1.5rem;margin:10px 0 4px}
-.sub-hero-box .sub-hero-top p{font-size:.84rem}
-
-.sub-hero-box .sub-perks-grid{gap:10px;padding:14px 20px 0}
-.sub-hero-box .sub-perk{padding:0;background:none;border:0;border-radius:0;gap:9px;font-size:.78rem;font-weight:700;color:var(--white);line-height:1.25}
-.sub-hero-box .sub-perk:hover{background:none;border:0}
-.sub-hero-box .sub-perk i{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(255,209,102,.12);font-size:.9rem}
-
-.sub-hero-box .emotes-mini-grid{display:flex;align-items:center;gap:0;padding:14px 20px 0;background:none;border:0;border-radius:0}
-.sub-hero-box .emotes-mini-grid .emote{width:34px;height:34px;aspect-ratio:auto;flex:none;border-radius:50%;margin-left:-8px;padding:3px;background:#221238;border:2px solid #181028;font-size:1rem}
-.sub-hero-box .emotes-mini-grid .emote:first-child{margin-left:0}
-.sub-hero-box .emotes-mini-grid .emote img{border-radius:50%}
-.sub-hero-box .emotes-mini-grid .emote:hover{position:relative;z-index:2}
-.sub-hero-box .emotes-mini-grid:not(:empty)::after{content:'+ emotes do canal';margin-left:12px;font-size:.74rem;color:var(--mute)}
-
-.sub-hero-box .btn.sub-hero-cta{width:calc(100% - 40px);margin:14px 20px 0;
-  background:linear-gradient(135deg,#ffd166,#f59e0b);color:#2a1700;box-shadow:0 8px 22px -8px rgba(255,209,102,.55)}
-.sub-hero-box .btn.sub-hero-cta:hover{box-shadow:0 12px 28px -8px rgba(255,209,102,.75)}
-.sub-hero-box .sub-note{padding:10px 20px 18px}

@@ -205,7 +205,6 @@ function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
   elDesc.textContent = `Faltam ${(alvo - atual).toLocaleString('pt-BR')} para alcançar a próxima meta!`;
 }
 
-/* 🆕 Renderiza o recado no card dedicado */
 function renderRecado(){
   const noteEl = $('playerNoteText');
   if(noteEl){
@@ -290,7 +289,7 @@ function setupSubShortcuts(){
 }
 
 /* ============================================================
-   HALL DA FAMA (compacto — top 3 com avatar)
+   HALL DA FAMA
    ============================================================ */
 async function carregarHall(){
   const lista = $('hallLista'); if(!lista) return;
@@ -331,7 +330,6 @@ function renderHall(){
       else if(HALL_ABA === 'fieis') meta = `${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
       else meta = fmtBRL(p.total);
 
-      /* 🆕 Avatar (se o StreamElements retornar; senão, placeholder) */
       const avatarHTML = p.avatar
         ? `<img class="hr-avatar" src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hr-avatar-ph',textContent:'👤'}))">`
         : `<div class="hr-avatar-ph">👤</div>`;
@@ -893,7 +891,7 @@ async function checarLogin(){
       const pr = await fetch('/api/admin?action=permissoes-minhas');
       if(pr.ok){
         const pd = await pr.json();
-        USUARIO.permissoes = Array.isArray(pd.permissoes) ? pd.permissoes : [];
+        USUARIO.permissoes = Array.isArray(pd.permissoes) ? pd.permissions : (Array.isArray(pd.permissoes) ? pd.permissoes : []);
       } else USUARIO.permissoes = [];
     } catch(e){ USUARIO.permissoes = []; }
   }
@@ -1395,23 +1393,53 @@ function setupReveal(){
   setupCardTilt();
 }
 
+/* 🆕 Tilt 3D em TODOS os cards do site */
 function setupCardTilt(){
   if(matchMedia('(max-width: 960px)').matches) return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  document.querySelectorAll('.bento-col > .card.reveal').forEach(card => {
-    card.addEventListener('mousemove', e => {
-      const rect = card.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      card.style.setProperty('--tilt-ry', (x * 5) + 'deg');
-      card.style.setProperty('--tilt-rx', (-y * 5) + 'deg');
-    });
-    card.addEventListener('mouseleave', () => {
-      card.style.setProperty('--tilt-ry', '0deg');
-      card.style.setProperty('--tilt-rx', '0deg');
-    });
+  let currentCard = null;
+  let rafId = null;
+  let lastX = 0, lastY = 0;
+
+  function resetTilt(card){
+    card.style.setProperty('--tilt-ry', '0deg');
+    card.style.setProperty('--tilt-rx', '0deg');
+  }
+
+  document.addEventListener('mouseover', (e) => {
+    const card = e.target.closest('.card');
+    if(!card || card.closest('dialog')) return;
+    if(card === currentCard) return;
+    if(currentCard) resetTilt(currentCard);
+    currentCard = card;
   });
+
+  document.addEventListener('mouseout', (e) => {
+    const card = e.target.closest('.card');
+    if(!card) return;
+    const to = e.relatedTarget;
+    if(!to || !card.contains(to)){
+      resetTilt(card);
+      if(currentCard === card) currentCard = null;
+    }
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if(!currentCard) return;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    if(rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      if(!currentCard) return;
+      const rect = currentCard.getBoundingClientRect();
+      const x = (lastX - rect.left) / rect.width - 0.5;
+      const y = (lastY - rect.top) / rect.height - 0.5;
+      currentCard.style.setProperty('--tilt-ry', (x * 5) + 'deg');
+      currentCard.style.setProperty('--tilt-rx', (-y * 5) + 'deg');
+    });
+  }, { passive: true });
 }
 window.setupCardTilt = setupCardTilt;
 
