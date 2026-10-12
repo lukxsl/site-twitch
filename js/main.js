@@ -566,6 +566,9 @@ function _executarMudarAba(nome, salvar){
   }
 
   if(section) section.querySelectorAll('.reveal:not(.in)').forEach(el => revealObs && revealObs.observe(el));
+
+  // 🆕 Reaplica o tilt nos cards que apareceram na nova aba
+  setTimeout(() => setupCardTilt(), 100);
 }
 
 function mudarAba(nome, salvar = true){
@@ -598,6 +601,7 @@ function setupComunidadeTabs(){
       p.classList.toggle('on', p.dataset.panel === tab);
     });
     if(tab === 'playlist') renderPlaylistComunidade();
+    setTimeout(() => setupCardTilt(), 100);
   };
   const salva = localStorage.getItem('comunidade:tab') || 'discord';
   ativarTab(salva);
@@ -891,7 +895,7 @@ async function checarLogin(){
       const pr = await fetch('/api/admin?action=permissoes-minhas');
       if(pr.ok){
         const pd = await pr.json();
-        USUARIO.permissoes = Array.isArray(pd.permissoes) ? pd.permissions : (Array.isArray(pd.permissoes) ? pd.permissoes : []);
+        USUARIO.permissoes = Array.isArray(pd.permissoes) ? pd.permissoes : [];
       } else USUARIO.permissoes = [];
     } catch(e){ USUARIO.permissoes = []; }
   }
@@ -1393,53 +1397,31 @@ function setupReveal(){
   setupCardTilt();
 }
 
-/* 🆕 Tilt 3D em TODOS os cards do site */
+/* ============================================================
+   TILT 3D — aplicado DIRETO em cada .card
+   ============================================================ */
 function setupCardTilt(){
   if(matchMedia('(max-width: 960px)').matches) return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  let currentCard = null;
-  let rafId = null;
-  let lastX = 0, lastY = 0;
+  document.querySelectorAll('.card').forEach(card => {
+    if(card.dataset.tiltBound === '1') return;
+    if(card.closest('dialog')) return;
+    card.dataset.tiltBound = '1';
 
-  function resetTilt(card){
-    card.style.setProperty('--tilt-ry', '0deg');
-    card.style.setProperty('--tilt-rx', '0deg');
-  }
-
-  document.addEventListener('mouseover', (e) => {
-    const card = e.target.closest('.card');
-    if(!card || card.closest('dialog')) return;
-    if(card === currentCard) return;
-    if(currentCard) resetTilt(currentCard);
-    currentCard = card;
-  });
-
-  document.addEventListener('mouseout', (e) => {
-    const card = e.target.closest('.card');
-    if(!card) return;
-    const to = e.relatedTarget;
-    if(!to || !card.contains(to)){
-      resetTilt(card);
-      if(currentCard === card) currentCard = null;
-    }
-  });
-
-  document.addEventListener('mousemove', (e) => {
-    if(!currentCard) return;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    if(rafId) return;
-    rafId = requestAnimationFrame(() => {
-      rafId = null;
-      if(!currentCard) return;
-      const rect = currentCard.getBoundingClientRect();
-      const x = (lastX - rect.left) / rect.width - 0.5;
-      const y = (lastY - rect.top) / rect.height - 0.5;
-      currentCard.style.setProperty('--tilt-ry', (x * 5) + 'deg');
-      currentCard.style.setProperty('--tilt-rx', (-y * 5) + 'deg');
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      card.style.setProperty('--tilt-ry', (x * 6).toFixed(2) + 'deg');
+      card.style.setProperty('--tilt-rx', (-y * 6).toFixed(2) + 'deg');
     });
-  }, { passive: true });
+
+    card.addEventListener('mouseleave', () => {
+      card.style.setProperty('--tilt-ry', '0deg');
+      card.style.setProperty('--tilt-rx', '0deg');
+    });
+  });
 }
 window.setupCardTilt = setupCardTilt;
 
@@ -1651,6 +1633,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => {
     if(ultVivo && ultGame) atualizarFoco(ultGame, ultVivo);
   }, 30000);
+
+  // 🆕 Reaplica tilt depois que tudo carregar (pega cards dinâmicos)
+  setTimeout(() => setupCardTilt(), 800);
+  setTimeout(() => setupCardTilt(), 2000);
 });
 
 /* ============================================================
