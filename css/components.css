@@ -905,3 +905,31 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 @media (max-width:400px){
   .sub-perks-grid{grid-template-columns:1fr}
 }
+
+/* ============================================================
+   SEJA SUB — visual final (cabeçalho com brilho, perks sem caixa,
+   emotes sobrepostos, botão dourado)
+   ============================================================ */
+.sub-hero-box{padding:0;gap:0;overflow:hidden;border-color:rgba(255,209,102,.3)}
+.sub-hero-box .sub-hero-top{padding:20px 20px 14px;gap:0;
+  background:radial-gradient(ellipse at 15% 0,rgba(255,209,102,.22),transparent 60%),linear-gradient(160deg,rgba(168,85,247,.28),transparent)}
+.sub-hero-box .sub-kicker{font-size:.64rem;letter-spacing:.1em;padding:3px 10px;margin:0;background:rgba(255,209,102,.08)}
+.sub-hero-box h3{font-size:1.5rem;margin:10px 0 4px}
+.sub-hero-box .sub-hero-top p{font-size:.84rem}
+
+.sub-hero-box .sub-perks-grid{gap:10px;padding:14px 20px 0}
+.sub-hero-box .sub-perk{padding:0;background:none;border:0;border-radius:0;gap:9px;font-size:.78rem;font-weight:700;color:var(--white);line-height:1.25}
+.sub-hero-box .sub-perk:hover{background:none;border:0}
+.sub-hero-box .sub-perk i{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(255,209,102,.12);font-size:.9rem}
+
+.sub-hero-box .emotes-mini-grid{display:flex;align-items:center;gap:0;padding:14px 20px 0;background:none;border:0;border-radius:0}
+.sub-hero-box .emotes-mini-grid .emote{width:34px;height:34px;aspect-ratio:auto;flex:none;border-radius:50%;margin-left:-8px;padding:3px;background:#221238;border:2px solid #181028;font-size:1rem}
+.sub-hero-box .emotes-mini-grid .emote:first-child{margin-left:0}
+.sub-hero-box .emotes-mini-grid .emote img{border-radius:50%}
+.sub-hero-box .emotes-mini-grid .emote:hover{position:relative;z-index:2}
+.sub-hero-box .emotes-mini-grid:not(:empty)::after{content:'+ emotes do canal';margin-left:12px;font-size:.74rem;color:var(--mute)}
+
+.sub-hero-box .btn.sub-hero-cta{width:calc(100% - 40px);margin:14px 20px 0;
+  background:linear-gradient(135deg,#ffd166,#f59e0b);color:#2a1700;box-shadow:0 8px 22px -8px rgba(255,209,102,.55)}
+.sub-hero-box .btn.sub-hero-cta:hover{box-shadow:0 12px 28px -8px rgba(255,209,102,.75)}
+.sub-hero-box .sub-note{padding:10px 20px 18px}
