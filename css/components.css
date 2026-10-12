@@ -898,3 +898,39 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 @media (max-width:400px){
   .sub-perks-grid{grid-template-columns:1fr}
 }
+
+/* ============================================================
+   HOME — TILT 3D + LUZ QUE ACOMPANHA O MOUSE (todos os cards)
+   O .reveal.in{transform:none} do base.css anulava o tilt;
+   aqui a regra mais específica devolve o efeito.
+   ============================================================ */
+.card.reveal.in{
+  transform:perspective(1000px) rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry)) translateY(var(--tilt-ty));
+}
+@media (max-width:960px){ .card.reveal.in{transform:none !important} }
+@media (prefers-reduced-motion: reduce){ .card.reveal.in{transform:none !important} }
+dialog .card.reveal.in{transform:none !important}
+
+.bento .card::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  opacity:0;transition:opacity .35s var(--ease);
+  background:radial-gradient(380px circle at var(--mx,50%) var(--my,50%), rgba(192,132,252,.17), transparent 62%);
+}
+.bento .card:hover::after{opacity:1}
+.bento .sub-hero-box::after{
+  background:radial-gradient(380px circle at var(--mx,50%) var(--my,50%), rgba(255,209,102,.16), transparent 62%);
+}
+@media (hover:none){ .bento .card::after{display:none} }
+
+/* ============================================================
+   JOGOS — duas metades sempre alinhadas (com ou sem música)
+   rótulo e título no topo, botão sempre embaixo
+   ============================================================ */
+.jogos-card{align-items:stretch}
+.jogo-half{align-items:stretch;padding:16px 14px;gap:12px}
+.jogo-half .foco-cover{align-self:flex-start}
+.jogo-half .foco-info{align-self:stretch;justify-content:flex-start;gap:6px}
+.jogo-half .foco-info h3{min-height:1.2em}
+.jogo-half .foco-meta{min-height:24px;align-items:center}
+.jogo-half .prox-bar{min-height:24px;display:flex;align-items:center}
+.jogo-half .foco-btns{margin-top:auto;padding-top:8px}

@@ -1036,7 +1036,7 @@ function renderVotacao(){
         </a>
       </div>`;
     if(proxCover) proxCover.style.display = 'none';
-    if(proxBarWrap) proxBarWrap.style.display = 'none';
+    if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
     return;
   }
   if(!VOTOS_DADOS.length){
@@ -1098,11 +1098,11 @@ function renderVotacao(){
     }
     $('proxNome').textContent = l.nome;
     $('proxInfo').textContent = fechada ? `Encerrada com ${p}% dos votos` : `Liderando com ${p}% dos votos`;
-    if(proxBarWrap && proxBarI){ proxBarWrap.style.display = ''; proxBarI.style.width = p + '%'; }
+    if(proxBarWrap && proxBarI){ proxBarWrap.style.visibility = 'visible'; proxBarI.style.width = p + '%'; }
   } else {
     destBox.innerHTML = '';
     if(proxCover) proxCover.style.display = 'none';
-    if(proxBarWrap) proxBarWrap.style.display = 'none';
+    if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
     $('proxNome').textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
     $('proxInfo').textContent = fechada ? 'Aguardando nova votação 💜' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
@@ -1401,7 +1401,6 @@ function setupReveal(){
    TILT 3D — aplicado DIRETO em cada .card
    ============================================================ */
 function setupCardTilt(){
-  if(matchMedia('(max-width: 960px)').matches) return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   document.querySelectorAll('.card').forEach(card => {
@@ -1409,15 +1408,30 @@ function setupCardTilt(){
     if(card.closest('dialog')) return;
     card.dataset.tiltBound = '1';
 
-    card.addEventListener('mousemove', (e) => {
+    let raf = 0, ev = null;
+    const aplicar = () => {
+      raf = 0;
+      if(!ev) return;
       const rect = card.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5;
-      const y = (e.clientY - rect.top) / rect.height - 0.5;
-      card.style.setProperty('--tilt-ry', (x * 6).toFixed(2) + 'deg');
-      card.style.setProperty('--tilt-rx', (-y * 6).toFixed(2) + 'deg');
-    });
+      const px = ev.clientX - rect.left, py = ev.clientY - rect.top;
+      // luz que acompanha o mouse (funciona em qualquer tamanho de tela com mouse)
+      card.style.setProperty('--mx', px.toFixed(0) + 'px');
+      card.style.setProperty('--my', py.toFixed(0) + 'px');
+      // tilt só em telas grandes; cards largos (player) inclinam menos
+      if(matchMedia('(max-width: 960px)').matches) return;
+      const max = rect.width > 560 ? 2.2 : 5;
+      const x = px / rect.width - 0.5, y = py / rect.height - 0.5;
+      card.style.setProperty('--tilt-ry', (x * max).toFixed(2) + 'deg');
+      card.style.setProperty('--tilt-rx', (-y * max).toFixed(2) + 'deg');
+    };
+
+    card.addEventListener('mousemove', (e) => {
+      ev = e;
+      if(!raf) raf = requestAnimationFrame(aplicar);
+    }, { passive: true });
 
     card.addEventListener('mouseleave', () => {
+      ev = null;
       card.style.setProperty('--tilt-ry', '0deg');
       card.style.setProperty('--tilt-rx', '0deg');
     });

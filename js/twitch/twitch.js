@@ -114,8 +114,8 @@ function _atualizarBanner(data){
     if(liveText) liveText.textContent = 'AO VIVO AGORA';
     if(overlay){
       overlay.style.display = '';
-      kicker.textContent = `🎮 Jogando: ${game}`;
-      title.innerHTML = `Assistindo agora com <em>${viewers.toLocaleString('pt-BR')} ${viewers === 1 ? 'viewer' : 'viewers'}</em>`;
+      if(kicker) kicker.textContent = `🎮 Jogando: ${game}`;
+      if(title) title.innerHTML = `Assistindo agora com <em>${viewers.toLocaleString('pt-BR')} ${viewers === 1 ? 'viewer' : 'viewers'}</em>`;
     }
   } else {
     if(badge){
