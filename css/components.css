@@ -22,6 +22,13 @@
 .btn.twitch-accent{background:linear-gradient(135deg,#a970ff,#7c3aed);box-shadow:0 6px 18px -6px rgba(145,70,255,.5), inset 0 1px 0 rgba(255,255,255,.15)}
 .btn.twitch-accent:hover{box-shadow:0 10px 24px -6px rgba(145,70,255,.7), inset 0 1px 0 rgba(255,255,255,.2)}
 
+/* 🆕 Pulse no botão Votar */
+.btn.pulse-vote{animation:votePulse 2s ease-in-out infinite}
+@keyframes votePulse{
+  0%,100%{box-shadow:0 6px 18px -6px rgba(168,85,247,.4), inset 0 1px 0 rgba(255,255,255,.15)}
+  50%{box-shadow:0 6px 18px -6px rgba(168,85,247,.4), inset 0 1px 0 rgba(255,255,255,.15), 0 0 0 4px rgba(168,85,247,.18)}
+}
+
 /* ============================================================
    CARDS
    ============================================================ */
@@ -37,7 +44,7 @@
 .card:hover{border-color:var(--line-2);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 32px -14px rgba(168,85,247,.22), var(--sh-lg),var(--sh-floor)}
 
-/* 🆕 TILT 3D nos cards da Home (só desktop) */
+/* TILT 3D nos cards da Home */
 .bento-col > .card.reveal{
   --tilt-rx:0deg; --tilt-ry:0deg; --tilt-ty:0px;
   transform:perspective(1000px) rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry)) translateY(var(--tilt-ty));
@@ -136,7 +143,7 @@
 .twitch-player{width:100%;aspect-ratio:16/9;min-height:340px;background:#050309;position:relative}
 .twitch-player iframe{width:100%;height:100%;border:0;display:block}
 
-/* 🆕 Offline panel com foto da Twitch + overlay */
+/* Offline panel com foto da Twitch + overlay */
 .offline-panel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:20px;
   background:linear-gradient(rgba(10,5,17,.72),rgba(10,5,17,.92)),radial-gradient(circle at 50% 30%,rgba(168,85,247,.25),#0a0511 70%);
   background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden}
@@ -152,12 +159,9 @@
 .player-note.recado{background:rgba(255,209,102,.08);color:#ffe4a3;font-weight:600;border-top-color:rgba(255,209,102,.25)}
 
 /* ============================================================
-   MUSIC BOX (Home) — altura fixa
+   MUSIC BOX (Home) — sem altura fixa
    ============================================================ */
-.music-box{
-  display:flex;flex-direction:column;gap:12px;padding:18px;
-  min-height:340px;
-}
+.music-box{display:flex;flex-direction:column;gap:12px;padding:18px}
 .music-head{display:flex;align-items:center;gap:12px;flex:none}
 .music-ic{width:42px;height:42px;display:grid;place-items:center;background:rgba(30,215,96,.1);border:1px solid rgba(30,215,96,.25);border-radius:11px;padding:8px;flex:none}
 .music-ic svg{width:100%;height:100%;display:block}
@@ -165,16 +169,7 @@
 .music-info h3{color:var(--white);font-size:.94rem;margin-bottom:2px}
 .music-info p{color:var(--mute);font-size:.72rem}
 
-.music-panel{
-  display:none;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  flex:1 1 auto;
-  min-height:0;
-  padding:8px 0;
-  animation:pageIn .3s var(--ease);
-}
+.music-panel{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1 1 auto;min-height:0;padding:8px 0;animation:pageIn .3s var(--ease)}
 .music-panel.on{display:flex}
 
 .ouvindo-vazio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 18px;text-align:center;color:var(--mute);font-size:.82rem;font-style:italic;width:100%}
@@ -182,7 +177,6 @@
 .ouvindo-wrap{display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;padding:4px 0;transition:opacity .35s ease;width:100%}
 .ouvindo-wrap.fade{opacity:0}
 
-/* Disco normal (toca) */
 .disco{position:relative;width:120px;height:120px;border-radius:50%;flex:none;cursor:pointer;
   transition:transform .3s var(--ease), box-shadow .3s;text-decoration:none;display:block;
   box-shadow:0 8px 24px -8px rgba(0,0,0,.8), 0 0 0 1px rgba(168,85,247,.15)}
@@ -197,7 +191,6 @@
 .disco::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px dashed rgba(168,85,247,.15);pointer-events:none}
 @keyframes discoSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
-/* Disco fantasma (parado, dorminhoco) */
 .disco-fantasma{
   position:relative;
   width:120px;height:120px;
@@ -252,11 +245,6 @@
   font-family:inherit;font-weight:700;font-size:.76rem;cursor:pointer;transition:.2s;margin-top:auto;flex:none}
 .music-link-playlist:hover{background:rgba(168,85,247,.1);border-color:var(--purple);color:#fff}
 
-@media (max-width:960px){
-  .music-box{min-height:auto}
-}
-
-/* Full player (aba Comunidade > Playlist) */
 .music-full{padding:24px}
 .music-full-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .music-full-head h3{color:var(--white);font-size:1.1rem;margin-bottom:2px}
@@ -297,9 +285,9 @@
 .hall-empty-ic{font-size:1.4rem;opacity:.55;animation:discoSleep 3s ease-in-out infinite}
 
 /* ============================================================
-   SUB HERO (novo visual com emotes grid)
+   SUB HERO (compactado)
    ============================================================ */
-.sub-hero-box{display:flex;flex-direction:column;gap:12px;align-items:stretch;padding:18px;
+.sub-hero-box{display:flex;flex-direction:column;gap:10px;align-items:stretch;padding:14px;
   background:radial-gradient(circle at 0% 0%, rgba(255,209,102,.12), transparent 55%),linear-gradient(135deg, rgba(168,85,247,.12), rgba(255,209,102,.04)),var(--surface);
   border-color:rgba(255,209,102,.28)}
 .sub-hero-head{display:flex;align-items:center;gap:12px;text-align:left}
@@ -308,16 +296,15 @@
 .sub-hero-box .sub-hero-head p{color:#e0d9ec;font-size:.78rem;line-height:1.45}
 .sub-hero-box .btn{width:100%;margin-top:auto}
 
-.beneficios-lista{list-style:none;display:grid;gap:6px;text-align:left;padding:10px 12px;background:rgba(255,255,255,.03);border:1px dashed var(--line);border-radius:var(--r-sm)}
-.beneficios-lista li{color:#ddd5eb;font-size:.8rem;line-height:1.4;display:flex;gap:8px;align-items:baseline}
+.beneficios-lista{list-style:none;display:grid;gap:4px;text-align:left;padding:8px 10px;background:rgba(255,255,255,.03);border:1px dashed var(--line);border-radius:var(--r-sm)}
+.beneficios-lista li{color:#ddd5eb;font-size:.76rem;line-height:1.4;display:flex;gap:8px;align-items:baseline}
 .beneficios-lista li b{color:var(--white);font-weight:700}
 
-/* 🆕 Grid 3x2 de emotes no card Seja Sub */
 .emotes-mini-grid{
   display:grid;
-  grid-template-columns:repeat(3, 1fr);
-  gap:6px;
-  padding:10px;
+  grid-template-columns:repeat(6, 1fr);
+  gap:4px;
+  padding:6px;
   background:rgba(255,255,255,.03);
   border:1px dashed var(--line);
   border-radius:var(--r-sm);
@@ -328,8 +315,8 @@
   place-items:center;
   background:rgba(255,255,255,.04);
   border:1px solid var(--line);
-  border-radius:10px;
-  font-size:1.35rem;
+  border-radius:8px;
+  font-size:1rem;
   transition:transform .25s var(--ease), border-color .2s, background .2s, box-shadow .2s;
   cursor:default;
   user-select:none;
@@ -343,7 +330,7 @@
 .emotes-mini-grid .emote img{width:100%;height:100%;object-fit:contain;border-radius:8px}
 
 /* ============================================================
-   🆕 RECADO DA SOSO (novo card)
+   🆕 RECADO DA SOSO
    ============================================================ */
 .recado-card{
   background:linear-gradient(160deg, rgba(255,110,199,.10), rgba(168,85,247,.04)), var(--surface);
@@ -391,16 +378,22 @@
   font-style:italic;
   overflow-wrap:anywhere;
 }
+.recado-card.vazio .recado-texto{
+  color:var(--mute);
+  text-align:center;
+  font-size:.82rem;
+  padding:6px 0;
+}
 @keyframes heartBeat{
   0%,100%{ transform:scale(1); }
   50%{ transform:scale(1.08); }
 }
 
 /* ============================================================
-   JOGOS CARD (Último Jogo + Próximo) — compacto
+   JOGOS CARD (compacto)
    ============================================================ */
 .jogos-card{display:grid;grid-template-columns:1fr 1fr;padding:0}
-.jogo-half{display:flex;flex-direction:row;align-items:center;gap:12px;padding:12px;min-width:0}
+.jogo-half{display:flex;flex-direction:row;align-items:center;gap:10px;padding:10px;min-width:0}
 .jogo-half + .jogo-half{
   border-left:2px solid var(--line);
   background:transparent;
@@ -417,20 +410,20 @@
   filter:blur(1px);
   pointer-events:none;
 }
-.foco-cover{width:68px;aspect-ratio:2/3;object-fit:cover;border-radius:10px;border:1px solid var(--line);flex:none;background:#1d1433;box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.foco-cover{width:60px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--line);flex:none;background:#1d1433;box-shadow:0 8px 20px rgba(0,0,0,.5)}
 .foco-cover.skeleton{border:none;background:linear-gradient(90deg,#1d1433 0%,#2a1a4d 50%,#1d1433 100%);background-size:200% 100%;animation:skel 1.4s ease-in-out infinite}
-.foco-info{display:flex;flex-direction:column;gap:6px;min-width:0;align-items:flex-start;flex:1}
-.foco-label{font-size:.64rem;font-weight:800;color:var(--purple-2);text-transform:uppercase;letter-spacing:.1em}
-.foco-info h3{font-size:1rem;color:var(--white);line-height:1.2}
-.foco-meta{display:flex;flex-wrap:wrap;gap:5px}
-.foco-chip{font-size:.68rem;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(168,85,247,.14);border:1px solid var(--line);color:var(--purple-2)}
+.foco-info{display:flex;flex-direction:column;gap:4px;min-width:0;align-items:flex-start;flex:1}
+.foco-label{font-size:.62rem;font-weight:800;color:var(--purple-2);text-transform:uppercase;letter-spacing:.1em}
+.foco-info h3{font-size:.92rem;color:var(--white);line-height:1.2}
+.foco-meta{display:flex;flex-wrap:wrap;gap:4px}
+.foco-chip{font-size:.66rem;font-weight:700;padding:3px 8px;border-radius:99px;background:rgba(168,85,247,.14);border:1px solid var(--line);color:var(--purple-2)}
 .foco-chip.tr{background:linear-gradient(135deg,var(--purple-2),var(--purple-3));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(168,85,247,.4)}
 .foco-bar{width:100%}
-.foco-bar small{display:flex;justify-content:space-between;font-size:.66rem;color:var(--mute);margin-bottom:5px;font-weight:600}
-.foco-last{font-size:.74rem;color:var(--mute);line-height:1.4}
-.foco-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;width:100%}
-.prox-bar{margin:4px 0;width:100%}
-.jogo-half .foco-btns .btn{flex:1 1 auto;padding:9px 12px;white-space:nowrap;font-size:.78rem}
+.foco-bar small{display:flex;justify-content:space-between;font-size:.64rem;color:var(--mute);margin-bottom:4px;font-weight:600}
+.foco-last{font-size:.72rem;color:var(--mute);line-height:1.4}
+.foco-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;width:100%}
+.prox-bar{margin:2px 0;width:100%}
+.jogo-half .foco-btns .btn{flex:1 1 auto;padding:7px 10px;white-space:nowrap;font-size:.74rem}
 .jogo-half .foco-last:empty{display:none}
 
 /* ============================================================
@@ -788,9 +781,9 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
     left:12%;right:12%;top:-1px;bottom:auto;width:auto;height:2px;
     background:linear-gradient(90deg,transparent,rgba(168,85,247,.4),transparent);
   }
-  .jogo-half{padding:12px;gap:12px}
-  .foco-cover{width:64px}
-  .foco-info h3{font-size:.95rem}
+  .jogo-half{padding:10px;gap:10px}
+  .foco-cover{width:56px}
+  .foco-info h3{font-size:.88rem}
   .stats{grid-template-columns:1fr 1fr}
   .admin-btn,.btn{font-size:.76rem;padding:9px 14px}
   .toast{bottom:16px;padding:10px 16px;font-size:.78rem}

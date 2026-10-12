@@ -205,8 +205,9 @@ function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
   elDesc.textContent = `Faltam ${(alvo - atual).toLocaleString('pt-BR')} para alcançar a próxima meta!`;
 }
 
-/* 🆕 Renderiza o recado no card dedicado E na nota do player */
+/* 🆕 Renderiza o recado no card dedicado (com estado vazio) */
 function renderRecado(){
+  // Player note (legado)
   const noteEl = $('playerNoteText');
   if(noteEl){
     noteEl.classList.remove('recado');
@@ -217,16 +218,19 @@ function renderRecado(){
     }
   }
 
+  // Card "Recado da Soso" com estado vazio
   const card = $('recadoCard');
   const texto = $('recadoTexto');
   if(card && texto){
     const recado = (CONFIG_GERAL.recado || '').trim();
     if(recado){
       texto.textContent = recado;
-      card.style.display = '';
+      card.classList.remove('vazio');
     } else {
-      card.style.display = 'none';
+      texto.textContent = 'A Soso não deixou recado hoje, mas volta logo! 💜';
+      card.classList.add('vazio');
     }
+    card.style.display = '';
   }
 }
 
@@ -262,7 +266,7 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
-   SUB SHORTCUTS (legado — mantido por segurança)
+   SUB SHORTCUTS (legado)
    ============================================================ */
 function setupSubShortcuts(){
   const wrap = document.querySelector('.sub-shortcuts');
@@ -407,7 +411,6 @@ function _fmtMs(ms){
 function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
 
-  // Estado vazio: disco fantasma "dorminhoco"
   if(!musicaTocando){
     painel.innerHTML = `
       <div class="ouvindo-wrap">
@@ -529,7 +532,6 @@ function _executarMudarAba(nome, salvar){
   if(section) section.classList.add('ativo');
   if(button) button.classList.add('on');
 
-  // 🆕 marca/desmarca o botão admin (canto direito)
   const adminBtn = $('btn-admin');
   if(adminBtn) adminBtn.classList.toggle('on', nome === 'admin');
 
@@ -1380,7 +1382,7 @@ function setupReveal(){
     });
   }, { rootMargin: '0px 0px -60px 0px', threshold: 0.05 });
 
-  // 🆕 Cascade nos cards da Home
+  // Cascade nos cards da Home
   document.querySelectorAll('.bento-col').forEach(col => {
     col.querySelectorAll('.card.reveal').forEach((card, i) => {
       if(i > 0) card.style.transitionDelay = (i * 70) + 'ms';

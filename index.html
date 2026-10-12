@@ -169,7 +169,7 @@
       </article>
     </div>
 
-    <!-- COLUNA CENTRAL (palco): player + jogos -->
+    <!-- COLUNA CENTRAL (palco): player + recado + jogos -->
     <div class="bento-col bento-center">
       <article class="card twitch-player-box reveal">
         <div class="twitch-player-header">
@@ -193,6 +193,19 @@
         </div>
         <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
       </article>
+
+      <!-- 🆕 RECADO DA SOSO (Centro, abaixo do player) -->
+      <article class="card recado-card reveal" id="recadoCard">
+        <div class="recado-head">
+          <span class="recado-ic">💌</span>
+          <div>
+            <h3>Recado da Soso</h3>
+            <small>Pra você, com carinho 💜</small>
+          </div>
+        </div>
+        <p class="recado-texto" id="recadoTexto">Carregando...</p>
+      </article>
+
       <article class="card jogos-card reveal">
         <div class="jogo-half">
           <img class="foco-cover skeleton" id="focoCover" alt="">
@@ -228,7 +241,7 @@
       </article>
     </div>
 
-    <!-- COLUNA DIREITA: seja sub + recado + apoie/hall -->
+    <!-- COLUNA DIREITA: seja sub + apoie/hall -->
     <div class="bento-col bento-right">
       <article class="card sub-hero-box reveal">
         <div class="sub-hero-head">
@@ -247,19 +260,6 @@
         <div class="emotes-mini-grid" id="emotesMiniGrid"></div>
         <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block twitch-accent">👑 Assinar na Twitch →</a>
       </article>
-
-      <!-- 🆕 CARD RECADO DA SOSO -->
-      <article class="card recado-card reveal" id="recadoCard" style="display:none">
-        <div class="recado-head">
-          <span class="recado-ic">💌</span>
-          <div>
-            <h3>Recado da Soso</h3>
-            <small>Pra você, com carinho 💜</small>
-          </div>
-        </div>
-        <p class="recado-texto" id="recadoTexto"></p>
-      </article>
-
       <article class="card apoie reveal">
         <div class="apoie-head">
           <h3>💜 Apoie o cantinho</h3>
