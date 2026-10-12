@@ -426,7 +426,6 @@ dialog .card{transform:none !important}
   overflow:hidden;
   animation:pageIn .4s var(--ease);
 }
-.recado-card.vazio{display:none}
 .recado-av{position:relative;width:44px;height:44px;flex:none}
 .recado-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid var(--purple-2);background:#1a102d;position:relative;z-index:1}
 .recado-av span{position:absolute;right:-6px;bottom:-5px;font-size:.95rem;z-index:2;animation:heartBeat 2.4s ease-in-out infinite}
@@ -962,3 +961,25 @@ dialog .card.reveal.in{transform:none !important}
   background:linear-gradient(135deg,#ffd166,#f59e0b);color:#2a1700;box-shadow:0 8px 22px -8px rgba(255,209,102,.55)}
 .sub-hero-box .btn.sub-hero-cta:hover{box-shadow:0 12px 28px -8px rgba(255,209,102,.75)}
 .sub-hero-box .sub-note{padding:10px 20px 18px}
+
+/* ============================================================
+   SPOTIFY — estado vazio com playlist embutida
+   ============================================================ */
+.music-panel .ouvindo-vazio-wrap{flex:1 1 auto;align-self:stretch;min-height:0;justify-content:flex-start;align-items:stretch;gap:12px;padding:0}
+.ouvindo-vazio-top{display:flex;align-items:center;gap:12px;padding:2px 2px 0}
+.ouvindo-vazio-top .ouvindo-vazio-txt{text-align:left;max-width:none;font-style:normal;font-size:.8rem;line-height:1.4}
+.eq{display:flex;align-items:flex-end;gap:3px;height:26px;flex:none}
+.eq i{display:block;width:4px;height:25%;border-radius:2px;background:linear-gradient(180deg,var(--purple-2),var(--purple-3));animation:eqBar 1.2s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:.18s}
+.eq i:nth-child(3){animation-delay:.36s}
+.eq i:nth-child(4){animation-delay:.54s}
+.eq i:nth-child(5){animation-delay:.72s}
+@keyframes eqBar{0%,100%{height:25%}50%{height:100%}}
+.music-mini-embed{flex:1 1 auto;display:block;width:100%;min-height:152px;border:0;border-radius:12px;background:rgba(0,0,0,.25)}
+
+/* ============================================================
+   RECADO — sempre visível (sem mensagem mostra aviso suave)
+   ============================================================ */
+.recado-card.vazio .recado-bubble{border-style:dashed;background:rgba(255,255,255,.03)}
+.recado-card.vazio .recado-texto{color:var(--mute);font-style:italic;text-align:left;font-size:.86rem;padding:0}
+.recado-card.vazio .recado-av img{filter:grayscale(.35);opacity:.85}

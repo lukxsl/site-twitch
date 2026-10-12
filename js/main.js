@@ -413,6 +413,24 @@ function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
 
   if(!musicaTocando){
+    const mp = (CONFIG.spotifyPlaylist || '').match(/playlist\/([a-zA-Z0-9]+)/);
+    if(mp){
+      // já está na tela? não recria (evita recarregar o iframe a cada atualização)
+      if(painel.querySelector('.music-mini-embed')) return;
+      painel.innerHTML = `
+        <div class="ouvindo-wrap ouvindo-vazio-wrap">
+          <div class="ouvindo-vazio-top">
+            <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="ouvindo-vazio-txt">Nada tocando agora.<br>Enquanto isso, dá o play na playlist 💜</div>
+          </div>
+          <iframe class="music-mini-embed" src="https://open.spotify.com/embed/playlist/${mp[1]}?theme=0"
+            allowtransparency="true" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy" title="Playlist da Soso no Spotify"></iframe>
+        </div>
+      `;
+      return;
+    }
+    // sem playlist configurada: mantém o estado vazio simples
     painel.innerHTML = `
       <div class="ouvindo-wrap">
         <div class="disco-fantasma" aria-hidden="true">
