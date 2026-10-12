@@ -7,14 +7,13 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 const COOKIE_NAME = 'sessao_site';
 const CRON_SECRET = process.env.CRON_SECRET;
 
+// Chaves de texto simples (GET / SET)
 const KEYS_PARA_BACKUP = [
   'tierlist:jogos',
   'tierlist:filmes',
+  'tierlist:seedFeito',
   'votos:config',
   'votos:ciclo_atual',
-  'admins',
-  'user_profiles',
-  'banidos',
   'config:aviso',
   'config:donate',
   'config:manutencao',
@@ -23,10 +22,14 @@ const KEYS_PARA_BACKUP = [
   'config:updatedAt',
   'config:top3',
   'config:hall',
+  'config:metas',
   'config:permissoes',
-  'config:votosFechamento',
-  'sugestoes:lista'
+  'config:votosFechamento'
 ];
+// Hashes (HGETALL / HSET) — antes eram lidos com GET, o que falhava e apagava tudo ao restaurar
+const KEYS_HASH = ['admins', 'user_profiles', 'banidos'];
+// Listas (LRANGE / RPUSH)
+const KEYS_LIST = ['sugestoes:lista'];
 
 const MAX_BACKUPS = 5;
 const INDEX_KEY = 'backups:index';
@@ -98,13 +101,29 @@ async function listarBackups(){
 async function criarBackup(criadoPor){
   const id = new Date().toISOString().replace(/[:.]/g, '-') + '_' + randomUUID().slice(0, 8);
 
-  const cmds = KEYS_PARA_BACKUP.map(k => ['GET', k]);
+  // votos do ciclo atual (hashes cujo nome depende do ciclo)
+  const [cicloRaw] = await redis([['GET', 'votos:ciclo_atual']]);
+  const ciclo = Number(cicloRaw) > 0 ? String(Number(cicloRaw)) : '1';
+  const hashes = [...KEYS_HASH, `votos:${ciclo}`, `votos_usuarios:${ciclo}`];
+
+  const cmds = [
+    ...KEYS_PARA_BACKUP.map(k => ['GET', k]),
+    ...hashes.map(k => ['HGETALL', k]),
+    ...KEYS_LIST.map(k => ['LRANGE', k, '0', '-1'])
+  ];
   const results = await redis(cmds);
 
   const dados = {};
-  KEYS_PARA_BACKUP.forEach((k, i) => {
-    dados[k] = results[i] ?? null;
-  });
+  let i = 0;
+  for (const k of KEYS_PARA_BACKUP) dados[k] = results[i++] ?? null;
+  for (const k of hashes) {
+    const flat = results[i++];
+    dados[k] = Array.isArray(flat) ? { __t: 'hash', v: flat } : null;
+  }
+  for (const k of KEYS_LIST) {
+    const lst = results[i++];
+    dados[k] = Array.isArray(lst) ? { __t: 'list', v: lst } : null;
+  }
 
   const json = JSON.stringify({
     id,
@@ -156,12 +175,27 @@ async function restaurarBackup(id, quem){
   const chaves = dados.chaves || {};
   const cmds = [];
   let total = 0;
+  // 1) textos simples
   for(const k of KEYS_PARA_BACKUP){
     const v = chaves[k];
     if(v === null || v === undefined){
       cmds.push(['DEL', k]);
     } else {
       cmds.push(['SET', k, v]);
+      total++;
+    }
+  }
+  // 2) hashes e listas (só restaura se o backup tiver o formato novo;
+  //    backups antigos não têm esses dados, então NÃO apagamos nada)
+  for(const [k, val] of Object.entries(chaves)){
+    if(!val || typeof val !== 'object' || !Array.isArray(val.v)) continue;
+    if(val.__t === 'hash'){
+      cmds.push(['DEL', k]);
+      if(val.v.length) cmds.push(['HSET', k, ...val.v]);
+      total++;
+    } else if(val.__t === 'list'){
+      cmds.push(['DEL', k]);
+      if(val.v.length) cmds.push(['RPUSH', k, ...val.v]);
       total++;
     }
   }

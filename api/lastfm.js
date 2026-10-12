@@ -1,5 +1,5 @@
 // Vercel serverless: /api/lastfm.js
-// GET → ouvindo agora + cadeia de capas (oEmbed Spotify → iTunes → Deezer → MusicBrainz)
+// GET → ouvindo agora (ou, se nada tocando, últimas faixas) + cadeia de capas (oEmbed Spotify → iTunes → Deezer → MusicBrainz)
 // Cache Redis de 10s.
 
 const USER = process.env.LASTFM_USER;
@@ -105,33 +105,56 @@ async function spotifyNowPlaying() {
 }
 
 /* ===== LAST.FM ===== */
-async function lastfmNowPlaying() {
-  if (!USER || !KEY) return null;
+const LASTFM_PLACEHOLDER = '2a96cbd8b46e442fc41c2b86b821562f'; // estrelinha cinza padrão do Last.fm
+
+function lastfmImg(track, tamanhos) {
+  if (!Array.isArray(track.image)) return null;
+  for (const t of tamanhos) {
+    const u = safeUrl(track.image.find(i => i.size === t)?.['#text']);
+    if (u && !u.includes(LASTFM_PLACEHOLDER)) return u;
+  }
+  return null;
+}
+
+/* Uma única chamada: devolve o que está tocando agora + as últimas faixas tocadas */
+async function lastfmDados() {
+  const vazio = { agora: null, recentes: [] };
+  if (!USER || !KEY) return vazio;
   try {
-    const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(USER)}&api_key=${KEY}&format=json&limit=1`;
+    const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(USER)}&api_key=${KEY}&format=json&limit=6`;
     const r = await fetch(url);
-    if (!r.ok) return null;
+    if (!r.ok) return vazio;
     const d = await r.json();
-    const track = d?.recenttracks?.track?.[0];
-    if (!track) return null;
-    const nowplaying = track['@attr']?.nowplaying === 'true';
-    if (!nowplaying) return null;
-    const lastfmImg = Array.isArray(track.image)
-      ? safeUrl(track.image.find(i => i.size === 'extralarge')?.['#text']
-        || track.image.find(i => i.size === 'large')?.['#text'])
-      : null;
-    return {
+    let tracks = d?.recenttracks?.track;
+    if (!tracks) return vazio;
+    if (!Array.isArray(tracks)) tracks = [tracks];
+
+    const ehAgora = t => t['@attr']?.nowplaying === 'true';
+    const nome = t => safeStr(t.artist?.['#text'] || t.artist, 200);
+
+    const t0 = tracks.find(ehAgora);
+    const agora = t0 ? {
       tocando: true,
-      faixa: safeStr(track.name, 200),
-      artista: safeStr(track.artist?.['#text'] || track.artist, 200),
-      album: safeStr(track.album?.['#text'], 200),
-      capa: lastfmImg,
-      url: safeUrl(track.url),
+      faixa: safeStr(t0.name, 200),
+      artista: nome(t0),
+      album: safeStr(t0.album?.['#text'], 200),
+      capa: lastfmImg(t0, ['extralarge', 'large']),
+      url: safeUrl(t0.url),
       duracao: null,
       progresso: null,
       fonte: 'lastfm'
-    };
-  } catch(e) { return null; }
+    } : null;
+
+    const recentes = tracks.filter(t => !ehAgora(t)).slice(0, 4).map(t => ({
+      faixa: safeStr(t.name, 200),
+      artista: nome(t),
+      capa: lastfmImg(t, ['large', 'extralarge']),
+      url: safeUrl(t.url),
+      quando: t.date?.uts ? new Date(Number(t.date.uts) * 1000).toISOString() : null
+    })).filter(x => x.faixa);
+
+    return { agora, recentes };
+  } catch(e) { return vazio; }
 }
 
 /* ===== SPOTIFY oEMBED (capa em alta sem token) ===== */
@@ -217,10 +240,15 @@ export default async function handler(req, res) {
 
   try {
     let data = await spotifyNowPlaying();
-    if (!data || !data.tocando) data = await lastfmNowPlaying();
+    let recentes = [];
+    if (!data || !data.tocando) {
+      const lf = await lastfmDados();
+      data = lf.agora;
+      recentes = lf.recentes;
+    }
 
     if (!data || !data.tocando) {
-      const vazio = { tocando: false };
+      const vazio = { tocando: false, recentes };
       await setCache(vazio);
       return res.status(200).json(vazio);
     }

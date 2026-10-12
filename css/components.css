@@ -983,3 +983,15 @@ dialog .card.reveal.in{transform:none !important}
 .recado-card.vazio .recado-bubble{border-style:dashed;background:rgba(255,255,255,.03)}
 .recado-card.vazio .recado-texto{color:var(--mute);font-style:italic;text-align:left;font-size:.86rem;padding:0}
 .recado-card.vazio .recado-av img{filter:grayscale(.35);opacity:.85}
+
+/* Spotify — últimas músicas tocadas */
+.rec-lista{list-style:none;display:flex;flex-direction:column;gap:6px;flex:1 1 auto}
+.rec-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:rgba(168,85,247,.07);border:1px solid var(--line);transition:.2s}
+a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple);transform:translateX(2px)}
+.rec-capa{width:40px;height:40px;border-radius:9px;flex:none;overflow:hidden;display:grid;place-items:center;color:#fff;font-weight:800;
+  background:linear-gradient(135deg,var(--purple-3),var(--pink))}
+.rec-capa img{width:100%;height:100%;object-fit:cover;display:block}
+.rec-info{min-width:0;flex:1;display:flex;flex-direction:column}
+.rec-info b{color:var(--white);font-size:.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-info small{color:var(--mute);font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-item em{font-style:normal;font-size:.64rem;color:var(--dim);white-space:nowrap;flex:none}

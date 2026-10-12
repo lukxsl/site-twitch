@@ -76,6 +76,7 @@ let sugTipoAtual = 'Sugestão / ideia';
 let sirFiltro = 'all';
 let SIR_ITENS_CACHE = [];
 let _musicaAtual = null;
+let _recentes = [];
 
 let HALL_DADOS = null;
 let HALL_ABA = 'gift';
@@ -413,6 +414,36 @@ function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
 
   if(!musicaTocando){
+    // 1) tem faixas recentes (Last.fm)? mostra a lista das últimas músicas
+    if(_recentes.length){
+      const lista = _recentes.slice(0, 3);
+      const sig = JSON.stringify(lista.map(x => [x.faixa, x.artista, x.quando]));
+      if(painel.dataset.rec === sig) return; // nada mudou, não redesenha
+      painel.dataset.rec = sig;
+      const quando = q => (q && typeof tempoAtras === 'function') ? esc(tempoAtras(q)) : '';
+      painel.innerHTML = `
+        <div class="ouvindo-wrap ouvindo-vazio-wrap">
+          <div class="ouvindo-vazio-top">
+            <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="ouvindo-vazio-txt">Nada tocando agora.<br>Últimas que rolaram nas lives 💜</div>
+          </div>
+          <ul class="rec-lista">
+            ${lista.map(x => `
+              <li>
+                <a class="rec-item" ${x.url ? `href="${esc(x.url)}" target="_blank" rel="noopener"` : ''}>
+                  <span class="rec-capa">${x.capa ? `<img src="${esc(x.capa)}" alt="" loading="lazy" onerror="this.remove()">` : '♪'}</span>
+                  <span class="rec-info"><b>${esc(x.faixa)}</b><small>${esc(x.artista)}</small></span>
+                  <em>${quando(x.quando)}</em>
+                </a>
+              </li>`).join('')}
+          </ul>
+        </div>
+      `;
+      return;
+    }
+    delete painel.dataset.rec;
+
+    // 2) sem faixas recentes: playlist embutida (ou estado simples)
     const mp = (CONFIG.spotifyPlaylist || '').match(/playlist\/([a-zA-Z0-9]+)/);
     if(mp){
       // já está na tela? não recria (evita recarregar o iframe a cada atualização)
@@ -494,6 +525,7 @@ async function carregarOuvindoAgora(){
     if(!d || !d.tocando || !d.faixa){
       musicaTocando = false;
       _musicaAtual = null;
+      _recentes = Array.isArray(d && d.recentes) ? d.recentes : [];
       renderOuvindo();
       return;
     }

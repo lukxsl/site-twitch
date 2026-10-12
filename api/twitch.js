@@ -156,7 +156,8 @@ export default async function handler(req, res) {
         viewer_count: Number(stream.viewer_count) || 0,
         uptime,
         uptime_seconds: uptimeSeconds,
-        started_at: safeStr(stream.started_at, 40)
+        started_at: safeStr(stream.started_at, 40),
+        is_mature: !!stream.is_mature
       },
       followers: followersTotal,
       discord: discordTotal,
