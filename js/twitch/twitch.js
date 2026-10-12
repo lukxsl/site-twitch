@@ -37,11 +37,33 @@ function _atualizarPlayerHeader(isLive){
   if(typeof setLivePulse === 'function') setLivePulse(isLive);
 }
 
-function _atualizarProfileStatus(isLive){
+/* 🆕 Status dinâmico do perfil (bolinha + texto abaixo do Maceió – AL) */
+function _atualizarProfileStatus(isLive, data){
+  // Bolinha verde/roxa no canto do avatar
   const el = document.getElementById('profileStatus');
-  if(!el) return;
-  el.classList.toggle('online', !!isLive);
-  el.title = isLive ? '🟢 Online agora' : '⚫ Offline';
+  if(el){
+    el.classList.toggle('online', !!isLive);
+    el.title = isLive ? '🟢 Online agora' : '⚫ Offline';
+  }
+
+  // Status dinâmico em texto (abaixo do "Maceió – AL")
+  const dyn = document.getElementById('profileStatusDinamica');
+  if(!dyn) return;
+
+  if(isLive){
+    const jogo = (data && data.stream && data.stream.game_name) ? data.stream.game_name : null;
+    dyn.className = 'profile-status-dinamica online';
+    dyn.textContent = jogo ? `Online agora · jogando ${jogo}` : 'Online agora';
+  } else {
+    const vod = (data && data.video) ? data.video : vodAtual;
+    if(vod && vod.created_at){
+      dyn.className = 'profile-status-dinamica offline';
+      dyn.textContent = `Offline · última live ${tempoAtras(vod.created_at)}`;
+    } else {
+      dyn.className = 'profile-status-dinamica offline';
+      dyn.textContent = 'Offline · sem lives recentes';
+    }
+  }
 }
 
 function _atualizarStatsStrip(data){
@@ -126,7 +148,7 @@ async function verificarStatusTwitch() {
     }
 
     _atualizarPlayerHeader(live);
-    _atualizarProfileStatus(live);
+    _atualizarProfileStatus(live, data);   // 🆕 passa data junto
     _atualizarBanner(data);
 
     const isMature = !!(data.stream && data.stream.is_mature);
@@ -200,7 +222,6 @@ async function verificarStatusTwitch() {
         }
         if(panel){
           panel.style.display = 'flex';
-          // 🆕 background fica sendo a offline_image_url (setada acima)
           panel.innerHTML = `
             <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
             <h4>Estamos offline por agora 💜</h4>
@@ -235,7 +256,7 @@ async function verificarStatusTwitch() {
     ['goalSeg','goalDc'].forEach(p => { const el = $(p+'Num'); if (el && el.textContent === '…') atualizarMeta(p, null); });
     setLivePulse(false);
     _atualizarPlayerHeader(false);
-    _atualizarProfileStatus(false);
+    _atualizarProfileStatus(false, null);   // 🆕 garante status offline em caso de erro
     const overlay = document.getElementById('bannerOverlay');
     if(overlay) overlay.style.display = 'none';
     const badge = document.getElementById('bannerLiveBadge');

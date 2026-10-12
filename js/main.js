@@ -205,9 +205,8 @@ function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
   elDesc.textContent = `Faltam ${(alvo - atual).toLocaleString('pt-BR')} para alcançar a próxima meta!`;
 }
 
-/* 🆕 Renderiza o recado no card dedicado (com estado vazio) */
+/* 🆕 Renderiza o recado no card dedicado */
 function renderRecado(){
-  // Player note (legado)
   const noteEl = $('playerNoteText');
   if(noteEl){
     noteEl.classList.remove('recado');
@@ -218,7 +217,6 @@ function renderRecado(){
     }
   }
 
-  // Card "Recado da Soso" com estado vazio
   const card = $('recadoCard');
   const texto = $('recadoTexto');
   if(card && texto){
@@ -252,7 +250,7 @@ function renderEmotes(){
   }).join('');
   const g1 = $('emotesGrid'); if(g1) g1.innerHTML = html;
   const g2 = $('emotesGridComunidade'); if(g2) g2.innerHTML = html;
-  const g3 = $('emotesMiniGrid'); if(g3) g3.innerHTML = html; // 🆕 card Seja Sub
+  const g3 = $('emotesMiniGrid'); if(g3) g3.innerHTML = html;
 }
 
 function renderSiteUpdate(){
@@ -292,7 +290,7 @@ function setupSubShortcuts(){
 }
 
 /* ============================================================
-   HALL DA FAMA (compacto — top 3)
+   HALL DA FAMA (compacto — top 3 com avatar)
    ============================================================ */
 async function carregarHall(){
   const lista = $('hallLista'); if(!lista) return;
@@ -318,7 +316,6 @@ function renderHall(){
     return;
   }
 
-  // 🆕 só top 3 (compacto)
   const itens = (HALL_ABA === 'gift' ? (d.gift || [])
               : HALL_ABA === 'fieis' ? (d.fieis || [])
               : (d.doadores || [])).slice(0, 3);
@@ -328,15 +325,21 @@ function renderHall(){
   } else {
     const medalhas = ['🥇','🥈','🥉'];
     lista.innerHTML = itens.map((p, i) => {
-      const pos = i + 1;
-      const medalha = medalhas[i] || `${pos}º`;
+      const medalha = medalhas[i] || `${i+1}º`;
       let meta = '';
       if(HALL_ABA === 'gift') meta = `${p.total} gift${p.total === 1 ? '' : 's'}`;
       else if(HALL_ABA === 'fieis') meta = `${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
       else meta = fmtBRL(p.total);
+
+      /* 🆕 Avatar (se o StreamElements retornar; senão, placeholder) */
+      const avatarHTML = p.avatar
+        ? `<img class="hr-avatar" src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hr-avatar-ph',textContent:'👤'}))">`
+        : `<div class="hr-avatar-ph">👤</div>`;
+
       return `
         <div class="hall-row">
           <span class="hr-pos">${medalha}</span>
+          ${avatarHTML}
           <span class="hr-name">@${esc(p.nome || '—')}</span>
           <span class="hr-meta">${esc(meta)}</span>
         </div>
@@ -1061,7 +1064,6 @@ function renderVotacao(){
     else { statLider.parentElement.style.display = ''; statLider.textContent = 'líder com ' + pct(ord[0].votos) + '%'; }
   }
 
-  // 🆕 botão com pulse quando o usuário ainda não votou
   const btn = (it) => {
     const meu = meuVoto === it.id;
     if(fechada) return `<button class="btn ghost" disabled>Encerrada</button>`;
@@ -1382,7 +1384,6 @@ function setupReveal(){
     });
   }, { rootMargin: '0px 0px -60px 0px', threshold: 0.05 });
 
-  // Cascade nos cards da Home
   document.querySelectorAll('.bento-col').forEach(col => {
     col.querySelectorAll('.card.reveal').forEach((card, i) => {
       if(i > 0) card.style.transitionDelay = (i * 70) + 'ms';
@@ -1394,7 +1395,6 @@ function setupReveal(){
   setupCardTilt();
 }
 
-/* 🆕 Efeito Tilt 3D nos cards da Home */
 function setupCardTilt(){
   if(matchMedia('(max-width: 960px)').matches) return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -1501,7 +1501,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   iniciarHall();
   renderOuvindo();
 
-  setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
+  if (typeof setupView === 'undefined') {
+    window.setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
+  } else {
+    setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
+  }
   document.querySelectorAll('.svt-btn').forEach(b => {
     const on = b.dataset.view === setupView;
     b.classList.toggle('on', on);

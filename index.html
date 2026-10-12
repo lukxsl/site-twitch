@@ -126,17 +126,17 @@
           <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
           <span class="av-status" id="profileStatus" title="Carregando..."></span>
         </div>
-        <h2>asemtet0 <span class="h2-emoji">💜</span></h2>
-        <div class="subloc">📍 Maceió – AL · Streamer desde 2025</div>
+        <h2>
+          asemtet0
+          <span class="h2-emoji">💜</span>
+          <span class="badge-verificada" title="Canal verificado no site">✓ Verificada</span>
+        </h2>
+        <div class="subloc" id="profileSubloc">📍 Maceió – AL · Streamer desde 2025</div>
+        <div class="profile-status-dinamica" id="profileStatusDinamica">Carregando status…</div>
         <p class="profile-description">
           Oie! Eu sou a Soso, também conhecida como Sophs ou Teto.
           Aqui você encontra games, caos, conversa e muita gameplay duvidosa. 💜
         </p>
-        <div class="profile-chips">
-          <span class="p-chip">🎮 Games & Chat</span>
-          <span class="p-chip">✨ Caos & Diversão</span>
-          <span class="p-chip">⚡ Quase todo dia</span>
-        </div>
         <div class="profile-socials">
           <a class="profile-social-btn" href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener" title="Instagram">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z"/><path d="M16 2H8a6 6 0 0 0-6 6v8a6 6 0 0 0 6 6h8a6 6 0 0 0 6-6V8a6 6 0 0 0-6-6Zm4.2 14a4.2 4.2 0 0 1-4.2 4.2H8A4.2 4.2 0 0 1 3.8 16V8A4.2 4.2 0 0 1 8 3.8h8A4.2 4.2 0 0 1 20.2 8v8Z"/></svg>
@@ -152,6 +152,7 @@
           </a>
         </div>
       </article>
+
       <article class="card music-box reveal" id="musicBox">
         <div class="music-head">
           <span class="music-ic" aria-hidden="true">
@@ -185,7 +186,7 @@
             <h4>Estamos offline por agora 💜</h4>
             <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
             <div class="offline-info">
-              <span>📅 Quase todo dia</span>
+              <span>📅 Lives toda semana</span>
               <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
             </div>
             <div class="offline-actions">
@@ -198,14 +199,14 @@
         <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
       </article>
 
-      <!-- 🆕 RECADO DA SOSO (Centro, abaixo do player) -->
+      <!-- RECADO DA SOSO (Centro, abaixo do player) -->
       <article class="card recado-card reveal" id="recadoCard">
         <div class="recado-av">
           <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
           <span aria-hidden="true">💌</span>
         </div>
         <div class="recado-bubble">
-          <div class="recado-meta"><b>📌 Recado da Soso</b><small>Pra você, com carinho 💜</small></div>
+          <div class="recado-meta"><b>📌 Recado da Soso</b><small>Um oi rapidinho da Soso 💜</small></div>
           <p class="recado-texto" id="recadoTexto">Carregando...</p>
         </div>
       </article>
@@ -250,18 +251,18 @@
       <article class="card sub-hero-box reveal">
         <div class="sub-hero-top">
           <span class="sub-kicker">👑 Cantinho VIP</span>
-          <h3>Entra pro cantinho</h3>
-          <p>Vire Sub e apoie a Soso ganhando vantagens exclusivas. 💜</p>
+          <h3>Entre pro cantinho</h3>
+          <p>Vire Sub e apoie a Soso ganhando recompensas exclusivas. 💜</p>
         </div>
         <ul class="sub-perks">
           <li><i>🎁</i>Emotes exclusivos</li>
-          <li><i>💬</i>Canal privado no Discord</li>
-          <li><i>🎖️</i>Cargo de destaque</li>
           <li><i>🚫</i>Lives sem anúncios</li>
+          <li><i>🏅</i>Badge exclusivo de Sub</li>
+          <li><i>💜</i>Apoio direto ao cantinho</li>
         </ul>
         <div class="emotes-mini-grid" id="emotesMiniGrid"></div>
         <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block sub-cta">👑 Assinar na Twitch →</a>
-        <small class="sub-note">Sub de presente (gift) também vale 💜</small>
+        <small class="sub-note">🎁 Gift e Prime também valem 💜</small>
       </article>
       <article class="card apoie reveal">
         <div class="apoie-head">
@@ -399,10 +400,10 @@
     <div class="sub-beneficios reveal">
       <h3>✨ Benefícios exclusivos</h3>
       <div class="benefits-grid benefits-grid-2">
-        <div class="benefit"><b>🎖️ Cargos exclusivos no Discord</b><span>Apareça com destaque no servidor da comunidade.</span></div>
         <div class="benefit"><b>🎁 Emotes personalizados pro chat</b><span>Use os emotes exclusivos dos subs em qualquer live.</span></div>
-        <div class="benefit"><b>💜 Sem anúncios</b><span>Assista as lives tranquilamente, sem interrupção.</span></div>
-        <div class="benefit"><b>💬 Canal exclusivo no Discord</b><span>Acesso a um canal privado só pra subs, com resenha e bastidores.</span></div>
+        <div class="benefit"><b>🚫 Sem anúncios</b><span>Assista as lives tranquilamente, sem interrupção.</span></div>
+        <div class="benefit"><b>🏅 Badge exclusivo de Sub</b><span>Apareça com um badge especial no chat das lives.</span></div>
+        <div class="benefit"><b>💜 Apoio direto ao cantinho</b><span>Cada Sub ajuda a manter o canal ativo e melhorar o setup.</span></div>
       </div>
     </div>
     <div class="sub-emotes reveal">

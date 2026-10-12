@@ -18,11 +18,9 @@
 .btn.big{padding:13px 24px;font-size:.9rem;min-height:46px;border-radius:12px}
 .btn.block{display:flex;width:100%}
 
-/* Botão "Seguir na Twitch" com toque de cor da Twitch */
 .btn.twitch-accent{background:linear-gradient(135deg,#a970ff,#7c3aed);box-shadow:0 6px 18px -6px rgba(145,70,255,.5), inset 0 1px 0 rgba(255,255,255,.15)}
 .btn.twitch-accent:hover{box-shadow:0 10px 24px -6px rgba(145,70,255,.7), inset 0 1px 0 rgba(255,255,255,.2)}
 
-/* 🆕 Pulse no botão Votar */
 .btn.pulse-vote{animation:votePulse 2s ease-in-out infinite}
 @keyframes votePulse{
   0%,100%{box-shadow:0 6px 18px -6px rgba(168,85,247,.4), inset 0 1px 0 rgba(255,255,255,.15)}
@@ -44,7 +42,6 @@
 .card:hover{border-color:var(--line-2);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 32px -14px rgba(168,85,247,.22), var(--sh-lg),var(--sh-floor)}
 
-/* TILT 3D nos cards da Home */
 .bento-col > .card.reveal{
   --tilt-rx:0deg; --tilt-ry:0deg; --tilt-ty:0px;
   transform:perspective(1000px) rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry)) translateY(var(--tilt-ty));
@@ -121,14 +118,54 @@
 .av-ring{position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 90deg,var(--purple-2),var(--pink),var(--cyan),var(--purple-2));animation:spinRing 6s linear infinite;filter:blur(2px);z-index:1}
 .av-status{position:absolute;bottom:4px;right:4px;width:14px;height:14px;border-radius:50%;background:#6b6080;border:2px solid var(--surface-solid);z-index:3;transition:background .4s,box-shadow .4s}
 .av-status.online{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.7)}
-.profile-card h2{font-size:1.45rem;font-weight:800;color:var(--white);margin-top:6px}
+.profile-card h2{font-size:1.45rem;font-weight:800;color:var(--white);margin-top:6px;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
 .h2-emoji{font-size:1.1rem}
-.profile-card .subloc{font-size:.76rem;color:var(--mute);margin-bottom:8px}
-.profile-description{color:#e0d9ec;font-size:.83rem;line-height:1.55;max-width:280px}
-.profile-stats-grid{display:grid;gap:6px;text-align:left;width:100%;margin-top:8px}
-.profile-stat-row{background:rgba(168,85,247,.06);border:1px solid var(--line);border-radius:var(--r-xs);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.78rem}
-.profile-stat-row span:first-child{color:var(--mute);font-weight:500}
-.profile-stat-row span:last-child{color:var(--white);font-weight:700;text-align:right}
+
+/* 🆕 Badge "Verificada" */
+.badge-verificada{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-size:.62rem;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#86efac;
+  background:rgba(34,197,94,.12);
+  border:1px solid rgba(34,197,94,.4);
+  padding:3px 9px;
+  border-radius:99px;
+  box-shadow:0 0 14px -4px rgba(34,197,94,.4);
+}
+
+/* 🆕 Status dinâmico do perfil */
+.profile-status-dinamica{
+  font-size:.74rem;
+  color:#c4bcd9;
+  margin-top:-2px;
+  font-weight:600;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.profile-status-dinamica.online{color:#86efac}
+.profile-status-dinamica.online::before{
+  content:'';
+  width:7px;height:7px;border-radius:50%;
+  background:#22c55e;
+  box-shadow:0 0 8px rgba(34,197,94,.8);
+  animation:pulseDot 1.6s ease-in-out infinite;
+  flex:none;
+}
+.profile-status-dinamica.offline::before{
+  content:'';
+  width:7px;height:7px;border-radius:50%;
+  background:#6b6080;
+  flex:none;
+}
+
+.profile-card .subloc{font-size:.76rem;color:var(--mute);margin-bottom:2px}
+.profile-description{color:#e0d9ec;font-size:.83rem;line-height:1.55;max-width:280px;margin-top:6px}
 .profile-socials{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px;width:100%}
 .profile-social-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 4px;border-radius:var(--r-xs);font-size:.72rem;font-weight:700;color:#ddd5eb;border:1px solid var(--line);background:rgba(255,255,255,.03);transition:.2s}
 .profile-social-btn:hover{transform:translateY(-2px);background:rgba(168,85,247,.18);border-color:var(--purple);color:#fff}
@@ -143,7 +180,6 @@
 .twitch-player{width:100%;aspect-ratio:16/9;min-height:340px;background:#050309;position:relative}
 .twitch-player iframe{width:100%;height:100%;border:0;display:block}
 
-/* Offline panel com foto da Twitch + overlay */
 .offline-panel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:20px;
   background:linear-gradient(rgba(10,5,17,.72),rgba(10,5,17,.92)),radial-gradient(circle at 50% 30%,rgba(168,85,247,.25),#0a0511 70%);
   background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden}
@@ -155,13 +191,19 @@
 .offline-panel h4{font-size:1rem;color:var(--white)}
 .offline-panel p{font-size:.78rem;color:#e0d9ec;max-width:340px;text-shadow:0 2px 6px rgba(0,0,0,.7)}
 .offline-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px}
+.offline-info{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:4px}
+.offline-info > *{font-size:.72rem;font-weight:700;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.07);border:1px solid var(--line-2);color:#f0e6ff;backdrop-filter:blur(6px);transition:.2s;text-decoration:none}
+.offline-info a:hover{background:rgba(168,85,247,.25);border-color:var(--purple)}
 .player-note{padding:10px 14px;background:rgba(168,85,247,.05);color:var(--mute);font-size:.7rem;text-align:center;border-top:1px solid var(--line);transition:.3s}
 .player-note.recado{background:rgba(255,209,102,.08);color:#ffe4a3;font-weight:600;border-top-color:rgba(255,209,102,.25)}
 
 /* ============================================================
-   MUSIC BOX (Home) — sem altura fixa
+   MUSIC BOX — ALTURA FIXA (não estica/encolhe)
    ============================================================ */
-.music-box{display:flex;flex-direction:column;gap:12px;padding:18px}
+.music-box{
+  display:flex;flex-direction:column;gap:12px;padding:18px;
+  min-height:360px; /* 🆕 fixo */
+}
 .music-head{display:flex;align-items:center;gap:12px;flex:none}
 .music-ic{width:42px;height:42px;display:grid;place-items:center;background:rgba(30,215,96,.1);border:1px solid rgba(30,215,96,.25);border-radius:11px;padding:8px;flex:none}
 .music-ic svg{width:100%;height:100%;display:block}
@@ -193,7 +235,7 @@
 
 .disco-fantasma{
   position:relative;
-  width:120px;height:120px;
+  width:88px;height:88px;
   border-radius:50%;
   flex:none;
   display:grid;
@@ -211,7 +253,7 @@
   border:1px dashed rgba(168,85,247,.08);
 }
 .disco-fantasma .df-ic{
-  font-size:2rem;
+  font-size:1.5rem;
   line-height:1;
   opacity:.5;
   filter:grayscale(.3);
@@ -227,7 +269,7 @@
   font-size:.8rem;
   text-align:center;
   line-height:1.4;
-  max-width:200px;
+  max-width:220px;
 }
 
 .ouvindo-info{display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center;width:100%;min-width:0}
@@ -262,19 +304,64 @@
 .ap-vazio{color:var(--mute);font-size:.78rem;text-align:center;padding:12px;font-style:italic;opacity:.8}
 
 /* ============================================================
-   HALL DA FAMA (compacto)
+   HALL DA FAMA (compacto, top 3, com avatar)
    ============================================================ */
 .hall-tabs{display:flex;gap:4px;margin:6px 0 10px}
 .hall-tab{flex:1;background:rgba(255,255,255,.02);border:1px solid var(--line);color:var(--mute);font-family:inherit;font-weight:700;font-size:.7rem;padding:8px 6px;border-radius:8px;cursor:pointer;transition:.2s;white-space:nowrap}
 .hall-tab:hover{color:var(--white);border-color:var(--line-2);background:rgba(168,85,247,.08)}
 .hall-tab.on{background:linear-gradient(135deg,rgba(255,209,102,.18),rgba(168,85,247,.1));border-color:rgba(255,209,102,.35);color:#ffe4a3}
-.hall-lista{display:flex;flex-direction:column;gap:4px;flex:none;min-height:auto}
-.hall-row{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:6px 10px;background:rgba(255,255,255,.03);
-  border:1px solid var(--line);border-radius:var(--r-xs);font-size:.76rem;transition:.2s}
-.hall-row:hover{border-color:rgba(255,209,102,.4);background:rgba(255,209,102,.06)}
-.hall-row .hr-pos{display:grid;place-items:center;width:22px;height:22px;border-radius:6px;background:rgba(255,209,102,.16);color:var(--gold);font-weight:800;font-size:.66rem;font-family:'JetBrains Mono',monospace}
-.hall-row .hr-name{color:var(--white);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.82rem}
-.hall-row .hr-meta{color:var(--mute);font-size:.68rem;font-weight:600;white-space:nowrap}
+
+.hall-lista{display:flex;flex-direction:column;gap:6px;flex:none;min-height:auto}
+
+/* 🆕 Linha do hall com avatar */
+.hall-row{
+  display:grid;
+  grid-template-columns:26px 34px 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:8px 12px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--line);
+  border-radius:var(--r-xs);
+  font-size:.8rem;
+  transition:.2s;
+}
+.hall-row:hover{
+  border-color:rgba(255,209,102,.4);
+  background:rgba(255,209,102,.06);
+}
+.hall-row .hr-pos{
+  display:grid;
+  place-items:center;
+  width:24px;height:24px;
+  border-radius:7px;
+  background:rgba(255,209,102,.16);
+  color:var(--gold);
+  font-weight:800;
+  font-size:.72rem;
+  font-family:'JetBrains Mono',monospace;
+}
+.hall-row .hr-avatar{
+  width:34px;height:34px;
+  border-radius:50%;
+  object-fit:cover;
+  flex:none;
+  background:#1a102d;
+  border:1.5px solid rgba(168,85,247,.4);
+}
+.hall-row .hr-avatar-ph{
+  width:34px;height:34px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#1a102d;
+  border:1.5px solid var(--line);
+  color:var(--mute);
+  font-size:.85rem;
+  flex:none;
+}
+.hall-row .hr-name{color:var(--white);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.84rem}
+.hall-row .hr-meta{color:var(--mute);font-size:.7rem;font-weight:600;white-space:nowrap}
 .hall-updated{font-size:.62rem;color:var(--dim);text-align:center;margin-top:8px;font-family:'JetBrains Mono',monospace;opacity:.75}
 
 .hall-empty{
@@ -285,7 +372,7 @@
 .hall-empty-ic{font-size:1.4rem;opacity:.55;animation:discoSleep 3s ease-in-out infinite}
 
 /* ============================================================
-   SUB HERO (compactado)
+   SUB HERO (compactado, com emotes em linha)
    ============================================================ */
 .sub-hero-box{display:flex;flex-direction:column;gap:10px;align-items:stretch;padding:14px;
   background:radial-gradient(circle at 0% 0%, rgba(255,209,102,.12), transparent 55%),linear-gradient(135deg, rgba(168,85,247,.12), rgba(255,209,102,.04)),var(--surface);
@@ -330,64 +417,27 @@
 .emotes-mini-grid .emote img{width:100%;height:100%;object-fit:contain;border-radius:8px}
 
 /* ============================================================
-   🆕 RECADO DA SOSO
+   RECADO DA SOSO
    ============================================================ */
 .recado-card{
+  display:flex;flex-direction:row;gap:12px;align-items:flex-start;
   background:linear-gradient(160deg, rgba(255,110,199,.10), rgba(168,85,247,.04)), var(--surface);
   border:1px dashed rgba(255,110,199,.35);
+  padding:16px;
   position:relative;
   overflow:hidden;
   animation:pageIn .4s var(--ease);
 }
-.recado-card::before{
-  content:'';
-  position:absolute;
-  top:0; left:0; right:0;
-  height:3px;
-  background:linear-gradient(90deg, var(--pink), var(--purple-2), transparent);
-  opacity:.85;
-}
-.recado-head{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:12px;
-  padding-bottom:10px;
-  border-bottom:1px dashed rgba(255,110,199,.25);
-}
-.recado-ic{
-  font-size:1.6rem;
-  line-height:1;
-  flex:none;
-  filter: drop-shadow(0 4px 10px rgba(255,110,199,.5));
-  animation: heartBeat 2.4s ease-in-out infinite;
-}
-.recado-head h3{
-  color:var(--white);
-  font-size:.98rem;
-  margin:0 0 2px;
-}
-.recado-head small{
-  color:var(--mute);
-  font-size:.72rem;
-}
-.recado-texto{
-  color:#ecdfef;
-  font-size:.88rem;
-  line-height:1.6;
-  font-style:italic;
-  overflow-wrap:anywhere;
-}
-.recado-card.vazio .recado-texto{
-  color:var(--mute);
-  text-align:center;
-  font-size:.82rem;
-  padding:6px 0;
-}
-@keyframes heartBeat{
-  0%,100%{ transform:scale(1); }
-  50%{ transform:scale(1.08); }
-}
+.recado-card.vazio{display:none}
+.recado-av{position:relative;width:44px;height:44px;flex:none}
+.recado-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid var(--purple-2);background:#1a102d;position:relative;z-index:1}
+.recado-av span{position:absolute;right:-6px;bottom:-5px;font-size:.95rem;z-index:2;animation:heartBeat 2.4s ease-in-out infinite}
+.recado-bubble{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:4px 16px 16px 16px;padding:12px 14px}
+.recado-meta{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:4px}
+.recado-meta b{font-size:.78rem;color:var(--purple-2);font-weight:800}
+.recado-meta small{font-size:.68rem;color:var(--mute)}
+.recado-texto{font-style:normal;font-size:.92rem;line-height:1.55;color:#f1e8ff}
+@keyframes heartBeat{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
 /* ============================================================
    JOGOS CARD (compacto)
@@ -425,6 +475,7 @@
 .prox-bar{margin:2px 0;width:100%}
 .jogo-half .foco-btns .btn{flex:1 1 auto;padding:7px 10px;white-space:nowrap;font-size:.74rem}
 .jogo-half .foco-last:empty{display:none}
+#proxInfo{font-size:.74rem;color:var(--mute);line-height:1.4}
 
 /* ============================================================
    TIER LIST
@@ -639,7 +690,6 @@ body.sou-admin .g[draggable="true"]{cursor:grab}
 .sir-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 14px;text-align:center;background:rgba(255,255,255,.02);border:1px dashed var(--line);border-radius:var(--r-sm)}
 .sir-empty span{font-size:1.5rem;opacity:.6}
 .sir-empty small{color:var(--mute);font-size:.76rem;line-height:1.4}
-.sir-item-exemplo{opacity:.35;pointer-events:none;filter:grayscale(.4)}
 
 .vt{display:grid;grid-template-columns:auto 1fr auto;gap:12px 14px;align-items:center;padding:14px 16px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:var(--r);position:relative;overflow:hidden;margin-bottom:10px;transition:.25s var(--ease)}
 .vt:hover{border-color:var(--line-2);background:rgba(168,85,247,.05)}
@@ -771,6 +821,7 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
   .voto-add-btn{margin-left:0;width:100%}
   .hall-tabs{flex-wrap:wrap}
   .hall-tab{font-size:.66rem;padding:7px 4px}
+  .music-box{min-height:auto}
 }
 @media (max-width:480px){
   .hero-banner{height:150px}
@@ -809,65 +860,3 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 @media (max-width:480px){
   .float-live-btn{right:12px; bottom:16px;padding:10px 16px 10px 12px;font-size:.78rem}
 }
-
-/* ============================================================
-   HOME V3 — melhorias de layout (perfil, offline, recado, sub, hall)
-   ============================================================ */
-.profile-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
-.p-chip{font-size:.74rem;font-weight:700;padding:6px 11px;border-radius:99px;background:rgba(168,85,247,.1);border:1px solid var(--line);color:#e9ddff}
-.profile-description{text-wrap:balance}
-
-/* Player offline */
-.offline-panel h4{font-size:1.3rem}
-.offline-panel p{font-size:.86rem}
-.offline-info{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.offline-info > *{font-size:.72rem;font-weight:700;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.07);border:1px solid var(--line-2);color:#f0e6ff;backdrop-filter:blur(6px);transition:.2s}
-.offline-info a:hover{background:rgba(168,85,247,.25);border-color:var(--purple)}
-
-/* Música (estado vazio menor) */
-.disco-fantasma{width:88px;height:88px}
-.disco-fantasma .df-ic{font-size:1.5rem}
-.ouvindo-vazio-txt{font-size:.8rem;max-width:220px}
-
-/* Recado: balão de chat */
-.recado-card{display:flex;flex-direction:row;gap:12px;align-items:flex-start;padding:16px;border:1px solid rgba(255,110,199,.28);
-  background:linear-gradient(135deg,rgba(168,85,247,.16),rgba(255,110,199,.07)),var(--surface)}
-.recado-card::before{display:none}
-.recado-card.vazio{display:none}
-.recado-av{position:relative;width:44px;height:44px;flex:none}
-.recado-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid var(--purple-2);background:#1a102d;position:relative;z-index:1}
-.recado-av span{position:absolute;right:-6px;bottom:-5px;font-size:.95rem;z-index:2;animation:heartBeat 2.4s ease-in-out infinite}
-.recado-bubble{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:4px 16px 16px 16px;padding:12px 14px}
-.recado-meta{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:4px}
-.recado-meta b{font-size:.78rem;color:var(--purple-2);font-weight:800}
-.recado-meta small{font-size:.68rem;color:var(--mute)}
-.recado-texto{font-style:normal;font-size:.92rem;line-height:1.55;color:#f1e8ff}
-
-/* Jogos: texto da votação menor */
-.jogo-half .foco-info p,#proxInfo{font-size:.74rem;color:var(--mute);line-height:1.4}
-
-/* Seja Sub */
-.sub-hero-box{padding:0;gap:0;overflow:hidden;border-color:rgba(255,209,102,.3)}
-.sub-hero-top{padding:20px 20px 14px;text-align:left;
-  background:radial-gradient(ellipse at 15% 0,rgba(255,209,102,.22),transparent 60%),linear-gradient(160deg,rgba(168,85,247,.28),transparent)}
-.sub-kicker{display:inline-block;font-size:.64rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);padding:3px 10px;border-radius:99px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.3)}
-.sub-hero-top h3{font-size:1.5rem;color:var(--white);margin:10px 0 4px}
-.sub-hero-top p{font-size:.84rem;line-height:1.45;color:#e0d9ec}
-.sub-perks{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 20px 0}
-.sub-perks li{display:flex;gap:9px;align-items:center;font-size:.78rem;font-weight:700;color:var(--white);line-height:1.25}
-.sub-perks i{font-style:normal;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(255,209,102,.12);flex:none;font-size:.9rem}
-.sub-hero-box .emotes-mini-grid{display:flex;align-items:center;gap:0;padding:14px 20px 0;background:none;border:0;border-radius:0}
-.sub-hero-box .emotes-mini-grid .emote{width:34px;height:34px;aspect-ratio:auto;flex:none;border-radius:50%;margin-left:-8px;padding:3px;background:#221238;border:2px solid #181028;font-size:1rem}
-.sub-hero-box .emotes-mini-grid .emote:first-child{margin-left:0}
-.sub-hero-box .emotes-mini-grid .emote img{border-radius:50%}
-.sub-hero-box .emotes-mini-grid .emote:hover{position:relative;z-index:2}
-.sub-hero-box .emotes-mini-grid:not(:empty)::after{content:'+ emotes do canal';margin-left:12px;font-size:.74rem;color:var(--mute)}
-.sub-hero-box .btn.sub-cta{width:calc(100% - 40px);margin:14px 20px 0;
-  background:linear-gradient(135deg,#ffd166,#f59e0b);color:#2a1700;box-shadow:0 8px 22px -8px rgba(255,209,102,.55)}
-.sub-hero-box .btn.sub-cta:hover{box-shadow:0 12px 28px -8px rgba(255,209,102,.75)}
-.sub-note{display:block;text-align:center;font-size:.7rem;color:var(--mute);padding:10px 20px 18px}
-
-/* Hall: estado vazio preenche o espaço */
-.apoie .hall-lista{flex:1 1 auto}
-.hall-lista .hall-empty{flex:1;min-height:120px}
-.hall-empty-ic{opacity:.8}

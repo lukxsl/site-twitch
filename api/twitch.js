@@ -1,303 +1,174 @@
-/* ============================================================
-   TWITCH
-   ============================================================ */
-function assistirVod(v){
-  v = v || vodAtual; if (!v) return;
-  vodAtual = v; assistindoVod = true;
-  const panel = document.getElementById('offlinePanel');
-  if(panel) panel.style.display = 'none';
-  const f = document.getElementById('twitchIframe');
-  if(!f) return;
-  f.style.display = 'block';
-  f.src = `https://player.twitch.tv/?video=v${vodAtual.id}&parent=${HOST}&autoplay=false`;
-  const noteEl = document.getElementById('playerNoteText');
-  if(noteEl){
-    noteEl.classList.remove('recado');
-    noteEl.textContent = `Reprise: ${vodAtual.title}`;
+// Vercel serverless: /api/twitch.js
+const STREAMER = 'asemtet0';
+const DISCORD_INVITE = 'J4gGaKWFPZ';
+
+let cache = { token: null, exp: 0 };
+
+async function getToken(id, secret) {
+  if (cache.token && Date.now() < cache.exp) return cache.token;
+  const r = await fetch('https://id.twitch.tv/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: id, client_secret: secret, grant_type: 'client_credentials' })
+  });
+  const d = await r.json();
+  if (!d.access_token) throw new Error('Falha ao obter token');
+  cache = { token: d.access_token, exp: Date.now() + (d.expires_in - 60) * 1000 };
+  return cache.token;
+}
+
+function duracaoParaMin(d) {
+  if (!d) return 0;
+  const h = /(\d+)h/.exec(d);
+  const m = /(\d+)m/.exec(d);
+  const s = /(\d+)s/.exec(d);
+  return (h ? Number(h[1]) * 60 : 0) + (m ? Number(m[1]) : 0) + (s ? Math.round(Number(s[1]) / 60) : 0);
+}
+
+function calcularHorasMes(videos) {
+  if (!Array.isArray(videos)) return 0;
+  const agora = new Date();
+  const anoAtual = agora.getUTCFullYear();
+  const mesAtual = agora.getUTCMonth();
+  let totalMin = 0;
+  for (const v of videos) {
+    if (!v.created_at || !v.duration) continue;
+    const d = new Date(v.created_at);
+    if (d.getUTCFullYear() !== anoAtual || d.getUTCMonth() !== mesAtual) continue;
+    totalMin += duracaoParaMin(v.duration);
   }
-  const box = document.querySelector('.twitch-player-box');
-  if(box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-window.assistirVod = assistirVod;
-
-function tickUptime(){
-  const el = $('tmUp'); if(!el) return;
-  if(!inicioLive){ el.textContent = 'Offline'; return; }
-  const m = Math.max(0, Math.floor((Date.now() - inicioLive) / 60000));
-  el.textContent = `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
-}
-setInterval(tickUptime, 30000);
-
-let toastLiveMostrado = false;
-
-function _atualizarPlayerHeader(isLive){
-  const titleEl = document.querySelector('.twitch-player-title');
-  if(!titleEl) return;
-  titleEl.innerHTML = `<span class="live-indicator" id="headerLiveDot"></span>${isLive ? ' AO VIVO NA TWITCH' : ' CANAL DA SOSO'}`;
-  if(typeof setLivePulse === 'function') setLivePulse(isLive);
+  return Math.round(totalMin / 60);
 }
 
-function _atualizarProfileStatus(isLive){
-  const el = document.getElementById('profileStatus');
-  if(!el) return;
-  el.classList.toggle('online', !!isLive);
-  el.title = isLive ? '🟢 Online agora' : '⚫ Offline';
+function safeStr(v, max = 200) {
+  return String(v == null ? '' : v).trim().slice(0, max);
+}
+function safeUrl(v) {
+  const s = safeStr(v, 500);
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) return null;
+  return s;
 }
 
-function _atualizarStatsStrip(data){
-  const seg = document.getElementById('stripSeg');
-  const horas = document.getElementById('stripHoras');
-  const discord = document.getElementById('stripDiscord');
-  const live = document.getElementById('stripLive');
-  const liveSep = document.getElementById('stripLiveSep');
-  const viewers = document.getElementById('stripViewers');
-
-  const flash = (el, novoValor) => {
-    if(!el) return;
-    const valorAntigo = el.dataset.valor || el.textContent;
-    const novo = String(novoValor);
-    el.textContent = novo;
-    el.dataset.valor = novo;
-    if(valorAntigo && valorAntigo !== '—' && valorAntigo !== novo){
-      el.classList.add('flash');
-      setTimeout(() => el.classList.remove('flash'), 1200);
-    }
-  };
-
-  if(seg) flash(seg, data.followers != null ? Number(data.followers).toLocaleString('pt-BR') : '—');
-  if(horas) flash(horas, data.horasMes != null ? Number(data.horasMes).toLocaleString('pt-BR') : '—');
-  if(discord) flash(discord, data.discord != null ? Number(data.discord).toLocaleString('pt-BR') : '—');
-
-  const isLive = !!(data.stream && data.stream.viewer_count != null);
-  if(live) live.style.display = isLive ? '' : 'none';
-  if(liveSep) liveSep.style.display = isLive ? '' : 'none';
-  if(viewers && isLive) viewers.textContent = Number(data.stream.viewer_count).toLocaleString('pt-BR');
-}
-
-function _atualizarBanner(data){
-  const overlay = document.getElementById('bannerOverlay');
-  const badge = document.getElementById('bannerLiveBadge');
-  const kicker = document.getElementById('bannerKicker');
-  const title = document.getElementById('bannerTitle');
-  const liveText = document.getElementById('bannerLiveText');
-
-  const isLive = !!data.stream;
-  if(isLive){
-    const game = data.stream.game_name || 'Jogando';
-    const viewers = Number(data.stream.viewer_count || 0);
-    if(badge){
-      badge.style.display = 'flex';
-      badge.classList.add('live');
-    }
-    if(liveText) liveText.textContent = 'AO VIVO AGORA';
-    if(overlay){
-      overlay.style.display = '';
-      kicker.textContent = `🎮 Jogando: ${game}`;
-      title.innerHTML = `Assistindo agora com <em>${viewers.toLocaleString('pt-BR')} ${viewers === 1 ? 'viewer' : 'viewers'}</em>`;
-    }
-  } else {
-    if(badge){
-      badge.style.display = 'none';
-      badge.classList.remove('live');
-    }
-    if(overlay) overlay.style.display = 'none';
-  }
-}
-
-async function verificarStatusTwitch() {
-  const g = id => document.getElementById(id);
-  const iframe = g('twitchIframe'), panel = g('offlinePanel');
+/* 🆕 Helper que NUNCA explode: se falhar, retorna {} */
+async function safeApi(url, headers) {
   try {
-    const response = await fetch('/api/twitch');
-    if (!response.ok) throw new Error('api');
-    const data = await response.json();
-
-    atualizarMeta('goalSeg', data.followers, MARCOS, true);
-    atualizarMeta('goalDc', data.discord, MARCOS, true);
-    _atualizarStatsStrip(data);
-
-    const live = !!data.stream;
-    inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
-    if(data.stream && data.stream.uptime_seconds){
-      window.__uptimeLiveSeg = data.stream.uptime_seconds;
-      window.__uptimeLiveTs = Date.now();
-    } else {
-      window.__uptimeLiveSeg = 0;
-    }
-
-    _atualizarPlayerHeader(live);
-    _atualizarProfileStatus(live);
-    _atualizarBanner(data);
-
-    const isMature = !!(data.stream && data.stream.is_mature);
-
-    if (live && !toastLiveMostrado) {
-      toastLiveMostrado = true;
-      setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
-    }
-
-    if (data.discord && $('dcMembros'))
-      $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
-
-    vodAtual = data.video;
-    videosTw = data.videos || (data.video ? [data.video] : []);
-
-    // 🆕 Foto de capa offline da Twitch como background do player
-    if (data.user) {
-      if (data.user.profile_image_url) {
-        const av = g('offlineAvatarImg');
-        if (av) av.src = data.user.profile_image_url;
-      }
-      if (data.user.offline_image_url && panel) {
-        panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
-      }
-    }
-
-    if (data.stream && isMature) {
-      assistindoVod = false;
-      if(iframe){
-        iframe.style.display = 'none';
-        iframe.src = 'about:blank';
-      }
-      if(panel){
-        panel.style.display = 'flex';
-        panel.innerHTML = `
-          <div style="font-size:2.6rem;line-height:1">🔞</div>
-          <h4>Conteúdo +18 agora</h4>
-          <p>A Soso tá jogando algo com classificação adulta. O Twitch bloqueia o player embutido nesses casos — assiste direto no site deles:</p>
-          <div class="offline-actions">
-            <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">▶ Assistir na Twitch</a>
-          </div>
-        `;
-      }
-      g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
-      const noteEl = g('playerNoteText');
-      if(noteEl){
-        noteEl.classList.remove('recado');
-        noteEl.textContent = `🔞 Conteúdo +18 — clica em "Assistir na Twitch" acima.`;
-      }
-    } else if (data.stream) {
-      assistindoVod = false;
-      if(panel) panel.style.display = 'none';
-      if(iframe){
-        iframe.style.display = 'block';
-        const novoSrc = `https://player.twitch.tv/?channel=asemtet0&parent=${HOST}`;
-        if (iframe.src !== novoSrc) iframe.src = novoSrc;
-      }
-      g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
-      const noteEl = g('playerNoteText');
-      if(noteEl){
-        if(!noteEl.classList.contains('recado')){
-          noteEl.textContent = `Transmitindo: ${data.stream.title}`;
-        }
-      }
-    } else {
-      g('viewerCountStatus').textContent = '@asemtet0';
-      if (!assistindoVod) {
-        if(iframe){
-          iframe.style.display = 'none';
-          iframe.src = 'about:blank';
-        }
-        if(panel){
-          panel.style.display = 'flex';
-          // 🆕 background fica sendo a offline_image_url (setada acima)
-          panel.innerHTML = `
-            <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
-            <h4>Estamos offline por agora 💜</h4>
-            <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
-            <div class="offline-info">
-              <span>📅 Quase todo dia</span>
-              <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
-            </div>
-            <div class="offline-actions">
-              <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
-              <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
-            </div>
-          `;
-          // reaplica a foto de capa offline depois de recriar o innerHTML
-          if(data.user && data.user.offline_image_url){
-            panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
-          }
-          const btnVodEl = g('btnVod');
-          if(btnVodEl) btnVodEl.style.display = vodAtual ? '' : 'none';
-        }
-        const noteEl = g('playerNoteText');
-        if(noteEl){
-          if(!noteEl.classList.contains('recado')){
-            noteEl.textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
-          }
-        }
-      }
-    }
-
-    atualizarFoco(data.game, !!data.stream);
-    renderClips(data.clips);
-    setLivePulse(live);
-  } catch (err) {
-    console.error('Erro ao buscar dados da Twitch:', err);
-    atualizarFoco(null, false);
-    ['goalSeg','goalDc'].forEach(p => { const el = $(p+'Num'); if (el && el.textContent === '…') atualizarMeta(p, null); });
-    setLivePulse(false);
-    _atualizarPlayerHeader(false);
-    _atualizarProfileStatus(false);
-    const overlay = document.getElementById('bannerOverlay');
-    if(overlay) overlay.style.display = 'none';
-    const badge = document.getElementById('bannerLiveBadge');
-    if(badge) badge.style.display = 'none';
+    const r = await fetch(url, { headers });
+    if (!r.ok) return {};
+    return await r.json();
+  } catch (e) {
+    return {};
   }
 }
 
-document.addEventListener('click', e => {
-  const b = e.target.closest('.tm-vod');
-  if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]);
-});
-
-/* ============================================================
-   CLIPES
-   ============================================================ */
-function renderClips(list){
-  if(clipsOk) return;
-  const vazio = $('clipsVazio'), box = $('clipsBox');
-  if(!list || !list.length){
-    if(vazio) vazio.style.display = 'block';
-    if(box) box.style.display = 'none';
-    return;
+export default async function handler(req, res) {
+  const id = process.env.TWITCH_CLIENT_ID;
+  const secret = process.env.TWITCH_CLIENT_SECRET;
+  if (!id || !secret) {
+    return res.status(500).json({ error: 'Variáveis de ambiente não configuradas' });
   }
-  clipsOk = true;
-  clipsCache = list.slice(0, 4);
-  const totalViews = clipsCache.reduce((a, c) => a + (Number(c.views) || 0), 0);
-  const titulo = $('clipsTitulo');
-  if(titulo) titulo.textContent = `🎬 Clipes em destaque · 👁 ${totalViews.toLocaleString('pt-BR')} views`;
-  if(box) box.style.display = '';
-  if(vazio) vazio.style.display = 'none';
-  $('clipsGrid').innerHTML = clipsCache.map(c =>
-    `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}">
-      <img src="${esc(c.thumbnail)}" alt="" loading="lazy">
-      <span class="play">▶</span>
-      <span class="vw">👁 ${Number(c.views || 0).toLocaleString('pt-BR')}</span>
-      <span class="ct">${esc(c.title)}</span>
-    </button>`
-  ).join('');
+
+  try {
+    const token = await getToken(id, secret);
+    const headers = { 'Client-ID': id, Authorization: `Bearer ${token}` };
+    const api = (path) => safeApi(`https://api.twitch.tv/helix/${path}`, headers);
+
+    // 1) Busca o usuário
+    const u = await api(`users?login=${STREAMER}`);
+    const user = u.data && u.data[0];
+    if (!user) {
+      return res.status(200).json({
+        user: null, stream: null, followers: null, discord: null, horasMes: 0,
+        video: null, videos: [], game: null, clips: [],
+        aviso: 'Canal não encontrado na Twitch'
+      });
+    }
+
+    // 2) Todas as chamadas em paralelo, TODAS com proteção
+    const [s, f, v, ch, cl, dc] = await Promise.all([
+      api(`streams?user_id=${user.id}`),
+      api(`channels/followers?broadcaster_id=${user.id}&first=1`),
+      api(`videos?user_id=${user.id}&type=archive&first=50`),
+      api(`channels?broadcaster_id=${user.id}`),
+      api(`clips?broadcaster_id=${user.id}&first=6`),
+      fetch(`https://discord.com/api/v10/invites/${DISCORD_INVITE}?with_counts=true`)
+        .then(r => r.json()).catch(() => ({}))
+    ]);
+
+    const stream = s.data && s.data[0] ? s.data[0] : null;
+
+    let uptime = null;
+    let uptimeSeconds = 0;
+    if (stream && stream.started_at) {
+      const diff = Date.now() - new Date(stream.started_at).getTime();
+      uptimeSeconds = Math.max(0, Math.floor(diff / 1000));
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      uptime = `${h}h ${m}m`;
+    }
+
+    const mapVideo = x => ({
+      id: safeStr(x.id, 60),
+      title: safeStr(x.title, 200),
+      created_at: safeStr(x.created_at, 40),
+      duration: safeStr(x.duration, 20),
+      views: Number(x.view_count) || 0,
+      thumbnail: safeUrl(
+        x.thumbnail_url
+          ? x.thumbnail_url.replace('%{width}', '320').replace('%{height}', '180')
+          : null
+      )
+    });
+    const videos = (v.data || []).map(mapVideo);
+    const video = videos[0] || null;
+    const horasMes = calcularHorasMes(videos);
+
+    const c = ch.data && ch.data[0];
+    let game = null;
+    if (c && c.game_id) {
+      const g = await api(`games?id=${c.game_id}`);
+      const box = g.data && g.data[0] && g.data[0].box_art_url;
+      game = {
+        name: safeStr(c.game_name, 200),
+        box_art: safeUrl(box ? box.replace('{width}', '285').replace('{height}', '380') : null)
+      };
+    }
+
+    const clips = (cl.data || []).map(x => ({
+      id: safeStr(x.id, 60),
+      title: safeStr(x.title, 200),
+      views: Number(x.view_count) || 0,
+      thumbnail: safeUrl(x.thumbnail_url)
+    }));
+
+    const followersTotal = typeof f.total === 'number' ? f.total : null;
+    const discordTotal = typeof dc.approximate_member_count === 'number' ? dc.approximate_member_count : null;
+
+    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=30');
+    return res.status(200).json({
+      user: {
+        profile_image_url: safeUrl(user.profile_image_url),
+        offline_image_url: safeUrl(user.offline_image_url) || null
+      },
+      stream: stream && {
+        title: safeStr(stream.title, 200),
+        game_name: safeStr(stream.game_name, 200),
+        viewer_count: Number(stream.viewer_count) || 0,
+        uptime,
+        uptime_seconds: uptimeSeconds,
+        started_at: safeStr(stream.started_at, 40)
+      },
+      followers: followersTotal,
+      discord: discordTotal,
+      horasMes,
+      video, videos, game, clips
+    });
+  } catch (e) {
+    console.error('[twitch] erro:', e);
+    return res.status(200).json({
+      user: null, stream: null, followers: null, discord: null, horasMes: 0,
+      video: null, videos: [], game: null, clips: [],
+      aviso: 'Erro temporário'
+    });
+  }
 }
-function getDlgClip(){
-  if(dlgClip) return dlgClip;
-  dlgClip = document.createElement('dialog');
-  dlgClip.className = 'clip-modal';
-  dlgClip.innerHTML = `<iframe id="clipIframe" allowfullscreen></iframe><div class="cm-foot"><b id="clipTitle"></b><span id="clipViews"></span></div>`;
-  document.body.appendChild(dlgClip);
-  dlgClip.addEventListener('click', e => { if(e.target === dlgClip) fecharClip(); });
-  return dlgClip;
-}
-function abrirClip(id){
-  const c = clipsCache.find(x => x.id === id); if(!c) return;
-  const d = getDlgClip();
-  d.querySelector('#clipIframe').src = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(id)}&parent=${HOST}&autoplay=true`;
-  d.querySelector('#clipTitle').textContent = c.title;
-  d.querySelector('#clipViews').textContent = `👁 ${Number(c.views || 0).toLocaleString('pt-BR')} views`;
-  d.showModal();
-}
-function fecharClip(){ if(dlgClip){ dlgClip.querySelector('#clipIframe').src = ''; dlgClip.close(); } }
-document.addEventListener('click', e => {
-  const b = e.target.closest('.clip');
-  if(b && b.dataset.id) abrirClip(b.dataset.id);
-});
