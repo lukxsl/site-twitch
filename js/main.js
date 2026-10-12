@@ -302,7 +302,7 @@ async function carregarHall(){
     HALL_DADOS = d;
     renderHall();
   } catch(e){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">✨</span><small>Aguardando os primeiros dados</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
   }
 }
 
@@ -313,7 +313,7 @@ function renderHall(){
   const d = HALL_DADOS;
 
   if(!d || d.vazio){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">✨</span><small>Aguardando os primeiros dados</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
     if(updated) updated.style.display = 'none';
     return;
   }
@@ -324,7 +324,7 @@ function renderHall(){
               : (d.doadores || [])).slice(0, 3);
 
   if(!itens.length){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">✨</span><small>Aguardando os primeiros dados</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
   } else {
     const medalhas = ['🥇','🥈','🥉'];
     lista.innerHTML = itens.map((p, i) => {
@@ -418,7 +418,7 @@ function renderOuvindo(){
           <span class="df-ic">💤</span>
         </div>
         <div class="ouvindo-vazio-txt">
-          Sem música rolando agora
+          Nada tocando agora.<br>A playlist completa tá logo abaixo 💜
         </div>
       </div>
     `;

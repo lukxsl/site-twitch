@@ -132,10 +132,10 @@
           Oie! Eu sou a Soso, também conhecida como Sophs ou Teto.
           Aqui você encontra games, caos, conversa e muita gameplay duvidosa. 💜
         </p>
-        <div class="profile-stats-grid">
-          <div class="profile-stat-row"><span>🎮 Foco</span><span>Games & Chat</span></div>
-          <div class="profile-stat-row"><span>✨ Vibe</span><span>Caos & Diversão</span></div>
-          <div class="profile-stat-row"><span>⚡ Frequência</span><span>Quase todo dia</span></div>
+        <div class="profile-chips">
+          <span class="p-chip">🎮 Games & Chat</span>
+          <span class="p-chip">✨ Caos & Diversão</span>
+          <span class="p-chip">⚡ Quase todo dia</span>
         </div>
         <div class="profile-socials">
           <a class="profile-social-btn" href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener" title="Instagram">
@@ -184,6 +184,10 @@
             <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
             <h4>Estamos offline por agora 💜</h4>
             <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
+            <div class="offline-info">
+              <span>📅 Quase todo dia</span>
+              <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
+            </div>
             <div class="offline-actions">
               <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
               <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
@@ -196,14 +200,14 @@
 
       <!-- 🆕 RECADO DA SOSO (Centro, abaixo do player) -->
       <article class="card recado-card reveal" id="recadoCard">
-        <div class="recado-head">
-          <span class="recado-ic">💌</span>
-          <div>
-            <h3>Recado da Soso</h3>
-            <small>Pra você, com carinho 💜</small>
-          </div>
+        <div class="recado-av">
+          <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+          <span aria-hidden="true">💌</span>
         </div>
-        <p class="recado-texto" id="recadoTexto">Carregando...</p>
+        <div class="recado-bubble">
+          <div class="recado-meta"><b>📌 Recado da Soso</b><small>Pra você, com carinho 💜</small></div>
+          <p class="recado-texto" id="recadoTexto">Carregando...</p>
+        </div>
       </article>
 
       <article class="card jogos-card reveal">
@@ -244,21 +248,20 @@
     <!-- COLUNA DIREITA: seja sub + apoie/hall -->
     <div class="bento-col bento-right">
       <article class="card sub-hero-box reveal">
-        <div class="sub-hero-head">
-          <span class="sub-hero-crown">👑</span>
-          <div>
-            <h3>Seja Sub</h3>
-            <p>Vem pro cantinho! 💜 Vire Sub e desbloqueie recompensas como emotes exclusivos e lives sem anúncios.</p>
-          </div>
+        <div class="sub-hero-top">
+          <span class="sub-kicker">👑 Cantinho VIP</span>
+          <h3>Entra pro cantinho</h3>
+          <p>Vire Sub e apoie a Soso ganhando vantagens exclusivas. 💜</p>
         </div>
-        <ul class="beneficios-lista">
-          <li><b>🎁 Emotes exclusivos</b> no chat</li>
-          <li><b>💬 Canal privado</b> no Discord</li>
-          <li><b>🎖️ Cargo de destaque</b> no servidor</li>
-          <li><b>💜 Lives sem anúncios</b></li>
+        <ul class="sub-perks">
+          <li><i>🎁</i>Emotes exclusivos</li>
+          <li><i>💬</i>Canal privado no Discord</li>
+          <li><i>🎖️</i>Cargo de destaque</li>
+          <li><i>🚫</i>Lives sem anúncios</li>
         </ul>
         <div class="emotes-mini-grid" id="emotesMiniGrid"></div>
-        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block twitch-accent">👑 Assinar na Twitch →</a>
+        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" class="btn big block sub-cta">👑 Assinar na Twitch →</a>
+        <small class="sub-note">Sub de presente (gift) também vale 💜</small>
       </article>
       <article class="card apoie reveal">
         <div class="apoie-head">
@@ -274,8 +277,8 @@
         </div>
         <div class="hall-lista" id="hallLista">
           <div class="hall-empty">
-            <span class="hall-empty-ic">✨</span>
-            <small>Aguardando os primeiros dados</small>
+            <span class="hall-empty-ic">🏆</span>
+            <small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small>
           </div>
         </div>
         <p class="hall-updated" id="hallUpdated" style="display:none"></p>

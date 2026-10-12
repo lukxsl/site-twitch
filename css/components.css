@@ -809,3 +809,65 @@ dialog::backdrop{background:rgba(5,3,9,.8);backdrop-filter:blur(8px);-webkit-bac
 @media (max-width:480px){
   .float-live-btn{right:12px; bottom:16px;padding:10px 16px 10px 12px;font-size:.78rem}
 }
+
+/* ============================================================
+   HOME V3 — melhorias de layout (perfil, offline, recado, sub, hall)
+   ============================================================ */
+.profile-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:8px}
+.p-chip{font-size:.74rem;font-weight:700;padding:6px 11px;border-radius:99px;background:rgba(168,85,247,.1);border:1px solid var(--line);color:#e9ddff}
+.profile-description{text-wrap:balance}
+
+/* Player offline */
+.offline-panel h4{font-size:1.3rem}
+.offline-panel p{font-size:.86rem}
+.offline-info{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.offline-info > *{font-size:.72rem;font-weight:700;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.07);border:1px solid var(--line-2);color:#f0e6ff;backdrop-filter:blur(6px);transition:.2s}
+.offline-info a:hover{background:rgba(168,85,247,.25);border-color:var(--purple)}
+
+/* Música (estado vazio menor) */
+.disco-fantasma{width:88px;height:88px}
+.disco-fantasma .df-ic{font-size:1.5rem}
+.ouvindo-vazio-txt{font-size:.8rem;max-width:220px}
+
+/* Recado: balão de chat */
+.recado-card{display:flex;flex-direction:row;gap:12px;align-items:flex-start;padding:16px;border:1px solid rgba(255,110,199,.28);
+  background:linear-gradient(135deg,rgba(168,85,247,.16),rgba(255,110,199,.07)),var(--surface)}
+.recado-card::before{display:none}
+.recado-card.vazio{display:none}
+.recado-av{position:relative;width:44px;height:44px;flex:none}
+.recado-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid var(--purple-2);background:#1a102d;position:relative;z-index:1}
+.recado-av span{position:absolute;right:-6px;bottom:-5px;font-size:.95rem;z-index:2;animation:heartBeat 2.4s ease-in-out infinite}
+.recado-bubble{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:4px 16px 16px 16px;padding:12px 14px}
+.recado-meta{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:4px}
+.recado-meta b{font-size:.78rem;color:var(--purple-2);font-weight:800}
+.recado-meta small{font-size:.68rem;color:var(--mute)}
+.recado-texto{font-style:normal;font-size:.92rem;line-height:1.55;color:#f1e8ff}
+
+/* Jogos: texto da votação menor */
+.jogo-half .foco-info p,#proxInfo{font-size:.74rem;color:var(--mute);line-height:1.4}
+
+/* Seja Sub */
+.sub-hero-box{padding:0;gap:0;overflow:hidden;border-color:rgba(255,209,102,.3)}
+.sub-hero-top{padding:20px 20px 14px;text-align:left;
+  background:radial-gradient(ellipse at 15% 0,rgba(255,209,102,.22),transparent 60%),linear-gradient(160deg,rgba(168,85,247,.28),transparent)}
+.sub-kicker{display:inline-block;font-size:.64rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);padding:3px 10px;border-radius:99px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.3)}
+.sub-hero-top h3{font-size:1.5rem;color:var(--white);margin:10px 0 4px}
+.sub-hero-top p{font-size:.84rem;line-height:1.45;color:#e0d9ec}
+.sub-perks{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 20px 0}
+.sub-perks li{display:flex;gap:9px;align-items:center;font-size:.78rem;font-weight:700;color:var(--white);line-height:1.25}
+.sub-perks i{font-style:normal;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(255,209,102,.12);flex:none;font-size:.9rem}
+.sub-hero-box .emotes-mini-grid{display:flex;align-items:center;gap:0;padding:14px 20px 0;background:none;border:0;border-radius:0}
+.sub-hero-box .emotes-mini-grid .emote{width:34px;height:34px;aspect-ratio:auto;flex:none;border-radius:50%;margin-left:-8px;padding:3px;background:#221238;border:2px solid #181028;font-size:1rem}
+.sub-hero-box .emotes-mini-grid .emote:first-child{margin-left:0}
+.sub-hero-box .emotes-mini-grid .emote img{border-radius:50%}
+.sub-hero-box .emotes-mini-grid .emote:hover{position:relative;z-index:2}
+.sub-hero-box .emotes-mini-grid:not(:empty)::after{content:'+ emotes do canal';margin-left:12px;font-size:.74rem;color:var(--mute)}
+.sub-hero-box .btn.sub-cta{width:calc(100% - 40px);margin:14px 20px 0;
+  background:linear-gradient(135deg,#ffd166,#f59e0b);color:#2a1700;box-shadow:0 8px 22px -8px rgba(255,209,102,.55)}
+.sub-hero-box .btn.sub-cta:hover{box-shadow:0 12px 28px -8px rgba(255,209,102,.75)}
+.sub-note{display:block;text-align:center;font-size:.7rem;color:var(--mute);padding:10px 20px 18px}
+
+/* Hall: estado vazio preenche o espaço */
+.apoie .hall-lista{flex:1 1 auto}
+.hall-lista .hall-empty{flex:1;min-height:120px}
+.hall-empty-ic{opacity:.8}
