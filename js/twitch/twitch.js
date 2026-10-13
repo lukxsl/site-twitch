@@ -1,17 +1,13 @@
 /* ============================================================
    TWITCH
    ============================================================ */
-// O player embutido da Twitch pede login nas reprises +18 e não funciona dentro do site.
-// true  = "Última live" sempre abre a reprise direto na Twitch (recomendado para este canal)
-// false = usa o player embutido quando a API não marcar o canal como +18
 const FORCAR_REPRISE_NA_TWITCH = true;
-let canalMature = FORCAR_REPRISE_NA_TWITCH; // canal marcado como +18 (player embutido pede login)
+let canalMature = FORCAR_REPRISE_NA_TWITCH;
 
 function assistirVod(v){
   v = v || vodAtual; if (!v) return;
   vodAtual = v;
   const urlTwitch = `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}`;
-  // Reprise de canal +18: o player embutido não funciona sem login, então abre direto na Twitch
   if (canalMature) {
     window.open(urlTwitch, '_blank', 'noopener');
     if (typeof toast === 'function') toast('🔞 Reprise +18: abrindo na Twitch', 'ok');
@@ -24,7 +20,6 @@ function assistirVod(v){
   if(!f) return;
   f.style.display = 'block';
   f.src = `https://player.twitch.tv/?video=v${vodAtual.id}&parent=${HOST}&autoplay=false`;
-  // botão de segurança dentro do player (se a Twitch pedir login, dá pra assistir direto lá)
   const area = document.querySelector('.twitch-player');
   if(area){
     let fb = document.getElementById('vodFallback');
@@ -65,16 +60,13 @@ function _atualizarPlayerHeader(isLive){
   if(typeof setLivePulse === 'function') setLivePulse(isLive);
 }
 
-/* 🆕 Status dinâmico do perfil (bolinha + texto abaixo do Maceió – AL) */
 function _atualizarProfileStatus(isLive, data){
-  // Bolinha verde/roxa no canto do avatar
   const el = document.getElementById('profileStatus');
   if(el){
     el.classList.toggle('online', !!isLive);
     el.title = isLive ? '🟢 Online agora' : '⚫ Offline';
   }
 
-  // Status dinâmico em texto (abaixo do "Maceió – AL")
   const dyn = document.getElementById('profileStatusDinamica');
   if(!dyn) return;
 
@@ -193,7 +185,6 @@ async function verificarStatusTwitch() {
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
 
-    // 🆕 Foto de capa offline da Twitch como background do player
     if (data.user) {
       if (data.user.profile_image_url) {
         const av = g('offlineAvatarImg');
@@ -264,7 +255,6 @@ async function verificarStatusTwitch() {
               <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live${canalMature ? ' ↗' : ''}</button>
             </div>
           `;
-          // reaplica a foto de capa offline depois de recriar o innerHTML
           if(data.user && data.user.offline_image_url){
             panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
           }
@@ -284,11 +274,16 @@ async function verificarStatusTwitch() {
     if(fbVod) fbVod.style.display = assistindoVod ? '' : 'none';
 
     atualizarFoco(data.game, !!data.stream);
+    // 🆕 Avisa a tier list qual jogo tá rolando agora
+    if(typeof window.setJogoAoVivo === 'function'){
+      window.setJogoAoVivo(data.stream && data.game ? data.game.name : null);
+    }
     renderClips(data.clips);
     setLivePulse(live);
   } catch (err) {
     console.error('Erro ao buscar dados da Twitch:', err);
     atualizarFoco(null, false);
+    if(typeof window.setJogoAoVivo === 'function') window.setJogoAoVivo(null);
     ['goalSeg','goalDc'].forEach(p => { const el = $(p+'Num'); if (el && el.textContent === '…') atualizarMeta(p, null); });
     setLivePulse(false);
     _atualizarPlayerHeader(false);

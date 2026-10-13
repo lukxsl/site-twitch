@@ -199,7 +199,7 @@
         <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
       </article>
 
-      <!-- RECADO DA SOSO (Centro, abaixo do player) -->
+      <!-- RECADO DA SOSO -->
       <article class="card recado-card reveal" id="recadoCard">
         <div class="recado-av">
           <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
@@ -300,13 +300,37 @@
     </div>
   </header>
 
+  <!-- 🆕 PÓDIO TOP 3 -->
+  <div class="podium reveal" id="podium" style="display:none"></div>
+
   <div class="tools reveal">
     <div class="search-wrap">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
       <input class="search" id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo">
     </div>
-    <div class="chips" id="chips"></div>
+
+    <!-- 🆕 SELECT DE ORDENAÇÃO -->
+    <div class="sort-wrap">
+      <label for="sortSelect" class="sort-label">↕️ Ordenar:</label>
+      <select class="sort-select" id="sortSelect">
+        <option value="nota">Nota (maior → menor)</option>
+        <option value="horas">Horas jogadas</option>
+        <option value="nome">Nome (A → Z)</option>
+        <option value="recentes">Adicionados recentemente</option>
+      </select>
+    </div>
+
+    <!-- 🆕 BOTÃO ROLETA -->
+    <button type="button" class="btn-roleta" id="btnRoleta" title="Sortear um item aleatório">
+      <span class="roleta-ic">🎲</span>
+      <span>Surpreenda-me!</span>
+    </button>
   </div>
+
+  <!-- 🆕 CHIPS DE GÊNERO -->
+  <div class="genero-chips reveal" id="generoChips"></div>
+
+  <div class="chips reveal" id="chips"></div>
 
   <section class="stats" id="stats" aria-label="Resumo"></section>
 
@@ -662,6 +686,26 @@
     <div class="confirm-actions">
       <button class="btn ghost" id="confirmCancel">Cancelar</button>
       <button class="btn" id="confirmOk">Confirmar</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- 🆕 MODAL DA ROLETA -->
+<dialog id="roletaDlg" class="roleta-modal">
+  <div class="roleta-body">
+    <span class="roleta-kicker">🎲 Sorteio do cantinho</span>
+    <h3 class="roleta-title">Surpreenda-me!</h3>
+    <p class="roleta-desc" id="roletaDesc">Sorteando um item da Tier List…</p>
+    <div class="roleta-slot" id="roletaSlot">
+      <div class="roleta-slot-ph">🎮</div>
+    </div>
+    <div class="roleta-info" id="roletaInfo" style="display:none">
+      <b id="roletaNome">—</b>
+      <span id="roletaMeta"></span>
+    </div>
+    <div class="roleta-actions">
+      <button type="button" class="btn ghost" id="roletaFechar">Fechar</button>
+      <button type="button" class="btn" id="roletaNovamente">🎲 De novo</button>
     </div>
   </div>
 </dialog>

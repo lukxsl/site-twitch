@@ -1,5 +1,4 @@
 // Vercel serverless: /api/jogos.js
-// Junta Steam (horas reais) + IGDB (nota, capa, sinopse).
 const STEAM_KEY = process.env.STEAM_API_KEY || process.env.STEAM;
 const STEAM_ID = '76561199823015081';
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
@@ -86,18 +85,22 @@ export default async function handler(req, res) {
 
         for (const lote of lotes) {
           const filtro = lote.map(n => `"${n}"`).join(',');
-          const body = `fields name, rating, aggregated_rating, cover.url, summary, first_release_date; where name = (${filtro}); limit 500;`;
+          const body = `fields name, rating, aggregated_rating, cover.url, summary, first_release_date, genres.name; where name = (${filtro}); limit 500;`;
           const d = await igdbQuery(body);
           if (Array.isArray(d)) {
             for (const g of d) {
               const capa = g.cover && g.cover.url
                 ? `https:${g.cover.url.replace('t_thumb', 't_cover_big').replace('t_cover_small', 't_cover_big')}`
                 : null;
+              const generos = Array.isArray(g.genres)
+                ? g.genres.map(x => x.name).filter(Boolean).slice(0, 6)
+                : [];
               igdbData[g.name.toLowerCase()] = {
                 nota: g.rating ? Math.round(g.rating) / 10 : null,
                 capa: safeUrl(capa),
                 sinopse: safeStr(g.summary, 2000),
-                ano: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null
+                ano: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null,
+                generos
               };
             }
           }
@@ -119,6 +122,7 @@ export default async function handler(req, res) {
           nota: extra.nota || 0,
           sinopse: extra.sinopse || '',
           ano: extra.ano || null,
+          generos: extra.generos || [],
           capa: extra.capa || safeUrl(`https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`)
         };
       })

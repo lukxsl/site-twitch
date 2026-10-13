@@ -83,6 +83,12 @@ let HALL_DADOS = null;
 let HALL_ABA = 'gift';
 let HALL_TIMER = null;
 
+/* 🆕 Tier List V2 */
+let sortMode = 'nota';
+let generoFiltro = 'all';
+let _jogoAoVivoNome = null;
+let _roletaRodando = false;
+
 /* ============================================================
    HELPERS
    ============================================================ */
@@ -414,7 +420,6 @@ function _fmtMs(ms){
 function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
 
-  // Estado inicial: ainda não buscamos nada.
   if(!_musicaPronta && !musicaTocando && !_recentes.length){
     painel.innerHTML = `
       <div class="ouvindo-wrap">
@@ -489,7 +494,6 @@ function renderOuvindo(){
   const urlAbrir = d.url || '#';
   const target = d.url ? '_blank' : '_self';
 
-  // Link direto pra faixa vs busca
   const linkTexto = d.url
     ? (d.url.includes('/track/') ? '▶ Ouvir no Spotify' : '🔍 Buscar no Spotify')
     : '';
@@ -689,22 +693,22 @@ function renderComandos(filtroTxt = ''){
 }
 
 /* ============================================================
-   TIER LIST
+   TIER LIST V2
    ============================================================ */
 const TIERS = ['S','A','B','C'];
 const JOGOS_FALLBACK = [
   { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando', horas:50, nota:8,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
-    comentario:'Um dos mundos mais vivos e detalhados dos games.' },
+    comentario:'Um dos mundos mais vivos e detalhados dos games.', generos:['Ação','Aventura'] },
   { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Zerado', nota:9, horas:40,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario:'' },
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario:'', generos:['Metroidvania'] },
   { id:'stardew-valley', nome:'Stardew Valley', tier:'A', status:'Jogando', nota:8, horas:120,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario:'' }
+    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario:'', generos:['Simulação'] }
 ];
 const FILMES_FALLBACK = [
   { id:'interestelar', nome:'Interestelar', tier:'S', status:'Assistido', nota:9, duracao:169, ano:2014,
     capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario:'As reservas naturais da Terra estão chegando ao fim.' }
+    comentario:'As reservas naturais da Terra estão chegando ao fim.', generos:['Ficção'] }
 ];
 
 async function carregarBiblioteca(){
@@ -761,60 +765,87 @@ function desenharStats(){
   const bEls = el.querySelectorAll('.stat b');
   if(bEls[0] && !isNaN(Number(dados[0][0]))) animarNumero(bEls[0], Number(dados[0][0]));
   if(bEls[3] && !isNaN(Number(dados[3][0]))) animarNumero(bEls[3], Number(dados[3][0]));
+
+  renderPodium();
+  renderGeneroChips();
 }
 
-function _fmtUptime(segundos){
-  if(!segundos || segundos <= 0) return '';
-  const h = Math.floor(segundos / 3600);
-  const m = Math.floor((segundos % 3600) / 60);
-  if(h > 0) return `${h}h ${String(m).padStart(2,'0')}m`;
-  return `${m}m`;
+/* ---------- Pódio Top 3 ---------- */
+function renderPodium(){
+  const wrap = $('podium'); if(!wrap) return;
+  const L = LISTA().filter(j => j.nota > 0);
+  if(L.length < 3){ wrap.style.display = 'none'; return; }
+  const top = [...L].sort((a,b) => (b.nota||0) - (a.nota||0)).slice(0, 3);
+  const medalhas = ['🥇','🥈','🥉'];
+  wrap.style.display = '';
+  wrap.innerHTML = top.map((j, i) => {
+    const pos = i + 1;
+    const chipTier = j.tier && j.tier !== 'NR' ? `<span class="podium-chip tr">Tier ${esc(j.tier)}</span>` : '';
+    const chipNota = j.nota > 0 ? `<span class="podium-chip nota">⭐ ${n1(j.nota)}</span>` : '';
+    const chipMeta = modo === 'jogos' && j.horas > 0
+      ? `<span class="podium-chip">⏱ ${fh(j.horas)}</span>`
+      : (j.duracao > 0 ? `<span class="podium-chip">${fmtDuracao(j.duracao)}</span>` : '');
+    const capaHTML = j.capa
+      ? `<img class="podium-img" src="${esc(j.capa)}" alt="${esc(j.nome)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'podium-img',style:'display:grid;place-items:center;font-size:1.6rem',textContent:'🎮'}))">`
+      : `<div class="podium-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>`;
+    return `
+      <div class="podium-card pos-${pos}">
+        <span class="podium-medal">${medalhas[i]}</span>
+        ${capaHTML}
+        <div class="podium-nome">${esc(j.nome)}</div>
+        <div class="podium-chips">${chipTier}${chipNota}${chipMeta}</div>
+      </div>
+    `;
+  }).join('');
 }
 
-function atualizarFoco(game, aoVivo){
-  ultGame = game; ultVivo = aoVivo;
-  const j = game ? JOGOS.find(x => norm(x.nome) === norm(game.name)) : (JOGOS.find(x => x.status === 'Jogando') || JOGOS[0]);
-  const nome = game ? game.name : (j && j.nome);
-  const c = $('focoCover');
-  if(c) c.classList.remove('skeleton');
-  if(!nome) return;
-  const capa = (j && j.capa) || (game && game.box_art) || '';
-  const elNome = $('focoNome'); if(!elNome) return;
-  elNome.textContent = nome;
-  $('focoLabel').textContent = aoVivo ? '🔴 Jogando agora' : '🎮 Último jogo jogado';
-  const chips = [];
-  if(j && j.tier && j.tier !== 'NR') chips.push(`<span class="foco-chip tr">Tier ${esc(j.tier)}</span>`);
-  if(j && j.nota > 0) chips.push(`<span class="foco-chip">⭐ ${n1(j.nota)}</span>`);
-  if(j && j.horas > 0) chips.push(`<span class="foco-chip">⏱ ${fh(j.horas)}</span>`);
-  if(j && j.status) chips.push(`<span class="foco-chip">${esc(j.status)}</span>`);
-  if(!chips.length) chips.push('<span class="foco-chip">Ainda sem nota na tier list</span>');
-  $('focoMeta').innerHTML = chips.join('');
-  const pr = j && j.progresso != null && j.progresso > 0;
-  $('focoBar').style.display = pr ? '' : 'none';
-  if(pr){ $('focoPct').textContent = j.progresso + '%'; $('focoBarI').style.width = j.progresso + '%'; }
-
-  const v = vodAtual;
-  let linhaTempo = '';
-  if(aoVivo && window.__uptimeLiveSeg && window.__uptimeLiveTs){
-    const passou = Math.floor((Date.now() - window.__uptimeLiveTs) / 1000);
-    const total = window.__uptimeLiveSeg + passou;
-    const fmt = _fmtUptime(total);
-    if(fmt) linhaTempo = `🔴 Ao vivo há ${fmt}`;
-  }
-  if(!linhaTempo && v && v.created_at){
-    linhaTempo = `Última live ${tempoAtras(v.created_at)}${v.duration ? ' · ' + durTw(v.duration) : ''}`;
-  }
-  $('focoHoras').textContent = linhaTempo;
-
-  if(capa){ c.onerror = () => { c.style.display = 'none'; }; c.src = capa; c.style.display = ''; }
-  else c.style.display = 'none';
-  const twLink = $('focoTwitchLink');
-  if(twLink){
-    if(aoVivo){ twLink.href = 'https://www.twitch.tv/asemtet0'; twLink.style.display = ''; }
-    else twLink.style.display = 'none';
-  }
+/* ---------- Chips de gênero ---------- */
+function renderGeneroChips(){
+  const wrap = $('generoChips'); if(!wrap) return;
+  const L = LISTA();
+  const contagem = {};
+  L.forEach(j => (j.generos || []).forEach(g => {
+    const k = String(g).trim();
+    if(!k) return;
+    contagem[k] = (contagem[k] || 0) + 1;
+  }));
+  const generos = Object.keys(contagem).sort((a,b) => contagem[b] - contagem[a]);
+  if(!generos.length){ wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const iconeGenero = g => {
+    const t = g.toLowerCase();
+    if(/a[çc][aã]o/.test(t)) return '⚔️';
+    if(/aventura/.test(t)) return '🗺️';
+    if(/rpg/.test(t)) return '🎭';
+    if(/terror|horror/.test(t)) return '👻';
+    if(/fps|shooter|tiro/.test(t)) return '🎯';
+    if(/simula/.test(t)) return '🏡';
+    if(/estrat/.test(t)) return '♟️';
+    if(/esporte/.test(t)) return '⚽';
+    if(/corrida/.test(t)) return '🏎️';
+    if(/puzzle/.test(t)) return '🧩';
+    if(/plataforma/.test(t)) return '🦘';
+    if(/metroidvania/.test(t)) return '🗡️';
+    if(/fic[çc]/.test(t)) return '🚀';
+    if(/anima/.test(t)) return '🎨';
+    if(/com[ée]dia/.test(t)) return '😄';
+    if(/drama/.test(t)) return '🎬';
+    if(/fantasia/.test(t)) return '🧙';
+    return '🎮';
+  };
+  wrap.innerHTML = `
+    <button type="button" class="gen-chip ${generoFiltro === 'all' ? 'on' : ''}" data-gen="all">
+      Todos <b>${L.length}</b>
+    </button>
+    ${generos.map(g => `
+      <button type="button" class="gen-chip ${generoFiltro === g ? 'on' : ''}" data-gen="${esc(g)}">
+        ${iconeGenero(g)} ${esc(g)} <b>${contagem[g]}</b>
+      </button>
+    `).join('')}
+  `;
 }
 
+/* ---------- Chips de status ---------- */
 function renderChips(){
   $('chips').innerHTML = MODOS[modo].status.map(s => {
     const tip = STATUS_TOOLTIP[s] || s;
@@ -824,7 +855,7 @@ function renderChips(){
 
 function aplicarModo(novo, salvar = true){
   if(!MODOS[novo]) novo = 'jogos';
-  modo = novo; filtro = 'Todos';
+  modo = novo; filtro = 'Todos'; generoFiltro = 'all';
   $('q').value = '';
   document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x.dataset.m === modo));
   const m = MODOS[modo];
@@ -836,18 +867,30 @@ function aplicarModo(novo, salvar = true){
   if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
 }
 
+/* ---------- Cartão com tilt + tooltip + live ---------- */
 function cartao(j,i){
   const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
   const podeArrastar = !!(USUARIO && USUARIO.admin) && !ADMIN_MULTISEL.ativo;
   const conq = j.conquistas && j.conquistas.total
     ? `<span class="conq">🏆 ${j.conquistas.obtidas}/${j.conquistas.total}</span>` : '';
   const novo = ehNovo(j) ? `<span class="novo">Novo</span>` : '';
+
+  const aoVivo = _jogoAoVivoNome && norm(j.nome) === norm(_jogoAoVivoNome);
+  const liveBadge = aoVivo ? `<span class="live-now">Ao vivo</span>` : '';
+
+  const tooltip = (j.comentario || '').trim()
+    ? ` data-tooltip="${esc(j.comentario.slice(0, 180))}${j.comentario.length > 180 ? '…' : ''}"`
+    : '';
+
+  const tierCls = j.tier && j.tier !== 'NR' ? `t-${j.tier}` : '';
+
   return `
-    <button class="g" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}">
+    <button class="g ${tierCls}" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}"${tooltip}>
       <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
         <div class="ph">${esc(ini)}</div>
         ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
         ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
+        ${liveBadge}
         ${novo}
         ${j.nota > 0 ? `<span class="nt">⭐ ${n1(j.nota)}</span>` : ''}
       </div>
@@ -860,11 +903,30 @@ function cartao(j,i){
     </button>
   `;
 }
+
 function linha(cls, rotulo, lista){
   const L = LISTA();
+  const totalItens = lista.length;
+  let resumo = '';
+  if(totalItens > 0){
+    const comNota = lista.filter(j => j.nota > 0);
+    const media = comNota.length
+      ? (comNota.reduce((a,j) => a + j.nota, 0) / comNota.length).toFixed(1)
+      : null;
+    const somaHoras = modo === 'jogos'
+      ? Math.round(lista.reduce((a,j) => a + (j.horas || 0), 0))
+      : 0;
+    const partes = [`${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`];
+    if(media) partes.push(`média ${media}`);
+    if(somaHoras > 0) partes.push(`${somaHoras}h`);
+    resumo = partes.join(' · ');
+  }
   return `
     <div class="tier t-${cls}">
-      <div class="label"><div>${rotulo}</div></div>
+      <div class="label">
+        <div>${rotulo}</div>
+        ${resumo ? `<span class="tier-resumo">${esc(resumo)}</span>` : ''}
+      </div>
       <div class="games">
         ${lista.length ? lista.map(j => cartao(j, L.indexOf(j))).join('') : `<span class="empty">${MODOS[modo].vazio}</span>`}
       </div>
@@ -872,6 +934,37 @@ function linha(cls, rotulo, lista){
   `;
 }
 
+/* ---------- Tilt 3D ---------- */
+function setupCardTiltTier(){
+  if(matchMedia('(max-width: 960px)').matches) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  document.querySelectorAll('#tiers .g').forEach(card => {
+    if(card.dataset.tiltBound === '1') return;
+    card.dataset.tiltBound = '1';
+    let raf = 0, ev = null;
+    const aplicar = () => {
+      raf = 0;
+      if(!ev) return;
+      const rect = card.getBoundingClientRect();
+      const px = ev.clientX - rect.left, py = ev.clientY - rect.top;
+      const x = px / rect.width - 0.5, y = py / rect.height - 0.5;
+      card.style.setProperty('--tilt-ry', (x * 8).toFixed(2) + 'deg');
+      card.style.setProperty('--tilt-rx', (-y * 6).toFixed(2) + 'deg');
+    };
+    card.addEventListener('mousemove', (e) => {
+      ev = e;
+      if(!raf) raf = requestAnimationFrame(aplicar);
+    }, { passive: true });
+    card.addEventListener('mouseleave', () => {
+      ev = null;
+      card.style.setProperty('--tilt-ry', '0deg');
+      card.style.setProperty('--tilt-rx', '0deg');
+    });
+  });
+}
+
+/* ---------- Drag & drop ---------- */
 function setupDragDrop(){
   if(!USUARIO || !USUARIO.admin || ADMIN_MULTISEL.ativo) return;
   document.querySelectorAll('.g').forEach(el => {
@@ -925,17 +1018,192 @@ function setupDragDrop(){
   });
 }
 
+/* ---------- Filtros + Ordenação ---------- */
+function _aplicarFiltrosOrdenacao(){
+  const q = ($('q')?.value || '').trim().toLowerCase();
+  let lista = LISTA().filter(j => {
+    if(filtro !== 'Todos' && j.status !== filtro) return false;
+    if(generoFiltro !== 'all'){
+      const temGen = (j.generos || []).some(g => String(g).toLowerCase() === generoFiltro.toLowerCase());
+      if(!temGen) return false;
+    }
+    if(q && !j.nome.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  lista.sort((a,b) => {
+    switch(sortMode){
+      case 'nome':
+        return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
+      case 'horas':
+        return (b.horas || b.duracao || 0) - (a.horas || a.duracao || 0);
+      case 'recentes': {
+        const ta = a.adicionadoEm ? new Date(a.adicionadoEm).getTime() : 0;
+        const tb = b.adicionadoEm ? new Date(b.adicionadoEm).getTime() : 0;
+        return tb - ta;
+      }
+      case 'nota':
+      default:
+        return (b.nota || 0) - (a.nota || 0) || (b.horas || 0) - (a.horas || 0);
+    }
+  });
+
+  return lista;
+}
+
 function desenhar(){
   const el = $('tiers'); if(!el) return;
-  const q = $('q').value.trim().toLowerCase();
-  const lista = LISTA().filter(j => (filtro === 'Todos' || j.status === filtro) && j.nome.toLowerCase().includes(q))
-    .sort((a,b) => (b.nota || 0) - (a.nota || 0) || (b.horas || 0) - (a.horas || 0));
+  const lista = _aplicarFiltrosOrdenacao();
+
+  if(!lista.length && !LISTA().length){
+    el.innerHTML = TIERS.map(t => `
+      <div class="tier t-${t}">
+        <div class="label"><div>${t}</div></div>
+        <div class="games">
+          <div class="g skeleton"></div>
+          <div class="g skeleton"></div>
+          <div class="g skeleton"></div>
+        </div>
+      </div>
+    `).join('');
+    return;
+  }
+
   const tiers = TIERS.map(t => linha(t, t, lista.filter(j => j.tier === t)));
   const nr = lista.filter(j => j.tier === 'NR');
   if(nr.length) tiers.push(linha('NR', '?', nr));
   el.innerHTML = tiers.join('');
   setupDragDrop();
+  setTimeout(setupCardTiltTier, 30);
 }
+
+/* ---------- ROLETA "Surpreenda-me" ---------- */
+function abrirRoleta(){
+  const dlg = $('roletaDlg');
+  if(!dlg) return;
+  const lista = _aplicarFiltrosOrdenacao();
+  if(!lista.length){
+    toast('Nada pra sortear com esses filtros 😢', 'warn');
+    return;
+  }
+  dlg.showModal();
+  rodarRoleta(lista);
+}
+
+function rodarRoleta(lista){
+  if(_roletaRodando) return;
+  _roletaRodando = true;
+
+  const slot = $('roletaSlot');
+  const info = $('roletaInfo');
+  const nomeEl = $('roletaNome');
+  const metaEl = $('roletaMeta');
+  const desc = $('roletaDesc');
+
+  slot.classList.add('rolling');
+  slot.classList.remove('done');
+  info.style.display = 'none';
+  desc.textContent = 'Sorteando um item da Tier List…';
+
+  const totalRolagens = 22 + Math.floor(Math.random() * 8);
+  let contador = 0;
+  const vencedor = lista[Math.floor(Math.random() * lista.length)];
+
+  const interval = setInterval(() => {
+    const j = lista[Math.floor(Math.random() * lista.length)];
+    if(j && j.capa){
+      slot.innerHTML = `<img src="${esc(j.capa)}" alt="" loading="eager" onerror="this.parentNode.innerHTML='<div class=&quot;roleta-slot-ph&quot;>🎮</div>'">`;
+    } else {
+      slot.innerHTML = `<div class="roleta-slot-ph">🎮</div>`;
+    }
+    contador++;
+
+    if(contador >= totalRolagens){
+      clearInterval(interval);
+      slot.innerHTML = vencedor.capa
+        ? `<img src="${esc(vencedor.capa)}" alt="${esc(vencedor.nome)}" loading="eager">`
+        : `<div class="roleta-slot-ph">🎮</div>`;
+
+      slot.classList.remove('rolling');
+      slot.classList.add('done');
+      desc.textContent = '🎉 O escolhido foi…';
+
+      nomeEl.textContent = vencedor.nome;
+      const partes = [];
+      if(vencedor.tier && vencedor.tier !== 'NR') partes.push(`Tier ${vencedor.tier}`);
+      if(vencedor.nota > 0) partes.push(`⭐ ${n1(vencedor.nota)}`);
+      if(modo === 'jogos' && vencedor.horas > 0) partes.push(`${fh(vencedor.horas)}`);
+      if(vencedor.status) partes.push(vencedor.status);
+      metaEl.textContent = partes.join(' · ');
+      info.style.display = '';
+
+      setTimeout(() => { _destacarVencedor(vencedor); }, 400);
+      _roletaRodando = false;
+    }
+  }, 80);
+}
+
+function _destacarVencedor(vencedor){
+  const card = document.querySelector(`.g[data-i="${LISTA().indexOf(vencedor)}"]`);
+  if(!card) return;
+  card.style.transition = 'box-shadow .3s, transform .3s';
+  card.style.boxShadow = '0 0 0 3px #ffd166, 0 20px 40px -8px rgba(255,209,102,.7)';
+  card.style.transform = 'scale(1.12)';
+  setTimeout(() => {
+    card.style.boxShadow = '';
+    card.style.transform = '';
+  }, 1600);
+}
+
+function setupRoleta(){
+  const btn = $('btnRoleta'); if(!btn || btn.dataset.bound) return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', abrirRoleta);
+
+  const dlg = $('roletaDlg'); if(!dlg) return;
+  $('roletaFechar').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
+  $('roletaNovamente').addEventListener('click', () => {
+    if(_roletaRodando) return;
+    rodarRoleta(_aplicarFiltrosOrdenacao());
+  });
+}
+
+function setupTierList(){
+  const sel = $('sortSelect'); if(sel && !sel.dataset.bound){
+    sel.dataset.bound = '1';
+    try {
+      const salvo = localStorage.getItem('tier:sort');
+      if(salvo) { sortMode = salvo; sel.value = salvo; }
+    } catch(e){}
+    sel.addEventListener('change', () => {
+      sortMode = sel.value || 'nota';
+      try { localStorage.setItem('tier:sort', sortMode); } catch(e){}
+      desenhar();
+    });
+  }
+
+  const wrap = $('generoChips'); if(wrap && !wrap.dataset.bound){
+    wrap.dataset.bound = '1';
+    wrap.addEventListener('click', e => {
+      const b = e.target.closest('.gen-chip'); if(!b) return;
+      generoFiltro = b.dataset.gen || 'all';
+      renderGeneroChips();
+      desenhar();
+    });
+  }
+
+  setupRoleta();
+}
+window.setupTierList = setupTierList;
+
+/* ---------- Jogo ao vivo (chamado pelo twitch.js) ---------- */
+window.setJogoAoVivo = function(nome){
+  _jogoAoVivoNome = nome || null;
+  if(document.getElementById('sec-tierlist')?.classList.contains('ativo')){
+    desenhar();
+  }
+};
 
 /* ============================================================
    LOGIN / MANUTENÇÃO
@@ -1461,9 +1729,6 @@ function setupReveal(){
   setupCardTilt();
 }
 
-/* ============================================================
-   TILT 3D
-   ============================================================ */
 function setupCardTilt(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -1665,6 +1930,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     } else {
       if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
     }
+    const generosHTML = (j.generos && j.generos.length)
+      ? `<div class="badges">${j.generos.map(g => `<span class="bd">${esc(g)}</span>`).join('')}</div>`
+      : '';
     $('dBody').innerHTML = `
       <div class="mrow">
         ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
@@ -1673,6 +1941,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             <span class="bd">${j.tier === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
             <span class="bd">${esc(j.status)}</span>
           </div>
+          ${generosHTML}
           <div class="kv">
             <div><b>${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '—')}</b><span>${m.hl}</span></div>
             <div><b>${j.nota > 0 ? '⭐ ' + n1(j.nota) : '—'}</b><span>nota</span></div>
@@ -1702,6 +1971,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   carregarOuvindoAgora();
   setInterval(carregarOuvindoAgora, 5000);
   carregarBiblioteca();
+  setupTierList();
   carregarVotosApi();
 
   setInterval(() => { if(VOTOS_FECHAMENTO) renderVotacao(); }, 60000);

@@ -28,6 +28,8 @@ function renderAdminTierList(){
   const podeImportar = temPerm('importar_steam');
   const botaoImport = (ADMIN_TIER_TAB === 'jogos' && podeImportar)
     ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>` : '';
+  const botaoSync = (ADMIN_TIER_TAB === 'jogos' && podeImportar)
+    ? `<button class="admin-btn ghost" onclick="sincronizarHoras()" id="btnSyncHoras">🔄 Sincronizar horas</button>` : '';
   const todosSel = lista.length > 0 && ADMIN_MULTISEL.ids.size === lista.length;
   const barraSel = ADMIN_MULTISEL.ativo ? `
     <div class="admin-bar">
@@ -57,7 +59,7 @@ function renderAdminTierList(){
         ${it.capa ? `<img src="${esc(it.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
         <div class="admin-item-info">
           <b>${esc(it.nome)}</b>
-          <small>Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
+          <small>Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}${(it.generos && it.generos.length) ? ' · ' + it.generos.join(', ') : ''}</small>
         </div>
         ${podeEditar ? `<button class="btn-mini" onclick="editarItemTier(${i})">Editar</button>` : ''}
         ${podeEditar ? `<button class="btn-mini danger" onclick="removerItemTier(${i})">Remover</button>` : ''}
@@ -79,6 +81,7 @@ function renderAdminTierList(){
         ${podeEditar && !ADMIN_MULTISEL.ativo && lista.length ? `<button class="admin-btn ghost" onclick="ativarMultiSel()">☑️ Selecionar vários</button>` : ''}
         ${podeEditar ? `<button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : 'filme'}</button>` : ''}
         ${botaoImport}
+        ${botaoSync}
         <button class="admin-btn ghost" onclick="carregarAdminTierList()">🔄 Recarregar</button>
       </div>
     </div>`;
@@ -147,11 +150,34 @@ async function importarSteam(){
 }
 window.importarSteam = importarSteam;
 
+/* 🆕 Sincronizar horas e conquistas (Steam) */
+async function sincronizarHoras(){
+  const btn = document.getElementById('btnSyncHoras');
+  const ok = await confirmar('Sincronizar horas?', 'Vou atualizar horas e conquistas dos jogos que já estão na lista, sem adicionar novos.', '🔄');
+  if(!ok) return;
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando…'; }
+  try {
+    const r = await fetch('/api/admin?action=sync-horas', { method: 'POST' });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    const msg = `✅ ${d.atualizados} ${d.atualizados === 1 ? 'jogo atualizado' : 'jogos atualizados'}` + (d.conqAtualizadas ? ` · ${d.conqAtualizadas} conquistas verificadas` : '');
+    toast(msg, 'ok');
+    if(btn){ btn.disabled = false; btn.textContent = '🔄 Sincronizar horas'; }
+    await carregarAdminTierList();
+    await carregarBiblioteca();
+    carregarShared(true).then(() => renderSidebar());
+  } catch(e){
+    toast('Erro: ' + e.message, 'erro');
+    if(btn){ btn.disabled = false; btn.textContent = '🔄 Sincronizar horas'; }
+  }
+}
+window.sincronizarHoras = sincronizarHoras;
+
 function abrirModalItemTier(i){
   const tipo = ADMIN_TIER_TAB;
   const lista = ADMIN_TIER[tipo];
   const ehNovo = (i === -1);
-  const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null, appid:null } : lista[i];
+  const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null, appid:null, generos:[] } : lista[i];
   const statusOpcoes = tipo === 'jogos' ? ['Jogando','Zerado','Dropado','Na fila'] : ['Assistindo','Assistido','Na fila'];
   document.getElementById('dTitle').textContent = (ehNovo ? 'Adicionar ' : 'Editar ') + (tipo === 'jogos' ? 'jogo' : 'filme');
   document.getElementById('dBody').innerHTML = `
@@ -196,6 +222,10 @@ function abrirModalItemTier(i){
         `}
       </div>
       <div>
+        <label>🎭 Gêneros <small style="color:var(--mute);text-transform:none;font-weight:500;letter-spacing:0">(separe por vírgula)</small></label>
+        <input id="itemGeneros" type="text" value="${esc((it.generos || []).join(', '))}" placeholder="Ex: Ação, Aventura, RPG">
+      </div>
+      <div>
         <label>URL da capa</label>
         <input id="itemCapa" type="text" value="${esc(it.capa || '')}">
         <div style="margin-top:8px">
@@ -237,6 +267,9 @@ async function buscarItemAuto(){
       p.src = d.capa; p.style.display = 'block';
     }
     if(d.nota && !document.getElementById('itemNota').value) document.getElementById('itemNota').value = d.nota;
+    if(d.generos && d.generos.length && !document.getElementById('itemGeneros').value){
+      document.getElementById('itemGeneros').value = d.generos.join(', ');
+    }
     if(tipo === 'jogos'){
       if(d.sinopse && !document.getElementById('itemComentario').value) document.getElementById('itemComentario').value = d.sinopse;
     } else {
@@ -294,6 +327,12 @@ async function salvarItemTier(i){
   const nome = document.getElementById('itemNome').value.trim();
   if(!nome){ toast('Digite um nome!', 'warn'); return; }
   const anterior = i >= 0 ? ADMIN_TIER[tipo][i] : {};
+
+  const generosRaw = (document.getElementById('itemGeneros')?.value || '').trim();
+  const generos = generosRaw
+    ? generosRaw.split(',').map(g => g.trim()).filter(Boolean).slice(0, 6)
+    : [];
+
   const item = {
     id: anterior.id || nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
     nome, tier: document.getElementById('itemTier').value,
@@ -301,6 +340,7 @@ async function salvarItemTier(i){
     nota: Number(document.getElementById('itemNota').value) || 0,
     capa: document.getElementById('itemCapa').value.trim() || null,
     comentario: document.getElementById('itemComentario').value.trim(),
+    generos,
     appid: anterior.appid || null,
     adicionadoEm: anterior.adicionadoEm || new Date().toISOString()
   };
@@ -399,7 +439,6 @@ function renderAdminSugestoes(){
   const itens = (ADMIN_SHARED.sugestoes && ADMIN_SHARED.sugestoes.itens) || [];
   const podeEditar = temPerm('editar_config');
 
-  // Filtros
   const filtrados = itens.filter(i => {
     if(ADMIN_SUG_STATUS !== 'all' && (i.status || 'nova') !== ADMIN_SUG_STATUS) return false;
     if(ADMIN_SUG_TIPO !== 'all'){
@@ -415,7 +454,6 @@ function renderAdminSugestoes(){
     if(contagem[st] !== undefined) contagem[st]++;
   });
 
-  // Filtros por tipo disponíveis (só os que existem)
   const tiposDisponiveis = { all: true };
   itens.forEach(i => {
     const t = _sugTipoInfo(i.tipo).label.toLowerCase();
@@ -528,9 +566,8 @@ async function mudarStatusSug(id, novoStatus){
   let motivo = null, motivoTipo = null;
 
   if(novoStatus === 'recusada'){
-    // Modal de motivo
     const escolha = await _abrirModalMotivoRecusa();
-    if(!escolha) return; // cancelou
+    if(!escolha) return;
     motivoTipo = escolha.tipo;
     motivo = escolha.motivo;
   }
@@ -1028,14 +1065,14 @@ async function removerBanido(id){
 window.removerBanido = removerBanido;
 
 /* ============================================================
-   LOGS (mostra 20 por padrão + "carregar mais")
+   LOGS
    ============================================================ */
 const LOGS_STATE = { busca: '', periodo: 'all', tipo: 'all', limite: 20 };
 
 function categoriaLog(acao){
   const a = (acao || '').toLowerCase();
   if(/resetou|resetar|votaç|voto|opç/.test(a))    return { ic:'🗳️', accent:'purple' };
-  if(/tier|moveu|removeu|importou|editou item/.test(a)) return { ic:'🎮', accent:'amber'  };
+  if(/tier|moveu|removeu|importou|editou item|sincronizou/.test(a)) return { ic:'🎮', accent:'amber'  };
   if(/sugest|sugeriu/.test(a))                     return { ic:'💡', accent:'amber'  };
   if(/admin/.test(a))                              return { ic:'👥', accent:'blue'   };
   if(/bani|desbaniu/.test(a))                      return { ic:'🚫', accent:'red'    };

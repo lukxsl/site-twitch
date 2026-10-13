@@ -36,16 +36,16 @@ const LABEL_PERM = {
 const JOGOS_PADRAO = [
   { id: 'red-dead-2', nome: 'Red Dead Redemption 2', appid: 1174180, tier: 'S', status: 'Jogando', nota: 8, horas: 50,
     capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
-    comentario: 'Um dos mundos mais vivos e detalhados dos games.' },
+    comentario: 'Um dos mundos mais vivos e detalhados dos games.', generos: ['Ação','Aventura'] },
   { id: 'hollow-knight', nome: 'Hollow Knight', tier: 'S', status: 'Zerado', nota: 9, horas: 40,
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario: '' },
+    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario: '', generos: ['Metroidvania','Plataforma'] },
   { id: 'stardew-valley', nome: 'Stardew Valley', tier: 'A', status: 'Jogando', nota: 8, horas: 120,
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario: '' }
+    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario: '', generos: ['Simulação','RPG'] }
 ];
 const FILMES_PADRAO = [
   { id: 'interestelar', nome: 'Interestelar', tier: 'S', status: 'Assistido', nota: 9, duracao: 169, ano: 2014,
     capa: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario: 'As reservas naturais da Terra estão chegando ao fim.' }
+    comentario: 'As reservas naturais da Terra estão chegando ao fim.', generos: ['Ficção'] }
 ];
 
 const STATUS_SUG_VALIDOS = ['nova','analise','aceita','recusada','concluido'];
@@ -177,7 +177,7 @@ async function igdbBuscar(nome){
       headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' },
       body
     })).json();
-    const campos = 'fields name, rating, aggregated_rating, total_rating_count, cover.url, summary, first_release_date, version_parent, category;';
+    const campos = 'fields name, rating, aggregated_rating, total_rating_count, cover.url, summary, first_release_date, version_parent, category, genres.name;';
     let lista = await post(`where name = "${limpo}" & version_parent = null & category = 0; ${campos} sort total_rating_count desc; limit 10;`);
     if(!Array.isArray(lista) || !lista.length) lista = await post(`where name = "${limpo}" & version_parent = null; ${campos} sort total_rating_count desc; limit 10;`);
     if(!Array.isArray(lista) || !lista.length) lista = await post(`search "${limpo}"; ${campos} where version_parent = null; limit 15;`);
@@ -186,11 +186,13 @@ async function igdbBuscar(nome){
     const mapJogo = g => {
       const capa = g.cover?.url ? 'https:' + g.cover.url.replace(/t_(thumb|cover_small|cover_big|720p)/g, 't_1080p') : null;
       const rating = g.aggregated_rating || g.rating || null;
+      const generos = Array.isArray(g.genres) ? g.genres.map(x => x.name).filter(Boolean) : [];
       return {
         id: g.id, nome: g.name, capa,
         nota: rating ? Math.round(rating) / 10 : null,
         sinopse: g.summary || '',
-        ano: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null
+        ano: g.first_release_date ? new Date(g.first_release_date * 1000).getFullYear() : null,
+        generos
       };
     };
     const resultados = lista.map(mapJogo);
@@ -223,11 +225,13 @@ async function tmdbBuscar(nome, ano){
     if(!filme){ d = await chamar('/search/movie', { query: nome, include_adult: 'false', language: 'en-US' }); filme = d.results?.[0]; }
     if(!filme) return { erro: 'Filme não encontrado' };
     const det = await chamar(`/movie/${filme.id}`);
+    const generos = Array.isArray(det.genres) ? det.genres.map(x => x.name).filter(Boolean) : [];
     return {
       id: det.id, nome: det.title || filme.title,
       capa: det.poster_path ? `https://image.tmdb.org/t/p/w500${det.poster_path}` : null,
       sinopse: det.overview || '', duracao: det.runtime || null,
-      ano: det.release_date ? Number(det.release_date.slice(0,4)) : null
+      ano: det.release_date ? Number(det.release_date.slice(0,4)) : null,
+      generos
     };
   } catch(e){ return { erro: 'Erro ao buscar no TMDB' }; }
 }
@@ -245,6 +249,7 @@ async function buscarConquistasSteam(appid){
   } catch(e){ return null; }
 }
 
+/* ============ IMPORTAR STEAM (só adiciona novos) ============ */
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -273,6 +278,7 @@ async function importarSteam(){
       horas: Math.round(g.playtime_forever / 6) / 10,
       conquistas, nota: extra.nota || 0,
       capa: extra.capa || capaSteam, comentario,
+      generos: extra.generos || [],
       adicionadoEm: new Date().toISOString()
     });
     adicionados++;
@@ -280,6 +286,58 @@ async function importarSteam(){
   }
   await redis([['SET', 'tierlist:jogos', JSON.stringify(atuais)]]);
   return { ok: true, adicionados, pulados, total: jogados.length };
+}
+
+/* ============ SINCRONIZAR HORAS/CONQUISTAS (só atualiza os existentes) ============ */
+async function sincronizarHoras(){
+  if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
+  const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
+  const r = await fetch(url);
+  if(!r.ok) return { error: `Steam HTTP ${r.status}` };
+  const sd = await r.json();
+  const lista = sd?.response?.games || [];
+  const mapa = {};
+  lista.forEach(g => { if(g.appid) mapa[g.appid] = g; });
+
+  const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
+  let atuais = [];
+  try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
+
+  let atualizados = 0;
+  let conqAtualizadas = 0;
+
+  for(const j of atuais){
+    if(!j.appid) continue;
+    const g = mapa[j.appid];
+    if(!g) continue;
+
+    const novasHoras = Math.round(g.playtime_forever / 6) / 10;
+    const mudouHoras = Number(j.horas) !== novasHoras;
+
+    // Atualiza conquistas no máx 1x por dia
+    const conqAntiga = j.conquistasAtualizadoEm;
+    const precisaConq = !j.conquistas || !conqAntiga || (Date.now() - new Date(conqAntiga).getTime() > 24 * 3600 * 1000);
+    let mudouConq = false;
+
+    if(precisaConq){
+      try {
+        const c = await buscarConquistasSteam(j.appid);
+        if(c){
+          const antes = j.conquistas?.obtidas || 0;
+          j.conquistas = c;
+          j.conquistasAtualizadoEm = new Date().toISOString();
+          if(antes !== c.obtidas) mudouConq = true;
+          conqAtualizadas++;
+        }
+      } catch(e){}
+    }
+
+    if(mudouHoras) j.horas = novasHoras;
+    if(mudouHoras || mudouConq) atualizados++;
+  }
+
+  if(atualizados) await redis([['SET', 'tierlist:jogos', JSON.stringify(atuais)]]);
+  return { ok: true, atualizados, conqAtualizadas, total: atuais.length };
 }
 
 /* ============ NOTIFICAÇÃO DISCORD: status mudou ============ */
@@ -297,10 +355,8 @@ async function notificarStatus(item, novoStatus, motivo, quemMudou){
     nova:      0xf59e0b
   };
   const color = cores[novoStatus] || 0xa855f7;
-
   const menciona = item.userId ? `<@${item.userId}> ` : '';
 
-  // 🆕 Frases prontas por tipo (concordância correta)
   const FRASES_CONCLUIDO = {
     'Sugestão / ideia':     { titulo: '💡 Anotado!',        desc: 'Sua sugestão foi anotada pela Soso!' },
     'Sugestão de jogo':     { titulo: '🎮 Jogo anotado!',   desc: 'Anotamos sua sugestão de jogo!' },
@@ -332,18 +388,12 @@ async function notificarStatus(item, novoStatus, motivo, quemMudou){
     { name: '🏷️ Novo status', value: labelFinal, inline: true },
     { name: '👤 Por', value: `@${quemMudou}`, inline: true }
   ];
-
-  if(novoStatus === 'recusada' && motivo){
-    fields.push({ name: '💸 Motivo', value: motivo });
-  }
+  if(novoStatus === 'recusada' && motivo) fields.push({ name: '💸 Motivo', value: motivo });
 
   const payload = {
     embeds: [{
       author: item.avatar ? { name: item.nome ? `@${item.nome}` : 'Usuário', icon_url: item.avatar } : { name: item.nome ? `@${item.nome}` : 'Usuário' },
-      title: titulo,
-      description: descricao,
-      color,
-      fields,
+      title: titulo, description: descricao, color, fields,
       footer: { text: `ID: ${item.id.slice(0,8)}` },
       timestamp: new Date().toISOString()
     }]
@@ -370,11 +420,36 @@ export default async function handler(req, res){
   if(!SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
 
+  const action = req.query?.action || '';
+
+  // ============ CRON: sync-horas-cron (não precisa de sessão, precisa CRON_SECRET) ============
+  if(req.method === 'GET' && action === 'sync-horas-cron'){
+    const CRON_SECRET = process.env.CRON_SECRET;
+    if(!CRON_SECRET) return res.status(500).json({ error: 'CRON_SECRET não configurado' });
+    const auth = req.headers.authorization || '';
+    const expected = `Bearer ${CRON_SECRET}`;
+    try {
+      const a = Buffer.from(auth);
+      const b = Buffer.from(expected);
+      if(a.length !== b.length || !timingSafeEqual(a, b)){
+        return res.status(401).json({ error: 'Não autorizado' });
+      }
+    } catch(e){
+      return res.status(401).json({ error: 'Não autorizado' });
+    }
+    try {
+      const r = await sincronizarHoras();
+      return res.status(200).json(r);
+    } catch(e){
+      return res.status(500).json({ error: 'Erro no cron: ' + e.message });
+    }
+  }
+
   const sessao = lerSessao(req);
   if(!sessao) return res.status(401).json({ error: 'Faça login' });
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
 
-  // 🆕 Revalida o cargo a CADA request (não confia só no cookie)
+  // Revalida o cargo a CADA request
   let cargoAtual = null;
   if(ENV_ADMINS.includes(String(sessao.id))){
     cargoAtual = 'dev';
@@ -393,7 +468,6 @@ export default async function handler(req, res){
   sessao.cargo = cargoAtual;
 
   res.setHeader('Cache-Control', 'no-store');
-  const action = req.query?.action || '';
   const meNivel = NIVEIS[sessao.cargo] || 0;
   const quem = sessao.username || 'anônimo';
 
@@ -657,6 +731,15 @@ export default async function handler(req, res){
       const r = await importarSteam();
       if(r.error) return res.status(400).json(r);
       await logAcao(quem, sessao.cargo, `Importou ${r.adicionados} jogos da Steam (${r.pulados} já existiam)`);
+      return res.status(200).json(r);
+    }
+
+    /* 🆕 SINCRONIZAR HORAS - atualiza só os existentes */
+    if(req.method === 'POST' && action === 'sync-horas'){
+      if(!(await temPermissao(sessao, 'importar_steam'))) return res.status(403).json({ error: 'Sem permissão' });
+      const r = await sincronizarHoras();
+      if(r.error) return res.status(400).json(r);
+      await logAcao(quem, sessao.cargo, `Sincronizou horas/conquistas de ${r.atualizados} jogos (Steam)`);
       return res.status(200).json(r);
     }
 

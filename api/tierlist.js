@@ -1,5 +1,4 @@
 // Vercel serverless: /api/tierlist.js
-// Se o Redis estiver VAZIO (primeira vez), salva os jogos/filmes padrão.
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
@@ -8,17 +7,18 @@ const JOGOS_PADRAO = [
     id: 'red-dead-2', nome: 'Red Dead Redemption 2', appid: 1174180,
     tier: 'S', status: 'Jogando', nota: 8, horas: 50,
     capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
-    comentario: 'Um dos mundos mais vivos e detalhados dos games.'
+    comentario: 'Um dos mundos mais vivos e detalhados dos games.',
+    generos: ['Ação', 'Aventura']
   },
   {
     id: 'hollow-knight', nome: 'Hollow Knight', tier: 'S', status: 'Zerado', nota: 9, horas: 40,
     capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg',
-    comentario: ''
+    comentario: '', generos: ['Metroidvania', 'Plataforma']
   },
   {
     id: 'stardew-valley', nome: 'Stardew Valley', tier: 'A', status: 'Jogando', nota: 8, horas: 120,
     capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg',
-    comentario: ''
+    comentario: '', generos: ['Simulação', 'RPG']
   }
 ];
 
@@ -27,7 +27,8 @@ const FILMES_PADRAO = [
     id: 'interestelar', nome: 'Interestelar', tier: 'S', status: 'Assistido', nota: 9,
     duracao: 169, ano: 2014,
     capa: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario: 'As reservas naturais da Terra estão chegando ao fim e um grupo de astronautas recebe a missão de verificar possíveis planetas para receberem a população mundial.'
+    comentario: 'As reservas naturais da Terra estão chegando ao fim.',
+    generos: ['Ficção']
   }
 ];
 
@@ -40,7 +41,6 @@ async function redis(cmds) {
   return (await r.json()).map(x => x.result);
 }
 
-/* Sanitiza cada item vindo do Redis (defesa em profundidade) */
 function sanitizarItem(it) {
   if (!it || typeof it !== 'object') return null;
   const safe = {
@@ -57,6 +57,10 @@ function sanitizarItem(it) {
     ano: Number(it.ano) || null,
     adicionadoEm: it.adicionadoEm || null
   };
+  // Gêneros: array de strings (máx 6)
+  safe.generos = Array.isArray(it.generos)
+    ? it.generos.map(g => String(g).trim().slice(0, 40)).filter(Boolean).slice(0, 6)
+    : [];
   if (it.conquistas && typeof it.conquistas === 'object') {
     safe.conquistas = {
       obtidas: Number(it.conquistas.obtidas) || 0,
