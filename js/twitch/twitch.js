@@ -1,7 +1,11 @@
 /* ============================================================
    TWITCH
    ============================================================ */
-let canalMature = false; // canal marcado como +18 (player embutido pede login)
+// O player embutido da Twitch pede login nas reprises +18 e não funciona dentro do site.
+// true  = "Última live" sempre abre a reprise direto na Twitch (recomendado para este canal)
+// false = usa o player embutido quando a API não marcar o canal como +18
+const FORCAR_REPRISE_NA_TWITCH = true;
+let canalMature = FORCAR_REPRISE_NA_TWITCH; // canal marcado como +18 (player embutido pede login)
 
 function assistirVod(v){
   v = v || vodAtual; if (!v) return;
@@ -185,7 +189,7 @@ async function verificarStatusTwitch() {
     if (data.discord && $('dcMembros'))
       $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
 
-    canalMature = !!data.canal_mature;
+    canalMature = FORCAR_REPRISE_NA_TWITCH || !!data.canal_mature;
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
 
