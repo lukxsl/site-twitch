@@ -1,6 +1,6 @@
 // Vercel serverless: /api/lastfm.js
-// Cadeia de capas: Spotify (app/anon) → iTunes → Deezer → MusicBrainz
-// Aplica em TODOS os itens (agora + recentes)
+// Prioridade: Spotify (dados completos: nome, artista, capa, link)
+// Fallback: Last.fm + capa do iTunes/Deezer/MusicBrainz
 
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
@@ -51,15 +51,10 @@ async function redis(cmds) {
 }
 
 async function getCache() {
-  try {
-    const [raw] = await redis([['GET', CACHE_KEY]]);
-    return raw ? JSON.parse(raw) : null;
-  } catch(e) { return null; }
+  try { const [raw] = await redis([['GET', CACHE_KEY]]); return raw ? JSON.parse(raw) : null; } catch(e) { return null; }
 }
 async function setCache(data) {
-  try {
-    await redis([['SET', CACHE_KEY, JSON.stringify(data), 'EX', String(CACHE_TTL)]]);
-  } catch(e) {}
+  try { await redis([['SET', CACHE_KEY, JSON.stringify(data), 'EX', String(CACHE_TTL)]]); } catch(e) {}
 }
 
 /* ============ SPOTIFY TOKENS ============ */
@@ -67,10 +62,7 @@ async function spotifyUserToken() {
   if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET || !SPOTIFY_REFRESH_TOKEN) return null;
   try {
     const [raw] = await redis([['GET', SPOTIFY_USER_TOKEN_KEY]]);
-    if (raw) {
-      const c = JSON.parse(raw);
-      if (c.exp && c.exp > Date.now()) return c.token;
-    }
+    if (raw) { const c = JSON.parse(raw); if (c.exp && c.exp > Date.now()) return c.token; }
   } catch(e) {}
   try {
     const basic = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64');
@@ -91,10 +83,7 @@ async function spotifyAppToken() {
   if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) return null;
   try {
     const [raw] = await redis([['GET', SPOTIFY_APP_TOKEN_KEY]]);
-    if (raw) {
-      const c = JSON.parse(raw);
-      if (c.exp && c.exp > Date.now()) return c.token;
-    }
+    if (raw) { const c = JSON.parse(raw); if (c.exp && c.exp > Date.now()) return c.token; }
   } catch(e) {}
   try {
     const basic = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64');
@@ -115,10 +104,7 @@ async function spotifyAppToken() {
 async function spotifyAnonToken() {
   try {
     const [raw] = await redis([['GET', SPOTIFY_ANON_TOKEN_KEY]]);
-    if (raw) {
-      const c = JSON.parse(raw);
-      if (c.exp && c.exp > Date.now()) return c.token;
-    }
+    if (raw) { const c = JSON.parse(raw); if (c.exp && c.exp > Date.now()) return c.token; }
   } catch(e) {}
   try {
     const r = await fetch('https://open.spotify.com/embed/track/4cOdK2wGLETKBW3PvgPWqT', {
@@ -145,7 +131,7 @@ async function spotifyAnonToken() {
   } catch(e) { return null; }
 }
 
-/* ============ NOW PLAYING (opcional) ============ */
+/* ============ SPOTIFY: now playing (opcional) ============ */
 async function spotifyNowPlaying() {
   const token = await spotifyUserToken();
   if (!token) return null;
@@ -222,20 +208,8 @@ async function lastfmDados() {
   } catch(e) { return vazio; }
 }
 
-/* ============ FONTE 1: SPOTIFY oEMBED ============ */
-async function capaSpotifyOEmbed(url) {
-  if (!url) return null;
-  if (!/open\.spotify\.com\/track\//.test(url)) return null;
-  try {
-    const r = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
-    if (!r.ok) return null;
-    const d = await r.json();
-    return safeUrl(d?.thumbnail_url);
-  } catch(e) { return null; }
-}
-
-/* ============ FONTE 2: SPOTIFY SEARCH (app + anon) ============ */
-async function capaSpotifySearch(faixa, artista) {
+/* ============ SPOTIFY SEARCH → TRACK COMPLETO ============ */
+async function spotifySearchTrack(faixa, artista) {
   let token = await spotifyAppToken();
   if (!token) token = await spotifyAnonToken();
   if (!token) return null;
@@ -268,64 +242,51 @@ async function capaSpotifySearch(faixa, artista) {
       if (!track) continue;
       const imgs = track.album?.images || [];
       const capa = imgs[0]?.url || imgs[1]?.url || imgs[2]?.url;
-      if (capa) return safeUrl(capa);
+      return {
+        faixa: safeStr(track.name, 200),
+        artista: safeStr((track.artists || []).map(x => x.name).join(', '), 200),
+        album: safeStr(track.album?.name, 200) || null,
+        capa: safeUrl(capa),
+        url: safeUrl(track.external_urls?.spotify),
+        duracao: track.duration_ms || null
+      };
     } catch(e) { continue; }
   }
   return null;
 }
 
-/* ============ FONTE 3: iTunes ============ */
+/* ============ FALLBACKS DE CAPA (só capa) ============ */
 async function capaITunes(faixa, artista) {
-  const f = limparNome(faixa);
-  const a = limparNome(artista);
+  const f = limparNome(faixa), a = limparNome(artista);
   if (!f) return null;
-  const termos = [
-    a ? `${f} ${a}` : null,
-    f
-  ].filter(Boolean);
-
-  for (const termo of termos) {
+  for (const termo of [a ? `${f} ${a}` : null, f].filter(Boolean)) {
     try {
       const r = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(termo)}&entity=song&limit=1`);
       if (!r.ok) continue;
       const d = await r.json();
       const t = d?.results?.[0];
       const url = t?.artworkUrl100 || t?.artworkUrl60;
-      if (!url) continue;
-      return url.replace(/\/\d+x\d+bb\./, '/600x600bb.');
+      if (url) return url.replace(/\/\d+x\d+bb\./, '/600x600bb.');
     } catch(e) { continue; }
   }
   return null;
 }
 
-/* ============ FONTE 4: Deezer ============ */
 async function capaDeezer(faixa, artista) {
-  const f = limparNome(faixa);
-  const a = limparNome(artista);
+  const f = limparNome(faixa), a = limparNome(artista);
   if (!f) return null;
-  const queries = [
-    a ? `track:"${f}" artist:"${a}"` : null,
-    a ? `${f} ${a}` : null,
-    f
-  ].filter(Boolean);
-
-  for (const q of queries) {
+  for (const q of [a ? `track:"${f}" artist:"${a}"` : null, a ? `${f} ${a}` : null, f].filter(Boolean)) {
     try {
-      const r = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=1`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' }
-      });
+      const r = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(q)}&limit=1`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
       if (!r.ok) continue;
       const d = await r.json();
       const album = d?.data?.[0]?.album;
-      if (!album) continue;
-      const capa = album.cover_xl || album.cover_big || album.cover_medium;
-      if (capa) return capa;
+      if (album) return album.cover_xl || album.cover_big || album.cover_medium;
     } catch(e) { continue; }
   }
   return null;
 }
 
-/* ============ FONTE 5: MusicBrainz + Cover Art Archive ============ */
 async function capaMusicBrainz(faixa, artista) {
   try {
     const q = encodeURIComponent(`recording:"${limparNome(faixa)}" AND artist:"${limparNome(artista)}"`);
@@ -340,37 +301,51 @@ async function capaMusicBrainz(faixa, artista) {
   } catch(e) { return null; }
 }
 
-/* ============ CACHE DE CAPA (30 dias) ============ */
-function chaveCapa(faixa, artista) {
-  return 'capa:' + norm(faixa + '|' + artista).slice(0, 120);
+/* ============ CACHE DO TRACK COMPLETO ============ */
+function chaveTrack(faixa, artista) {
+  return 'track:' + norm(faixa + '|' + artista).slice(0, 140);
 }
-async function capaCache(chave) {
+
+async function enriquecerComSpotify(item) {
+  if (!item || !item.faixa) return item;
+
+  const chave = chaveTrack(item.faixa, item.artista);
   try {
     const [raw] = await redis([['GET', chave]]);
-    return raw || null;
-  } catch(e) { return null; }
-}
-async function capaSalvar(chave, url) {
-  try { await redis([['SET', chave, url, 'EX', '2592000']]); } catch(e) {}
-}
+    if (raw) {
+      const cached = JSON.parse(raw);
+      item.faixa = cached.faixa;
+      item.artista = cached.artista;
+      if (cached.album) item.album = cached.album;
+      if (cached.capa) item.capa = cached.capa;
+      if (cached.url) item.url = cached.url;
+      if (cached.duracao) item.duracao = cached.duracao;
+      item.fonte = 'spotify';
+      return item;
+    }
+  } catch(e) {}
 
-/* ============ BUSCA EM CADEIA ============ */
-async function buscarCapa(faixa, artista, urlLastfm) {
-  if (!faixa) return null;
+  const spot = await spotifySearchTrack(item.faixa, item.artista);
+  if (spot) {
+    item.faixa = spot.faixa;
+    item.artista = spot.artista;
+    if (spot.album) item.album = spot.album;
+    if (spot.capa) item.capa = spot.capa;
+    if (spot.url) item.url = spot.url;
+    if (spot.duracao) item.duracao = spot.duracao;
+    item.fonte = 'spotify';
+    try { await redis([['SET', chave, JSON.stringify(spot), 'EX', '2592000']]); } catch(e) {}
+    return item;
+  }
 
-  const chave = chaveCapa(faixa, artista);
-  const cache = await capaCache(chave);
-  if (cache) return cache;
-
-  // Tenta cada fonte em sequência até achar
-  let capa = await capaSpotifyOEmbed(urlLastfm);
-  if (!capa) capa = await capaSpotifySearch(faixa, artista);
-  if (!capa) capa = await capaITunes(faixa, artista);
-  if (!capa) capa = await capaDeezer(faixa, artista);
-  if (!capa) capa = await capaMusicBrainz(faixa, artista);
-
-  if (capa) await capaSalvar(chave, capa);
-  return capa;
+  // Spotify não achou: usa Last.fm como está, mas tenta capa do iTunes/Deezer
+  if (!item.capa) {
+    const c = await capaITunes(item.faixa, item.artista)
+      || await capaDeezer(item.faixa, item.artista)
+      || await capaMusicBrainz(item.faixa, item.artista);
+    if (c) item.capa = c;
+  }
+  return item;
 }
 
 /* ============ HANDLER ============ */
@@ -390,23 +365,11 @@ export default async function handler(req, res) {
       recentes = lf.recentes;
     }
 
-    // 🔥 Aplica buscarCapa em TODOS os itens sem capa (agora + recentes)
-    const paraBuscar = [];
-    if (data && data.tocando && !data.capa && data.faixa) {
-      paraBuscar.push({ tipo: 'agora', ref: data });
-    }
-    recentes.forEach(r => {
-      if (!r.capa && r.faixa) paraBuscar.push({ tipo: 'recente', ref: r });
-    });
-
-    if (paraBuscar.length) {
-      await Promise.all(paraBuscar.map(async item => {
-        try {
-          const capa = await buscarCapa(item.ref.faixa, item.ref.artista, item.ref.url);
-          if (capa) item.ref.capa = capa;
-        } catch(e) {}
-      }));
-    }
+    // Enriquece tudo com Spotify (nome, artista, capa, link)
+    const tarefas = [];
+    if (data && data.tocando) tarefas.push(enriquecerComSpotify(data));
+    recentes.forEach(r => tarefas.push(enriquecerComSpotify(r)));
+    await Promise.all(tarefas);
 
     if (!data || !data.tocando) {
       const vazio = { tocando: false, recentes };
