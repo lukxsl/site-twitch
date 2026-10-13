@@ -49,7 +49,6 @@
   border-color:var(--line-2);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 32px -14px rgba(168,85,247,.22), var(--sh-lg),var(--sh-floor);
 }
-/* Desliga tilt em mobile, reduced-motion e dentro de dialogs */
 @media (max-width:960px){ .card{transform:none !important} }
 @media (prefers-reduced-motion: reduce){ .card{transform:none !important} }
 dialog .card{transform:none !important}
@@ -115,7 +114,6 @@ dialog .card{transform:none !important}
 .profile-card h2{font-size:1.45rem;font-weight:800;color:var(--white);margin-top:6px;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
 .h2-emoji{font-size:1.1rem}
 
-/* Badge "Verificada" */
 .badge-verificada{
   display:inline-flex;
   align-items:center;
@@ -132,7 +130,6 @@ dialog .card{transform:none !important}
   box-shadow:0 0 14px -4px rgba(34,197,94,.4);
 }
 
-/* Status dinâmico do perfil */
 .profile-status-dinamica{
   font-size:.74rem;
   color:#c4bcd9;
@@ -144,18 +141,13 @@ dialog .card{transform:none !important}
 }
 .profile-status-dinamica.online{color:#86efac}
 .profile-status-dinamica.online::before{
-  content:'';
-  width:7px;height:7px;border-radius:50%;
-  background:#22c55e;
-  box-shadow:0 0 8px rgba(34,197,94,.8);
-  animation:pulseDot 1.6s ease-in-out infinite;
-  flex:none;
+  content:'';width:7px;height:7px;border-radius:50%;
+  background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,.8);
+  animation:pulseDot 1.6s ease-in-out infinite;flex:none;
 }
 .profile-status-dinamica.offline::before{
-  content:'';
-  width:7px;height:7px;border-radius:50%;
-  background:#6b6080;
-  flex:none;
+  content:'';width:7px;height:7px;border-radius:50%;
+  background:#6b6080;flex:none;
 }
 
 .profile-card .subloc{font-size:.76rem;color:var(--mute);margin-bottom:2px}
@@ -1019,7 +1011,7 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .vod-fallback:hover{background:rgba(168,85,247,.45);border-color:var(--purple)}
 
 /* ============================================================
-   🆕 TIER LIST V2 — PÓDIO + ROLETA + GÊNEROS + TILT 3D
+   🆕 TIER LIST V2 — PÓDIO + GÊNEROS + TILT 3D (SEM ROLETA)
    ============================================================ */
 
 /* ---------- PÓDIO TOP 3 ---------- */
@@ -1078,8 +1070,11 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .podium-nome{
   font-size:.82rem;font-weight:700;color:var(--white);
   text-align:center;line-height:1.2;
-  max-width:100%;overflow:hidden;text-overflow:ellipsis;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  max-width:100%;overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+  -webkit-box-orient:vertical;
 }
 .podium-card.pos-1 .podium-nome{font-size:.92rem}
 .podium-chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
@@ -1100,7 +1095,7 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
   box-shadow:0 4px 10px rgba(255,209,102,.4);
 }
 
-/* ---------- TOOLS: SORT + ROLETA ---------- */
+/* ---------- TOOLS: SORT + CONTADOR ---------- */
 .sort-wrap{
   display:inline-flex;align-items:center;gap:8px;
   background:rgba(255,255,255,.04);
@@ -1123,21 +1118,21 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .sort-select:hover{background-color:rgba(168,85,247,.1)}
 .sort-select option{background:#181028;color:#f5f3ff}
 
-.btn-roleta{
-  display:inline-flex;align-items:center;gap:8px;
-  background:linear-gradient(135deg,#ff6ec7,#a855f7);
-  color:#fff;border:0;
-  padding:10px 18px;border-radius:99px;
-  font-family:inherit;font-weight:800;font-size:.82rem;
-  cursor:pointer;
-  box-shadow:0 8px 22px -8px rgba(255,110,199,.5),inset 0 1px 0 rgba(255,255,255,.2);
-  transition:transform .2s var(--ease),box-shadow .2s,filter .2s;
-  white-space:nowrap;
+.tl-contador{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:.72rem;
+  font-weight:700;
+  color:var(--mute);
+  padding:5px 12px;
+  border-radius:99px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--line);
+  margin-left:auto;
 }
-.btn-roleta:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 12px 28px -8px rgba(255,110,199,.7),inset 0 1px 0 rgba(255,255,255,.25)}
-.btn-roleta:active{transform:translateY(0)}
-.roleta-ic{font-size:1.05rem;display:inline-block;animation:roletaSpin 3.2s linear infinite}
-@keyframes roletaSpin{to{transform:rotate(360deg)}}
+.tl-contador b{color:var(--purple-2)}
 
 /* ---------- CHIPS DE GÊNERO ---------- */
 .genero-chips{
@@ -1259,65 +1254,7 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 }
 .g.skeleton .ph,.g.skeleton img{display:none}
 
-/* ---------- MODAL ROLETA ---------- */
-dialog.roleta-modal{
-  width:min(460px,92vw);padding:0;
-  border:1px solid rgba(168,85,247,.5);
-  background:radial-gradient(circle at 50% 0%,rgba(255,110,199,.18),transparent 60%),var(--surface-solid);
-  box-shadow:0 30px 80px rgba(0,0,0,.8),0 0 0 1px rgba(168,85,247,.25),0 0 60px -20px rgba(255,110,199,.5);
-  overflow:hidden;
-}
-.roleta-body{
-  padding:26px 24px 20px;
-  display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;
-}
-.roleta-kicker{
-  font-size:.64rem;font-weight:800;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--purple-2);
-  padding:4px 12px;border-radius:99px;
-  background:rgba(168,85,247,.14);border:1px solid var(--line);
-}
-.roleta-title{
-  color:var(--white);font-size:1.5rem;margin:0;
-  background:linear-gradient(120deg,#c084fc,#ff6ec7);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.roleta-desc{color:var(--mute);font-size:.84rem;margin:0;line-height:1.5}
-.roleta-slot{
-  position:relative;width:150px;height:200px;
-  border-radius:14px;overflow:hidden;
-  border:2px solid var(--line-2);
-  background:#0d0818;
-  box-shadow:0 14px 40px -10px rgba(168,85,247,.5),inset 0 0 30px rgba(0,0,0,.5);
-  transition:border-color .3s,box-shadow .3s;
-}
-.roleta-slot.rolling{
-  border-color:#ff6ec7;
-  animation:roletaShake .12s infinite;
-  box-shadow:0 14px 40px -10px rgba(255,110,199,.7),inset 0 0 30px rgba(255,110,199,.2);
-}
-.roleta-slot.done{
-  border-color:var(--purple);
-  box-shadow:0 14px 40px -10px rgba(168,85,247,.7),inset 0 0 30px rgba(168,85,247,.2);
-  animation:roletaGlow 1.8s ease-in-out;
-}
-@keyframes roletaShake{0%{transform:translateY(0)}50%{transform:translateY(-3px)}100%{transform:translateY(0)}}
-@keyframes roletaGlow{
-  0%{box-shadow:0 14px 40px -10px rgba(168,85,247,.7),inset 0 0 30px rgba(168,85,247,.2),0 0 0 0 rgba(168,85,247,.5)}
-  50%{box-shadow:0 14px 40px -10px rgba(168,85,247,.7),inset 0 0 30px rgba(168,85,247,.2),0 0 0 14px rgba(168,85,247,0)}
-  100%{box-shadow:0 14px 40px -10px rgba(168,85,247,.7),inset 0 0 30px rgba(168,85,247,.2),0 0 0 0 rgba(168,85,247,0)}
-}
-.roleta-slot img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .1s}
-.roleta-slot-ph{position:absolute;inset:0;display:grid;place-items:center;font-size:2.4rem;opacity:.4}
-.roleta-info{
-  display:flex;flex-direction:column;gap:4px;align-items:center;
-  animation:fadeUp .35s var(--ease);
-}
-.roleta-info b{color:var(--white);font-size:1rem;line-height:1.2;max-width:100%}
-.roleta-info span{color:var(--mute);font-size:.76rem}
-.roleta-actions{display:flex;gap:8px;width:100%;margin-top:4px}
-.roleta-actions .btn{flex:1}
-
+/* ---------- RESPONSIVE ---------- */
 @media (max-width:720px){
   .podium{grid-template-columns:repeat(3,1fr);gap:8px}
   .podium-card{padding:12px 8px}
@@ -1330,7 +1267,7 @@ dialog.roleta-modal{
   .podium-chip{font-size:.55rem;padding:2px 6px}
   .sort-wrap{padding:4px}
   .sort-label{display:none}
-  .btn-roleta{padding:9px 14px;font-size:.76rem}
+  .tl-contador{width:100%;justify-content:center;margin-left:0}
 }
 @media (max-width:480px){
   .podium{grid-template-columns:1fr;gap:10px;align-items:stretch}
@@ -1340,5 +1277,4 @@ dialog.roleta-modal{
   .podium-img,.podium-card.pos-1 .podium-img{width:64px;aspect-ratio:1;border-radius:50%;object-position:center top}
   .podium-card{flex-direction:row;text-align:left;align-items:center}
   .podium-medal{position:static;margin-right:4px}
-  .roleta-slot{width:120px;height:160px}
 }
