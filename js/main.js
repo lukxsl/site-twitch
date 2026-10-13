@@ -1688,7 +1688,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   verificarStatusTwitch();
   setInterval(verificarStatusTwitch, 60000);
   carregarOuvindoAgora();
-  setInterval(carregarOuvindoAgora, 15000);
+  setInterval(carregarOuvindoAgora, 5000);
   carregarBiblioteca();
   carregarVotosApi();
 

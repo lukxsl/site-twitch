@@ -1,6 +1,5 @@
 // Vercel serverless: /api/lastfm.js
-// Prioridade: Spotify (dados completos: nome, artista, capa, link)
-// Fallback: Last.fm + capa do iTunes/Deezer/MusicBrainz
+// Prioridade total no Spotify. Sem URL do Spotify = sem botão.
 
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
@@ -11,7 +10,7 @@ const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN_R = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
 const CACHE_KEY = 'cache:musica';
-const CACHE_TTL = 30;
+const CACHE_TTL = 5; // ← reduzido de 30 pra 5s (atualização quase instantânea)
 const SPOTIFY_USER_TOKEN_KEY = 'cache:spotify_user_token';
 const SPOTIFY_APP_TOKEN_KEY = 'cache:spotify_app_token';
 const SPOTIFY_ANON_TOKEN_KEY = 'cache:spotify_anon_token';
@@ -21,6 +20,12 @@ function safeUrl(v) {
   const s = safeStr(v, 500);
   if (!s) return null;
   if (!/^https?:\/\//i.test(s)) return null;
+  return s;
+}
+function soSpotify(u) {
+  const s = safeUrl(u);
+  if (!s) return null;
+  if (!/open\.spotify\.com\//.test(s)) return null;
   return s;
 }
 function norm(t) {
@@ -131,7 +136,7 @@ async function spotifyAnonToken() {
   } catch(e) { return null; }
 }
 
-/* ============ SPOTIFY: now playing (opcional) ============ */
+/* ============ NOW PLAYING (opcional) ============ */
 async function spotifyNowPlaying() {
   const token = await spotifyUserToken();
   if (!token) return null;
@@ -148,7 +153,7 @@ async function spotifyNowPlaying() {
       artista: safeStr((d.item.artists || []).map(a => a.name).join(', '), 200),
       album: safeStr(d.item.album?.name, 200),
       capa: safeUrl(d.item.album?.images?.[0]?.url),
-      url: safeUrl(d.item.external_urls?.spotify),
+      url: soSpotify(d.item.external_urls?.spotify),
       duracao: d.item.duration_ms || null,
       progresso: d.progress_ms || 0,
       fonte: 'spotify'
@@ -190,7 +195,7 @@ async function lastfmDados() {
       artista: nome(t0),
       album: safeStr(t0.album?.['#text'], 200),
       capa: lastfmImg(t0, ['extralarge', 'large']),
-      url: safeUrl(t0.url),
+      url: null, // ← não usamos mais URL do Last.fm
       duracao: null,
       progresso: null,
       fonte: 'lastfm'
@@ -200,7 +205,7 @@ async function lastfmDados() {
       faixa: safeStr(t.name, 200),
       artista: nome(t),
       capa: lastfmImg(t, ['large', 'extralarge']),
-      url: safeUrl(t.url),
+      url: null, // ← idem
       quando: t.date?.uts ? new Date(Number(t.date.uts) * 1000).toISOString() : null
     })).filter(x => x.faixa);
 
@@ -247,7 +252,7 @@ async function spotifySearchTrack(faixa, artista) {
         artista: safeStr((track.artists || []).map(x => x.name).join(', '), 200),
         album: safeStr(track.album?.name, 200) || null,
         capa: safeUrl(capa),
-        url: safeUrl(track.external_urls?.spotify),
+        url: soSpotify(track.external_urls?.spotify),
         duracao: track.duration_ms || null
       };
     } catch(e) { continue; }
@@ -255,7 +260,7 @@ async function spotifySearchTrack(faixa, artista) {
   return null;
 }
 
-/* ============ FALLBACKS DE CAPA (só capa) ============ */
+/* ============ FALLBACKS DE CAPA ============ */
 async function capaITunes(faixa, artista) {
   const f = limparNome(faixa), a = limparNome(artista);
   if (!f) return null;
@@ -301,51 +306,66 @@ async function capaMusicBrainz(faixa, artista) {
   } catch(e) { return null; }
 }
 
-/* ============ CACHE DO TRACK COMPLETO ============ */
+/* ============ CACHE POR TRACK (30 dias) ============ */
 function chaveTrack(faixa, artista) {
   return 'track:' + norm(faixa + '|' + artista).slice(0, 140);
 }
 
-async function enriquecerComSpotify(item) {
-  if (!item || !item.faixa) return item;
+/* ============ ENRIQUECIMENTO EM LOTE (1 única chamada ao Redis) ============ */
+async function enriquecerItens(itens) {
+  const validos = itens.filter(it => it && it.faixa);
+  if (!validos.length) return;
 
-  const chave = chaveTrack(item.faixa, item.artista);
-  try {
-    const [raw] = await redis([['GET', chave]]);
+  // 1) Lê todos os caches em uma única chamada
+  const chaves = validos.map(it => chaveTrack(it.faixa, it.artista));
+  const results = await redis(chaves.map(k => ['GET', k]));
+
+  const paraBuscar = [];
+  validos.forEach((item, i) => {
+    const raw = results[i];
     if (raw) {
-      const cached = JSON.parse(raw);
-      item.faixa = cached.faixa;
-      item.artista = cached.artista;
-      if (cached.album) item.album = cached.album;
-      if (cached.capa) item.capa = cached.capa;
-      if (cached.url) item.url = cached.url;
-      if (cached.duracao) item.duracao = cached.duracao;
-      item.fonte = 'spotify';
-      return item;
+      try {
+        const c = JSON.parse(raw);
+        item.faixa = c.faixa;
+        item.artista = c.artista;
+        if (c.album) item.album = c.album;
+        if (c.capa) item.capa = c.capa;
+        item.url = soSpotify(c.url); // só aceita Spotify
+        if (c.duracao) item.duracao = c.duracao;
+        item.fonte = 'spotify';
+        return;
+      } catch(e) {}
     }
-  } catch(e) {}
+    paraBuscar.push(item);
+  });
 
-  const spot = await spotifySearchTrack(item.faixa, item.artista);
-  if (spot) {
-    item.faixa = spot.faixa;
-    item.artista = spot.artista;
-    if (spot.album) item.album = spot.album;
-    if (spot.capa) item.capa = spot.capa;
-    if (spot.url) item.url = spot.url;
-    if (spot.duracao) item.duracao = spot.duracao;
-    item.fonte = 'spotify';
-    try { await redis([['SET', chave, JSON.stringify(spot), 'EX', '2592000']]); } catch(e) {}
-    return item;
-  }
+  // 2) Busca no Spotify em paralelo só os que não estavam cacheados
+  await Promise.all(paraBuscar.map(async item => {
+    try {
+      const spot = await spotifySearchTrack(item.faixa, item.artista);
+      if (spot) {
+        item.faixa = spot.faixa;
+        item.artista = spot.artista;
+        if (spot.album) item.album = spot.album;
+        if (spot.capa) item.capa = spot.capa;
+        item.url = soSpotify(spot.url);
+        if (spot.duracao) item.duracao = spot.duracao;
+        item.fonte = 'spotify';
+        try { await redis([['SET', chaveTrack(item.faixa, item.artista), JSON.stringify(spot), 'EX', '2592000']]); } catch(e) {}
+        return;
+      }
+    } catch(e) {}
 
-  // Spotify não achou: usa Last.fm como está, mas tenta capa do iTunes/Deezer
-  if (!item.capa) {
-    const c = await capaITunes(item.faixa, item.artista)
-      || await capaDeezer(item.faixa, item.artista)
-      || await capaMusicBrainz(item.faixa, item.artista);
-    if (c) item.capa = c;
-  }
-  return item;
+    // 3) Não achou no Spotify: mantém dados do Last.fm, mas SEM URL
+    item.url = null;
+    item.fonte = 'lastfm';
+    if (!item.capa) {
+      const c = await capaITunes(item.faixa, item.artista)
+        || await capaDeezer(item.faixa, item.artista)
+        || await capaMusicBrainz(item.faixa, item.artista);
+      if (c) item.capa = c;
+    }
+  }));
 }
 
 /* ============ HANDLER ============ */
@@ -365,11 +385,11 @@ export default async function handler(req, res) {
       recentes = lf.recentes;
     }
 
-    // Enriquece tudo com Spotify (nome, artista, capa, link)
-    const tarefas = [];
-    if (data && data.tocando) tarefas.push(enriquecerComSpotify(data));
-    recentes.forEach(r => tarefas.push(enriquecerComSpotify(r)));
-    await Promise.all(tarefas);
+    // Enriquece tudo em uma única passada
+    const itens = [];
+    if (data && data.tocando) itens.push(data);
+    recentes.forEach(r => itens.push(r));
+    await enriquecerItens(itens);
 
     if (!data || !data.tocando) {
       const vazio = { tocando: false, recentes };
