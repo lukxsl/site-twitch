@@ -124,6 +124,8 @@ export default async function handler(req, res) {
     const horasMes = calcularHorasMes(videos);
 
     const c = ch.data && ch.data[0];
+    const rotulos = (c && Array.isArray(c.content_classification_labels)) ? c.content_classification_labels : [];
+    const canalMature = rotulos.some(l => String(l).toLowerCase() === 'maturegame');
     let game = null;
     if (c && c.game_id) {
       const g = await api(`games?id=${c.game_id}`);
@@ -162,6 +164,7 @@ export default async function handler(req, res) {
       followers: followersTotal,
       discord: discordTotal,
       horasMes,
+      canal_mature: canalMature,
       video, videos, game, clips
     });
   } catch (e) {

@@ -1,9 +1,19 @@
 /* ============================================================
    TWITCH
    ============================================================ */
+let canalMature = false; // canal marcado como +18 (player embutido pede login)
+
 function assistirVod(v){
   v = v || vodAtual; if (!v) return;
-  vodAtual = v; assistindoVod = true;
+  vodAtual = v;
+  const urlTwitch = `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}`;
+  // Reprise de canal +18: o player embutido não funciona sem login, então abre direto na Twitch
+  if (canalMature) {
+    window.open(urlTwitch, '_blank', 'noopener');
+    if (typeof toast === 'function') toast('🔞 Reprise +18: abrindo na Twitch', 'ok');
+    return;
+  }
+  assistindoVod = true;
   const panel = document.getElementById('offlinePanel');
   if(panel) panel.style.display = 'none';
   const f = document.getElementById('twitchIframe');
@@ -13,7 +23,7 @@ function assistirVod(v){
   const noteEl = document.getElementById('playerNoteText');
   if(noteEl){
     noteEl.classList.remove('recado');
-    noteEl.textContent = `Reprise: ${vodAtual.title}`;
+    noteEl.innerHTML = `Reprise: ${esc(vodAtual.title)} · <a href="${urlTwitch}" target="_blank" rel="noopener">Não carregou? Abrir na Twitch ↗</a>`;
   }
   const box = document.querySelector('.twitch-player-box');
   if(box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -161,6 +171,7 @@ async function verificarStatusTwitch() {
     if (data.discord && $('dcMembros'))
       $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
 
+    canalMature = !!data.canal_mature;
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
 
@@ -232,7 +243,7 @@ async function verificarStatusTwitch() {
             </div>
             <div class="offline-actions">
               <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
-              <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
+              <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live${canalMature ? ' ↗' : ''}</button>
             </div>
           `;
           // reaplica a foto de capa offline depois de recriar o innerHTML
