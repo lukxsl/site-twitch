@@ -77,6 +77,7 @@ let sirFiltro = 'all';
 let SIR_ITENS_CACHE = [];
 let _musicaAtual = null;
 let _recentes = [];
+let _musicaPronta = false; // ← NOVO: controla o loading inicial
 
 let HALL_DADOS = null;
 let HALL_ABA = 'gift';
@@ -413,12 +414,24 @@ function _fmtMs(ms){
 function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
 
+  // Estado inicial: ainda não buscamos nada.
+  // Mostra um loading discreto em vez de flashar a playlist.
+  if(!_musicaPronta && !musicaTocando && !_recentes.length){
+    painel.innerHTML = `
+      <div class="ouvindo-wrap">
+        <div class="disco-fantasma" aria-hidden="true"><span class="df-ic">🎵</span></div>
+        <div class="ouvindo-vazio-txt">Carregando…</div>
+      </div>
+    `;
+    return;
+  }
+
   if(!musicaTocando){
     // 1) tem faixas recentes (Last.fm)? mostra a lista das últimas músicas
     if(_recentes.length){
       const lista = _recentes.slice(0, 3);
       const sig = JSON.stringify(lista.map(x => [x.faixa, x.artista, x.quando]));
-      if(painel.dataset.rec === sig) return; // nada mudou, não redesenha
+      if(painel.dataset.rec === sig) return;
       painel.dataset.rec = sig;
       const quando = q => (q && typeof tempoAtras === 'function') ? esc(tempoAtras(q)) : '';
       painel.innerHTML = `
@@ -446,7 +459,6 @@ function renderOuvindo(){
     // 2) sem faixas recentes: playlist embutida (ou estado simples)
     const mp = (CONFIG.spotifyPlaylist || '').match(/playlist\/([a-zA-Z0-9]+)/);
     if(mp){
-      // já está na tela? não recria (evita recarregar o iframe a cada atualização)
       if(painel.querySelector('.music-mini-embed')) return;
       painel.innerHTML = `
         <div class="ouvindo-wrap ouvindo-vazio-wrap">
@@ -461,7 +473,6 @@ function renderOuvindo(){
       `;
       return;
     }
-    // sem playlist configurada: mantém o estado vazio simples
     painel.innerHTML = `
       <div class="ouvindo-wrap">
         <div class="disco-fantasma" aria-hidden="true">
@@ -520,6 +531,7 @@ function pintarOuvindo(d){
 async function carregarOuvindoAgora(){
   try {
     const r = await fetch('/api/lastfm', { cache: 'no-store' });
+    _musicaPronta = true; // ← marca que já carregou uma vez
     if(!r.ok) { musicaTocando = false; renderOuvindo(); return; }
     const d = await r.json();
     if(!d || !d.tocando || !d.faixa){
@@ -535,6 +547,7 @@ async function carregarOuvindoAgora(){
     if(musicaMudou) pintarOuvindo(d);
     else renderOuvindo();
   } catch(e) {
+    _musicaPronta = true; // ← idem no catch
     musicaTocando = false;
     renderOuvindo();
   }
@@ -617,7 +630,6 @@ function _executarMudarAba(nome, salvar){
 
   if(section) section.querySelectorAll('.reveal:not(.in)').forEach(el => revealObs && revealObs.observe(el));
 
-  // 🆕 Reaplica o tilt nos cards que apareceram na nova aba
   setTimeout(() => setupCardTilt(), 100);
 }
 
@@ -1464,10 +1476,8 @@ function setupCardTilt(){
       if(!ev) return;
       const rect = card.getBoundingClientRect();
       const px = ev.clientX - rect.left, py = ev.clientY - rect.top;
-      // luz que acompanha o mouse (funciona em qualquer tamanho de tela com mouse)
       card.style.setProperty('--mx', px.toFixed(0) + 'px');
       card.style.setProperty('--my', py.toFixed(0) + 'px');
-      // tilt só em telas grandes; cards largos (player) inclinam menos
       if(matchMedia('(max-width: 960px)').matches) return;
       const max = rect.width > 560 ? 2.2 : 5;
       const x = px / rect.width - 0.5, y = py / rect.height - 0.5;
@@ -1688,7 +1698,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   verificarStatusTwitch();
   setInterval(verificarStatusTwitch, 60000);
   carregarOuvindoAgora();
-  setInterval(carregarOuvindoAgora, 5000);
+  setInterval(carregarOuvindoAgora, 5000); // ← alterado de 15000 pra 5000
   carregarBiblioteca();
   carregarVotosApi();
 
@@ -1698,7 +1708,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     if(ultVivo && ultGame) atualizarFoco(ultGame, ultVivo);
   }, 30000);
 
-  // 🆕 Reaplica tilt depois que tudo carregar (pega cards dinâmicos)
   setTimeout(() => setupCardTilt(), 800);
   setTimeout(() => setupCardTilt(), 2000);
 });

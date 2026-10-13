@@ -1,5 +1,5 @@
 // Vercel serverless: /api/lastfm.js
-// Prioridade total no Spotify. Sem URL do Spotify = sem botão.
+// Prioridade total no Spotify. Sem URL do Spotify = URL de busca do Spotify.
 
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
@@ -10,7 +10,7 @@ const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN_R = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
 const CACHE_KEY = 'cache:musica';
-const CACHE_TTL = 5; // ← reduzido de 30 pra 5s (atualização quase instantânea)
+const CACHE_TTL = 5;
 const SPOTIFY_USER_TOKEN_KEY = 'cache:spotify_user_token';
 const SPOTIFY_APP_TOKEN_KEY = 'cache:spotify_app_token';
 const SPOTIFY_ANON_TOKEN_KEY = 'cache:spotify_anon_token';
@@ -195,7 +195,7 @@ async function lastfmDados() {
       artista: nome(t0),
       album: safeStr(t0.album?.['#text'], 200),
       capa: lastfmImg(t0, ['extralarge', 'large']),
-      url: null, // ← não usamos mais URL do Last.fm
+      url: null,
       duracao: null,
       progresso: null,
       fonte: 'lastfm'
@@ -205,7 +205,7 @@ async function lastfmDados() {
       faixa: safeStr(t.name, 200),
       artista: nome(t),
       capa: lastfmImg(t, ['large', 'extralarge']),
-      url: null, // ← idem
+      url: null,
       quando: t.date?.uts ? new Date(Number(t.date.uts) * 1000).toISOString() : null
     })).filter(x => x.faixa);
 
@@ -311,12 +311,17 @@ function chaveTrack(faixa, artista) {
   return 'track:' + norm(faixa + '|' + artista).slice(0, 140);
 }
 
-/* ============ ENRIQUECIMENTO EM LOTE (1 única chamada ao Redis) ============ */
+/* ============ URL DE BUSCA DO SPOTIFY (fallback) ============ */
+function urlBuscaSpotify(faixa, artista) {
+  const q = encodeURIComponent(`${faixa || ''} ${artista || ''}`.trim());
+  return `https://open.spotify.com/search/${q}`;
+}
+
+/* ============ ENRIQUECIMENTO EM LOTE ============ */
 async function enriquecerItens(itens) {
   const validos = itens.filter(it => it && it.faixa);
   if (!validos.length) return;
 
-  // 1) Lê todos os caches em uma única chamada
   const chaves = validos.map(it => chaveTrack(it.faixa, it.artista));
   const results = await redis(chaves.map(k => ['GET', k]));
 
@@ -330,7 +335,7 @@ async function enriquecerItens(itens) {
         item.artista = c.artista;
         if (c.album) item.album = c.album;
         if (c.capa) item.capa = c.capa;
-        item.url = soSpotify(c.url); // só aceita Spotify
+        item.url = soSpotify(c.url) || urlBuscaSpotify(c.faixa, c.artista);
         if (c.duracao) item.duracao = c.duracao;
         item.fonte = 'spotify';
         return;
@@ -339,7 +344,6 @@ async function enriquecerItens(itens) {
     paraBuscar.push(item);
   });
 
-  // 2) Busca no Spotify em paralelo só os que não estavam cacheados
   await Promise.all(paraBuscar.map(async item => {
     try {
       const spot = await spotifySearchTrack(item.faixa, item.artista);
@@ -356,8 +360,8 @@ async function enriquecerItens(itens) {
       }
     } catch(e) {}
 
-    // 3) Não achou no Spotify: mantém dados do Last.fm, mas SEM URL
-    item.url = null;
+    // Não achou no Spotify: mantém dados do Last.fm, tenta capa nos fallbacks,
+    // e SEMPRE gera um link do Spotify (busca se não achar a faixa exata)
     item.fonte = 'lastfm';
     if (!item.capa) {
       const c = await capaITunes(item.faixa, item.artista)
@@ -365,6 +369,7 @@ async function enriquecerItens(itens) {
         || await capaMusicBrainz(item.faixa, item.artista);
       if (c) item.capa = c;
     }
+    item.url = urlBuscaSpotify(item.faixa, item.artista);
   }));
 }
 
@@ -385,7 +390,6 @@ export default async function handler(req, res) {
       recentes = lf.recentes;
     }
 
-    // Enriquece tudo em uma única passada
     const itens = [];
     if (data && data.tocando) itens.push(data);
     recentes.forEach(r => itens.push(r));
