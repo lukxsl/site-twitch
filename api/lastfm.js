@@ -1,5 +1,5 @@
 // Vercel serverless: /api/lastfm.js
-// Prioridade total no Spotify. Sem URL do Spotify = URL de busca do Spotify.
+// Prioridade total no Spotify. Match de faixa + artista antes de aceitar.
 
 const USER = process.env.LASTFM_USER;
 const KEY = process.env.LASTFM_API_KEY;
@@ -213,7 +213,7 @@ async function lastfmDados() {
   } catch(e) { return vazio; }
 }
 
-/* ============ SPOTIFY SEARCH → TRACK COMPLETO ============ */
+/* ============ SPOTIFY SEARCH → TRACK COMPLETO (com match de nome + artista) ============ */
 async function spotifySearchTrack(faixa, artista) {
   let token = await spotifyAppToken();
   if (!token) token = await spotifyAnonToken();
@@ -222,6 +222,14 @@ async function spotifySearchTrack(faixa, artista) {
   const f = limparNome(faixa);
   const a = limparNome(artista);
   if (!f) return null;
+
+  const normArt = s => norm(limparNome(s));
+
+  // Artistas do Last.fm podem vir separados por vírgula
+  const artistasOrigem = String(artista || '')
+    .split(',')
+    .map(x => normArt(x))
+    .filter(Boolean);
 
   const tentativas = [
     a ? `track:"${f}" artist:"${a}"` : null,
@@ -232,7 +240,7 @@ async function spotifySearchTrack(faixa, artista) {
 
   for (const q of tentativas) {
     try {
-      const r = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=1`, {
+      const r = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=5`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (r.status === 401) {
@@ -243,18 +251,30 @@ async function spotifySearchTrack(faixa, artista) {
       }
       if (!r.ok) continue;
       const d = await r.json();
-      const track = d?.tracks?.items?.[0];
-      if (!track) continue;
-      const imgs = track.album?.images || [];
-      const capa = imgs[0]?.url || imgs[1]?.url || imgs[2]?.url;
-      return {
-        faixa: safeStr(track.name, 200),
-        artista: safeStr((track.artists || []).map(x => x.name).join(', '), 200),
-        album: safeStr(track.album?.name, 200) || null,
-        capa: safeUrl(capa),
-        url: soSpotify(track.external_urls?.spotify),
-        duracao: track.duration_ms || null
-      };
+      const tracks = d?.tracks?.items || [];
+      if (!tracks.length) continue;
+
+      const faixaNorm = norm(limparNome(faixa));
+      for (const track of tracks) {
+        const trackNome = norm(limparNome(track.name));
+        if (trackNome !== faixaNorm) continue;
+
+        const spotArtistas = (track.artists || []).map(x => normArt(x.name));
+        const artistaBate = artistasOrigem.length === 0
+          || spotArtistas.some(sa => artistasOrigem.some(ao => ao.includes(sa) || sa.includes(ao)));
+        if (!artistaBate) continue;
+
+        const imgs = track.album?.images || [];
+        const capa = imgs[0]?.url || imgs[1]?.url || imgs[2]?.url;
+        return {
+          faixa: safeStr(track.name, 200),
+          artista: safeStr((track.artists || []).map(x => x.name).join(', '), 200),
+          album: safeStr(track.album?.name, 200) || null,
+          capa: safeUrl(capa),
+          url: soSpotify(track.external_urls?.spotify),
+          duracao: track.duration_ms || null
+        };
+      }
     } catch(e) { continue; }
   }
   return null;
@@ -360,8 +380,6 @@ async function enriquecerItens(itens) {
       }
     } catch(e) {}
 
-    // Não achou no Spotify: mantém dados do Last.fm, tenta capa nos fallbacks,
-    // e SEMPRE gera um link do Spotify (busca se não achar a faixa exata)
     item.fonte = 'lastfm';
     if (!item.capa) {
       const c = await capaITunes(item.faixa, item.artista)

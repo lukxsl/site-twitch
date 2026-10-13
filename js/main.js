@@ -77,7 +77,7 @@ let sirFiltro = 'all';
 let SIR_ITENS_CACHE = [];
 let _musicaAtual = null;
 let _recentes = [];
-let _musicaPronta = false; // ← NOVO: controla o loading inicial
+let _musicaPronta = false;
 
 let HALL_DADOS = null;
 let HALL_ABA = 'gift';
@@ -415,7 +415,6 @@ function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
 
   // Estado inicial: ainda não buscamos nada.
-  // Mostra um loading discreto em vez de flashar a playlist.
   if(!_musicaPronta && !musicaTocando && !_recentes.length){
     painel.innerHTML = `
       <div class="ouvindo-wrap">
@@ -427,7 +426,6 @@ function renderOuvindo(){
   }
 
   if(!musicaTocando){
-    // 1) tem faixas recentes (Last.fm)? mostra a lista das últimas músicas
     if(_recentes.length){
       const lista = _recentes.slice(0, 3);
       const sig = JSON.stringify(lista.map(x => [x.faixa, x.artista, x.quando]));
@@ -456,7 +454,6 @@ function renderOuvindo(){
     }
     delete painel.dataset.rec;
 
-    // 2) sem faixas recentes: playlist embutida (ou estado simples)
     const mp = (CONFIG.spotifyPlaylist || '').match(/playlist\/([a-zA-Z0-9]+)/);
     if(mp){
       if(painel.querySelector('.music-mini-embed')) return;
@@ -492,6 +489,11 @@ function renderOuvindo(){
   const urlAbrir = d.url || '#';
   const target = d.url ? '_blank' : '_self';
 
+  // Link direto pra faixa vs busca
+  const linkTexto = d.url
+    ? (d.url.includes('/track/') ? '▶ Ouvir no Spotify' : '🔍 Buscar no Spotify')
+    : '';
+
   const capaHTML = d.capa
     ? `<img src="${esc(d.capa)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'disco-fallback',textContent:'${iniciais}'}))">`
     : `<div class="disco-fallback">${iniciais}</div>`;
@@ -511,7 +513,7 @@ function renderOuvindo(){
             <span>${_fmtMs(d.duracao)}</span>
           </div>
         ` : ''}
-        ${d.url ? `<a class="ouvindo-link" href="${esc(d.url)}" target="_blank" rel="noopener">▶ Ouvir no Spotify</a>` : ''}
+        ${d.url ? `<a class="ouvindo-link" href="${esc(d.url)}" target="_blank" rel="noopener">${linkTexto}</a>` : ''}
       </div>
     </div>`;
 }
@@ -531,7 +533,7 @@ function pintarOuvindo(d){
 async function carregarOuvindoAgora(){
   try {
     const r = await fetch('/api/lastfm', { cache: 'no-store' });
-    _musicaPronta = true; // ← marca que já carregou uma vez
+    _musicaPronta = true;
     if(!r.ok) { musicaTocando = false; renderOuvindo(); return; }
     const d = await r.json();
     if(!d || !d.tocando || !d.faixa){
@@ -547,7 +549,7 @@ async function carregarOuvindoAgora(){
     if(musicaMudou) pintarOuvindo(d);
     else renderOuvindo();
   } catch(e) {
-    _musicaPronta = true; // ← idem no catch
+    _musicaPronta = true;
     musicaTocando = false;
     renderOuvindo();
   }
@@ -1460,7 +1462,7 @@ function setupReveal(){
 }
 
 /* ============================================================
-   TILT 3D — aplicado DIRETO em cada .card
+   TILT 3D
    ============================================================ */
 function setupCardTilt(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -1698,7 +1700,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   verificarStatusTwitch();
   setInterval(verificarStatusTwitch, 60000);
   carregarOuvindoAgora();
-  setInterval(carregarOuvindoAgora, 5000); // ← alterado de 15000 pra 5000
+  setInterval(carregarOuvindoAgora, 5000);
   carregarBiblioteca();
   carregarVotosApi();
 
