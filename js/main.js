@@ -225,7 +225,7 @@ function renderRecado(){
       texto.textContent = recado;
       card.classList.remove('vazio');
     } else {
-      texto.textContent = 'A Soso não deixou recado hoje, mas volta logo! 💜';
+      texto.textContent = '💭 Sem recadinho por hoje. A Soso volta logo com novidades!';
       card.classList.add('vazio');
     }
     card.style.display = '';
