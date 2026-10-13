@@ -14,6 +14,7 @@ function fmtDuracao(min){
 
 const tempoAtras = iso => {
   const m = (Date.now() - new Date(iso)) / 60000;
+  if (!Number.isFinite(m)) return ''; // data inválida: evita "há NaN dias"
   if (m < 60) return 'há ' + Math.max(1, Math.round(m)) + ' min';
   if (m < 1440) return 'há ' + Math.round(m / 60) + 'h';
   const d = Math.round(m / 1440); return d === 1 ? 'ontem' : 'há ' + d + ' dias';

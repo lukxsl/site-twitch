@@ -20,6 +20,20 @@ function assistirVod(v){
   if(!f) return;
   f.style.display = 'block';
   f.src = `https://player.twitch.tv/?video=v${vodAtual.id}&parent=${HOST}&autoplay=false`;
+  // botão de segurança dentro do player (se a Twitch pedir login, dá pra assistir direto lá)
+  const area = document.querySelector('.twitch-player');
+  if(area){
+    let fb = document.getElementById('vodFallback');
+    if(!fb){
+      fb = document.createElement('a');
+      fb.id = 'vodFallback'; fb.className = 'vod-fallback';
+      fb.target = '_blank'; fb.rel = 'noopener';
+      area.appendChild(fb);
+    }
+    fb.href = urlTwitch;
+    fb.textContent = 'Pediu login? Assistir na Twitch ↗';
+    fb.style.display = '';
+  }
   const noteEl = document.getElementById('playerNoteText');
   if(noteEl){
     noteEl.classList.remove('recado');
@@ -261,6 +275,9 @@ async function verificarStatusTwitch() {
         }
       }
     }
+
+    const fbVod = g('vodFallback');
+    if(fbVod) fbVod.style.display = assistindoVod ? '' : 'none';
 
     atualizarFoco(data.game, !!data.stream);
     renderClips(data.clips);

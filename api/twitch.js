@@ -125,7 +125,9 @@ export default async function handler(req, res) {
 
     const c = ch.data && ch.data[0];
     const rotulos = (c && Array.isArray(c.content_classification_labels)) ? c.content_classification_labels : [];
-    const canalMature = rotulos.some(l => String(l).toLowerCase() === 'maturegame');
+    // +18 se a Twitch marcou o canal como "MatureGame" OU se você forçar com TWITCH_CANAL_ADULTO=1 na Vercel
+    const canalMature = process.env.TWITCH_CANAL_ADULTO === '1'
+      || rotulos.some(l => String(l).toLowerCase() === 'maturegame');
     let game = null;
     if (c && c.game_id) {
       const g = await api(`games?id=${c.game_id}`);
@@ -165,6 +167,7 @@ export default async function handler(req, res) {
       discord: discordTotal,
       horasMes,
       canal_mature: canalMature,
+      canal_labels: rotulos, // para diagnóstico: abra /api/twitch no navegador e veja o que a Twitch devolve
       video, videos, game, clips
     });
   } catch (e) {
