@@ -249,7 +249,7 @@ async function buscarConquistasSteam(appid){
   } catch(e){ return null; }
 }
 
-/* ============ IMPORTAR STEAM (só adiciona novos) ============ */
+/* ============ IMPORTAR STEAM ============ */
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -288,7 +288,7 @@ async function importarSteam(){
   return { ok: true, adicionados, pulados, total: jogados.length };
 }
 
-/* ============ SINCRONIZAR HORAS/CONQUISTAS (só atualiza os existentes) ============ */
+/* ============ SINCRONIZAR HORAS ============ */
 async function sincronizarHoras(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -314,7 +314,6 @@ async function sincronizarHoras(){
     const novasHoras = Math.round(g.playtime_forever / 6) / 10;
     const mudouHoras = Number(j.horas) !== novasHoras;
 
-    // Atualiza conquistas no máx 1x por dia
     const conqAntiga = j.conquistasAtualizadoEm;
     const precisaConq = !j.conquistas || !conqAntiga || (Date.now() - new Date(conqAntiga).getTime() > 24 * 3600 * 1000);
     let mudouConq = false;
@@ -340,7 +339,7 @@ async function sincronizarHoras(){
   return { ok: true, atualizados, conqAtualizadas, total: atuais.length };
 }
 
-/* ============ NOTIFICAÇÃO DISCORD: status mudou ============ */
+/* ============ NOTIFICAÇÃO DISCORD ============ */
 async function notificarStatus(item, novoStatus, motivo, quemMudou){
   if(!DISCORD_WEBHOOK) return;
 
@@ -422,7 +421,7 @@ export default async function handler(req, res){
 
   const action = req.query?.action || '';
 
-  // ============ CRON: sync-horas-cron (não precisa de sessão, precisa CRON_SECRET) ============
+  // ============ CRON: sync-horas-cron ============
   if(req.method === 'GET' && action === 'sync-horas-cron'){
     const CRON_SECRET = process.env.CRON_SECRET;
     if(!CRON_SECRET) return res.status(500).json({ error: 'CRON_SECRET não configurado' });
@@ -449,7 +448,6 @@ export default async function handler(req, res){
   if(!sessao) return res.status(401).json({ error: 'Faça login' });
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
 
-  // Revalida o cargo a CADA request
   let cargoAtual = null;
   if(ENV_ADMINS.includes(String(sessao.id))){
     cargoAtual = 'dev';
@@ -523,8 +521,18 @@ export default async function handler(req, res){
 
     if(req.method === 'POST' && action === 'opcoes'){
       if(!(await temPermissao(sessao, 'editar_opcoes'))) return res.status(403).json({ error: 'Sem permissão' });
-      const opcoes = Array.isArray(req.body?.opcoes) ? req.body.opcoes.slice(0,5) : [];
-      if(!opcoes.length) return res.status(400).json({ error: 'Nenhuma opção enviada' });
+      const body = req.body || {};
+      const opcoesRaw = Array.isArray(body.opcoes) ? body.opcoes : null;
+      if(opcoesRaw === null) return res.status(400).json({ error: 'Dados inválidos' });
+
+      // 🆕 Permite array vazio — apaga todas as opções
+      if(opcoesRaw.length === 0){
+        await redis([['SET', 'votos:config', JSON.stringify([])]]);
+        await logAcao(quem, sessao.cargo, 'Removeu TODAS as opções da votação');
+        return res.status(200).json({ ok: true, opcoes: [] });
+      }
+
+      const opcoes = opcoesRaw.slice(0, 5);
       const processadas = [];
       for(const o of opcoes){
         const nome = String(o.nome || '').trim().slice(0,80);
@@ -734,7 +742,6 @@ export default async function handler(req, res){
       return res.status(200).json(r);
     }
 
-    /* 🆕 SINCRONIZAR HORAS - atualiza só os existentes */
     if(req.method === 'POST' && action === 'sync-horas'){
       if(!(await temPermissao(sessao, 'importar_steam'))) return res.status(403).json({ error: 'Sem permissão' });
       const r = await sincronizarHoras();

@@ -122,11 +122,17 @@ function renderAdminOpcoes(opcoes, contagem){
   const total = Object.values(contagem).reduce((a,b)=>a+b,0);
   const maxVotos = Math.max(1, ...Object.values(contagem).map(Number));
 
+  const vazio = `
+    <div class="admin-vazio" style="padding:40px 20px">
+      <b>🗳️ Nenhuma opção cadastrada</b>
+      Enquanto não tiver opções, a votação fica desativada e a aba mostra uma mensagem amigável pro pessoal.
+    </div>`;
+
   el.innerHTML = `
     <div class="admin-card">
-      <h3>🎯 Opções da votação</h3>
+      <h3>🎯 Opções da votação ${lista.length ? `<span class="cont">${lista.length}/5</span>` : ''}</h3>
       <div>
-        ${lista.map((o,i) => {
+        ${lista.length ? lista.map((o,i) => {
           const votos = contagem[o.id] || 0;
           const pct = total ? Math.round(votos / total * 100) : 0;
           const barW = votos > 0 ? Math.round(votos / maxVotos * 100) : 0;
@@ -148,11 +154,12 @@ function renderAdminOpcoes(opcoes, contagem){
               <button class="btn-mini" onclick="editarOpcao(${i})">Editar</button>
             </div>
           `;
-        }).join('') || '<div class="logs-empty"><b>Nenhuma opção ainda</b>Adiciona a primeira pra começar a votação.</div>'}
+        }).join('') : vazio}
       </div>
       <div class="admin-actions">
         <button class="admin-btn" onclick="adicionarOpcao()">+ Adicionar opção</button>
-        <button class="admin-btn ghost" onclick="restaurarPadraoVotacao()">Restaurar padrão</button>
+        ${lista.length ? `<button class="admin-btn ghost" onclick="restaurarPadraoVotacao()">Restaurar padrão</button>` : ''}
+        ${lista.length ? `<button class="admin-btn perigo" onclick="removerTodasOpcoes()">🚫 Remover todas</button>` : ''}
       </div>
     </div>`;
 }
@@ -242,6 +249,28 @@ async function resetarVotacao(){
   }catch(e){ toast('Erro: ' + e.message, 'erro'); }
 }
 window.resetarVotacao = resetarVotacao;
+
+/* 🆕 Remover todas as opções */
+async function removerTodasOpcoes(){
+  const ok1 = await confirmar('Remover TODAS as opções?', 'A votação fica desativada. Os votos existentes continuam salvos no ciclo atual, mas ninguém consegue votar sem opções.', '🚫');
+  if(!ok1) return;
+  const ok2 = await confirmar('TEM CERTEZA?', 'Confirma de novo, essa ação tira todas as opções do ar.', '⚠️');
+  if(!ok2) return;
+  try{
+    const r = await fetch('/api/admin?action=opcoes', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ opcoes: [] })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    toast('Todas as opções removidas ✅', 'ok');
+    await carregarAdminVotacao();
+    await carregarVotosApi();
+    carregarShared(true).then(() => renderSidebar());
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.removerTodasOpcoes = removerTodasOpcoes;
 
 function editarOpcao(i){
   const opcoes = (ADMIN_DADOS.config || []).slice();

@@ -31,7 +31,7 @@ const STATUS_TOOLTIP = {
   'Dropado': 'Comecei mas não vou continuar', 'Na fila': 'Quero jogar/assistir em breve',
   'Assistindo': 'Estou assistindo agora', 'Assistido': 'Já assisti'
 };
-const SUG_MAX_CHARS = 300;
+const SUG_MAX_CHARS = 200;
 const STATUS_SUG = {
   nova:     { label: '🟡 Nova',       cor: 'amarelo',   desc: 'Acabou de chegar' },
   analise:  { label: '👀 Em análise', cor: 'azul',      desc: 'A Soso viu e tá pensando' },
@@ -67,8 +67,8 @@ let vodAtual = null, assistindoVod = false;
 let videosTw = [];
 let inicioLive = null;
 let modo = 'jogos';
-let filtro = [];          // 🆕 array multi
-let favoritosFiltro = false; // 🆕
+let filtro = [];
+let favoritosFiltro = false;
 let CONFIG_GERAL = {
   aviso: null, donate: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, top3: [], hall: [], votosFechamento: null
 };
@@ -76,6 +76,7 @@ let musicaTocando = false;
 let revealObs = null;
 let sugTipoAtual = 'Sugestão / ideia';
 let sirFiltro = 'all';
+let sirStatusFiltro = 'all';
 let SIR_ITENS_CACHE = [];
 let _musicaAtual = null;
 let _recentes = [];
@@ -85,9 +86,8 @@ let HALL_DADOS = null;
 let HALL_ABA = 'gift';
 let HALL_TIMER = null;
 
-/* 🆕 Tier List V3 */
 let sortMode = 'nota';
-let generoFiltro = [];     // 🆕 array multi
+let generoFiltro = [];
 let _jogoAoVivoNome = null;
 let _roletaRodando = false;
 
@@ -1586,6 +1586,29 @@ function renderVotacao(){
   const statusEl = $('votoStatus');
   const countdownEl = $('votoCountdown');
 
+  const semOpcoes = !VOTOS_DADOS.length && votoStatus === 'ok';
+
+  // 🆕 Esconde/mostra o card "Próximo na votação" na home
+  const proxHalf = document.querySelector('.jogos-card .jogo-half:nth-child(2)');
+  if(proxHalf) proxHalf.style.display = semOpcoes ? 'none' : '';
+
+  if(semOpcoes){
+    if(infoTop) infoTop.style.display = 'none';
+    destBox.innerHTML = '';
+    listaBox.innerHTML = `
+      <div class="voto-vazio">
+        <span class="vv-emoji">🗳️</span>
+        <b>Nenhuma votação rolando agora</b>
+        <p>A Soso ainda não abriu uma nova votação. Volta mais tarde ou passa no Discord pra ficar por dentro 💜</p>
+        <a class="btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">💬 Falar no Discord</a>
+      </div>`;
+    if(proxCover) proxCover.style.display = 'none';
+    if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
+    if($('proxNome')) $('proxNome').textContent = 'Sem votação';
+    if($('proxInfo')) $('proxInfo').textContent = 'Aguardando a Soso abrir a próxima votação 💜';
+    return;
+  }
+
   const countdown = tempoRestante(VOTOS_FECHAMENTO);
   const fechada = countdown && countdown.encerrado;
 
@@ -1837,8 +1860,14 @@ async function enviarSugestao(){
       if(success){ success.hidden = false; setTimeout(() => { success.hidden = true; }, 6000); }
       toast('Ideia enviada! Obrigado 💜', 'ok');
       carregarUltimasIdeias();
-    } else if(res.status === 429){ toast('Calma! Aguarde alguns segundos.', 'warn'); }
-    else { toast('Não consegui enviar agora.', 'erro'); }
+    } else if(res.status === 400 && dados && dados.error){
+      toast(dados.error, 'warn');
+      $('sugTexto').classList.add('erro');
+    } else if(res.status === 429){
+      toast((dados && dados.error) || 'Calma! Aguarde alguns segundos.', 'warn');
+    } else {
+      toast((dados && dados.error) || 'Não consegui enviar agora.', 'erro');
+    }
   }catch(e){ toast('Sem conexão com o servidor.', 'erro'); }
   finally { setTimeout(() => { const txt = ($('sugTexto')?.value || '').trim(); if(btn) btn.disabled = txt.length < 3; }, 100); }
 }
@@ -1860,21 +1889,61 @@ function tipoInfoSug(tipo){
   if(t.includes('feedback')) return { ic: '💬', label: 'feedback' };
   return { ic: '💡', label: 'sugestao' };
 }
+
+/* 🆕 Renderiza 2 grupos de chips clicáveis: tipo + status */
 function renderSirFiltros(itens){
   const wrap = $('sirFiltros'); if(!wrap) return;
-  const tipos = { 'all': true, 'sugestao': false, 'jogo': false, 'feedback': false, 'bug': false };
+
+  const tiposDisponiveis = { 'all': true, 'sugestao': false, 'jogo': false, 'feedback': false, 'bug': false };
   itens.forEach(i => {
     const t = tipoInfoSug(i.tipo).label;
-    if(tipos[t] !== undefined) tipos[t] = true;
+    if(tiposDisponiveis[t] !== undefined) tiposDisponiveis[t] = true;
   });
-  const opts = [
-    { id: 'all', label: 'Todas' },
-    { id: 'sugestao', label: '💡' },
-    { id: 'jogo', label: '🎮' },
-    { id: 'feedback', label: '💬' },
-    { id: 'bug', label: '🐛' }
-  ].filter(o => o.id === 'all' || tipos[o.id]);
-  wrap.innerHTML = opts.map(o => `<button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}">${o.label}</button>`).join('');
+
+  const statCount = { nova:0, analise:0, aceita:0, recusada:0, concluido:0 };
+  itens.forEach(i => {
+    const st = i.status || 'nova';
+    if(statCount[st] !== undefined) statCount[st]++;
+  });
+
+  const statusOpts = [
+    { id:'all',       ic:'·',  label:'Todas' },
+    { id:'nova',      ic:'🟡', label:'Nova' },
+    { id:'analise',   ic:'👀', label:'Em análise' },
+    { id:'aceita',    ic:'✅', label:'Aceita' },
+    { id:'recusada',  ic:'❌', label:'Recusada' },
+    { id:'concluido', ic:'🏁', label:'Concluída' }
+  ];
+
+  const tipoOpts = [
+    { id:'all',      label:'Todos' },
+    { id:'sugestao', label:'💡' },
+    { id:'jogo',     label:'🎮' },
+    { id:'feedback', label:'💬' },
+    { id:'bug',      label:'🐛' }
+  ].filter(o => o.id === 'all' || tiposDisponiveis[o.id]);
+
+  wrap.innerHTML = `
+    <div class="sir-filtros-grupo">
+      ${tipoOpts.map(o => `
+        <button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}">
+          ${o.label}
+        </button>
+      `).join('')}
+    </div>
+    <div class="sir-filtros-grupo sir-filtros-status">
+      ${statusOpts.filter(o => o.id === 'all' || statCount[o.id] > 0).map(o => {
+        const n = o.id === 'all' ? itens.length : statCount[o.id];
+        return `
+          <button type="button" class="sir-chip sir-status-chip ${sirStatusFiltro === o.id ? 'on' : ''}" data-status="${o.id}">
+            <span class="sic-ic">${o.ic}</span>
+            <span class="sic-lb">${o.label}</span>
+            <b class="sic-count">${n}</b>
+          </button>
+        `;
+      }).join('')}
+    </div>
+  `;
 }
 
 async function carregarUltimasIdeias(){
@@ -1890,9 +1959,12 @@ async function carregarUltimasIdeias(){
       lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhuma ideia ainda. Seja a primeira 💜</small></div>`;
       return;
     }
-    const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
+    let filtrados = itens;
+    if(sirFiltro !== 'all') filtrados = filtrados.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
+    if(sirStatusFiltro !== 'all') filtrados = filtrados.filter(i => (i.status || 'nova') === sirStatusFiltro);
+
     if(!filtrados.length){
-      lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada nesse filtro</small></div>`;
+      lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada com esse filtro</small></div>`;
       return;
     }
     lista.innerHTML = filtrados.slice(0, 20).map(i => {
@@ -1918,13 +1990,19 @@ async function carregarUltimasIdeias(){
     lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Sugestões aparecem aqui após o primeiro envio 💜</small></div>`;
   }
 }
+
+/* 🆕 Aceita os dois tipos de chip (tipo + status) */
 function setupSirFiltros(){
   const wrap = $('sirFiltros'); if(!wrap || wrap.dataset.bound) return;
   wrap.dataset.bound = '1';
   wrap.addEventListener('click', e => {
-    const b = e.target.closest('.sir-chip'); if(!b) return;
-    wrap.querySelectorAll('.sir-chip').forEach(c => c.classList.toggle('on', c === b));
-    sirFiltro = b.dataset.filtro || 'all';
+    const btnTipo = e.target.closest('.sir-chip[data-filtro]');
+    const btnStatus = e.target.closest('.sir-chip[data-status]');
+    if(btnTipo){
+      sirFiltro = btnTipo.dataset.filtro || 'all';
+    } else if(btnStatus){
+      sirStatusFiltro = btnStatus.dataset.status || 'all';
+    } else return;
     carregarUltimasIdeias();
   });
 }
@@ -2154,7 +2232,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     aplicarModo(b.dataset.m);
   });
 
-  /* 🆕 chips de status multi + favoritos */
   const chipsEl = $('chips');
   if(chipsEl) chipsEl.addEventListener('click', e => {
     const b = e.target.closest('.chip'); if(!b) return;

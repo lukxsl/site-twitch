@@ -7,8 +7,9 @@ const SESSION_SECRET = process.env.SESSION_SECRET;
 const COOKIE_NAME = 'sessao_site';
 const LIST_KEY = 'sugestoes:lista';
 const MAX_ITENS = 200;
-const MAX_TEXTO = 300;
-const AUTO_TRANSICAO_MS = 90 * 1000; // 90 segundos
+const MAX_TEXTO = 200;
+const MIN_TEXTO = 10;
+const AUTO_TRANSICAO_MS = 90 * 1000;
 
 async function redis(cmds){
   const r = await fetch(`${URL_}/pipeline`, {
@@ -62,6 +63,35 @@ function tipoConfig(categoria){
   if(t.includes('jogo'))     return { key:'jogo',     cor: 0x3b82f6, icone: '🎮', titulo: 'Nova sugestão de jogo', label: 'Jogo' };
   if(t.includes('feedback')) return { key:'feedback', cor: 0x10b981, icone: '💬', titulo: 'Novo feedback',         label: 'Feedback' };
   return { key:'sugestao', cor: 0xa855f7, icone: '💡', titulo: 'Nova ideia', label: 'Sugestão' };
+}
+
+/* 🆕 Validação anti-flood */
+function validarTexto(msg){
+  const t = String(msg || '').trim();
+
+  if(t.length < MIN_TEXTO) return `Escreva pelo menos ${MIN_TEXTO} caracteres`;
+
+  // 1) Caractere repetido 8+ vezes seguidas (ex: "AAAAAAAA", "!!!!!!!")
+  if(/(.)\1{7,}/.test(t)) return 'Evite repetir o mesmo caractere várias vezes';
+
+  const semEspaco = t.replace(/\s+/g, '');
+  const unicos = new Set(semEspaco).size;
+
+  // 2) Variedade de caracteres
+  if(semEspaco.length > 15 && unicos < 6) return 'Texto muito repetitivo, escreve uma ideia de verdade 💜';
+
+  // 3) Variedade de palavras
+  const palavras = t.toLowerCase().split(/\s+/).filter(Boolean);
+  if(palavras.length > 5){
+    const unicas = new Set(palavras).size;
+    if(unicas / palavras.length < 0.3) return 'Texto muito repetitivo, escreve uma ideia de verdade 💜';
+  }
+
+  // 4) Sequência monótona (ex: "abcdefgh", "12345678")
+  if(/^(.)\1*$/.test(semEspaco)) return 'Texto muito repetitivo';
+  if(/^(0123456789|abcdefghij|abcdefghijklmnopqrstuvwxyz)+$/i.test(semEspaco)) return 'Texto muito repetitivo';
+
+  return null;
 }
 
 /* Aplica auto-transição: nova -> analise após 90s */
@@ -123,6 +153,10 @@ export default async function handler(req, res){
 
   if (!msg) return res.status(400).json({ error: 'Escreva uma sugestão' });
   if (msg.length > MAX_TEXTO) return res.status(400).json({ error: `Mensagem muito longa (máx ${MAX_TEXTO})` });
+
+  /* 🆕 Validação anti-flood */
+  const erroValidacao = validarTexto(msg);
+  if(erroValidacao) return res.status(400).json({ error: erroValidacao });
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
 

@@ -604,8 +604,8 @@
             <div>
               <label for="sugTexto">Mensagem</label>
               <div class="sug-textarea-wrap">
-                <textarea id="sugTexto" rows="4" maxlength="300" placeholder="Escreva sua sugestão, ideia, feedback ou bug..."></textarea>
-                <span class="sug-counter" id="sugCounter">0 / 300</span>
+                <textarea id="sugTexto" rows="4" maxlength="200" placeholder="Escreva sua sugestão, ideia, feedback ou bug..."></textarea>
+                <span class="sug-counter" id="sugCounter">0 / 200</span>
               </div>
             </div>
             <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
@@ -626,17 +626,8 @@
           <div class="sir-head">
             <div class="sir-head-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;width:100%">
               <span class="sir-kicker">💡 Últimas ideias</span>
-              <div class="sir-filtros" id="sirFiltros">
-                <button type="button" class="sir-chip on" data-filtro="all">Todas</button>
-              </div>
             </div>
-            <div class="sir-legenda" title="Cada ideia tem um status.">
-              <span title="Acabou de chegar">🟡 Nova</span>
-              <span title="A Soso viu e tá pensando">👀 Em análise</span>
-              <span title="Vai rolar!">✅ Aceita</span>
-              <span title="Não vai rolar (com motivo)">❌ Recusada</span>
-              <span title="Finalizado">🏁 Finalizado</span>
-            </div>
+            <div class="sir-filtros" id="sirFiltros"></div>
           </div>
           <div class="sir-lista" id="sirLista">
             <div class="sir-empty">

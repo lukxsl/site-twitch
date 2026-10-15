@@ -1278,3 +1278,71 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
   .podium-card{flex-direction:row;text-align:left;align-items:center}
   .podium-medal{position:static;margin-right:4px}
 }
+
+/* ============================================================
+   🆕 LEGENDA DE STATUS — chips clicáveis
+   ============================================================ */
+.sir-filtros{display:flex;flex-direction:column;gap:8px;width:100%}
+.sir-filtros-grupo{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sir-filtros-status{padding-top:6px;border-top:1px dashed var(--line)}
+
+.sir-status-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px 5px 8px;
+  border-radius:99px;
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--line);
+  color:var(--mute);
+  font-family:inherit;font-size:.72rem;font-weight:700;
+  cursor:pointer;transition:.2s var(--ease);
+}
+.sir-status-chip:hover{
+  color:var(--white);
+  border-color:var(--line-2);
+  background:rgba(168,85,247,.08);
+}
+.sir-status-chip.on{
+  background:linear-gradient(135deg,var(--purple-2),var(--purple-3));
+  border-color:transparent;color:#fff;
+  box-shadow:0 4px 12px -2px rgba(168,85,247,.5);
+}
+.sir-status-chip .sic-ic{font-size:.8rem;line-height:1}
+.sir-status-chip .sic-lb{font-weight:700}
+.sir-status-chip .sic-count{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.62rem;font-weight:800;
+  padding:1px 6px;border-radius:99px;
+  background:rgba(255,255,255,.08);
+  color:inherit;
+}
+.sir-status-chip.on .sic-count{background:rgba(0,0,0,.25)}
+
+/* Esconde o cabeçalho antigo da legenda */
+.sir-legenda{display:none !important}
+
+/* ============================================================
+   🆕 VOTAÇÃO VAZIA
+   ============================================================ */
+.voto-vazio{
+  grid-column:1 / -1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;padding:36px 24px;text-align:center;
+  background:radial-gradient(circle at 50% 0%,rgba(168,85,247,.14),transparent 65%),rgba(255,255,255,.02);
+  border:1px dashed var(--line-2);
+  border-radius:var(--r-lg);
+}
+.voto-vazio .vv-emoji{
+  font-size:2.6rem;line-height:1;opacity:.75;
+  filter:drop-shadow(0 6px 14px rgba(168,85,247,.4));
+}
+.voto-vazio b{
+  color:var(--white);
+  font-size:1.05rem;
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+}
+.voto-vazio p{
+  color:var(--mute);
+  font-size:.86rem;line-height:1.55;
+  max-width:400px;
+}
+.voto-vazio .btn{margin-top:6px}
