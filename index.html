@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/setup.css">
 <link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/tierlist.css">
 </head>
 <body>
 
@@ -296,13 +297,15 @@
     </div>
   </header>
 
-  <!-- PÓDIO TOP 3 -->
+  <div class="tl-insights reveal" id="tlInsights"></div>
+
   <div class="podium reveal" id="podium" style="display:none"></div>
 
   <div class="tools reveal">
     <div class="search-wrap">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
-      <input class="search" id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo">
+      <input class="search" id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo" autocomplete="off">
+      <div class="autocomplete" id="autocomplete" role="listbox"></div>
     </div>
 
     <div class="sort-wrap">
@@ -312,23 +315,53 @@
         <option value="horas">Horas jogadas</option>
         <option value="nome">Nome (A → Z)</option>
         <option value="recentes">Adicionados recentemente</option>
+        <option value="favoritos">⭐ Favoritos primeiro</option>
       </select>
     </div>
+
+    <button class="tl-roll-btn" id="btnRoleta" type="button" title="Escolhe um aleatório dentro dos filtros atuais">🎲 Surpreenda-me</button>
 
     <span class="tl-contador" id="tlContador">—</span>
   </div>
 
-  <!-- CHIPS DE GÊNERO -->
-  <div class="genero-chips reveal" id="generoChips"></div>
-
-  <div class="chips reveal" id="chips"></div>
+  <div class="tl-filters reveal">
+    <div class="tl-filter-row">
+      <span class="tl-filter-label">Status</span>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="tl-filter-row">
+      <span class="tl-filter-label">Gênero</span>
+      <div class="genero-chips" id="generoChips"></div>
+    </div>
+  </div>
 
   <section class="stats" id="stats" aria-label="Resumo"></section>
 
-  <div class="drag-hint">🖱️ Arraste os cards entre os tiers para reorganizar</div>
+  <div class="drag-hint">
+    🖱️ Arraste entre tiers · selecione um card e use <kbd>S</kbd><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>N</kbd> pra mover · <kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz
+  </div>
   <section id="tiers"></section>
   <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB.</p>
 </section>
+
+<dialog id="roletaDlg" class="roleta-dlg">
+  <div class="roleta-body">
+    <span class="roleta-kicker">🎲 Surpreenda-me</span>
+    <h3>Deixa o destino escolher…</h3>
+    <div class="roleta-slot" id="roletaSlot">
+      <div class="roleta-slot-ph">🎮</div>
+    </div>
+    <div class="roleta-info" id="roletaInfo" style="display:none">
+      <b id="roletaNome">—</b>
+      <span id="roletaMeta"></span>
+    </div>
+    <p class="roleta-desc" id="roletaDesc">Sorteando um item da Tier List…</p>
+    <div class="roleta-actions">
+      <button class="btn ghost" id="roletaFechar" type="button">Fechar</button>
+      <button class="btn" id="roletaNovamente" type="button">🔁 Rodar de novo</button>
+    </div>
+  </div>
+</dialog>
 
 <!-- ==================== COMUNIDADE ==================== -->
 <section id="sec-comunidade" class="page-section">

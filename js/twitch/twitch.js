@@ -4,6 +4,119 @@
 const FORCAR_REPRISE_NA_TWITCH = true;
 let canalMature = FORCAR_REPRISE_NA_TWITCH;
 
+/* ============================================================
+   🆕 FOCO — Último jogo / Jogo ao vivo
+   Faz match com JOGOS[] pra puxar capa/nota/tier/horas.
+   ============================================================ */
+function atualizarFoco(game, isLive){
+  const cover = document.getElementById('focoCover');
+  const nome  = document.getElementById('focoNome');
+  const meta  = document.getElementById('focoMeta');
+  const horas = document.getElementById('focoHoras');
+  const label = document.getElementById('focoLabel');
+  const link  = document.getElementById('focoTwitchLink');
+  const bar   = document.getElementById('focoBar');
+  const barI  = document.getElementById('focoBarI');
+  const pct   = document.getElementById('focoPct');
+  if(!cover || !nome) return;
+
+  ultGame = game || null;
+  ultVivo = !!isLive;
+
+  // ---- Sem jogo ----
+  if(!game || !game.name){
+    cover.classList.remove('skeleton');
+    cover.removeAttribute('src');
+    cover.style.display = 'none';
+    nome.textContent = isLive ? 'Live sem categoria' : 'Sem jogo recente';
+    if(label) label.textContent = isLive ? '🎮 Jogando agora' : '🎮 Último jogo jogado';
+    if(meta) meta.innerHTML = '';
+    if(horas) horas.textContent = isLive
+      ? 'Sem categoria definida na Twitch.'
+      : 'Quando a Soso jogar, aparece aqui. 💜';
+    if(link) link.style.display = 'none';
+    if(bar) bar.style.display = 'none';
+    return;
+  }
+
+  // ---- Match na tier list ----
+  const nomeNorm = norm(game.name);
+  const lista = (typeof JOGOS !== 'undefined' ? JOGOS : []);
+  const jogoTL = lista.find(j => norm(j.nome) === nomeNorm);
+
+  const nomeFinal = jogoTL ? jogoTL.nome : game.name;
+  const capaTL     = jogoTL && jogoTL.capa;
+  const capaTwitch = game.box_art || null;
+  const capaSteam  = (jogoTL && jogoTL.appid)
+    ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${jogoTL.appid}/library_600x900.jpg`
+    : null;
+  const capaFinal = capaTL || capaTwitch || capaSteam;
+
+  nome.textContent = nomeFinal;
+  if(label) label.textContent = isLive ? '🎮 Jogando agora' : '🎮 Último jogo jogado';
+
+  if(capaFinal){
+    cover.classList.remove('skeleton');
+    cover.onerror = () => { cover.style.display = 'none'; };
+    cover.src = capaFinal;
+    cover.style.display = 'block';
+  } else {
+    cover.classList.add('skeleton');
+    cover.removeAttribute('src');
+    cover.style.display = 'block';
+  }
+
+  // ---- Chips de meta ----
+  if(meta){
+    const chips = [];
+    if(jogoTL){
+      if(jogoTL.tier && jogoTL.tier !== 'NR') chips.push(`<span class="foco-chip tr">Tier ${esc(jogoTL.tier)}</span>`);
+      if(jogoTL.nota > 0) chips.push(`<span class="foco-chip">⭐ ${n1(jogoTL.nota)}</span>`);
+      if(jogoTL.status) chips.push(`<span class="foco-chip">${esc(jogoTL.status)}</span>`);
+      if(jogoTL.horas > 0) chips.push(`<span class="foco-chip">⏱ ${fh(jogoTL.horas)}</span>`);
+    } else {
+      chips.push(`<span class="foco-chip">Novo na biblioteca</span>`);
+    }
+    meta.innerHTML = chips.join('');
+  }
+
+  // ---- Linha de horas/extra ----
+  if(horas){
+    if(jogoTL && jogoTL.horas > 0){
+      const cq = (jogoTL.conquistas && jogoTL.conquistas.total)
+        ? ` · 🏆 ${jogoTL.conquistas.obtidas}/${jogoTL.conquistas.total}`
+        : (jogoTL.status ? ` · ${jogoTL.status}` : '');
+      horas.textContent = `${fh(jogoTL.horas)} jogadas${cq}`;
+    } else {
+      horas.textContent = isLive
+        ? 'Assistindo agora na Twitch 💜'
+        : 'Sem dados extras na tier list ainda.';
+    }
+  }
+
+  // ---- Barra de progresso (conquistas) ----
+  if(bar && barI && pct){
+    if(jogoTL && jogoTL.conquistas && jogoTL.conquistas.total > 0){
+      const p = Math.round((jogoTL.conquistas.obtidas / jogoTL.conquistas.total) * 100);
+      bar.style.display = '';
+      barI.style.width = p + '%';
+      pct.textContent = p + '%';
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
+  // ---- Link Twitch ----
+  if(link){
+    link.style.display = isLive ? '' : 'none';
+    link.href = 'https://www.twitch.tv/asemtet0';
+  }
+}
+window.atualizarFoco = atualizarFoco;
+
+/* ============================================================
+   VOD / REPRISE
+   ============================================================ */
 function assistirVod(v){
   v = v || vodAtual; if (!v) return;
   vodAtual = v;
@@ -66,10 +179,8 @@ function _atualizarProfileStatus(isLive, data){
     el.classList.toggle('online', !!isLive);
     el.title = isLive ? '🟢 Online agora' : '⚫ Offline';
   }
-
   const dyn = document.getElementById('profileStatusDinamica');
   if(!dyn) return;
-
   if(isLive){
     const jogo = (data && data.stream && data.stream.game_name) ? data.stream.game_name : null;
     dyn.className = 'profile-status-dinamica online';
@@ -274,7 +385,6 @@ async function verificarStatusTwitch() {
     if(fbVod) fbVod.style.display = assistindoVod ? '' : 'none';
 
     atualizarFoco(data.game, !!data.stream);
-    // 🆕 Avisa a tier list qual jogo tá rolando agora
     if(typeof window.setJogoAoVivo === 'function'){
       window.setJogoAoVivo(data.stream && data.game ? data.game.name : null);
     }

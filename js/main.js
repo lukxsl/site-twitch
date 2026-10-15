@@ -66,7 +66,9 @@ let ADMIN_MULTISEL = { ativo: false, ids: new Set() };
 let vodAtual = null, assistindoVod = false;
 let videosTw = [];
 let inicioLive = null;
-let modo = 'jogos', filtro = 'Todos';
+let modo = 'jogos';
+let filtro = [];          // 🆕 array multi
+let favoritosFiltro = false; // 🆕
 let CONFIG_GERAL = {
   aviso: null, donate: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, top3: [], hall: [], votosFechamento: null
 };
@@ -83,9 +85,9 @@ let HALL_DADOS = null;
 let HALL_ABA = 'gift';
 let HALL_TIMER = null;
 
-/* 🆕 Tier List V2 */
+/* 🆕 Tier List V3 */
 let sortMode = 'nota';
-let generoFiltro = 'all';
+let generoFiltro = [];     // 🆕 array multi
 let _jogoAoVivoNome = null;
 let _roletaRodando = false;
 
@@ -223,7 +225,6 @@ function renderRecado(){
         : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
     }
   }
-
   const card = $('recadoCard');
   const texto = $('recadoTexto');
   if(card && texto){
@@ -693,7 +694,7 @@ function renderComandos(filtroTxt = ''){
 }
 
 /* ============================================================
-   TIER LIST V2
+   TIER LIST V3
    ============================================================ */
 const TIERS = ['S','A','B','C'];
 const JOGOS_FALLBACK = [
@@ -710,6 +711,10 @@ const FILMES_FALLBACK = [
     capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
     comentario:'As reservas naturais da Terra estão chegando ao fim.', generos:['Ficção'] }
 ];
+
+const PLATAFORMA_ICONE = {
+  steam:'🎮', epic:'🕹️', ps:'🅿️', xbox:'❎', switch:'🔴', nintendo:'🔴', gog:'💾'
+};
 
 async function carregarBiblioteca(){
   try{
@@ -743,6 +748,30 @@ const MODOS = {
 const LISTA = () => MODOS[modo].lista;
 const fh = h => (Math.round(h * 10) / 10).toLocaleString('pt-BR') + 'h';
 
+/* ---------- Undo ---------- */
+const UNDO_STACK = [];
+const UNDO_MAX = 5;
+function pushUndo(snapshot){
+  UNDO_STACK.push(snapshot);
+  if(UNDO_STACK.length > UNDO_MAX) UNDO_STACK.shift();
+}
+async function desfazerUltima(){
+  if(!UNDO_STACK.length){ toast('Nada pra desfazer', 'warn'); return; }
+  const snap = UNDO_STACK.pop();
+  if(snap.jogos) JOGOS = snap.jogos;
+  if(snap.filmes) FILMES = snap.filmes;
+  desenharStats(); desenhar();
+  try{
+    await fetch('/api/admin?action=tierlist-set', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ jogos: JOGOS, filmes: FILMES, logAcao: 'Desfez última ação (undo)' })
+    });
+  }catch(e){}
+  toast('↩️ Desfeito', 'ok');
+}
+window.desfazerUltima = desfazerUltima;
+
+/* ---------- Stats ---------- */
 function desenharStats(){
   const m = MODOS[modo], L = m.lista, cn = L.filter(j => j.nota > 0);
   const media = cn.length ? cn.reduce((a,j) => a + j.nota, 0) / cn.length : 0;
@@ -754,23 +783,83 @@ function desenharStats(){
     const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
     totalLabel = hs.toLocaleString('pt-BR');
   }
+  const feitos = L.filter(j => j.status === m.feito).length;
+  const pctFeitos = L.length ? Math.round((feitos / L.length) * 100) : 0;
   const el = $('stats'); if(!el) return;
   const dados = [
     [L.length, m.plural + ' na lista'],
     [totalLabel, m.hrs],
     [media ? n1(media) : '—', 'média das notas'],
-    [L.filter(j => j.status === m.feito).length, m.l4]
+    [feitos + (L.length ? ` (${pctFeitos}%)` : ''), m.l4]
   ];
   el.innerHTML = dados.map(x => `<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
   const bEls = el.querySelectorAll('.stat b');
   if(bEls[0] && !isNaN(Number(dados[0][0]))) animarNumero(bEls[0], Number(dados[0][0]));
-  if(bEls[3] && !isNaN(Number(dados[3][0]))) animarNumero(bEls[3], Number(dados[3][0]));
-
+  if(bEls[3]){
+    const num = parseInt(String(dados[3][0]), 10);
+    if(!isNaN(num)) animarNumero(bEls[3], num);
+  }
   renderPodium();
   renderGeneroChips();
+  renderInsights();
 }
 
-/* ---------- Pódio Top 3 ---------- */
+function renderInsights(){
+  const wrap = $('tlInsights'); if(!wrap) return;
+  const L = LISTA();
+  if(!L.length){ wrap.innerHTML = ''; return; }
+
+  const dist = { S:0, A:0, B:0, C:0, NR:0 };
+  L.forEach(j => {
+    const t = (j.tier && j.tier !== 'NR') ? j.tier : 'NR';
+    if(dist[t] !== undefined) dist[t]++;
+  });
+  const max = Math.max(1, ...Object.values(dist));
+  const distHTML = ['S','A','B','C','NR'].map(t => {
+    const n = dist[t];
+    const w = Math.round((n / max) * 100);
+    const key = t === 'NR' ? '?' : t;
+    return `
+      <div class="tl-dist-row" data-tier="${t}">
+        <span class="tl-dist-key">${key}</span>
+        <div class="tl-dist-bar"><i style="width:${w}%"></i></div>
+        <span class="tl-dist-num">${n} ${n === 1 ? 'item' : 'itens'}</span>
+      </div>`;
+  }).join('');
+
+  const gc = {};
+  L.forEach(j => (j.generos || []).forEach(g => {
+    const k = String(g).trim();
+    if(!k) return;
+    gc[k] = (gc[k] || 0) + 1;
+  }));
+  const topGen = Object.entries(gc).sort((a,b) => b[1] - a[1]).slice(0, 3);
+
+  const totalHoras = modo === 'jogos' ? Math.round(L.reduce((a,j) => a + (j.horas || 0), 0)) : 0;
+  const totalMin = modo === 'filmes' ? L.reduce((a,j) => a + (j.duracao || 0), 0) : 0;
+  const favoritos = L.filter(j => j.favorito).length;
+
+  const statsHTML = `
+    <div class="tl-insight-line"><span>📦 Total</span><b>${L.length}</b></div>
+    ${modo === 'jogos' ? `<div class="tl-insight-line"><span>⏱️ Horas</span><b>${totalHoras.toLocaleString('pt-BR')}h</b></div>` : ''}
+    ${modo === 'filmes' && totalMin ? `<div class="tl-insight-line"><span>⏱️ Duração</span><b>${fmtDuracao(totalMin)}</b></div>` : ''}
+    ${favoritos ? `<div class="tl-insight-line"><span>⭐ Favoritos</span><b>${favoritos}</b></div>` : ''}
+    ${topGen.map(([g, n]) => `<div class="tl-insight-line"><span>🎭 ${esc(g)}</span><b>${n}</b></div>`).join('')}
+  `;
+
+  wrap.innerHTML = `
+    <div class="tl-insight-card">
+      <h4>📊 Distribuição por tier</h4>
+      <div class="tl-dist">${distHTML}</div>
+    </div>
+    <div class="tl-insight-card">
+      <h4>✨ Destaques</h4>
+      <div class="tl-insight-stats">${statsHTML}</div>
+    </div>
+  `;
+}
+
+/* ---------- Pódio ---------- */
 function renderPodium(){
   const wrap = $('podium'); if(!wrap) return;
   const L = LISTA().filter(j => j.nota > 0);
@@ -833,12 +922,13 @@ function renderGeneroChips(){
     if(/fantasia/.test(t)) return '🧙';
     return '🎮';
   };
+  const ativos = Array.isArray(generoFiltro) ? generoFiltro : (generoFiltro === 'all' ? [] : [generoFiltro]);
   wrap.innerHTML = `
-    <button type="button" class="gen-chip ${generoFiltro === 'all' ? 'on' : ''}" data-gen="all">
+    <button type="button" class="gen-chip ${!ativos.length ? 'on' : ''}" data-gen="all">
       Todos <b>${L.length}</b>
     </button>
     ${generos.map(g => `
-      <button type="button" class="gen-chip ${generoFiltro === g ? 'on' : ''}" data-gen="${esc(g)}">
+      <button type="button" class="gen-chip ${ativos.includes(g) ? 'on' : ''}" data-gen="${esc(g)}">
         ${iconeGenero(g)} ${esc(g)} <b>${contagem[g]}</b>
       </button>
     `).join('')}
@@ -847,15 +937,17 @@ function renderGeneroChips(){
 
 /* ---------- Chips de status ---------- */
 function renderChips(){
+  const ativos = Array.isArray(filtro) ? filtro : (filtro === 'Todos' ? [] : [filtro]);
   $('chips').innerHTML = MODOS[modo].status.map(s => {
     const tip = STATUS_TOOLTIP[s] || s;
-    return `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}" title="${esc(tip)}">${s}</button>`;
-  }).join('');
+    const on = s === 'Todos' ? !ativos.length : ativos.includes(s);
+    return `<button class="chip multi ${on ? 'on' : ''}" data-s="${s}" aria-pressed="${on}" title="${esc(tip)}">${s}</button>`;
+  }).join('') + `<button class="chip fav-chip" data-fav="1" aria-pressed="${favoritosFiltro}" title="Só favoritos">⭐ Favoritos</button>`;
 }
 
 function aplicarModo(novo, salvar = true){
   if(!MODOS[novo]) novo = 'jogos';
-  modo = novo; filtro = 'Todos'; generoFiltro = 'all';
+  modo = novo; filtro = []; generoFiltro = []; favoritosFiltro = false;
   $('q').value = '';
   document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x.dataset.m === modo));
   const m = MODOS[modo];
@@ -867,32 +959,51 @@ function aplicarModo(novo, salvar = true){
   if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
 }
 
-/* ---------- Cartão com tilt + tooltip + live ---------- */
+/* ---------- Cartão ---------- */
 function cartao(j,i){
   const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
   const podeArrastar = !!(USUARIO && USUARIO.admin) && !ADMIN_MULTISEL.ativo;
-  const conq = j.conquistas && j.conquistas.total
+  const conq = (j.conquistas && j.conquistas.total)
     ? `<span class="conq">🏆 ${j.conquistas.obtidas}/${j.conquistas.total}</span>` : '';
   const novo = ehNovo(j) ? `<span class="novo">Novo</span>` : '';
-
   const aoVivo = _jogoAoVivoNome && norm(j.nome) === norm(_jogoAoVivoNome);
   const liveBadge = aoVivo ? `<span class="live-now">Ao vivo</span>` : '';
-
   const tooltip = (j.comentario || '').trim()
     ? ` data-tooltip="${esc(j.comentario.slice(0, 180))}${j.comentario.length > 180 ? '…' : ''}"`
     : '';
-
   const tierCls = j.tier && j.tier !== 'NR' ? `t-${j.tier}` : '';
 
+  const statusDot = j.status ? `<span class="status-dot" data-s="${esc(j.status)}" title="${esc(j.status)}"></span>` : '';
+  const platIc = j.plataforma && PLATAFORMA_ICONE[j.plataforma] ? PLATAFORMA_ICONE[j.plataforma] : '';
+  const platHTML = platIc ? `<span class="platform-icon" title="${esc(j.plataforma)}">${platIc}</span>` : '';
+  const progPct = (j.conquistas && j.conquistas.total > 0)
+    ? Math.round((j.conquistas.obtidas / j.conquistas.total) * 100) : 0;
+  const progHTML = (j.status === 'Jogando' && progPct > 0)
+    ? `<span class="progress-mini"><i style="width:${progPct}%"></i></span>` : '';
+  const platina = (j.conquistas && j.conquistas.total > 0 && j.conquistas.obtidas === j.conquistas.total)
+    ? `<span class="platinum" title="100% completado">🏆 100%</span>` : '';
+  const favStar = `<span class="fav-star" aria-hidden="true">⭐</span>`;
+  const favCls = j.favorito ? 'favorito' : '';
+  const generosHTML = (j.generos && j.generos.length)
+    ? `<div class="hi-gen">${j.generos.slice(0, 3).map(g => `<span>${esc(g)}</span>`).join('')}</div>` : '';
+  const sinopse = (j.comentario || j.sinopse || '').trim().slice(0, 120);
+  const sinHTML = sinopse ? `<div class="hi-sin">${esc(sinopse)}${(j.comentario || j.sinopse || '').length > 120 ? '…' : ''}</div>` : '';
+  const hoverInfo = `<div class="hover-info">${generosHTML}${sinHTML}</div>`;
+
   return `
-    <button class="g ${tierCls}" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}"${tooltip}>
+    <button class="g ${tierCls} ${favCls}" data-i="${i}" data-id="${esc(j.id)}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}"${tooltip}>
       <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
         <div class="ph">${esc(ini)}</div>
         ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
-        ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
+        ${statusDot}
+        ${platHTML}
         ${liveBadge}
         ${novo}
         ${j.nota > 0 ? `<span class="nt">⭐ ${n1(j.nota)}</span>` : ''}
+        ${platina}
+        ${progHTML}
+        ${favStar}
+        ${hoverInfo}
       </div>
       <div class="cap">
         <span class="cn">${esc(j.nome)}</span>
@@ -905,7 +1016,6 @@ function cartao(j,i){
 }
 
 function linha(cls, rotulo, lista){
-  const L = LISTA();
   const totalItens = lista.length;
   let resumo = '';
   if(totalItens > 0){
@@ -916,19 +1026,20 @@ function linha(cls, rotulo, lista){
     const somaHoras = modo === 'jogos'
       ? Math.round(lista.reduce((a,j) => a + (j.horas || 0), 0))
       : 0;
-    const partes = [`${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`];
-    if(media) partes.push(`média ${media}`);
-    if(somaHoras > 0) partes.push(`${somaHoras}h`);
+    const partes = [];
+    partes.push(`<b>${totalItens}</b> ${totalItens === 1 ? 'item' : 'itens'}`);
+    if(media) partes.push(`⭐ <b>${media}</b>`);
+    if(somaHoras > 0) partes.push(`⏱ <b>${somaHoras}h</b>`);
     resumo = partes.join(' · ');
   }
   return `
     <div class="tier t-${cls}">
       <div class="label">
         <div>${rotulo}</div>
-        ${resumo ? `<span class="tier-resumo">${esc(resumo)}</span>` : ''}
+        ${resumo ? `<span class="tier-resumo">${resumo}</span>` : ''}
       </div>
       <div class="games">
-        ${lista.length ? lista.map(j => cartao(j, L.indexOf(j))).join('') : `<span class="empty">${MODOS[modo].vazio}</span>`}
+        ${lista.length ? lista.map(j => cartao(j, LISTA().indexOf(j))).join('') : `<span class="empty">${MODOS[modo].vazio}</span>`}
       </div>
     </div>
   `;
@@ -938,7 +1049,6 @@ function linha(cls, rotulo, lista){
 function setupCardTiltTier(){
   if(matchMedia('(max-width: 960px)').matches) return;
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
   document.querySelectorAll('#tiers .g').forEach(card => {
     if(card.dataset.tiltBound === '1') return;
     card.dataset.tiltBound = '1';
@@ -970,7 +1080,7 @@ function setupDragDrop(){
   document.querySelectorAll('.g').forEach(el => {
     el.addEventListener('dragstart', e => {
       const i = Number(el.dataset.i);
-      dragItem = { idx: i, nome: LISTA()[i].nome };
+      dragItem = { idx: i, nome: LISTA()[i].nome, id: LISTA()[i].id, tierOld: LISTA()[i].tier };
       el.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
       try { e.dataTransfer.setData('text/plain', dragItem.nome); } catch(err){}
@@ -1003,6 +1113,7 @@ function setupDragDrop(){
       const item = LISTA()[dragItem.idx];
       if(!item || item.tier === novoTier){ dragItem = null; return; }
       const tierAntigo = item.tier;
+      pushUndo({ jogos: JSON.parse(JSON.stringify(JOGOS)), filmes: JSON.parse(JSON.stringify(FILMES)) });
       item.tier = novoTier;
       desenharStats(); desenhar();
       toast(`✅ "${item.nome}" movido de ${tierAntigo} para ${novoTier}`, 'ok');
@@ -1021,41 +1132,51 @@ function setupDragDrop(){
 /* ---------- Filtros + Ordenação ---------- */
 function _aplicarFiltrosOrdenacao(){
   const q = ($('q')?.value || '').trim().toLowerCase();
+  const ativos = Array.isArray(filtro) ? filtro : (filtro === 'Todos' ? [] : [filtro]);
+  const gens = Array.isArray(generoFiltro) ? generoFiltro : (generoFiltro === 'all' ? [] : [generoFiltro]);
+
   let lista = LISTA().filter(j => {
-    if(filtro !== 'Todos' && j.status !== filtro) return false;
-    if(generoFiltro !== 'all'){
-      const temGen = (j.generos || []).some(g => String(g).toLowerCase() === generoFiltro.toLowerCase());
-      if(!temGen) return false;
+    if(ativos.length && !ativos.includes(j.status)) return false;
+    if(favoritosFiltro && !j.favorito) return false;
+    if(gens.length){
+      const jg = (j.generos || []).map(g => String(g).toLowerCase());
+      const ok = gens.some(g => jg.includes(g.toLowerCase()));
+      if(!ok) return false;
     }
     if(q && !j.nome.toLowerCase().includes(q)) return false;
     return true;
   });
 
-  lista.sort((a,b) => {
-    switch(sortMode){
-      case 'nome':
-        return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
-      case 'horas':
-        return (b.horas || b.duracao || 0) - (a.horas || a.duracao || 0);
-      case 'recentes': {
-        const ta = a.adicionadoEm ? new Date(a.adicionadoEm).getTime() : 0;
-        const tb = b.adicionadoEm ? new Date(b.adicionadoEm).getTime() : 0;
-        return tb - ta;
-      }
-      case 'nota':
-      default:
-        return (b.nota || 0) - (a.nota || 0) || (b.horas || 0) - (a.horas || 0);
-    }
-  });
+  const cmp = {
+    nome: (a,b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }),
+    horas: (a,b) => (b.horas || b.duracao || 0) - (a.horas || a.duracao || 0),
+    recentes: (a,b) => {
+      const ta = a.adicionadoEm ? new Date(a.adicionadoEm).getTime() : 0;
+      const tb = b.adicionadoEm ? new Date(b.adicionadoEm).getTime() : 0;
+      return tb - ta;
+    },
+    favoritos: (a,b) => (b.favorito?1:0) - (a.favorito?1:0),
+    nota: (a,b) => (b.nota || 0) - (a.nota || 0)
+  };
+  const prim = cmp[sortMode] || cmp.nota;
+  const sec = (sortMode === 'nota' || sortMode === 'favoritos') ? cmp.horas : cmp.nota;
 
+  lista.sort((a,b) => prim(a,b) || sec(a,b));
   return lista;
 }
 
 function desenhar(){
   const el = $('tiers'); if(!el) return;
   const lista = _aplicarFiltrosOrdenacao();
+  const total = LISTA().length;
 
-  if(!lista.length && !LISTA().length){
+  const cont = $('tlContador');
+  if(cont){
+    cont.innerHTML = `<b>${lista.length}</b> de ${total} ${total === 1 ? 'item' : 'itens'}`;
+    cont.style.display = total ? '' : 'none';
+  }
+
+  if(!lista.length && !total){
     el.innerHTML = TIERS.map(t => `
       <div class="tier t-${t}">
         <div class="label"><div>${t}</div></div>
@@ -1077,15 +1198,12 @@ function desenhar(){
   setTimeout(setupCardTiltTier, 30);
 }
 
-/* ---------- ROLETA "Surpreenda-me" ---------- */
+/* ---------- Roleta ---------- */
 function abrirRoleta(){
   const dlg = $('roletaDlg');
   if(!dlg) return;
   const lista = _aplicarFiltrosOrdenacao();
-  if(!lista.length){
-    toast('Nada pra sortear com esses filtros 😢', 'warn');
-    return;
-  }
+  if(!lista.length){ toast('Nada pra sortear com esses filtros 😢', 'warn'); return; }
   dlg.showModal();
   rodarRoleta(lista);
 }
@@ -1099,11 +1217,12 @@ function rodarRoleta(lista){
   const nomeEl = $('roletaNome');
   const metaEl = $('roletaMeta');
   const desc = $('roletaDesc');
+  if(!slot) return;
 
   slot.classList.add('rolling');
   slot.classList.remove('done');
-  info.style.display = 'none';
-  desc.textContent = 'Sorteando um item da Tier List…';
+  if(info) info.style.display = 'none';
+  if(desc) desc.textContent = 'Sorteando um item da Tier List…';
 
   const totalRolagens = 22 + Math.floor(Math.random() * 8);
   let contador = 0;
@@ -1117,34 +1236,30 @@ function rodarRoleta(lista){
       slot.innerHTML = `<div class="roleta-slot-ph">🎮</div>`;
     }
     contador++;
-
     if(contador >= totalRolagens){
       clearInterval(interval);
       slot.innerHTML = vencedor.capa
         ? `<img src="${esc(vencedor.capa)}" alt="${esc(vencedor.nome)}" loading="eager">`
         : `<div class="roleta-slot-ph">🎮</div>`;
-
       slot.classList.remove('rolling');
       slot.classList.add('done');
-      desc.textContent = '🎉 O escolhido foi…';
-
-      nomeEl.textContent = vencedor.nome;
+      if(desc) desc.textContent = '🎉 O escolhido foi…';
+      if(nomeEl) nomeEl.textContent = vencedor.nome;
       const partes = [];
       if(vencedor.tier && vencedor.tier !== 'NR') partes.push(`Tier ${vencedor.tier}`);
       if(vencedor.nota > 0) partes.push(`⭐ ${n1(vencedor.nota)}`);
       if(modo === 'jogos' && vencedor.horas > 0) partes.push(`${fh(vencedor.horas)}`);
       if(vencedor.status) partes.push(vencedor.status);
-      metaEl.textContent = partes.join(' · ');
-      info.style.display = '';
-
-      setTimeout(() => { _destacarVencedor(vencedor); }, 400);
+      if(metaEl) metaEl.textContent = partes.join(' · ');
+      if(info) info.style.display = '';
+      setTimeout(() => _destacarVencedor(vencedor), 400);
       _roletaRodando = false;
     }
   }, 80);
 }
 
 function _destacarVencedor(vencedor){
-  const card = document.querySelector(`.g[data-i="${LISTA().indexOf(vencedor)}"]`);
+  const card = document.querySelector(`.g[data-id="${CSS.escape(String(vencedor.id))}"]`);
   if(!card) return;
   card.style.transition = 'box-shadow .3s, transform .3s';
   card.style.boxShadow = '0 0 0 3px #ffd166, 0 20px 40px -8px rgba(255,209,102,.7)';
@@ -1159,16 +1274,142 @@ function setupRoleta(){
   const btn = $('btnRoleta'); if(!btn || btn.dataset.bound) return;
   btn.dataset.bound = '1';
   btn.addEventListener('click', abrirRoleta);
-
   const dlg = $('roletaDlg'); if(!dlg) return;
-  $('roletaFechar').addEventListener('click', () => dlg.close());
+  $('roletaFechar')?.addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
-  $('roletaNovamente').addEventListener('click', () => {
+  $('roletaNovamente')?.addEventListener('click', () => {
     if(_roletaRodando) return;
     rodarRoleta(_aplicarFiltrosOrdenacao());
   });
 }
 
+/* ---------- Autocomplete ---------- */
+function setupAutocomplete(){
+  const input = $('q'); const box = $('autocomplete');
+  if(!input || !box || input.dataset.acBound) return;
+  input.dataset.acBound = '1';
+
+  let acIndex = -1;
+  const fechar = () => { box.classList.remove('on'); acIndex = -1; box.innerHTML = ''; };
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    if(q.length < 2){ fechar(); return; }
+    const L = LISTA().filter(j => j.nome.toLowerCase().includes(q)).slice(0, 6);
+    if(!L.length){ fechar(); return; }
+    box.innerHTML = L.map((j, i) => `
+      <div class="ac-item" data-nome="${esc(j.nome)}" data-i="${i}">
+        ${j.capa ? `<img class="ac-capa" src="${esc(j.capa)}" alt="" onerror="this.remove()">` : ''}
+        <div class="ac-info">
+          <div class="ac-nome">${esc(j.nome)}</div>
+          <div class="ac-meta">${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '')} ${j.nota > 0 ? '· ⭐ ' + n1(j.nota) : ''}</div>
+        </div>
+        <span class="ac-tier">${j.tier === 'NR' ? '?' : j.tier}</span>
+      </div>
+    `).join('');
+    box.classList.add('on');
+    acIndex = -1;
+  });
+
+  input.addEventListener('keydown', e => {
+    const items = box.querySelectorAll('.ac-item');
+    if(!items.length) return;
+    if(e.key === 'ArrowDown'){ e.preventDefault(); acIndex = Math.min(items.length - 1, acIndex + 1); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); acIndex = Math.max(0, acIndex - 1); }
+    else if(e.key === 'Enter' && acIndex >= 0){ e.preventDefault(); items[acIndex].click(); return; }
+    else if(e.key === 'Escape'){ fechar(); return; }
+    items.forEach((it, i) => it.classList.toggle('on', i === acIndex));
+  });
+
+  box.addEventListener('click', e => {
+    const it = e.target.closest('.ac-item'); if(!it) return;
+    input.value = it.dataset.nome;
+    fechar();
+    desenhar();
+    setTimeout(() => {
+      const card = [...document.querySelectorAll('#tiers .g')].find(c => c.getAttribute('aria-label') === it.dataset.nome);
+      if(card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+  });
+
+  document.addEventListener('click', e => {
+    if(!box.contains(e.target) && e.target !== input) fechar();
+  });
+}
+
+/* ---------- Atalhos de teclado ---------- */
+function setupKeyboardShortcuts(){
+  if(document.body.dataset.kbBound) return;
+  document.body.dataset.kbBound = '1';
+  let selectedId = null;
+
+  document.addEventListener('click', e => {
+    const card = e.target.closest('#tiers .g');
+    if(!card) return;
+    if(!USUARIO || !USUARIO.admin) return;
+    if(e.ctrlKey || e.metaKey) return;
+    document.querySelectorAll('#tiers .g.kb-selected').forEach(c => c.classList.remove('kb-selected'));
+    card.classList.add('kb-selected');
+    selectedId = card.dataset.id;
+  });
+
+  document.addEventListener('keydown', e => {
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){
+      if(!USUARIO || !USUARIO.admin) return;
+      e.preventDefault();
+      desfazerUltima();
+      return;
+    }
+    if(!USUARIO || !USUARIO.admin) return;
+    if(!selectedId) return;
+    if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+
+    const map = { s:'S', a:'A', b:'B', c:'C', n:'NR' };
+    const key = e.key.toLowerCase();
+    if(!map[key]) return;
+    const novoTier = map[key];
+    const item = LISTA().find(j => String(j.id) === selectedId);
+    if(!item || item.tier === novoTier) return;
+    e.preventDefault();
+    pushUndo({ jogos: JSON.parse(JSON.stringify(JOGOS)), filmes: JSON.parse(JSON.stringify(FILMES)) });
+    const old = item.tier;
+    item.tier = novoTier;
+    desenharStats(); desenhar();
+    toast(`✅ "${item.nome}": ${old} → ${novoTier}`, 'ok');
+    fetch('/api/admin?action=tierlist-set', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ jogos: JOGOS, filmes: FILMES, logAcao:`Teclado: moveu "${item.nome}" de ${old} pra ${novoTier}` })
+    }).catch(() => {});
+    setTimeout(() => {
+      const card = document.querySelector(`#tiers .g[data-id="${CSS.escape(selectedId)}"]`);
+      if(card) card.classList.add('kb-selected');
+    }, 60);
+  });
+}
+
+/* ---------- Favorito via contexto ---------- */
+function setupFavoritoContext(){
+  if(document.body.dataset.favBound) return;
+  document.body.dataset.favBound = '1';
+  document.addEventListener('contextmenu', e => {
+    const card = e.target.closest('#tiers .g');
+    if(!card) return;
+    if(!USUARIO || !USUARIO.admin) return;
+    e.preventDefault();
+    const id = card.dataset.id;
+    const item = LISTA().find(j => String(j.id) === id);
+    if(!item) return;
+    item.favorito = !item.favorito;
+    card.classList.toggle('favorito', item.favorito);
+    toast(item.favorito ? `⭐ "${item.nome}" favoritado` : `"${item.nome}" desfavoritado`, 'ok');
+    fetch('/api/admin?action=tierlist-set', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ jogos: JOGOS, filmes: FILMES, logAcao: `${item.favorito ? 'Favoritou' : 'Desfavoritou'} "${item.nome}"` })
+    }).catch(() => {});
+  });
+}
+
+/* ---------- Setup geral da tier list ---------- */
 function setupTierList(){
   const sel = $('sortSelect'); if(sel && !sel.dataset.bound){
     sel.dataset.bound = '1';
@@ -1187,17 +1428,26 @@ function setupTierList(){
     wrap.dataset.bound = '1';
     wrap.addEventListener('click', e => {
       const b = e.target.closest('.gen-chip'); if(!b) return;
-      generoFiltro = b.dataset.gen || 'all';
+      const g = b.dataset.gen;
+      if(g === 'all'){ generoFiltro = []; }
+      else {
+        if(!Array.isArray(generoFiltro)) generoFiltro = [];
+        const idx = generoFiltro.indexOf(g);
+        if(idx >= 0) generoFiltro.splice(idx, 1);
+        else generoFiltro.push(g);
+      }
       renderGeneroChips();
       desenhar();
     });
   }
 
   setupRoleta();
+  setupAutocomplete();
+  setupKeyboardShortcuts();
+  setupFavoritoContext();
 }
 window.setupTierList = setupTierList;
 
-/* ---------- Jogo ao vivo (chamado pelo twitch.js) ---------- */
 window.setJogoAoVivo = function(nome){
   _jogoAoVivoNome = nome || null;
   if(document.getElementById('sec-tierlist')?.classList.contains('ativo')){
@@ -1537,11 +1787,9 @@ function setupSugForm(){
       const sel = $('sugTipo'); if(sel) sel.value = sugTipoAtual;
     });
   });
-
   const ta = $('sugTexto');
   const counter = $('sugCounter');
   const btn = $('sugBtn');
-
   function atualizarContador(){
     if(!counter || !ta) return;
     const n = ta.value.length;
@@ -1905,15 +2153,33 @@ window.addEventListener('DOMContentLoaded', async () => {
     if(!b || b.dataset.m === modo) return;
     aplicarModo(b.dataset.m);
   });
+
+  /* 🆕 chips de status multi + favoritos */
   const chipsEl = $('chips');
   if(chipsEl) chipsEl.addEventListener('click', e => {
     const b = e.target.closest('.chip'); if(!b) return;
-    filtro = b.dataset.s;
-    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.s === filtro));
+    if(b.dataset.fav){
+      favoritosFiltro = !favoritosFiltro;
+      renderChips();
+      desenhar();
+      return;
+    }
+    const s = b.dataset.s;
+    if(s === 'Todos'){ filtro = []; }
+    else {
+      if(!Array.isArray(filtro)) filtro = [];
+      const idx = filtro.indexOf(s);
+      if(idx >= 0) filtro.splice(idx, 1);
+      else filtro.push(s);
+    }
+    renderChips();
     desenhar();
   });
+
   const qEl = $('q');
-  if(qEl) qEl.addEventListener('input', desenhar);
+  if(qEl) qEl.addEventListener('input', () => {
+    if(!$('autocomplete')?.classList.contains('on')) desenhar();
+  });
 
   try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
 
@@ -1921,8 +2187,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   if(tiersEl) tiersEl.addEventListener('click', e => {
     const b = e.target.closest('.g'); if(!b) return;
     if(b.classList.contains('dragging')) return;
+    if(b.classList.contains('kb-selected')) return;
     const m = MODOS[modo];
     const j = LISTA()[+b.dataset.i];
+    if(!j) return;
     $('dTitle').textContent = j.nome;
     let terceiro = '';
     if (modo === 'jogos') {
