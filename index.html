@@ -286,79 +286,79 @@
 </section>
 
 <!-- ==================== TIER LIST ==================== -->
-<section id="sec-tierlist" class="page-section">
-  <header class="section-header reveal">
-    <span class="section-kicker">📚 Biblioteca</span>
-    <h1 id="tlTitulo">Tier List de Jogos</h1>
-    <p id="tlSub">Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior. Clique em um jogo para ver os detalhes.</p>
-    <div class="modo" id="modo">
-      <button class="on" data-m="jogos">🎮 Jogos</button>
-      <button data-m="filmes">🎬 Filmes</button>
+<section id="sec-tierlist" class="page-section tl">
+  <header class="tl-head">
+    <div>
+      <h1 id="tlTitulo">Tier List de Jogos</h1>
+      <p id="tlSub">Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior.</p>
+    </div>
+    <div class="tl-modo" id="modo" role="group" aria-label="Tipo de lista">
+      <button type="button" class="on" data-m="jogos" aria-pressed="true">Jogos</button>
+      <button type="button" data-m="filmes" aria-pressed="false">Filmes</button>
     </div>
   </header>
 
-  <div class="tl-insights reveal" id="tlInsights"></div>
+  <div class="tl-overview" id="stats" aria-label="Resumo da lista"></div>
 
-  <div class="podium reveal" id="podium" style="display:none"></div>
-
-  <div class="tools reveal">
-    <div class="search-wrap">
+  <div class="tl-toolbar">
+    <div class="tl-search">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
-      <input class="search" id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo" autocomplete="off">
-      <div class="autocomplete" id="autocomplete" role="listbox"></div>
+      <input id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar na lista" autocomplete="off">
     </div>
 
-    <div class="sort-wrap">
-      <label for="sortSelect" class="sort-label">↕️ Ordenar:</label>
-      <select class="sort-select" id="sortSelect">
-        <option value="nota">Nota (maior → menor)</option>
-        <option value="horas">Horas jogadas</option>
-        <option value="nome">Nome (A → Z)</option>
+    <label class="tl-select">
+      <span>Ordenar</span>
+      <select id="sortSelect">
+        <option value="nota">Maior nota</option>
+        <option value="horas">Mais horas jogadas</option>
+        <option value="nome">Nome (A–Z)</option>
         <option value="recentes">Adicionados recentemente</option>
-        <option value="favoritos">⭐ Favoritos primeiro</option>
+        <option value="favoritos">Favoritos primeiro</option>
       </select>
-    </div>
+    </label>
 
-    <button class="tl-roll-btn" id="btnRoleta" type="button" title="Escolhe um aleatório dentro dos filtros atuais">🎲 Surpreenda-me</button>
+    <button class="tl-roll" id="btnRoleta" type="button" title="Sorteia um item dentro dos filtros atuais">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>
+      Sortear um
+    </button>
 
-    <span class="tl-contador" id="tlContador">—</span>
+    <span class="tl-count" id="tlContador" aria-live="polite"></span>
   </div>
 
-  <div class="tl-filters reveal">
-    <div class="tl-filter-row">
-      <span class="tl-filter-label">Status</span>
-      <div class="chips" id="chips"></div>
+  <div class="tl-filters">
+    <div class="tl-frow">
+      <span class="tl-flabel">Status</span>
+      <div class="tl-chips" id="chips" role="group" aria-label="Filtrar por status"></div>
     </div>
-    <div class="tl-filter-row">
-      <span class="tl-filter-label">Gênero</span>
-      <div class="genero-chips" id="generoChips"></div>
+    <div class="tl-frow" id="generoRow">
+      <span class="tl-flabel">Gênero</span>
+      <div class="tl-chips" id="generoChips" role="group" aria-label="Filtrar por gênero"></div>
     </div>
   </div>
 
-  <section class="stats" id="stats" aria-label="Resumo"></section>
+  <p class="tl-hint">
+    <span>Arraste um card pra outra tier</span>
+    <span>ou clique nele e aperte <kbd>S</kbd><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>N</kbd></span>
+    <span>botão direito favorita</span>
+    <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz</span>
+  </p>
 
-  <div class="drag-hint">
-    🖱️ Arraste entre tiers · selecione um card e use <kbd>S</kbd><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>N</kbd> pra mover · <kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz
-  </div>
-  <section id="tiers"></section>
+  <div class="tl-board" id="tiers"></div>
   <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB.</p>
 </section>
 
-<dialog id="roletaDlg" class="roleta-dlg">
-  <div class="roleta-body">
-    <span class="roleta-kicker">🎲 Surpreenda-me</span>
-    <h3>Deixa o destino escolher…</h3>
-    <div class="roleta-slot" id="roletaSlot">
-      <div class="roleta-slot-ph">🎮</div>
-    </div>
-    <div class="roleta-info" id="roletaInfo" style="display:none">
+<dialog id="roletaDlg" class="tl-roll-dlg" aria-labelledby="roletaDesc">
+  <div class="tl-roll-body">
+    <div class="tl-roll-slot" id="roletaSlot"></div>
+    <p class="tl-roll-state" id="roletaDesc">Sorteando…</p>
+    <div class="tl-roll-info" id="roletaInfo" hidden>
       <b id="roletaNome">—</b>
       <span id="roletaMeta"></span>
     </div>
-    <p class="roleta-desc" id="roletaDesc">Sorteando um item da Tier List…</p>
-    <div class="roleta-actions">
+    <div class="tl-roll-actions">
+      <button class="btn" id="roletaVer" type="button" hidden>Ver na lista</button>
+      <button class="btn ghost" id="roletaNovamente" type="button">Sortear outro</button>
       <button class="btn ghost" id="roletaFechar" type="button">Fechar</button>
-      <button class="btn" id="roletaNovamente" type="button">🔁 Rodar de novo</button>
     </div>
   </div>
 </dialog>
