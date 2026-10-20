@@ -288,18 +288,23 @@
 <!-- ==================== TIER LIST ==================== -->
 <section id="sec-tierlist" class="page-section tl">
   <header class="tl-head">
-    <div>
+    <div class="tl-head-left">
+      <span class="section-kicker">🏆 Ranking</span>
       <h1 id="tlTitulo">Tier List de Jogos</h1>
       <p id="tlSub">Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior.</p>
     </div>
-    <div class="tl-modo" id="modo" role="group" aria-label="Tipo de lista">
-      <button type="button" class="on" data-m="jogos" aria-pressed="true">Jogos</button>
-      <button type="button" data-m="filmes" aria-pressed="false">Filmes</button>
+    <div class="tl-head-right">
+      <div class="tl-modo" id="modo" role="group" aria-label="Tipo de lista">
+        <button type="button" class="on" data-m="jogos" aria-pressed="true">🎮 Jogos</button>
+        <button type="button" data-m="filmes" aria-pressed="false">🎬 Filmes</button>
+      </div>
     </div>
   </header>
 
+  <!-- Resumo/Stats -->
   <div class="tl-overview" id="stats" aria-label="Resumo da lista"></div>
 
+  <!-- Controles -->
   <div class="tl-toolbar">
     <div class="tl-search">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
@@ -307,7 +312,7 @@
     </div>
 
     <label class="tl-select">
-      <span>Ordenar</span>
+      <span>Ordenar por</span>
       <select id="sortSelect">
         <option value="nota">Maior nota</option>
         <option value="horas">Mais horas jogadas</option>
@@ -325,6 +330,7 @@
     <span class="tl-count" id="tlContador" aria-live="polite"></span>
   </div>
 
+  <!-- Filtros -->
   <div class="tl-filters">
     <div class="tl-frow">
       <span class="tl-flabel">Status</span>
@@ -336,17 +342,21 @@
     </div>
   </div>
 
+  <!-- Dica Admin -->
   <p class="tl-hint">
+    <span>💡 <b>Modo Admin:</b></span>
     <span>Arraste um card pra outra tier</span>
-    <span>ou clique nele e aperte <kbd>S</kbd><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>N</kbd></span>
-    <span>botão direito favorita</span>
+    <span>Clique nele e aperte <kbd>S</kbd><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>N</kbd></span>
+    <span>Botão direito favorita</span>
     <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz</span>
   </p>
 
+  <!-- Quadro de Tiers -->
   <div class="tl-board" id="tiers"></div>
-  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes: TMDB.</p>
+  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes fornecidos por: TMDB.</p>
 </section>
 
+<!-- Modal Sorteio -->
 <dialog id="roletaDlg" class="tl-roll-dlg" aria-labelledby="roletaDesc">
   <div class="tl-roll-body">
     <div class="tl-roll-slot" id="roletaSlot"></div>

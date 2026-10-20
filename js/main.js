@@ -694,9 +694,12 @@ function renderComandos(filtroTxt = ''){
 }
 
 /* ============================================================
-   TIER LIST V4
+   TIER LIST V5 — PREMIUM DASHBOARD REDESIGN
    ============================================================ */
 const TIERS = ['S','A','B','C'];
+const PLATAFORMA_NOME = { steam:'Steam', epic:'Epic', ps:'PlayStation', xbox:'Xbox', switch:'Switch', nintendo:'Nintendo', gog:'GOG' };
+const ICO_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.5 6.1 20.7l1.2-6.6L2.5 9.5l6.6-.9L12 2.5z"/></svg>';
+
 const JOGOS_FALLBACK = [
   { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando', horas:50, nota:8,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
@@ -711,11 +714,6 @@ const FILMES_FALLBACK = [
     capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
     comentario:'As reservas naturais da Terra estão chegando ao fim.', generos:['Ficção'] }
 ];
-
-const PLATAFORMA_NOME = {
-  steam:'Steam', epic:'Epic', ps:'PlayStation', xbox:'Xbox', switch:'Switch', nintendo:'Nintendo', gog:'GOG'
-};
-const ICO_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.5 6.1 20.7l1.2-6.6L2.5 9.5l6.6-.9L12 2.5z"/></svg>';
 
 let _bibliotecaCarregada = false;
 let _roletaVencedor = null;
@@ -760,7 +758,6 @@ const _tierDe = j => TIERS.includes(j.tier) ? j.tier : 'NR';
 const _ehAdmin = () => !!(USUARIO && USUARIO.admin);
 const _arr = v => Array.isArray(v) ? v : [];
 
-/* ---------- Salvar / Undo ---------- */
 function _salvarBiblioteca(logAcao){
   return fetch('/api/admin?action=tierlist-set', {
     method:'POST', headers:{ 'Content-Type':'application/json' },
@@ -1256,17 +1253,14 @@ function setupTierList(){
   if(setupTierList._ok) return;
   setupTierList._ok = true;
 
-  // Modo: jogos / filmes
   $('modo')?.addEventListener('click', e => {
     const b = e.target.closest('button');
     if(!b || b.dataset.m === modo) return;
     aplicarModo(b.dataset.m);
   });
 
-  // Busca (filtra a lista enquanto digita)
   $('q')?.addEventListener('input', desenhar);
 
-  // Ordenação
   const sel = $('sortSelect');
   if(sel){
     try{
@@ -1280,7 +1274,6 @@ function setupTierList(){
     });
   }
 
-  // Status + favoritos
   $('chips')?.addEventListener('click', e => {
     const b = e.target.closest('.tl-chip'); if(!b) return;
     if(b.dataset.fav){ favoritosFiltro = !favoritosFiltro; }
@@ -1297,7 +1290,6 @@ function setupTierList(){
     desenhar();
   });
 
-  // Gênero
   $('generoChips')?.addEventListener('click', e => {
     const b = e.target.closest('.tl-chip'); if(!b) return;
     const g = b.dataset.gen;
@@ -1311,13 +1303,11 @@ function setupTierList(){
     desenhar();
   });
 
-  // Barra de distribuição: clicar rola até a tier
   $('stats')?.addEventListener('click', e => {
     const b = e.target.closest('[data-go]'); if(!b) return;
     document.getElementById('tl-tier-' + b.dataset.go)?.scrollIntoView({ behavior:'smooth', block:'start' });
   });
 
-  // Quadro: abrir detalhes / limpar filtros
   $('tiers')?.addEventListener('click', e => {
     if(e.target.closest('[data-act="limpar"]')){ limparFiltros(); return; }
     const b = e.target.closest('.tl-card'); if(!b) return;
@@ -1334,7 +1324,7 @@ window.setupTierList = setupTierList;
 
 window.setJogoAoVivo = function(nome){
   _jogoAoVivoNome = nome || null;
-  if(document.getElementById('sec-tierlist')?.classList.contains('ativo')) desenhar();
+  if(document.getElementById('sec-tierlist')?.classList.contains('active') || document.getElementById('sec-tierlist')?.classList.contains('ativo')) desenhar();
 };
 
 /* ============================================================
@@ -2107,7 +2097,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     if(d){ d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
   }
 
-  // handlers da tier list agora vivem em setupTierList()
   try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
 
   const dlgEl = $('dlg');
