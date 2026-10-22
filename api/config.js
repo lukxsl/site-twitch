@@ -146,34 +146,38 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL — StreamElements ============ */
+/* ============ HALL — StreamElements (ATUALIZADO) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   try {
     const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
+    
+    // 1. Descobre o ID do canal
     const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
     const cid = me?._id;
     if (!cid) return null;
 
-    // 1) Subs (para gifts + fiéis)
-    const subsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h })).json();
-    const subsList = subsResp?.docs || subsResp?.data || [];
+    // 2. Busca Subs e Tips ao mesmo tempo
+    const [subsResp, tipsResp] = await Promise.all([
+      fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h }).then(r => r.json()),
+      fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h }).then(r => r.json())
+    ]);
 
-    // ---- Gift Subs: agrupa por giftedBy ----
+    // 3. Processa Gift Subs (Quem deu mais presentes)
+    const subsList = subsResp?.docs || subsResp?.data || [];
     const gifts = {};
     subsList.forEach(s => {
       const giftedBy = s.giftedBy || s.gifted_by || s.gifter;
       if (!giftedBy) return;
       const nome = typeof giftedBy === 'string' ? giftedBy : (giftedBy.username || giftedBy.displayName || '');
-      if (!nome) return;
-      gifts[nome] = (gifts[nome] || 0) + 1;
+      if (nome) gifts[nome] = (gifts[nome] || 0) + 1;
     });
     const giftRanking = Object.entries(gifts)
       .map(([nome, total]) => ({ nome, total }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    // ---- Subs Fiéis: quem assina há mais tempo ----
+    // 4. Processa Fiéis (Quem assina há mais tempo)
     const fieis = subsList
       .map(s => {
         const username = s.username || s.displayName || '';
@@ -189,8 +193,7 @@ async function hallStreamElements() {
       .slice(0, 5)
       .map(p => ({ nome: p.nome, meses: p.meses }));
 
-    // 2) Tips (doadores)
-    const tipsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
+    // 5. Processa Doadores (Tips)
     const tipsList = tipsResp?.docs || [];
     const doadores = {};
     tipsList.forEach(t => {
@@ -209,7 +212,10 @@ async function hallStreamElements() {
       fieis: fieis,
       doadores: doadoresRanking
     };
-  } catch(e) { return null; }
+  } catch(e) { 
+    console.error('Erro no Hall SE:', e);
+    return null; 
+  }
 }
 
 async function salvarHallCache(dados) {
