@@ -3,16 +3,17 @@
 // GET  ?action=apoiadores → top 3 apoiadores (automático dos sonhos)
 // GET  ?action=metas      → metas + valores atuais
 // GET  ?action=hall       → hall da fama (StreamElements + cache persistente)
+// GET  ?action=debug-hall → rota secreta para ver o que a API do SE retorna
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const STREAMLABS_TOKEN = process.env.STREAMLABS_TOKEN || '';
 const STREAMELEMENTS_JWT = process.env.STREAMELEMENTS_JWT || '';
 
-const HALL_CACHE_KEY = 'cache:hall';
-const HALL_CACHE_TS_KEY = 'cache:hall_at';
+// Cache atualizado para não puxar o vazio antigo
+const HALL_CACHE_KEY = 'cache:hall_v2';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v2';
 const HALL_CACHE_TTL = 15 * 60; // 15 minutos
 
 async function redis(cmds) {
@@ -98,29 +99,6 @@ async function twitchSeguidores() {
   } catch(e) { return null; }
 }
 
-/* ============ Streamlabs: subs + doações ============ */
-async function streamlabsBuscar() {
-  if (!STREAMLABS_TOKEN) return null;
-  try {
-    const h = { Authorization: `Bearer ${STREAMLABS_TOKEN}`, Accept: 'application/json' };
-    const subs = await (await fetch('https://streamlabs.com/api/v2.0/subscriptions?limit=1', { headers: h })).json();
-    const totalSubs = Array.isArray(subs?.data) ? subs.data.length : null;
-
-    const inicioMes = new Date();
-    inicioMes.setDate(1);
-    inicioMes.setHours(0, 0, 0, 0);
-    const dons = await (await fetch('https://streamlabs.com/api/v2.0/donations?limit=100', { headers: h })).json();
-    let totalDoacoes = 0;
-    if (Array.isArray(dons?.data)) {
-      dons.data.forEach(d => {
-        const t = new Date(d.created_at).getTime();
-        if (t >= inicioMes.getTime()) totalDoacoes += Number(d.amount) || 0;
-      });
-    }
-    return { totalSubs, totalDoacoes };
-  } catch(e) { return null; }
-}
-
 /* ============ StreamElements: subs + doações ============ */
 async function streamElementsBuscar() {
   if (!STREAMELEMENTS_JWT) return null;
@@ -146,7 +124,7 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL — StreamElements (ATUALIZADO) ============ */
+/* ============ HALL — StreamElements ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   try {
@@ -163,7 +141,7 @@ async function hallStreamElements() {
       fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h }).then(r => r.json())
     ]);
 
-    // 3. Processa Gift Subs (Quem deu mais presentes)
+    // 3. Processa Gift Subs
     const subsList = subsResp?.docs || subsResp?.data || [];
     const gifts = {};
     subsList.forEach(s => {
@@ -177,7 +155,7 @@ async function hallStreamElements() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    // 4. Processa Fiéis (Quem assina há mais tempo)
+    // 4. Processa Fiéis
     const fieis = subsList
       .map(s => {
         const username = s.username || s.displayName || '';
@@ -248,6 +226,26 @@ export default async function handler(req, res) {
   const action = req.query?.action || '';
 
   try {
+    /* ---------- GET ?action=debug-hall (ROTA DE TESTE) ---------- */
+    if (action === 'debug-hall') {
+      try {
+        const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
+        const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
+        const cid = me?._id;
+        
+        const subsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=3`, { headers: h })).json();
+        const tipsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=3`, { headers: h })).json();
+        
+        return res.status(200).json({ 
+          seuIdNoStreamElements: cid, 
+          oQueSubsRetorna: subsResp, 
+          oQueTipsRetorna: tipsResp 
+        });
+      } catch(e) {
+        return res.status(500).json({ erro: e.message });
+      }
+    }
+
     /* ---------- GET ?action=apoiadores ---------- */
     if (action === 'apoiadores') {
       const [sonhosRaw] = await redis([['GET', 'setup:sonhos']]);
@@ -283,23 +281,18 @@ export default async function handler(req, res) {
         out.valores.seguidores = await twitchSeguidores();
       }
 
-      let sl = null, se = null;
-      if (metas.subs?.plataforma === 'streamlabs' || metas.doacoes?.plataforma === 'streamlabs') {
-        sl = await streamlabsBuscar();
-      }
+      let se = null;
       if (metas.subs?.plataforma === 'streamelements' || metas.doacoes?.plataforma === 'streamelements') {
         se = await streamElementsBuscar();
       }
 
       if (metas.subs?.ativo) {
-        if (metas.subs.plataforma === 'streamlabs' && sl) out.valores.subs = sl.totalSubs;
-        else if (metas.subs.plataforma === 'streamelements' && se) out.valores.subs = se.totalSubs;
+        if (metas.subs.plataforma === 'streamelements' && se) out.valores.subs = se.totalSubs;
         else out.valores.subs = Number(metas.subs.atualManual) || 0;
       }
 
       if (metas.doacoes?.ativo) {
-        if (metas.doacoes.plataforma === 'streamlabs' && sl) out.valores.doacoes = sl.totalDoacoes;
-        else if (metas.doacoes.plataforma === 'streamelements' && se) out.valores.doacoes = se.totalDoacoes;
+        if (metas.doacoes.plataforma === 'streamelements' && se) out.valores.doacoes = se.totalDoacoes;
         else if (metas.doacoes.plataforma === 'sonhos') {
           const top = calcularTopApoiadores(sonhos);
           out.valores.doacoes = top.reduce((a, p) => a + p.total, 0);
@@ -342,7 +335,6 @@ export default async function handler(req, res) {
 
       // Tem cache velho: retorna o cache e atualiza em background
       if (cache) {
-        // Dispara atualização em background (fire and forget)
         (async () => {
           try {
             const novos = await hallStreamElements();
