@@ -284,7 +284,7 @@ dialog .card{transform:none !important}
 /* ============================================================
    APOIO / SUB
    ============================================================ */
-.apoie{display:flex;flex-direction:column;gap:12px;padding:20px}
+.apoie{display:flex;flex-direction:column;gap:12px;padding:20px; height: 100%;}
 .apoie-head h3{font-size:1.1rem;color:var(--white);margin-bottom:4px}
 .apoie-head p{color:var(--mute);font-size:.82rem;line-height:1.45}
 .ap-vazio{color:var(--mute);font-size:.78rem;text-align:center;padding:12px;font-style:italic;opacity:.8}
@@ -297,7 +297,19 @@ dialog .card{transform:none !important}
 .hall-tab:hover{color:var(--white);border-color:var(--line-2);background:rgba(168,85,247,.08)}
 .hall-tab.on{background:linear-gradient(135deg,rgba(255,209,102,.18),rgba(168,85,247,.1));border-color:rgba(255,209,102,.35);color:#ffe4a3}
 
-.hall-lista{display:flex;flex-direction:column;gap:6px;flex:none;min-height:auto}
+/* Lista do Hall: Trava a altura para não esticar o card */
+#hallLista {
+  flex: 0 0 160px; 
+  height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 4px;
+}
+
+#hallLista::-webkit-scrollbar { width: 4px; }
+#hallLista::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
 
 .hall-row{
   display:grid;
@@ -310,6 +322,7 @@ dialog .card{transform:none !important}
   border-radius:var(--r-xs);
   font-size:.8rem;
   transition:.2s;
+  margin-bottom: 6px;
 }
 .hall-row:hover{
   border-color:rgba(255,209,102,.4);
@@ -352,7 +365,8 @@ dialog .card{transform:none !important}
 .hall-empty{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:18px 14px;text-align:center;
   color:var(--mute);font-size:.78rem;font-style:italic;line-height:1.4;
-  background:rgba(255,255,255,.02);border:1px dashed var(--line);border-radius:var(--r-sm);flex:none;
+  background:rgba(255,255,255,.02);border:1px dashed var(--line);border-radius:var(--r-sm);
+  flex: 1; margin: 0;
 }
 .hall-empty-ic{font-size:1.4rem;opacity:.55;animation:discoSleep 3s ease-in-out infinite}
 
@@ -1354,23 +1368,23 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .foco-btns { margin-top: auto; padding-top: 8px; }
 
 /* ============================================================
-   CORREÇÃO — HALL DA FAMA (Altura fixa para não esticar)
+   CORREÇÃO — HALL DA FAMA (Layout Alinhado)
    ============================================================ */
 .apoie {
   display: flex;
   flex-direction: column;
-  height: 100%; /* Ocupa a altura total do bento grid */
+  height: 100%; /* Garante que ocupe o espaço certo */
 }
 
 #hallLista {
-  flex: 1 1 auto;
-  min-height: 190px;
-  max-height: 190px; /* Trava a altura máxima para não esticar */
+  flex: 0 0 160px; /* Trava a altura em 160px de forma fixa */
+  height: 160px;
   overflow-y: auto; /* Cria scroll se tiver muitos itens */
   display: flex;
   flex-direction: column;
   justify-content: center; /* Centraliza quando vazio */
   padding-right: 4px;
+  margin-top: 10px;
 }
 
 /* Custom Scrollbar para a lista do Hall */
@@ -1382,7 +1396,7 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
   border-radius: 99px;
 }
 
-/* Força o estado vazio a preencher o espaço todo */
+/* Força o estado vazio a preencher o espaço sem quebrar */
 #hallLista .hall-empty {
   flex: 1;
   display: flex;
@@ -1390,4 +1404,7 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
   align-items: center;
   justify-content: center;
   margin: 0;
+  background: transparent;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
 }

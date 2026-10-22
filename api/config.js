@@ -4,11 +4,11 @@ const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const STREAMELEMENTS_JWT = process.env.STREAMELEMENTS_JWT || '';
+const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim(); // Garante que não tem espaço extra
 
-// Cache atualizado para v10
-const HALL_CACHE_KEY = 'cache:hall_v10';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v10';
+// Cache atualizado para v11
+const HALL_CACHE_KEY = 'cache:hall_v11';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v11';
 const HALL_CACHE_TTL = 15 * 60; // 15 minutos
 
 async function redis(cmds) {
@@ -101,7 +101,7 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL DA FAMA (v10 - Resiliência Máxima) ============ */
+/* ============ HALL DA FAMA (v11) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   
@@ -110,7 +110,6 @@ async function hallStreamElements() {
   const cid = me?._id;
   if (!cid) return null;
 
-  // Usamos allSettled para que se um falhar (ex: subs 404), os outros continuam
   const results = await Promise.allSettled([
     fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips`, { headers: h }).then(r => r.ok ? r.json() : null),
     fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/gifters`, { headers: h }).then(r => r.ok ? r.json() : null),
@@ -121,7 +120,6 @@ async function hallStreamElements() {
   const giftersLb = results[1].status === 'fulfilled' ? results[1].value : null;
   const subsLb = results[2].status === 'fulfilled' ? results[2].value : null;
 
-  // 1. Doadores
   let doadoresRanking = [];
   if (tipsLb) {
     const lista = Array.isArray(tipsLb) ? tipsLb : (tipsLb.docs || []);
@@ -132,7 +130,6 @@ async function hallStreamElements() {
     }));
   }
 
-  // 2. Gift Subs (Se o token permitir)
   let giftRanking = [];
   if (giftersLb) {
     const lista = Array.isArray(giftersLb) ? giftersLb : (giftersLb.docs || []);
@@ -142,7 +139,6 @@ async function hallStreamElements() {
     }));
   }
 
-  // 3. Fiéis (Se o token permitir)
   let fieis = [];
   if (subsLb) {
     const lista = Array.isArray(subsLb) ? subsLb : (subsLb.docs || []);
