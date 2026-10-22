@@ -6,9 +6,9 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = process.env.STREAMELEMENTS_JWT || '';
 
-// Cache atualizado para v7 (força a busca dos dados novos)
-const HALL_CACHE_KEY = 'cache:hall_v7';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v7';
+// Cache atualizado para v8
+const HALL_CACHE_KEY = 'cache:hall_v8';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v8';
 const HALL_CACHE_TTL = 15 * 60; // 15 minutos
 
 async function redis(cmds) {
@@ -101,7 +101,7 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL DA FAMA (ROTAS NOVAS v7) ============ */
+/* ============ HALL DA FAMA (v8 - Rota Activities) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   try {
@@ -110,24 +110,21 @@ async function hallStreamElements() {
     const cid = me?._id;
     if (!cid) return null;
 
-    // 1. Doadores (Leaderboard)
+    // 1. DOADORES
     let doadoresRanking = [];
     try {
       const tipsLbRes = await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips`, { headers: h });
       if (tipsLbRes.ok) {
         const tipsLb = await tipsLbRes.json();
         const lista = Array.isArray(tipsLb) ? tipsLb : (tipsLb.docs || []);
-        if (lista.length) {
-          doadoresRanking = lista.slice(0, 5).map(t => ({
-            nome: t.username || t.donation?.user?.username || 'Anônimo',
-            total: Number(t.amount || t.donation?.amount) || 0,
-            avatar: null
-          }));
-        }
+        doadoresRanking = lista.slice(0, 5).map(t => ({
+          nome: t.username || t.donation?.user?.username || 'Anônimo',
+          total: Number(t.amount || t.donation?.amount) || 0,
+          avatar: null
+        }));
       }
     } catch(e) { console.error('Erro tipsLb', e); }
 
-    // Fallback para doadores
     if (!doadoresRanking.length) {
       try {
         const tipsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
@@ -143,10 +140,11 @@ async function hallStreamElements() {
       } catch(e) { console.error('Erro tips fallback', e); }
     }
 
-    // 2. Gift Subs e Fiéis (Via Activities)
+    // 2. GIFT SUBS E FIÉIS (Via Activities)
     let giftRanking = [];
     let fieis = [];
     try {
+      // Tenta buscar atividades do tipo 'subscriber'
       const activitiesRes = await fetch(`https://api.streamelements.com/kappa/v2/activities/${cid}?limit=100&types=subscriber`, { headers: h });
       if (activitiesRes.ok) {
         const activities = await activitiesRes.json();
