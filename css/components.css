@@ -1353,10 +1353,41 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .foco-info { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
 .foco-btns { margin-top: auto; padding-top: 8px; }
 
-/* Impede que o card do Hall da Fama mude de tamanho quando a lista está vazia */
-#hallLista {
-  min-height: 160px;
+/* ============================================================
+   CORREÇÃO — HALL DA FAMA (Altura fixa para não esticar)
+   ============================================================ */
+.apoie {
   display: flex;
   flex-direction: column;
+  height: 100%; /* Ocupa a altura total do bento grid */
+}
+
+#hallLista {
+  flex: 1 1 auto;
+  min-height: 190px;
+  max-height: 190px; /* Trava a altura máxima para não esticar */
+  overflow-y: auto; /* Cria scroll se tiver muitos itens */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centraliza quando vazio */
+  padding-right: 4px;
+}
+
+/* Custom Scrollbar para a lista do Hall */
+#hallLista::-webkit-scrollbar {
+  width: 4px;
+}
+#hallLista::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 99px;
+}
+
+/* Força o estado vazio a preencher o espaço todo */
+#hallLista .hall-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  margin: 0;
 }
