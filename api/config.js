@@ -6,9 +6,9 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = process.env.STREAMELEMENTS_JWT || '';
 
-// Cache atualizado para v8
-const HALL_CACHE_KEY = 'cache:hall_v8';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v8';
+// Cache atualizado para v9
+const HALL_CACHE_KEY = 'cache:hall_v9';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v9';
 const HALL_CACHE_TTL = 15 * 60; // 15 minutos
 
 async function redis(cmds) {
@@ -101,7 +101,7 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL DA FAMA (v8 - Rota Activities) ============ */
+/* ============ HALL DA FAMA (v9 - Leaderboards) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   try {
@@ -125,83 +125,33 @@ async function hallStreamElements() {
       }
     } catch(e) { console.error('Erro tipsLb', e); }
 
-    if (!doadoresRanking.length) {
-      try {
-        const tipsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
-        if (tipsResp && tipsResp.docs) {
-          const doadoresMap = {};
-          tipsResp.docs.forEach(t => {
-            const nome = t.donation?.user?.username || t.username || 'Anônimo';
-            const valor = Number(t.donation?.amount || t.amount) || 0;
-            doadoresMap[nome] = (doadoresMap[nome] || 0) + valor;
-          });
-          doadoresRanking = Object.entries(doadoresMap).map(([nome, total]) => ({ nome, total })).sort((a, b) => b.total - a.total).slice(0, 5);
-        }
-      } catch(e) { console.error('Erro tips fallback', e); }
-    }
-
-    // 2. GIFT SUBS E FIÉIS (Via Activities)
+    // 2. GIFT SUBS (Via Leaderboard)
     let giftRanking = [];
-    let fieis = [];
     try {
-      // Tenta buscar atividades do tipo 'subscriber'
-      const activitiesRes = await fetch(`https://api.streamelements.com/kappa/v2/activities/${cid}?limit=100&types=subscriber`, { headers: h });
-      if (activitiesRes.ok) {
-        const activities = await activitiesRes.json();
-        const lista = Array.isArray(activities) ? activities : (activities.docs || []);
-        const gifts = {};
-        const subsParaFieis = [];
-        lista.forEach(act => {
-          const data = act.data || {};
-          const username = data.username || data.displayName || act.username;
-          if (!username) return;
-          
-          // Gift
-          if (data.wasGifted || data.giftedBy) {
-            const gifter = data.giftedBy || 'Anônimo';
-            gifts[gifter] = (gifts[gifter] || 0) + 1;
-          }
-          // Fiéis
-          const desde = data.subscribedAt || data.createdAt || act.createdAt;
-          if (desde) {
-            subsParaFieis.push({ nome: username, desde: new Date(desde).getTime() });
-          }
-        });
-        giftRanking = Object.entries(gifts).map(([nome, total]) => ({ nome, total })).sort((a, b) => b.total - a.total).slice(0, 5);
-        fieis = subsParaFieis.filter(s => s.desde).sort((a, b) => a.desde - b.desde).slice(0, 5).map(s => ({
-          nome: s.nome,
-          meses: Math.max(1, Math.round((Date.now() - s.desde) / (30 * 24 * 60 * 60 * 1000)))
+      const giftersRes = await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/gifters`, { headers: h });
+      if (giftersRes.ok) {
+        const gifters = await giftersRes.json();
+        const lista = Array.isArray(gifters) ? gifters : (gifters.docs || []);
+        giftRanking = lista.slice(0, 5).map(g => ({
+          nome: g.username || 'Anônimo',
+          total: Number(g.amount) || 0
         }));
       }
-    } catch(e) { console.error('Erro activities subs', e); }
+    } catch(e) { console.error('Erro gifters', e); }
 
-    // Fallback para Subs (se activities falhar)
-    if (!giftRanking.length && !fieis.length) {
-      try {
-        const subsRes = await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h });
-        if (subsRes.ok) {
-          const subsResp = await subsRes.json();
-          const lista = subsResp.docs || subsResp.data || [];
-          const gifts = {};
-          const subsParaFieis = [];
-          lista.forEach(s => {
-            const username = s.username || s.displayName;
-            if (!username) return;
-            if (s.wasGifted || s.giftedBy) {
-              const gifter = s.giftedBy || 'Anônimo';
-              gifts[gifter] = (gifts[gifter] || 0) + 1;
-            }
-            const desde = s.subscribedAt || s.createdAt;
-            if (desde) subsParaFieis.push({ nome: username, desde: new Date(desde).getTime() });
-          });
-          giftRanking = Object.entries(gifts).map(([nome, total]) => ({ nome, total })).sort((a, b) => b.total - a.total).slice(0, 5);
-          fieis = subsParaFieis.filter(s => s.desde).sort((a, b) => a.desde - b.desde).slice(0, 5).map(s => ({
-            nome: s.nome,
-            meses: Math.max(1, Math.round((Date.now() - s.desde) / (30 * 24 * 60 * 60 * 1000)))
-          }));
-        }
-      } catch(e) { /* 404 silencioso */ }
-    }
+    // 3. FIÉIS (Via Leaderboard)
+    let fieis = [];
+    try {
+      const subsLbRes = await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/subscribers`, { headers: h });
+      if (subsLbRes.ok) {
+        const subsLb = await subsLbRes.json();
+        const lista = Array.isArray(subsLb) ? subsLb : (subsLb.docs || []);
+        fieis = lista.slice(0, 5).map(s => ({
+          nome: s.username || 'Anônimo',
+          meses: Number(s.amount) || 1
+        }));
+      }
+    } catch(e) { console.error('Erro subsLb', e); }
 
     return {
       vazio: !giftRanking.length && !fieis.length && !doadoresRanking.length,
@@ -240,6 +190,19 @@ export default async function handler(req, res) {
   const action = req.query?.action || '';
 
   try {
+    /* ---------- ROTA SECRETA DE DEBUG ---------- */
+    if (action === 'debug-subs') {
+      const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
+      const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
+      const cid = me?._id;
+      
+      const testGift = await (await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/gifters`, { headers: h })).json().catch(e => e.message);
+      const testSubs = await (await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/subscribers`, { headers: h })).json().catch(e => e.message);
+      const testSubsRaw = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=3`, { headers: h })).json().catch(e => e.message);
+
+      return res.status(200).json({ cid, testGift, testSubs, testSubsRaw });
+    }
+
     if (action === 'apoiadores') {
       const [sonhosRaw] = await redis([['GET', 'setup:sonhos']]);
       let sonhos = []; try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e) {}
