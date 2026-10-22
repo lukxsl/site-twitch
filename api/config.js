@@ -1,8 +1,4 @@
 // Vercel serverless: /api/config.js
-// GET  → config pública
-// GET  ?action=apoiadores → top 3 apoiadores (automático dos sonhos)
-// GET  ?action=metas      → metas + valores atuais
-// GET  ?action=hall       → hall da fama (StreamElements + cache persistente)
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -10,9 +6,8 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = process.env.STREAMELEMENTS_JWT || '';
 
-// Cache atualizado para não puxar o vazio antigo (mudamos para v3)
-const HALL_CACHE_KEY = 'cache:hall_v3';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v3';
+const HALL_CACHE_KEY = 'cache:hall_v4';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v4';
 const HALL_CACHE_TTL = 15 * 60; // 15 minutos
 
 async function redis(cmds) {
@@ -24,19 +19,11 @@ async function redis(cmds) {
   return (await r.json()).map(x => x.result);
 }
 
-function safeStr(v, max = 1000) {
-  return String(v == null ? '' : v).trim().slice(0, max);
-}
+function safeStr(v, max = 1000) { return String(v == null ? '' : v).trim().slice(0, max); }
 
 function sanitizarAviso(a) {
   if (!a || typeof a !== 'object') return null;
-  return {
-    ativo: !!a.ativo,
-    tipo: a.tipo === 'warn' ? 'warn' : 'info',
-    icone: safeStr(a.icone, 8) || '📢',
-    titulo: safeStr(a.titulo, 120) || 'Aviso',
-    texto: safeStr(a.texto, 1000)
-  };
+  return { ativo: !!a.ativo, tipo: a.tipo === 'warn' ? 'warn' : 'info', icone: safeStr(a.icone, 8) || '📢', titulo: safeStr(a.titulo, 120) || 'Aviso', texto: safeStr(a.texto, 1000) };
 }
 
 function sanitizarLista(list, campos, max) {
@@ -44,14 +31,11 @@ function sanitizarLista(list, campos, max) {
   return list.slice(0, max).map(item => {
     if (!item || typeof item !== 'object') return null;
     const safe = {};
-    for (const c of campos) {
-      safe[c] = item[c] != null ? safeStr(item[c], 80) : null;
-    }
+    for (const c of campos) { safe[c] = item[c] != null ? safeStr(item[c], 80) : null; }
     return safe.nome ? safe : null;
   }).filter(Boolean);
 }
 
-/* ============ Top 3 apoiadores ============ */
 function calcularTopApoiadores(sonhos) {
   if (!Array.isArray(sonhos)) return [];
   const porPessoa = {};
@@ -64,19 +48,14 @@ function calcularTopApoiadores(sonhos) {
       if (!porPessoa[nome].sonhos.includes(s.nome)) porPessoa[nome].sonhos.push(s.nome);
     });
   });
-  return Object.values(porPessoa)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 3)
-    .map(p => ({ nome: p.nome, total: p.total, sonhos: p.sonhos }));
+  return Object.values(porPessoa).sort((a, b) => b.total - a.total).slice(0, 3).map(p => ({ nome: p.nome, total: p.total, sonhos: p.sonhos }));
 }
 
-/* ============ Twitch: seguidores totais ============ */
 let twitchCache = { token: null, exp: 0 };
 async function twitchToken() {
   if (twitchCache.token && Date.now() < twitchCache.exp) return twitchCache.token;
   const r = await fetch('https://id.twitch.tv/oauth2/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ client_id: TWITCH_ID, client_secret: TWITCH_SECRET, grant_type: 'client_credentials' })
   });
   const d = await r.json();
@@ -98,7 +77,6 @@ async function twitchSeguidores() {
   } catch(e) { return null; }
 }
 
-/* ============ StreamElements: subs + doações ============ */
 async function streamElementsBuscar() {
   if (!STREAMELEMENTS_JWT) return null;
   try {
@@ -111,14 +89,10 @@ async function streamElementsBuscar() {
     const totalSubs = typeof subs?.total === 'number' ? subs.total : 0;
 
     const tips = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
-    const inicioMes = new Date();
-    inicioMes.setDate(1);
-    inicioMes.setHours(0, 0, 0, 0);
+    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
     let totalDoacoes = 0;
     (tips?.docs || []).forEach(t => {
-      const ts = new Date(t.createdAt).getTime();
-      if (ts >= inicioMes.getTime()) {
-        // Corrigido: valor fica dentro de donation.amount
+      if (new Date(t.createdAt).getTime() >= inicioMes.getTime()) {
         totalDoacoes += Number(t.donation?.amount || t.amount) || 0;
       }
     });
@@ -126,32 +100,34 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL — StreamElements ============ */
+/* ============ HALL DA FAMA (ROTAS NOVAS) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   try {
     const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
-    
     const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
     const cid = me?._id;
     if (!cid) return null;
 
-    const [subsResp, tipsResp] = await Promise.all([
-      fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h }).then(r => r.json()),
-      fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h }).then(r => r.json())
+    const [tipsLb, subsListResp, giftedResp] = await Promise.all([
+      fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}/leaderboard`, { headers: h }).then(r => r.json()).catch(() => null),
+      fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h }).then(r => r.json()).catch(() => null),
+      fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?type=gifted&limit=100`, { headers: h }).then(r => r.json()).catch(() => null)
     ]);
 
-    // 1. Processa Gift Subs (Protegido contra o erro 404)
-    let subsList = [];
-    if (subsResp && !subsResp.statusCode && (subsResp.docs || subsResp.data)) {
-      subsList = subsResp.docs || subsResp.data;
-    }
-    
+    // 1. Doadores (Usa o Leaderboard, que já soma tudo)
+    const doadoresRanking = (Array.isArray(tipsLb) ? tipsLb : []).slice(0, 5).map(t => ({
+      nome: t.username || 'Anônimo',
+      total: Number(t.amount) || 0,
+      avatar: t.avatar || null
+    }));
+
+    // 2. Gifted Subs (Agrupa quem deu mais presentes)
+    const giftedList = giftedResp?.docs || [];
     const gifts = {};
-    subsList.forEach(s => {
-      const giftedBy = s.giftedBy || s.gifted_by || s.gifter;
-      if (!giftedBy) return;
-      const nome = typeof giftedBy === 'string' ? giftedBy : (giftedBy.username || giftedBy.displayName || '');
+    giftedList.forEach(s => {
+      const gifter = s.giftedBy || s.gifter;
+      const nome = typeof gifter === 'string' ? gifter : (gifter?.username || '');
       if (nome) gifts[nome] = (gifts[nome] || 0) + 1;
     });
     const giftRanking = Object.entries(gifts)
@@ -159,38 +135,17 @@ async function hallStreamElements() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    // 2. Processa Fiéis (Protegido contra o erro 404)
-    const fieis = subsList
-      .map(s => {
-        const username = s.username || s.displayName || '';
-        const desde = s.subscribedAt || s.subscribed_at || s.createdAt || s.created_at;
+    // 3. Fiéis (Quem assina há mais tempo)
+    const subsList = subsListResp?.docs || [];
+    const fieis = subsList.map(s => {
+        const username = s.username || '';
+        const desde = s.subscribedAt || s.createdAt;
         if (!username || !desde) return null;
         const ts = new Date(desde).getTime();
         if (isNaN(ts)) return null;
         const meses = Math.max(1, Math.round((Date.now() - ts) / (30 * 24 * 60 * 60 * 1000)));
         return { nome: username, meses, ts };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.ts - b.ts)
-      .slice(0, 5)
-      .map(p => ({ nome: p.nome, meses: p.meses }));
-
-    // 3. Processa Doadores (Tips) - Agora lendo o formato correto!
-    const tipsList = tipsResp?.docs || [];
-    const doadores = {};
-    tipsList.forEach(t => {
-      // A API do StreamElements aninha os dados dentro de "donation"
-      const nome = t.donation?.user?.username || t.username || t.displayName || t.name || '';
-      const valor = Number(t.donation?.amount || t.amount) || 0;
-      
-      if (!nome) return;
-      doadores[nome] = (doadores[nome] || 0) + valor;
-    });
-    
-    const doadoresRanking = Object.entries(doadores)
-      .map(([nome, total]) => ({ nome, total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5);
+      }).filter(Boolean).sort((a, b) => a.ts - b.ts).slice(0, 5).map(p => ({ nome: p.nome, meses: p.meses }));
 
     return {
       vazio: !giftRanking.length && !fieis.length && !doadoresRanking.length,
@@ -217,160 +172,90 @@ async function lerHallCache() {
   try {
     const [raw, ts] = await redis([['GET', HALL_CACHE_KEY], ['GET', HALL_CACHE_TS_KEY]]);
     if (!raw) return null;
-    const dados = JSON.parse(raw);
-    return { dados, ts: Number(ts) || 0 };
+    return { dados: JSON.parse(raw), ts: Number(ts) || 0 };
   } catch(e) { return null; }
 }
 
-/* ============ HANDLER ============ */
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.setHeader('CDN-Cache-Control', 'no-store');
-  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
-
   if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido' });
   if (!URL_ || !TOKEN) return res.status(200).json({});
 
   const action = req.query?.action || '';
 
   try {
-    /* ---------- GET ?action=apoiadores ---------- */
     if (action === 'apoiadores') {
       const [sonhosRaw] = await redis([['GET', 'setup:sonhos']]);
-      let sonhos = [];
-      try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e) {}
-      const top = calcularTopApoiadores(sonhos);
-      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=60');
-      return res.status(200).json({ top });
+      let sonhos = []; try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e) {}
+      return res.status(200).json({ top: calcularTopApoiadores(sonhos) });
     }
 
-    /* ---------- GET ?action=metas ---------- */
     if (action === 'metas') {
-      const [metasRaw, sonhosRaw] = await redis([
-        ['GET', 'config:metas'],
-        ['GET', 'setup:sonhos']
-      ]);
+      const [metasRaw, sonhosRaw] = await redis([['GET', 'config:metas'], ['GET', 'setup:sonhos']]);
       let metas = null, sonhos = [];
       try { metas = metasRaw ? JSON.parse(metasRaw) : null; } catch(e) {}
       try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e) {}
-
-      if (!metas || typeof metas !== 'object') {
-        metas = {
-          seguidores: { ativo: false, meta: 0 },
-          subs: { ativo: false, meta: 0, plataforma: 'manual', atualManual: 0 },
-          doacoes: { ativo: false, meta: 0, plataforma: 'manual', atualManual: 0 },
-          bits: { ativo: false, meta: 0, atualManual: 0 }
-        };
-      }
-
+      
+      if (!metas) metas = { seguidores: { ativo: false, meta: 0 }, subs: { ativo: false, meta: 0 }, doacoes: { ativo: false, meta: 0 }, bits: { ativo: false, meta: 0 } };
+      
       const out = { ...metas, valores: {} };
-
-      if (metas.seguidores?.ativo) {
-        out.valores.seguidores = await twitchSeguidores();
-      }
-
+      if (metas.seguidores?.ativo) out.valores.seguidores = await twitchSeguidores();
+      
       let se = null;
-      if (metas.subs?.plataforma === 'streamelements' || metas.doacoes?.plataforma === 'streamelements') {
-        se = await streamElementsBuscar();
-      }
-
-      if (metas.subs?.ativo) {
-        if (metas.subs.plataforma === 'streamelements' && se) out.valores.subs = se.totalSubs;
-        else out.valores.subs = Number(metas.subs.atualManual) || 0;
-      }
-
-      if (metas.doacoes?.ativo) {
-        if (metas.doacoes.plataforma === 'streamelements' && se) out.valores.doacoes = se.totalDoacoes;
-        else if (metas.doacoes.plataforma === 'sonhos') {
-          const top = calcularTopApoiadores(sonhos);
-          out.valores.doacoes = top.reduce((a, p) => a + p.total, 0);
-        } else out.valores.doacoes = Number(metas.doacoes.atualManual) || 0;
-      }
-
-      if (metas.bits?.ativo) {
-        out.valores.bits = Number(metas.bits.atualManual) || 0;
-      }
-
-      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=60');
+      if (metas.subs?.plataforma === 'streamelements' || metas.doacoes?.plataforma === 'streamelements') se = await streamElementsBuscar();
+      
+      if (metas.subs?.ativo) out.valores.subs = (metas.subs.plataforma === 'streamelements' && se) ? se.totalSubs : (Number(metas.subs.atualManual) || 0);
+      if (metas.doacoes?.ativo) out.valores.doacoes = (metas.doacoes.plataforma === 'streamelements' && se) ? se.totalDoacoes : (Number(metas.doacoes.atualManual) || 0);
+      
       return res.status(200).json(out);
     }
 
-    /* ---------- GET ?action=hall ---------- */
     if (action === 'hall') {
       const cache = await lerHallCache();
       const agora = Date.now();
       const idade = cache ? (agora - cache.ts) / 1000 : Infinity;
 
-      if (!STREAMELEMENTS_JWT) {
-        return res.status(200).json({
-          vazio: true, mensagem: '✨ Em breve...', gift: [], fieis: [], doadores: [], updatedAt: null
-        });
-      }
+      if (!STREAMELEMENTS_JWT) return res.status(200).json({ vazio: true, gift: [], fieis: [], doadores: [], updatedAt: null });
 
-      if (cache && idade < HALL_CACHE_TTL) {
-        return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
-      }
+      if (cache && idade < HALL_CACHE_TTL) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
 
       if (cache) {
-        (async () => {
-          try {
-            const novos = await hallStreamElements();
-            if (novos) await salvarHallCache(novos);
-          } catch(e) {}
-        })();
+        (async () => { try { const n = await hallStreamElements(); if(n) await salvarHallCache(n); } catch(e){} })();
         return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
       }
 
       const dados = await hallStreamElements();
-      if (dados) {
-        await salvarHallCache(dados);
-        return res.status(200).json({ ...dados, updatedAt: Date.now() });
-      }
-
-      return res.status(200).json({
-        vazio: true, mensagem: '✨ Em breve...', gift: [], fieis: [], doadores: [], updatedAt: null
-      });
+      if (dados) { await salvarHallCache(dados); return res.status(200).json({ ...dados, updatedAt: Date.now() }); }
+      return res.status(200).json({ vazio: true, gift: [], fieis: [], doadores: [], updatedAt: null });
     }
 
-    /* ---------- GET ?action=status-perfil ---------- */
     if (action === 'status-perfil') {
       try {
         const token = await twitchToken();
-        const headers = { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` };
-        const u = await (await fetch('https://api.twitch.tv/helix/users?login=asemtet0', { headers })).json();
+        const u = await (await fetch(`https://api.twitch.tv/helix/users?login=asemtet0`, { headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` } })).json();
         const id = u?.data?.[0]?.id;
         if (!id) return res.status(200).json({ online: false });
-        const s = await (await fetch(`https://api.twitch.tv/helix/streams?user_id=${id}`, { headers })).json();
-        const online = Array.isArray(s?.data) && s.data.length > 0;
-        return res.status(200).json({ online });
+        const s = await (await fetch(`https://api.twitch.tv/helix/streams?user_id=${id}`, { headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` } })).json();
+        return res.status(200).json({ online: Array.isArray(s?.data) && s.data.length > 0 });
       } catch(e) { return res.status(200).json({ online: false }); }
     }
 
-    /* ---------- GET normal (config pública) ---------- */
     const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw, votosFechRaw] = await redis([
-      ['GET', 'config:aviso'], ['GET', 'config:donate'], ['GET', 'config:manutencao'],
-      ['GET', 'config:recado'], ['GET', 'config:horasMes'], ['GET', 'config:updatedAt'],
-      ['GET', 'config:top3'], ['GET', 'config:hall'], ['GET', 'config:votosFechamento']
+      ['GET', 'config:aviso'], ['GET', 'config:donate'], ['GET', 'config:manutencao'], ['GET', 'config:recado'],
+      ['GET', 'config:horasMes'], ['GET', 'config:updatedAt'], ['GET', 'config:top3'], ['GET', 'config:hall'], ['GET', 'config:votosFechamento']
     ]);
 
     let aviso = null, top3 = [], hall = [];
     try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch (e) {}
-    try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch (e) { top3 = []; }
-    try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch (e) { hall = []; }
-
+    try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch (e) {}
+    try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch (e) {}
     const donate = safeStr(donateRaw, 500);
-    const donateUrl = /^https?:\/\//i.test(donate) ? donate : null;
 
     return res.status(200).json({
-      aviso: sanitizarAviso(aviso),
-      donate: donateUrl,
-      manutencao: manutRaw === '1',
-      recado: safeStr(recadoRaw, 500),
-      horasMes: safeStr(horasRaw, 30),
-      updatedAt: safeStr(updatedRaw, 40) || null,
-      top3: sanitizarLista(top3, ['nome', 'valor'], 3),
-      hall: sanitizarLista(hall, ['nome', 'meta'], 5),
-      votosFechamento: safeStr(votosFechRaw, 40) || null
+      aviso: sanitizarAviso(aviso), donate: /^https?:\/\//i.test(donate) ? donate : null,
+      manutencao: manutRaw === '1', recado: safeStr(recadoRaw, 500), horasMes: safeStr(horasRaw, 30),
+      updatedAt: safeStr(updatedRaw, 40) || null, top3: sanitizarLista(top3, ['nome', 'valor'], 3),
+      hall: sanitizarLista(hall, ['nome', 'meta'], 5), votosFechamento: safeStr(votosFechRaw, 40) || null
     });
   } catch (e) {
     return res.status(200).json({});

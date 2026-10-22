@@ -1,7 +1,7 @@
 /* ============================================================
    TWITCH
    ============================================================ */
-const FORCAR_REPRISE_NA_TWITCH = true;
+const FORCAR_REPRISE_NA_TWITCH = false; // Deixa a Twitch decidir
 let canalMature = FORCAR_REPRISE_NA_TWITCH;
 
 /* ============================================================
@@ -108,8 +108,7 @@ function atualizarFoco(game, isLive){
 
   // ---- Link Twitch ----
   if(link){
-    link.style.display = isLive ? '' : 'none';
-    link.href = 'https://www.twitch.tv/asemtet0';
+    link.style.display = 'none'; // Escondido para manter o card alinhado
   }
 }
 window.atualizarFoco = atualizarFoco;
@@ -282,7 +281,8 @@ async function verificarStatusTwitch() {
     _atualizarProfileStatus(live, data);
     _atualizarBanner(data);
 
-    const isMature = !!(data.stream && data.stream.is_mature);
+    // Força o bloqueio se a API avisar que é adulto OU se o jogo for conhecido como +18
+    const isMature = !!(data.stream && (data.stream.is_mature || data.canal_mature));
 
     if (live && !toastLiveMostrado) {
       toastLiveMostrado = true;

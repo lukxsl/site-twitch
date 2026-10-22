@@ -1346,3 +1346,9 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
   max-width:400px;
 }
 .voto-vazio .btn{margin-top:6px}
+
+/* Deixa os dois lados do card de jogos/votação perfeitamente alinhados */
+.jogos-card { display: grid; grid-template-columns: 1fr 1fr; padding: 0; align-items: stretch; }
+.jogo-half { display: flex; flex-direction: row; align-items: stretch; padding: 16px 14px; }
+.foco-info { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+.foco-btns { margin-top: auto; padding-top: 8px; }
