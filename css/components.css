@@ -284,7 +284,14 @@ dialog .card{transform:none !important}
 /* ============================================================
    APOIO / SUB
    ============================================================ */
-.apoie{display:flex;flex-direction:column;gap:12px;padding:20px; height: 100%;}
+.apoie{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:20px;
+  /* CORREÇÃO: Removido height:100% e forçado a não esticar */
+  flex: 0 0 auto !important; 
+}
 .apoie-head h3{font-size:1.1rem;color:var(--white);margin-bottom:4px}
 .apoie-head p{color:var(--mute);font-size:.82rem;line-height:1.45}
 .ap-vazio{color:var(--mute);font-size:.78rem;text-align:center;padding:12px;font-style:italic;opacity:.8}
@@ -306,6 +313,7 @@ dialog .card{transform:none !important}
   flex-direction: column;
   justify-content: center;
   padding-right: 4px;
+  margin-top: 10px;
 }
 
 #hallLista::-webkit-scrollbar { width: 4px; }
@@ -1370,33 +1378,20 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 /* ============================================================
    CORREÇÃO — HALL DA FAMA (Layout Alinhado)
    ============================================================ */
-.apoie {
-  display: flex;
-  flex-direction: column;
-  height: 100%; /* Garante que ocupe o espaço certo */
-}
-
 #hallLista {
-  flex: 0 0 160px; /* Trava a altura em 160px de forma fixa */
+  flex: 0 0 160px; 
   height: 160px;
-  overflow-y: auto; /* Cria scroll se tiver muitos itens */
+  overflow-y: auto; 
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Centraliza quando vazio */
+  justify-content: center; 
   padding-right: 4px;
   margin-top: 10px;
 }
 
-/* Custom Scrollbar para a lista do Hall */
-#hallLista::-webkit-scrollbar {
-  width: 4px;
-}
-#hallLista::-webkit-scrollbar-thumb {
-  background: var(--line-2);
-  border-radius: 99px;
-}
+#hallLista::-webkit-scrollbar { width: 4px; }
+#hallLista::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
 
-/* Força o estado vazio a preencher o espaço sem quebrar */
 #hallLista .hall-empty {
   flex: 1;
   display: flex;
