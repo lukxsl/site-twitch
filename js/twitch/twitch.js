@@ -327,7 +327,7 @@ async function verificarStatusTwitch() {
       const noteEl = g('playerNoteText');
       if(noteEl){
         noteEl.classList.remove('recado');
-        noteEl.textContent = `🔞 Conteúdo +18 — clica em "Assistir na Twitch" acima.`;
+        noteEl.textContent = `🔞 Conteúdo +18 — clique em "Assistir na Twitch" acima.`;
       }
     } else if (data.stream) {
       assistindoVod = false;
