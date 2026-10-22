@@ -3,7 +3,6 @@
 // GET  ?action=apoiadores → top 3 apoiadores (automático dos sonhos)
 // GET  ?action=metas      → metas + valores atuais
 // GET  ?action=hall       → hall da fama (StreamElements + cache persistente)
-// GET  ?action=debug-hall → rota secreta para ver o que a API do SE retorna
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -11,9 +10,9 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = process.env.STREAMELEMENTS_JWT || '';
 
-// Cache atualizado para não puxar o vazio antigo
-const HALL_CACHE_KEY = 'cache:hall_v2';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v2';
+// Cache atualizado para não puxar o vazio antigo (mudamos para v3)
+const HALL_CACHE_KEY = 'cache:hall_v3';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v3';
 const HALL_CACHE_TTL = 15 * 60; // 15 minutos
 
 async function redis(cmds) {
@@ -109,7 +108,7 @@ async function streamElementsBuscar() {
     if (!cid) return null;
 
     const subs = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=1`, { headers: h })).json();
-    const totalSubs = typeof subs?.total === 'number' ? subs.total : null;
+    const totalSubs = typeof subs?.total === 'number' ? subs.total : 0;
 
     const tips = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
     const inicioMes = new Date();
@@ -118,7 +117,10 @@ async function streamElementsBuscar() {
     let totalDoacoes = 0;
     (tips?.docs || []).forEach(t => {
       const ts = new Date(t.createdAt).getTime();
-      if (ts >= inicioMes.getTime()) totalDoacoes += Number(t.amount) || 0;
+      if (ts >= inicioMes.getTime()) {
+        // Corrigido: valor fica dentro de donation.amount
+        totalDoacoes += Number(t.donation?.amount || t.amount) || 0;
+      }
     });
     return { totalSubs, totalDoacoes };
   } catch(e) { return null; }
@@ -130,19 +132,21 @@ async function hallStreamElements() {
   try {
     const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
     
-    // 1. Descobre o ID do canal
     const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
     const cid = me?._id;
     if (!cid) return null;
 
-    // 2. Busca Subs e Tips ao mesmo tempo
     const [subsResp, tipsResp] = await Promise.all([
       fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h }).then(r => r.json()),
       fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h }).then(r => r.json())
     ]);
 
-    // 3. Processa Gift Subs
-    const subsList = subsResp?.docs || subsResp?.data || [];
+    // 1. Processa Gift Subs (Protegido contra o erro 404)
+    let subsList = [];
+    if (subsResp && !subsResp.statusCode && (subsResp.docs || subsResp.data)) {
+      subsList = subsResp.docs || subsResp.data;
+    }
+    
     const gifts = {};
     subsList.forEach(s => {
       const giftedBy = s.giftedBy || s.gifted_by || s.gifter;
@@ -155,7 +159,7 @@ async function hallStreamElements() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    // 4. Processa Fiéis
+    // 2. Processa Fiéis (Protegido contra o erro 404)
     const fieis = subsList
       .map(s => {
         const username = s.username || s.displayName || '';
@@ -171,14 +175,18 @@ async function hallStreamElements() {
       .slice(0, 5)
       .map(p => ({ nome: p.nome, meses: p.meses }));
 
-    // 5. Processa Doadores (Tips)
+    // 3. Processa Doadores (Tips) - Agora lendo o formato correto!
     const tipsList = tipsResp?.docs || [];
     const doadores = {};
     tipsList.forEach(t => {
-      const nome = t.username || t.displayName || t.name || '';
+      // A API do StreamElements aninha os dados dentro de "donation"
+      const nome = t.donation?.user?.username || t.username || t.displayName || t.name || '';
+      const valor = Number(t.donation?.amount || t.amount) || 0;
+      
       if (!nome) return;
-      doadores[nome] = (doadores[nome] || 0) + (Number(t.amount) || 0);
+      doadores[nome] = (doadores[nome] || 0) + valor;
     });
+    
     const doadoresRanking = Object.entries(doadores)
       .map(([nome, total]) => ({ nome, total }))
       .sort((a, b) => b.total - a.total)
@@ -199,7 +207,7 @@ async function hallStreamElements() {
 async function salvarHallCache(dados) {
   try {
     await redis([
-      ['SET', HALL_CACHE_KEY, JSON.stringify(dados), 'EX', String(60 * 60 * 24)], // 24h
+      ['SET', HALL_CACHE_KEY, JSON.stringify(dados), 'EX', String(60 * 60 * 24)],
       ['SET', HALL_CACHE_TS_KEY, String(Date.now()), 'EX', String(60 * 60 * 24)]
     ]);
   } catch(e) {}
@@ -226,26 +234,6 @@ export default async function handler(req, res) {
   const action = req.query?.action || '';
 
   try {
-    /* ---------- GET ?action=debug-hall (ROTA DE TESTE) ---------- */
-    if (action === 'debug-hall') {
-      try {
-        const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
-        const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
-        const cid = me?._id;
-        
-        const subsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=3`, { headers: h })).json();
-        const tipsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=3`, { headers: h })).json();
-        
-        return res.status(200).json({ 
-          seuIdNoStreamElements: cid, 
-          oQueSubsRetorna: subsResp, 
-          oQueTipsRetorna: tipsResp 
-        });
-      } catch(e) {
-        return res.status(500).json({ erro: e.message });
-      }
-    }
-
     /* ---------- GET ?action=apoiadores ---------- */
     if (action === 'apoiadores') {
       const [sonhosRaw] = await redis([['GET', 'setup:sonhos']]);
@@ -313,27 +301,16 @@ export default async function handler(req, res) {
       const agora = Date.now();
       const idade = cache ? (agora - cache.ts) / 1000 : Infinity;
 
-      // Sem token: retorna vazio com texto
       if (!STREAMELEMENTS_JWT) {
         return res.status(200).json({
-          vazio: true,
-          mensagem: '✨ Em breve... Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜',
-          gift: [],
-          fieis: [],
-          doadores: [],
-          updatedAt: null
+          vazio: true, mensagem: '✨ Em breve...', gift: [], fieis: [], doadores: [], updatedAt: null
         });
       }
 
-      // Tem cache fresco (< 15 min): retorna
       if (cache && idade < HALL_CACHE_TTL) {
-        return res.status(200).json({
-          ...cache.dados,
-          updatedAt: cache.ts
-        });
+        return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
       }
 
-      // Tem cache velho: retorna o cache e atualiza em background
       if (cache) {
         (async () => {
           try {
@@ -341,14 +318,9 @@ export default async function handler(req, res) {
             if (novos) await salvarHallCache(novos);
           } catch(e) {}
         })();
-
-        return res.status(200).json({
-          ...cache.dados,
-          updatedAt: cache.ts
-        });
+        return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
       }
 
-      // Sem cache: busca agora (esperando)
       const dados = await hallStreamElements();
       if (dados) {
         await salvarHallCache(dados);
@@ -356,12 +328,7 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({
-        vazio: true,
-        mensagem: '✨ Em breve... Os dados do Hall aparecem quando a Soso tiver as primeiras métricas 💜',
-        gift: [],
-        fieis: [],
-        doadores: [],
-        updatedAt: null
+        vazio: true, mensagem: '✨ Em breve...', gift: [], fieis: [], doadores: [], updatedAt: null
       });
     }
 
@@ -381,15 +348,9 @@ export default async function handler(req, res) {
 
     /* ---------- GET normal (config pública) ---------- */
     const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw, votosFechRaw] = await redis([
-      ['GET', 'config:aviso'],
-      ['GET', 'config:donate'],
-      ['GET', 'config:manutencao'],
-      ['GET', 'config:recado'],
-      ['GET', 'config:horasMes'],
-      ['GET', 'config:updatedAt'],
-      ['GET', 'config:top3'],
-      ['GET', 'config:hall'],
-      ['GET', 'config:votosFechamento']
+      ['GET', 'config:aviso'], ['GET', 'config:donate'], ['GET', 'config:manutencao'],
+      ['GET', 'config:recado'], ['GET', 'config:horasMes'], ['GET', 'config:updatedAt'],
+      ['GET', 'config:top3'], ['GET', 'config:hall'], ['GET', 'config:votosFechamento']
     ]);
 
     let aviso = null, top3 = [], hall = [];
