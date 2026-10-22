@@ -1352,3 +1352,11 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .jogo-half { display: flex; flex-direction: row; align-items: stretch; padding: 16px 14px; }
 .foco-info { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
 .foco-btns { margin-top: auto; padding-top: 8px; }
+
+/* Impede que o card do Hall da Fama mude de tamanho quando a lista está vazia */
+#hallLista {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

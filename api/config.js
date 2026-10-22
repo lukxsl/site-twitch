@@ -6,9 +6,9 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = process.env.STREAMELEMENTS_JWT || '';
 
-// Cache atualizado para v6 (força a busca de dados novos)
-const HALL_CACHE_KEY = 'cache:hall_v6';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v6';
+// Cache atualizado para v7 (força a busca dos dados novos)
+const HALL_CACHE_KEY = 'cache:hall_v7';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v7';
 const HALL_CACHE_TTL = 15 * 60; // 15 minutos
 
 async function redis(cmds) {
@@ -101,7 +101,7 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL DA FAMA ============ */
+/* ============ HALL DA FAMA (ROTAS NOVAS v7) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   try {
@@ -110,7 +110,7 @@ async function hallStreamElements() {
     const cid = me?._id;
     if (!cid) return null;
 
-    // 1. DOADORES
+    // 1. Doadores (Leaderboard)
     let doadoresRanking = [];
     try {
       const tipsLbRes = await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips`, { headers: h });
@@ -121,13 +121,13 @@ async function hallStreamElements() {
           doadoresRanking = lista.slice(0, 5).map(t => ({
             nome: t.username || t.donation?.user?.username || 'Anônimo',
             total: Number(t.amount || t.donation?.amount) || 0,
-            avatar: null // StreamElements não manda foto
+            avatar: null
           }));
         }
       }
     } catch(e) { console.error('Erro tipsLb', e); }
 
-    // Fallback para doadores (se o leaderboard falhar)
+    // Fallback para doadores
     if (!doadoresRanking.length) {
       try {
         const tipsResp = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
@@ -138,50 +138,72 @@ async function hallStreamElements() {
             const valor = Number(t.donation?.amount || t.amount) || 0;
             doadoresMap[nome] = (doadoresMap[nome] || 0) + valor;
           });
-          doadoresRanking = Object.entries(doadoresMap)
-            .map(([nome, total]) => ({ nome, total }))
-            .sort((a, b) => b.total - a.total)
-            .slice(0, 5);
+          doadoresRanking = Object.entries(doadoresMap).map(([nome, total]) => ({ nome, total })).sort((a, b) => b.total - a.total).slice(0, 5);
         }
       } catch(e) { console.error('Erro tips fallback', e); }
     }
 
-    // 2. FIÉIS
+    // 2. Gift Subs e Fiéis (Via Activities)
+    let giftRanking = [];
     let fieis = [];
     try {
-      const subsLbRes = await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/subscribers`, { headers: h });
-      if (subsLbRes.ok) {
-        const subsLb = await subsLbRes.json();
-        const lista = Array.isArray(subsLb) ? subsLb : (subsLb.docs || []);
-        if (lista.length) {
-          fieis = lista.slice(0, 5).map(s => ({
-            nome: s.username || 'Anônimo',
-            meses: Number(s.amount || s.months) || 1
+      const activitiesRes = await fetch(`https://api.streamelements.com/kappa/v2/activities/${cid}?limit=100&types=subscriber`, { headers: h });
+      if (activitiesRes.ok) {
+        const activities = await activitiesRes.json();
+        const lista = Array.isArray(activities) ? activities : (activities.docs || []);
+        const gifts = {};
+        const subsParaFieis = [];
+        lista.forEach(act => {
+          const data = act.data || {};
+          const username = data.username || data.displayName || act.username;
+          if (!username) return;
+          
+          // Gift
+          if (data.wasGifted || data.giftedBy) {
+            const gifter = data.giftedBy || 'Anônimo';
+            gifts[gifter] = (gifts[gifter] || 0) + 1;
+          }
+          // Fiéis
+          const desde = data.subscribedAt || data.createdAt || act.createdAt;
+          if (desde) {
+            subsParaFieis.push({ nome: username, desde: new Date(desde).getTime() });
+          }
+        });
+        giftRanking = Object.entries(gifts).map(([nome, total]) => ({ nome, total })).sort((a, b) => b.total - a.total).slice(0, 5);
+        fieis = subsParaFieis.filter(s => s.desde).sort((a, b) => a.desde - b.desde).slice(0, 5).map(s => ({
+          nome: s.nome,
+          meses: Math.max(1, Math.round((Date.now() - s.desde) / (30 * 24 * 60 * 60 * 1000)))
+        }));
+      }
+    } catch(e) { console.error('Erro activities subs', e); }
+
+    // Fallback para Subs (se activities falhar)
+    if (!giftRanking.length && !fieis.length) {
+      try {
+        const subsRes = await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h });
+        if (subsRes.ok) {
+          const subsResp = await subsRes.json();
+          const lista = subsResp.docs || subsResp.data || [];
+          const gifts = {};
+          const subsParaFieis = [];
+          lista.forEach(s => {
+            const username = s.username || s.displayName;
+            if (!username) return;
+            if (s.wasGifted || s.giftedBy) {
+              const gifter = s.giftedBy || 'Anônimo';
+              gifts[gifter] = (gifts[gifter] || 0) + 1;
+            }
+            const desde = s.subscribedAt || s.createdAt;
+            if (desde) subsParaFieis.push({ nome: username, desde: new Date(desde).getTime() });
+          });
+          giftRanking = Object.entries(gifts).map(([nome, total]) => ({ nome, total })).sort((a, b) => b.total - a.total).slice(0, 5);
+          fieis = subsParaFieis.filter(s => s.desde).sort((a, b) => a.desde - b.desde).slice(0, 5).map(s => ({
+            nome: s.nome,
+            meses: Math.max(1, Math.round((Date.now() - s.desde) / (30 * 24 * 60 * 60 * 1000)))
           }));
         }
-      }
-    } catch(e) { console.error('Erro subsLb', e); }
-
-    // 3. GIFT SUBS
-    let giftRanking = [];
-    try {
-      const giftedRes = await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=100`, { headers: h });
-      if (giftedRes.ok) {
-        const giftedResp = await giftedRes.json();
-        if (giftedResp && !giftedResp.statusCode && giftedResp.docs) {
-          const gifts = {};
-          giftedResp.docs.forEach(s => {
-            const gifter = s.giftedBy || s.gifter;
-            const nome = typeof gifter === 'string' ? gifter : (gifter?.username || '');
-            if (nome) gifts[nome] = (gifts[nome] || 0) + 1;
-          });
-          giftRanking = Object.entries(gifts)
-            .map(([nome, total]) => ({ nome, total }))
-            .sort((a, b) => b.total - a.total)
-            .slice(0, 5);
-        }
-      }
-    } catch(e) { /* 404 silencioso */ }
+      } catch(e) { /* 404 silencioso */ }
+    }
 
     return {
       vazio: !giftRanking.length && !fieis.length && !doadoresRanking.length,
