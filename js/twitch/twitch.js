@@ -317,7 +317,7 @@ async function verificarStatusTwitch() {
         panel.innerHTML = `
           <div style="font-size:2.6rem;line-height:1">🔞</div>
           <h4>Conteúdo +18 agora</h4>
-          <p>A Soso tá jogando algo com classificação adulta. O Twitch bloqueia o player embutido nesses casos — assiste direto no site deles:</p>
+          <p>A Soso tá jogando algo com classificação adulta. O Twitch bloqueia o player embutido nesses casos — assista direto no site deles:</p>
           <div class="offline-actions">
             <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">▶ Assistir na Twitch</a>
           </div>
