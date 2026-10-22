@@ -2008,20 +2008,41 @@ function setupBurger(){
   });
 }
 
+/* 🆕 CORREÇÃO DO BOTÃO VOLTAR PRA LIVE */
 function setupFloatingLive(){
   const btn = document.getElementById('floatLiveBtn');
   if(!btn) return;
+  
   window.addEventListener('scroll', () => {
     if(!ultVivo) { btn.classList.remove('show'); return; }
     const player = document.querySelector('.twitch-player-box');
-    if(!player) { btn.classList.remove('show'); return; }
+    
+    // Se o player não estiver na tela (aba errada), esconde o botão
+    if(!player || player.offsetParent === null) { 
+      btn.classList.remove('show'); 
+      return; 
+    }
+    
     const r = player.getBoundingClientRect();
     if(r.bottom < 100) btn.classList.add('show');
     else btn.classList.remove('show');
   }, { passive: true });
+  
   btn.addEventListener('click', () => {
     const player = document.querySelector('.twitch-player-box');
-    if(player) player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Se o player não estiver visível (aba errada), muda pra início primeiro
+    if(!player || player.offsetParent === null) {
+      mudarAba('inicio');
+      // Espera a animação da troca de aba e rola até o player
+      setTimeout(() => {
+        const p = document.querySelector('.twitch-player-box');
+        if(p) p.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    } else {
+      // Se já está na aba início, só rola
+      player.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   });
 }
 
