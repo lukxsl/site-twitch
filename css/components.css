@@ -300,17 +300,20 @@ dialog .card{transform:none !important}
    ============================================================ */
 /* Lista do Hall: Trava a altura para não esticar o card */
 #hallLista {
-  flex: 0 0 220px; 
-  height: 220px;
+  flex: 1 1 auto;
+  min-height: 150px;
+  max-height: 280px; /* Permite crescer um pouco mais, mas não estica infinito */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding-right: 4px;
-  margin-top: 10px;
+  justify-content: flex-start; /* Alinha do topo, não no meio */
+  padding-right: 8px; /* Dá um respiro para a barra de rolagem */
+  padding-bottom: 8px; /* Garante que o último item não cole na borda */
+  margin-top: 12px;
 }
 
-#hallLista::-webkit-scrollbar { width: 4px; }
+#hallLista::-webkit-scrollbar { width: 5px; }
+#hallLista::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 99px; }
 #hallLista::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
 
 .hall-row{

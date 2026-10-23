@@ -6,9 +6,9 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim();
 
-// Cache atualizado para v12 (Força a buscar dados novos)
-const HALL_CACHE_KEY = 'cache:hall_v12';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v12';
+// Cache atualizado para v13 (Força a buscar dados novos)
+const HALL_CACHE_KEY = 'cache:hall_v13';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v13';
 const HALL_CACHE_TTL = 15 * 60;
 
 async function redis(cmds) {
@@ -101,7 +101,7 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL DA FAMA (v12 - Busca via Tips para garantir) ============ */
+/* ============ HALL DA FAMA (v13 - Usando Leaderboard Oficial) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   
@@ -110,39 +110,34 @@ async function hallStreamElements() {
   const cid = me?._id;
   if (!cid) return null;
 
-  // Busca as últimas 100 doações (garantido que funciona pois é a mesma rota das metas)
-  const tipsResp = await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })
-    .then(r => r.ok ? r.json() : null)
-    .catch(() => null);
+  try {
+    // Puxa o ranking histórico de verdade
+    const lbResp = await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips?limit=10`, { headers: h });
+    if (!lbResp.ok) throw new Error('Falha no leaderboard');
+    const lbData = await lbResp.json();
 
-  let doadoresRanking = [];
+    // A API pode retornar como Array ou dentro de um objeto (users/docs)
+    const lista = Array.isArray(lbData) ? lbData : (lbData.users || lbData.docs || []);
 
-  if (tipsResp && Array.isArray(tipsResp.docs)) {
-    const doadoresMap = {};
-    
-    tipsResp.docs.forEach(t => {
-      const nome = t.username || t.donation?.user?.username || 'Anônimo';
-      // Pega o valor da doação (algumas versões da API usam t.amount, outras t.donation.amount)
-      const valor = Number(t.amount || t.donation?.amount) || 0;
-      
-      if (valor > 0) {
-        doadoresMap[nome] = (doadoresMap[nome] || 0) + valor;
-      }
-    });
+    const doadoresRanking = lista.map(t => ({
+      nome: t.username || t.user?.username || t.donation?.user?.username || 'Anônimo',
+      total: Number(t.amount || t.points || t.donation?.amount) || 0,
+      avatar: null
+    }))
+    .filter(t => t.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10);
 
-    // Transforma em lista e ordena do maior para o menor
-    doadoresRanking = Object.entries(doadoresMap)
-      .map(([nome, total]) => ({ nome, total, avatar: null }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10); // Pega o Top 10
+    return {
+      vazio: !doadoresRanking.length,
+      gift: [],
+      fieis: [],
+      doadores: doadoresRanking
+    };
+  } catch (e) {
+    console.error('Erro ao buscar leaderboard:', e);
+    return { vazio: true, doadores: [], gift: [], fieis: [] };
   }
-
-  return {
-    vazio: !doadoresRanking.length,
-    gift: [], // Removido
-    fieis: [], // Removido
-    doadores: doadoresRanking
-  };
 }
 
 async function salvarHallCache(dados) {
@@ -170,14 +165,13 @@ export default async function handler(req, res) {
   const action = req.query?.action || '';
 
   try {
-    // Rota de debug para você testar o que a API está devolvendo
     if (action === 'debug-hall') {
       const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
       const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
       const cid = me?._id;
-      const tipsRaw = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=5`, { headers: h })).json().catch(e => e.message);
+      const lbRaw = await (await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips?limit=10`, { headers: h })).json().catch(e => e.message);
       
-      return res.status(200).json({ cid, tipsRaw });
+      return res.status(200).json({ cid, lbRaw });
     }
 
     if (action === 'apoiadores') {
