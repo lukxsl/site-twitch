@@ -6,8 +6,9 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim();
 
-const HALL_CACHE_KEY = 'cache:hall_v11';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v11';
+// Cache atualizado para v12 (Força a buscar dados novos)
+const HALL_CACHE_KEY = 'cache:hall_v12';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v12';
 const HALL_CACHE_TTL = 15 * 60;
 
 async function redis(cmds) {
@@ -100,7 +101,7 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL DA FAMA (v11) ============ */
+/* ============ HALL DA FAMA (v12 - Busca via Tips para garantir) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   
@@ -109,49 +110,37 @@ async function hallStreamElements() {
   const cid = me?._id;
   if (!cid) return null;
 
-  const results = await Promise.allSettled([
-    fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips`, { headers: h }).then(r => r.ok ? r.json() : null),
-    fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/gifters`, { headers: h }).then(r => r.ok ? r.json() : null),
-    fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/subscribers`, { headers: h }).then(r => r.ok ? r.json() : null)
-  ]);
-
-  const tipsLb = results[0].status === 'fulfilled' ? results[0].value : null;
-  const giftersLb = results[1].status === 'fulfilled' ? results[1].value : null;
-  const subsLb = results[2].status === 'fulfilled' ? results[2].value : null;
+  // Busca as últimas 100 doações (garantido que funciona pois é a mesma rota das metas)
+  const tipsResp = await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })
+    .then(r => r.ok ? r.json() : null)
+    .catch(() => null);
 
   let doadoresRanking = [];
-  if (tipsLb) {
-    const lista = Array.isArray(tipsLb) ? tipsLb : (tipsLb.docs || []);
-    // ALTERADO AQUI: de .slice(0, 5) para .slice(0, 10)
-    doadoresRanking = lista.slice(0, 10).map(t => ({
-      nome: t.username || t.donation?.user?.username || 'Anônimo',
-      total: Number(t.amount || t.donation?.amount) || 0,
-      avatar: null
-    }));
-  }
 
-  let giftRanking = [];
-  if (giftersLb) {
-    const lista = Array.isArray(giftersLb) ? giftersLb : (giftersLb.docs || []);
-    giftRanking = lista.slice(0, 5).map(g => ({
-      nome: g.username || 'Anônimo',
-      total: Number(g.amount) || 0
-    }));
-  }
+  if (tipsResp && Array.isArray(tipsResp.docs)) {
+    const doadoresMap = {};
+    
+    tipsResp.docs.forEach(t => {
+      const nome = t.username || t.donation?.user?.username || 'Anônimo';
+      // Pega o valor da doação (algumas versões da API usam t.amount, outras t.donation.amount)
+      const valor = Number(t.amount || t.donation?.amount) || 0;
+      
+      if (valor > 0) {
+        doadoresMap[nome] = (doadoresMap[nome] || 0) + valor;
+      }
+    });
 
-  let fieis = [];
-  if (subsLb) {
-    const lista = Array.isArray(subsLb) ? subsLb : (subsLb.docs || []);
-    fieis = lista.slice(0, 5).map(s => ({
-      nome: s.username || 'Anônimo',
-      meses: Number(s.amount) || 1
-    }));
+    // Transforma em lista e ordena do maior para o menor
+    doadoresRanking = Object.entries(doadoresMap)
+      .map(([nome, total]) => ({ nome, total, avatar: null }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10); // Pega o Top 10
   }
 
   return {
-    vazio: !giftRanking.length && !fieis.length && !doadoresRanking.length,
-    gift: giftRanking,
-    fieis: fieis,
+    vazio: !doadoresRanking.length,
+    gift: [], // Removido
+    fieis: [], // Removido
     doadores: doadoresRanking
   };
 }
@@ -181,16 +170,14 @@ export default async function handler(req, res) {
   const action = req.query?.action || '';
 
   try {
-    if (action === 'debug-subs') {
+    // Rota de debug para você testar o que a API está devolvendo
+    if (action === 'debug-hall') {
       const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
       const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
       const cid = me?._id;
+      const tipsRaw = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=5`, { headers: h })).json().catch(e => e.message);
       
-      const testGift = await (await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/gifters`, { headers: h })).json().catch(e => e.message);
-      const testSubs = await (await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/subscribers`, { headers: h })).json().catch(e => e.message);
-      const testSubsRaw = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=3`, { headers: h })).json().catch(e => e.message);
-
-      return res.status(200).json({ cid, testGift, testSubs, testSubsRaw });
+      return res.status(200).json({ cid, tipsRaw });
     }
 
     if (action === 'apoiadores') {
@@ -224,7 +211,7 @@ export default async function handler(req, res) {
       const agora = Date.now();
       const idade = cache ? (agora - cache.ts) / 1000 : Infinity;
 
-      if (!STREAMELEMENTS_JWT) return res.status(200).json({ vazio: true, gift: [], fieis: [], doadores: [], updatedAt: null });
+      if (!STREAMELEMENTS_JWT) return res.status(200).json({ vazio: true, doadores: [], updatedAt: null });
 
       if (cache && idade < HALL_CACHE_TTL) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
 
@@ -235,7 +222,7 @@ export default async function handler(req, res) {
 
       const dados = await hallStreamElements();
       if (dados) { await salvarHallCache(dados); return res.status(200).json({ ...dados, updatedAt: Date.now() }); }
-      return res.status(200).json({ vazio: true, gift: [], fieis: [], doadores: [], updatedAt: null });
+      return res.status(200).json({ vazio: true, doadores: [], updatedAt: null });
     }
 
     if (action === 'status-perfil') {
