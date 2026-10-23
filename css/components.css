@@ -289,7 +289,6 @@ dialog .card{transform:none !important}
   flex-direction:column;
   gap:12px;
   padding:20px;
-  /* CORREÇÃO: Removido height:100% e forçado a não esticar */
   flex: 0 0 auto !important; 
 }
 .apoie-head h3{font-size:1.1rem;color:var(--white);margin-bottom:4px}
@@ -297,17 +296,12 @@ dialog .card{transform:none !important}
 .ap-vazio{color:var(--mute);font-size:.78rem;text-align:center;padding:12px;font-style:italic;opacity:.8}
 
 /* ============================================================
-   HALL DA FAMA
+   HALL DA FAMA (Apenas Doadores)
    ============================================================ */
-.hall-tabs{display:flex;gap:4px;margin:6px 0 10px}
-.hall-tab{flex:1;background:rgba(255,255,255,.02);border:1px solid var(--line);color:var(--mute);font-family:inherit;font-weight:700;font-size:.7rem;padding:8px 6px;border-radius:8px;cursor:pointer;transition:.2s;white-space:nowrap}
-.hall-tab:hover{color:var(--white);border-color:var(--line-2);background:rgba(168,85,247,.08)}
-.hall-tab.on{background:linear-gradient(135deg,rgba(255,209,102,.18),rgba(168,85,247,.1));border-color:rgba(255,209,102,.35);color:#ffe4a3}
-
 /* Lista do Hall: Trava a altura para não esticar o card */
 #hallLista {
-  flex: 0 0 160px; 
-  height: 160px;
+  flex: 0 0 220px; 
+  height: 220px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1374,32 +1368,3 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .jogo-half { display: flex; flex-direction: row; align-items: stretch; padding: 16px 14px; }
 .foco-info { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
 .foco-btns { margin-top: auto; padding-top: 8px; }
-
-/* ============================================================
-   CORREÇÃO — HALL DA FAMA (Layout Alinhado)
-   ============================================================ */
-#hallLista {
-  flex: 0 0 160px; 
-  height: 160px;
-  overflow-y: auto; 
-  display: flex;
-  flex-direction: column;
-  justify-content: center; 
-  padding-right: 4px;
-  margin-top: 10px;
-}
-
-#hallLista::-webkit-scrollbar { width: 4px; }
-#hallLista::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
-
-#hallLista .hall-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  background: transparent;
-  border: 1px dashed var(--line);
-  border-radius: var(--r-sm);
-}

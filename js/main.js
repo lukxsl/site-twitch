@@ -83,7 +83,7 @@ let _recentes = [];
 let _musicaPronta = false;
 
 let HALL_DADOS = null;
-let HALL_ABA = 'gift';
+let HALL_ABA = 'doadores'; // Alterado para focar apenas em doadores
 let HALL_TIMER = null;
 
 let sortMode = 'nota';
@@ -298,7 +298,7 @@ function setupSubShortcuts(){
 }
 
 /* ============================================================
-   HALL DA FAMA
+   HALL DA FAMA (Apenas Doadores)
    ============================================================ */
 async function carregarHall(){
   const lista = $('hallLista'); if(!lista) return;
@@ -308,7 +308,7 @@ async function carregarHall(){
     HALL_DADOS = d;
     renderHall();
   } catch(e){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>Nenhum doador ainda.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
   }
 }
 
@@ -319,25 +319,21 @@ function renderHall(){
   const d = HALL_DADOS;
 
   if(!d || d.vazio){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>Nenhum doador ainda.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
     if(updated) updated.style.display = 'none';
     return;
   }
 
-  const itens = (HALL_ABA === 'gift' ? (d.gift || [])
-              : HALL_ABA === 'fieis' ? (d.fieis || [])
-              : (d.doadores || [])).slice(0, 3);
+  // Agora mostra o Top 5 Doadores (mude para 10 se quiser a lista ainda maior)
+  const itens = (d.doadores || []).slice(0, 5);
 
   if(!itens.length){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>Nenhum doador ainda.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
   } else {
     const medalhas = ['🥇','🥈','🥉'];
     lista.innerHTML = itens.map((p, i) => {
       const medalha = medalhas[i] || `${i+1}º`;
-      let meta = '';
-      if(HALL_ABA === 'gift') meta = `${p.total} gift${p.total === 1 ? '' : 's'}`;
-      else if(HALL_ABA === 'fieis') meta = `${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
-      else meta = fmtBRL(p.total);
+      const meta = fmtBRL(p.total);
 
       const avatarHTML = p.avatar
         ? `<img class="hr-avatar" src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hr-avatar-ph',textContent:'👤'}))">`
@@ -376,20 +372,7 @@ function atualizarTextoHallUpdated(ts){
   el.textContent = texto;
 }
 
-function setupHallTabs(){
-  const wrap = $('hallTabs'); if(!wrap || wrap.dataset.bound) return;
-  wrap.dataset.bound = '1';
-  wrap.addEventListener('click', e => {
-    const btn = e.target.closest('.hall-tab');
-    if(!btn) return;
-    wrap.querySelectorAll('.hall-tab').forEach(t => t.classList.toggle('on', t === btn));
-    HALL_ABA = btn.dataset.hall || 'gift';
-    renderHall();
-  });
-}
-
 function iniciarHall(){
-  setupHallTabs();
   carregarHall();
   if(HALL_TIMER) clearInterval(HALL_TIMER);
   HALL_TIMER = setInterval(() => {
@@ -1460,7 +1443,6 @@ function renderVotacao(){
 
   const semOpcoes = !VOTOS_DADOS.length && votoStatus === 'ok';
 
-  // 🆕 Esconde/mostra o card "Próximo na votação" na home
   const proxHalf = document.querySelector('.jogos-card .jogo-half:nth-child(2)');
   if(proxHalf) proxHalf.style.display = semOpcoes ? 'none' : '';
 
@@ -1762,7 +1744,6 @@ function tipoInfoSug(tipo){
   return { ic: '💡', label: 'sugestao' };
 }
 
-/* 🆕 Renderiza 2 grupos de chips clicáveis: tipo + status */
 function renderSirFiltros(itens){
   const wrap = $('sirFiltros'); if(!wrap) return;
 
@@ -1863,7 +1844,6 @@ async function carregarUltimasIdeias(){
   }
 }
 
-/* 🆕 Aceita os dois tipos de chip (tipo + status) */
 function setupSirFiltros(){
   const wrap = $('sirFiltros'); if(!wrap || wrap.dataset.bound) return;
   wrap.dataset.bound = '1';
@@ -2068,7 +2048,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
   setupSubShortcuts();
-  iniciarHall();
+  iniciarHall(); // <- Aqui inicia o hall sem abas
   renderOuvindo();
 
   if (typeof setupView === 'undefined') {

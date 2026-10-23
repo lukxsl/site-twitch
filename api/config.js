@@ -4,12 +4,11 @@ const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim(); // Garante que não tem espaço extra
+const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim();
 
-// Cache atualizado para v11
 const HALL_CACHE_KEY = 'cache:hall_v11';
 const HALL_CACHE_TS_KEY = 'cache:hall_at_v11';
-const HALL_CACHE_TTL = 15 * 60; // 15 minutos
+const HALL_CACHE_TTL = 15 * 60;
 
 async function redis(cmds) {
   const r = await fetch(`${URL_}/pipeline`, {
@@ -123,7 +122,8 @@ async function hallStreamElements() {
   let doadoresRanking = [];
   if (tipsLb) {
     const lista = Array.isArray(tipsLb) ? tipsLb : (tipsLb.docs || []);
-    doadoresRanking = lista.slice(0, 5).map(t => ({
+    // ALTERADO AQUI: de .slice(0, 5) para .slice(0, 10)
+    doadoresRanking = lista.slice(0, 10).map(t => ({
       nome: t.username || t.donation?.user?.username || 'Anônimo',
       total: Number(t.amount || t.donation?.amount) || 0,
       avatar: null
