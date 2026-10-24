@@ -3,6 +3,7 @@
    ============================================================ */
 let _sonhoSelecionado = null;
 
+// LISTA ATUALIZADA COM OS COMPONENTES DA SOSO
 const SETUP_DATA = [
   {
     id: 'pc',
@@ -22,7 +23,7 @@ const SETUP_DATA = [
   },
   {
     id: 'per',
-    titulo: '🖱️ Periféricos & Outros',
+    titulo: '🖱️ Periféricos',
     accent: 'pink',
     tipo: 'real',
     itens: [
@@ -68,6 +69,7 @@ const SONHOS_DATA = [
   }
 ];
 
+/* Função que abre o Modal (chamada quando clica no pontinho) */
 function abrirItemSetup(grupoId, idx){
   const g = SETUP_DATA.find(x => x.id === grupoId);
   if(!g) return;
@@ -275,25 +277,26 @@ async function enviarContribuicao(){
 window.enviarContribuicao = enviarContribuicao;
 
 /* ============================================================
-   VISUALIZADOR 360° DO SETUP (Photo Sphere Viewer)
+   VISUALIZADOR 360° (A MÁGICA ACONTECE AQUI)
    ============================================================ */
 function iniciarSetup360() {
   const container = document.getElementById('setup360Container');
   if (!container) return;
+  
+  // Se a biblioteca não carregou, mostra um erro no console
   if (typeof PhotoSphereViewer === 'undefined') {
-    console.error("Photo Sphere Viewer não carregou.");
+    console.error("Erro: Photo Sphere Viewer não carregou os scripts JS.");
     return;
   }
 
-  // --- ATENÇÃO: SUBSTITUA PELA URL DA SUA FOTO 360° AQUI ---
-  // Essa é uma imagem de teste do Pannellum (sala de aula) que sempre funciona.
+  // IMAGEM DE TESTE (Sala de Aula). Depois troque pela sua foto do quarto.
   const urlFoto360 = 'https://pannellum.org/images/alma.jpg'; 
 
   const viewer = new PhotoSphereViewer.Viewer({
     container: container,
     panorama: urlFoto360,
     caption: 'Arraste para explorar o setup 360° 💜',
-    loadingTxt: 'Carregando cantinho...',
+    loadingTxt: 'Carregando o cantinho...',
     touchmoveTwoFingers: false, // Permite arrastar com 1 dedo no celular
     mousewheelCtrlKey: false,   // Permite dar zoom com a rodinha do mouse direto
     defaultYaw: '0deg',
@@ -302,13 +305,13 @@ function iniciarSetup360() {
     plugins: [
       [PhotoSphereViewer.MarkersPlugin, {
         markers: [
-          // 1. PC Gamer (Processador)
+          // 1. PC Gamer
           {
             id: 'pc',
             position: { yaw: '2.9rad', pitch: '0.1rad' }, 
             html: '<div class="custom-hotspot" title="Ver PC Gamer">💻</div>',
             tooltip: 'Ver PC Gamer',
-            click: () => { abrirItemSetup('pc', 0); }
+            click: () => { abrirItemSetup('pc', 0); } // Abre o Processador
           },
           // 2. Microfone
           {
@@ -316,7 +319,7 @@ function iniciarSetup360() {
             position: { yaw: '1.2rad', pitch: '-0.1rad' },
             html: '<div class="custom-hotspot" title="Ver Microfone">🎙️</div>',
             tooltip: 'Ver Microfone',
-            click: () => { abrirItemSetup('per', 3); }
+            click: () => { abrirItemSetup('per', 3); } // Abre o Microfone
           },
           // 3. Monitor
           {
@@ -324,7 +327,7 @@ function iniciarSetup360() {
             position: { yaw: '2.0rad', pitch: '0.2rad' },
             html: '<div class="custom-hotspot" title="Ver Monitor">🖥️</div>',
             tooltip: 'Ver Monitor',
-            click: () => { abrirItemSetup('per', 4); }
+            click: () => { abrirItemSetup('per', 4); } // Abre o Monitor
           },
           // 4. Teclado
           {
@@ -332,7 +335,7 @@ function iniciarSetup360() {
             position: { yaw: '2.8rad', pitch: '-0.3rad' },
             html: '<div class="custom-hotspot" title="Ver Teclado">⌨️</div>',
             tooltip: 'Ver Teclado',
-            click: () => { abrirItemSetup('per', 0); }
+            click: () => { abrirItemSetup('per', 0); } // Abre o Teclado
           },
           // 5. Mouse
           {
@@ -340,7 +343,7 @@ function iniciarSetup360() {
             position: { yaw: '3.2rad', pitch: '-0.4rad' },
             html: '<div class="custom-hotspot" title="Ver Mouse">🖱️</div>',
             tooltip: 'Ver Mouse',
-            click: () => { abrirItemSetup('per', 1); }
+            click: () => { abrirItemSetup('per', 1); } // Abre o Mouse
           },
           // 6. Headset
           {
@@ -348,7 +351,7 @@ function iniciarSetup360() {
             position: { yaw: '1.8rad', pitch: '-0.2rad' },
             html: '<div class="custom-hotspot" title="Ver Headset">🎧</div>',
             tooltip: 'Ver Headset',
-            click: () => { abrirItemSetup('per', 2); }
+            click: () => { abrirItemSetup('per', 2); } // Abre o Headset
           }
         ]
       }]
@@ -358,5 +361,6 @@ function iniciarSetup360() {
 
 // Inicia o visualizador quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(iniciarSetup360, 500);
+  // Um pequeno delay para garantir que a página e os scripts estejam 100% prontos
+  setTimeout(iniciarSetup360, 600);
 });
