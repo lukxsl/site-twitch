@@ -59,7 +59,6 @@ const LABEL_STATUS = {
   nova:'Nova', analise:'Em análise', aceita:'Aceita', recusada:'Recusada', concluido:'Concluído'
 };
 
-/* ============ SESSÃO ============ */
 function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
 function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
 function assinarValido(p, sig){
@@ -118,7 +117,6 @@ async function logAcao(quem, cargo, acao){
   } catch(e){}
 }
 
-/* ============ TRADUÇÃO ============ */
 async function traduzir(texto){
   if(!texto) return null;
   try {
@@ -134,7 +132,6 @@ async function traduzir(texto){
   } catch(e){ return null; }
 }
 
-/* ============ WIKIPEDIA ============ */
 async function sinopseWikipedia(nome, lang = 'pt'){
   try {
     const searchUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(nome)}&format=json&origin=*&srlimit=1`;
@@ -151,7 +148,6 @@ async function sinopseWikipedia(nome, lang = 'pt'){
   } catch(e){ return null; }
 }
 
-/* ============ IGDB ============ */
 let igdbCache = { token: null, exp: 0 };
 async function igdbToken(){
   if(igdbCache.token && Date.now() < igdbCache.exp) return igdbCache.token;
@@ -249,7 +245,6 @@ async function buscarConquistasSteam(appid){
   } catch(e){ return null; }
 }
 
-/* ============ IMPORTAR STEAM ============ */
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -288,7 +283,6 @@ async function importarSteam(){
   return { ok: true, adicionados, pulados, total: jogados.length };
 }
 
-/* ============ SINCRONIZAR HORAS ============ */
 async function sincronizarHoras(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
@@ -339,7 +333,6 @@ async function sincronizarHoras(){
   return { ok: true, atualizados, conqAtualizadas, total: atuais.length };
 }
 
-/* ============ NOTIFICAÇÃO DISCORD ============ */
 async function notificarStatus(item, novoStatus, motivo, quemMudou){
   if(!DISCORD_WEBHOOK) return;
 
@@ -414,14 +407,12 @@ async function notificarStatus(item, novoStatus, motivo, quemMudou){
   } catch(e){}
 }
 
-/* ============ HANDLER ============ */
 export default async function handler(req, res){
   if(!SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
 
   const action = req.query?.action || '';
 
-  // ============ CRON: sync-horas-cron ============
   if(req.method === 'GET' && action === 'sync-horas-cron'){
     const CRON_SECRET = process.env.CRON_SECRET;
     if(!CRON_SECRET) return res.status(500).json({ error: 'CRON_SECRET não configurado' });
@@ -525,7 +516,6 @@ export default async function handler(req, res){
       const opcoesRaw = Array.isArray(body.opcoes) ? body.opcoes : null;
       if(opcoesRaw === null) return res.status(400).json({ error: 'Dados inválidos' });
 
-      // 🆕 Permite array vazio — apaga todas as opções
       if(opcoesRaw.length === 0){
         await redis([['SET', 'votos:config', JSON.stringify([])]]);
         await logAcao(quem, sessao.cargo, 'Removeu TODAS as opções da votação');
@@ -831,6 +821,19 @@ export default async function handler(req, res){
       await redis(cmds);
       await logAcao(quem, sessao.cargo, `Salvou config geral${manutencao ? ' (manutenção)' : ''}`);
       return res.status(200).json({ ok: true, updatedAt: agora });
+    }
+
+    // ===== SETUP/SONHOS =====
+    if(req.method === 'POST' && action === 'setup-set'){
+      if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
+      const { setup, sonhos } = req.body || {};
+      const cmds = [];
+      if(setup && Array.isArray(setup)) cmds.push(['SET', 'setup:data', JSON.stringify(setup)]);
+      if(sonhos && Array.isArray(sonhos)) cmds.push(['SET', 'setup:sonhos', JSON.stringify(sonhos)]);
+      if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
+      await redis(cmds);
+      await logAcao(quem, sessao.cargo, `Editou setup dos sonhos (${sonhos ? sonhos.length : 0} sonhos)`);
+      return res.status(200).json({ ok: true });
     }
 
     if(req.method === 'GET' && action === 'logs-ver'){

@@ -83,13 +83,22 @@ let _recentes = [];
 let _musicaPronta = false;
 
 let HALL_DADOS = null;
-let HALL_ABA = 'doadores'; // Alterado para focar apenas em doadores
+let HALL_ABA = 'doadores';
 let HALL_TIMER = null;
 
 let sortMode = 'nota';
 let generoFiltro = [];
 let _jogoAoVivoNome = null;
 let _roletaRodando = false;
+
+/* ============================================================
+   EXPOR ultVivo / ultGame PRA CENA 3D (via window getter)
+   A cena 3D usa window.ultVivo no monitor "AO VIVO"
+   ============================================================ */
+try {
+  Object.defineProperty(window, 'ultVivo', { get: () => ultVivo, configurable: true });
+  Object.defineProperty(window, 'ultGame', { get: () => ultGame, configurable: true });
+} catch(e){}
 
 /* ============================================================
    HELPERS
@@ -324,7 +333,6 @@ function renderHall(){
     return;
   }
 
-  // Agora mostra o Top 5 Doadores (mude para 10 se quiser a lista ainda maior)
   const itens = (d.doadores || []).slice(0, 5);
 
   if(!itens.length){
@@ -1988,39 +1996,34 @@ function setupBurger(){
   });
 }
 
-/* 🆕 CORREÇÃO DO BOTÃO VOLTAR PRA LIVE */
 function setupFloatingLive(){
   const btn = document.getElementById('floatLiveBtn');
   if(!btn) return;
-  
+
   window.addEventListener('scroll', () => {
     if(!ultVivo) { btn.classList.remove('show'); return; }
     const player = document.querySelector('.twitch-player-box');
-    
-    // Se o player não estiver na tela (aba errada), esconde o botão
-    if(!player || player.offsetParent === null) { 
-      btn.classList.remove('show'); 
-      return; 
+
+    if(!player || player.offsetParent === null) {
+      btn.classList.remove('show');
+      return;
     }
-    
+
     const r = player.getBoundingClientRect();
     if(r.bottom < 100) btn.classList.add('show');
     else btn.classList.remove('show');
   }, { passive: true });
-  
+
   btn.addEventListener('click', () => {
     const player = document.querySelector('.twitch-player-box');
-    
-    // Se o player não estiver visível (aba errada), muda pra início primeiro
+
     if(!player || player.offsetParent === null) {
       mudarAba('inicio');
-      // Espera a animação da troca de aba e rola até o player
       setTimeout(() => {
         const p = document.querySelector('.twitch-player-box');
         if(p) p.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
     } else {
-      // Se já está na aba início, só rola
       player.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   });
@@ -2048,32 +2051,21 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
   setupSubShortcuts();
-  iniciarHall(); // <- Aqui inicia o hall sem abas
+  iniciarHall();
   renderOuvindo();
 
-  if (typeof setupView === 'undefined') {
-    window.setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
-  } else {
-    setupView = localStorage.getItem(SETUP_VIEW_KEY) || '3d';
-  }
-  document.querySelectorAll('.svt-btn').forEach(b => {
-    const on = b.dataset.view === setupView;
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-  });
-  setupRender(); renderSonhos(); renderApoiadores(); setupSetup3D();
+  /* ========================================================
+     SETUP — estado inicial + boot da cena 3D
+     O setup.js se auto-inicializa via DOMContentLoaded.
+     Aqui apenas garantimos o estado "loading" dos sonhos e,
+     como fallback, chamamos initSetup() se ainda não rodou.
+     ======================================================== */
+  if (typeof renderSonhos === 'function') { try { renderSonhos(); } catch(e){} }
+  if (typeof renderApoiadores === 'function') { try { renderApoiadores(); } catch(e){} }
 
-  const setupBuscaEl = $('setupBusca');
-  if(setupBuscaEl) setupBuscaEl.addEventListener('input', e => { setupBusca = e.target.value; setupRender(); });
-  document.querySelectorAll('.svt-btn').forEach(b => { b.addEventListener('click', () => setupSetView(b.dataset.view)); });
-
-  const setupGridEl = $('setupGrid');
-  if(setupGridEl){
-    setupGridEl.addEventListener('click', e => {
-      const item = e.target.closest('.setup-item');
-      if(!item) return;
-      abrirItemSetup(item.dataset.grupo, Number(item.dataset.idx));
-    });
+  if (!window.__setupIniciado && typeof initSetup === 'function') {
+    window.__setupIniciado = true;
+    initSetup();
   }
 
   setupSugForm();

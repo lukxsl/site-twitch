@@ -6,10 +6,38 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim();
 
-// Cache atualizado para v13 (Força a buscar dados novos)
 const HALL_CACHE_KEY = 'cache:hall_v13';
 const HALL_CACHE_TS_KEY = 'cache:hall_at_v13';
 const HALL_CACHE_TTL = 15 * 60;
+
+const DEFAULT_SETUP = [
+  { id: 'pc', titulo: '💻 PC Gamer', accent: 'blue', tipo: 'real', itens: [
+    { ic:'🧠', cat:'Processador',    nome:'Ryzen 9 5900X',               ano:2023, nota:10, comentario:'Monstro pra jogos e streaming.', benchmark:'Temp: 65°C | FPS: 144+ (Warzone)' },
+    { ic:'🎮', cat:'Placa de Vídeo', nome:'RTX 3060 12GB Branca',        ano:2023, nota:9,  comentario:'Linda e roda tudo liso.', benchmark:'Temp: 70°C | FPS: 120 (Fortnite)' },
+    { ic:'🧩', cat:'Memória RAM',    nome:'48GB de RAM',                 ano:2023, nota:9,  comentario:'Sobra RAM pra jogar e streamar.' },
+    { ic:'🔌', cat:'Placa Mãe',      nome:'X570 TUF Gaming',             ano:2023, nota:8,  comentario:'Ótima construção e dissipação.' },
+    { ic:'🗄️', cat:'Gabinete',       nome:'Risemode Aquarium Branco',    ano:2023, nota:8,  comentario:'Visual limpo e airflow top.' },
+    { ic:'💧', cat:'Water Cooler',   nome:'Risemode Aura RGB',           ano:2023, nota:7,  comentario:'Mantém a temperatura baixa.' },
+    { ic:'💾', cat:'Armazenamento',  nome:'SSD 2TB NVMe M.2',            ano:2024, nota:9,  comentario:'Leitura rápida, carrega em segundos.' },
+    { ic:'⚡', cat:'Fonte',          nome:'Corsair RM800W',              ano:2023, nota:9,  comentario:'80 Plus Gold, silenciosa.' }
+  ]},
+  { id: 'per', titulo: '🖱️ Periféricos', accent: 'pink', tipo: 'real', itens: [
+    { ic:'⌨️', cat:'Teclado',    nome:'Logitech G PRO X TKL Branco',     ano:2023, nota:10, comentario:'Switch top, ótimo pra jogar.' },
+    { ic:'🖱️', cat:'Mouse',      nome:'Logitech G502 X Superlight RGB',  ano:2024, nota:10, comentario:'Leve, preciso e TOP.' },
+    { ic:'🎧', cat:'Headset',    nome:'Astro A30',                       ano:2023, nota:9,  comentario:'Áudio excelente.' },
+    { ic:'🎙️', cat:'Microfone',  nome:'FIFINE AM8 Branco',               ano:2024, nota:8,  comentario:'Ganho bom e bonito.' },
+    { ic:'🖥️', cat:'Monitor',    nome:'AOC 240Hz',                       ano:2023, nota:9,  comentario:'240Hz faz MUITA diferença.' },
+    { ic:'📷', cat:'Webcam',     nome:'iPhone 11',                       ano:2023, nota:8,  comentario:'Usando como webcam, qualidade ótima.' }
+  ]},
+  { id: 'extra', titulo: '🪑 Mesa & Cadeira', accent: 'cyan', tipo: 'real', itens: [
+    { ic:'🪑', cat:'Cadeira', nome:'XT Racer', ano:2023, nota:8, comentario:'Confortável pra longas lives.' }
+  ]}
+];
+
+const DEFAULT_SONHOS = [
+  { id: 'sony-zv-e10', icon: '🎥', cat: 'Câmera profissional', nome: 'Sony ZV-E10', descricao: 'Pra dar um upgrade monstro no visual da live.', meta: 3500, arrecadado: 0, contribuintes: [] },
+  { id: 'shure-sm7b', icon: '🎤', cat: 'Microfone pro', nome: 'Shure SM7B', descricao: 'O sonho de todo streamer, mas precisa de interface.', meta: 4200, arrecadado: 0, contribuintes: [] }
+];
 
 async function redis(cmds) {
   const r = await fetch(`${URL_}/pipeline`, {
@@ -85,10 +113,8 @@ async function streamElementsBuscar() {
     const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
     const cid = me?._id;
     if (!cid) return null;
-
     const subs = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=1`, { headers: h })).json();
     const totalSubs = typeof subs?.total === 'number' ? subs.total : 0;
-
     const tips = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
     const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
     let totalDoacoes = 0;
@@ -101,41 +127,24 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
-/* ============ HALL DA FAMA (v13 - Usando Leaderboard Oficial) ============ */
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
-  
   const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
   const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json().catch(() => null);
   const cid = me?._id;
   if (!cid) return null;
-
   try {
-    // Puxa o ranking histórico de verdade
     const lbResp = await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips?limit=10`, { headers: h });
     if (!lbResp.ok) throw new Error('Falha no leaderboard');
     const lbData = await lbResp.json();
-
-    // A API pode retornar como Array ou dentro de um objeto (users/docs)
     const lista = Array.isArray(lbData) ? lbData : (lbData.users || lbData.docs || []);
-
     const doadoresRanking = lista.map(t => ({
       nome: t.username || t.user?.username || t.donation?.user?.username || 'Anônimo',
       total: Number(t.amount || t.points || t.donation?.amount) || 0,
       avatar: null
-    }))
-    .filter(t => t.total > 0)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 10);
-
-    return {
-      vazio: !doadoresRanking.length,
-      gift: [],
-      fieis: [],
-      doadores: doadoresRanking
-    };
+    })).filter(t => t.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
+    return { vazio: !doadoresRanking.length, gift: [], fieis: [], doadores: doadoresRanking };
   } catch (e) {
-    console.error('Erro ao buscar leaderboard:', e);
     return { vazio: true, doadores: [], gift: [], fieis: [] };
   }
 }
@@ -165,18 +174,26 @@ export default async function handler(req, res) {
   const action = req.query?.action || '';
 
   try {
+    // ===== SETUP =====
+    if (action === 'setup') {
+      const [setupRaw, sonhosRaw] = await redis([['GET', 'setup:data'], ['GET', 'setup:sonhos']]);
+      let setup = DEFAULT_SETUP, sonhos = DEFAULT_SONHOS;
+      try { if (setupRaw) setup = JSON.parse(setupRaw); } catch(e) {}
+      try { if (sonhosRaw) sonhos = JSON.parse(sonhosRaw); } catch(e) {}
+      return res.status(200).json({ setup, sonhos });
+    }
+
     if (action === 'debug-hall') {
       const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
       const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
       const cid = me?._id;
       const lbRaw = await (await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips?limit=10`, { headers: h })).json().catch(e => e.message);
-      
       return res.status(200).json({ cid, lbRaw });
     }
 
     if (action === 'apoiadores') {
       const [sonhosRaw] = await redis([['GET', 'setup:sonhos']]);
-      let sonhos = []; try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e) {}
+      let sonhos = []; try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : DEFAULT_SONHOS; } catch(e) {}
       return res.status(200).json({ top: calcularTopApoiadores(sonhos) });
     }
 

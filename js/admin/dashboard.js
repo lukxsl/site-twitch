@@ -217,26 +217,31 @@ async function renderAdminSetup(){
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🖥️ Setup dos sonhos') + `<p class="admin-vazio">Carregando…</p>`;
 
-  const sonhos = Array.isArray(window.SONHOS_DATA) ? window.SONHOS_DATA : [];
+  try {
+    const r = await fetch('/api/config?action=setup');
+    const d = await r.json();
+    window.SONHOS_DATA = d.sonhos || [];
+    window.SETUP_DATA_ADMIN = d.setup || [];
+  } catch(e) { toast('Erro ao carregar setup', 'erro'); }
+
+  const sonhos = window.SONHOS_DATA || [];
 
   area.innerHTML = adminVoltarHTML('🖥️ Setup dos sonhos') + `
     <div class="admin-card">
       <h3>✨ Sonhos ativos <span class="cont">${sonhos.length}</span></h3>
       <p style="color:var(--mute);font-size:.84rem;margin-bottom:14px">
-        Aqui você edita as metas, valores arrecadados e quem ajudou. Depois clica em salvar.
+        Edite as metas e contribuições. Depois clica em <b>Salvar tudo</b>.
       </p>
       <div id="adminSonhosLista"></div>
       <div class="admin-actions">
         <button class="admin-btn" onclick="adicionarSonho()">+ Adicionar sonho</button>
+        <button class="admin-btn" onclick="salvarSonhosAPI()">💾 Salvar tudo</button>
         <button class="admin-btn ghost" onclick="renderAdminSetup()">🔄 Recarregar</button>
       </div>
     </div>
 
     <div class="admin-card">
       <h3>🏆 Ranking de apoiadores</h3>
-      <p style="color:var(--mute);font-size:.84rem;margin-bottom:14px">
-        Visualização automática baseada nas contribuições adicionadas em cada sonho.
-      </p>
       <div id="adminApoiadoresLista"></div>
     </div>
   `;
@@ -328,7 +333,7 @@ function renderAdminApoiadoresLista(sonhos){
   `).join('');
 }
 
-async function salvarSonhos(){
+async function salvarSonhosAPI(){
   const sonhos = [];
   let idx = 0;
   while(document.getElementById(`sonho-${idx}-nome`)){
@@ -352,11 +357,21 @@ async function salvarSonhos(){
     if(s.nome) sonhos.push(s);
     idx++;
   }
-  window.SONHOS_DATA = sonhos;
-  toast('Sonhos salvos! ✅', 'ok');
-  renderAdminSetup();
+  try {
+    const r = await fetch('/api/admin?action=setup-set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sonhos })
+    });
+    if(!r.ok) throw new Error('Falha ao salvar');
+    window.SONHOS_DATA = sonhos;
+    toast('Setup salvo! ✅', 'ok');
+    renderAdminSetup();
+  } catch(e) {
+    toast('Erro: ' + e.message, 'erro');
+  }
 }
-window.salvarSonhos = salvarSonhos;
+window.salvarSonhosAPI = salvarSonhosAPI;
 
 function adicionarSonho(){
   const sonhos = window.SONHOS_DATA || [];
