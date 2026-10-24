@@ -234,13 +234,10 @@ window.enviarContribuicao = enviarContribuicao;
 
 /* ============================================================
    CENA 3D DO SETUP  (Three.js)
-   - Arraste para girar 360°
-   - Pontinhos 💜 e clique direto nos objetos abrem o item
-   - Clicar no PC abre a lateral e mostra os componentes
    ============================================================ */
 const Setup3D = (function () {
   let started = false, built = false, visible = false;
-  let container, wrap, pinLayer, hintEl, W = 0, H = 0;
+  let container, wrap, pinLayer, hintEl, ledPanel, W = 0, H = 0;
   let renderer, scene, camera, controls, raycaster;
   let pcGroup, caseShell, doorPivot;
   let mode = 'room';            // 'room' | 'pc'
@@ -254,6 +251,38 @@ const Setup3D = (function () {
   const tweens = [];
   let tmpV = null, camV = null;
   const DOOR_OPEN = 1.75;
+  
+  // Novidades
+  let rainMesh, rainVel = 0;
+  let catGroup, catBreath = 0;
+  let fans = [];
+  let audioCtx = null;
+  let ambientSound = null;
+
+  /* ---------- Audio Helpers ---------- */
+  function initAudio() {
+    if (audioCtx) return;
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContext();
+    } catch(e) {}
+  }
+  
+  function playSound(url) {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const audio = new Audio(url);
+    audio.volume = 0.3;
+    audio.play().catch(()=>{});
+  }
+
+  function playAmbient() {
+    if (!audioCtx || ambientSound) return;
+    ambientSound = new Audio('https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3'); // Lo-fi placeholder
+    ambientSound.loop = true;
+    ambientSound.volume = 0.15;
+    ambientSound.play().catch(()=>{});
+  }
 
   /* ---------- helpers de material / forma ---------- */
   function M(color, o) {
@@ -347,11 +376,10 @@ const Setup3D = (function () {
      CONSTRUÇÃO DA CENA
      ============================================================ */
   function buildRoom() {
-    // chão
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), M(0x100a1c, { roughness: 0.45, metalness: 0.25 }));
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
-    // tapete redondo
+    
     const rug = new THREE.Mesh(new THREE.CircleGeometry(1.15, 48), M(0x24153d, { roughness: 0.9, metalness: 0 }));
     rug.rotation.x = -Math.PI / 2;
     rug.position.set(-0.1, 0.003, 0.75);
@@ -361,7 +389,6 @@ const Setup3D = (function () {
     rugRing.position.set(-0.1, 0.005, 0.75);
     scene.add(rugRing);
 
-    // paredes (só aparecem de frente, então dá pra girar 360° sem bloquear)
     const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(7, 3.2), M(0x1a1030, { roughness: 0.95, metalness: 0 }));
     wallBack.position.set(0, 1.6, -0.45);
     scene.add(wallBack);
@@ -370,7 +397,6 @@ const Setup3D = (function () {
     wallLeft.position.set(-1.5, 1.6, 2.5);
     scene.add(wallLeft);
 
-    // moldura de LED na parede
     const fx = -0.15, fy = 1.12, fw = 1.7, fh = 0.95, ft = 0.012;
     const led = rgb(0.6);
     scene.add(box(fw, ft, ft, led, fx, fy + fh / 2, -0.435));
@@ -378,16 +404,36 @@ const Setup3D = (function () {
     scene.add(box(ft, fh, ft, led, fx - fw / 2, fy, -0.435));
     scene.add(box(ft, fh, ft, led, fx + fw / 2, fy, -0.435));
 
-    // mesa
     const deskMat = M(0x241d33, { roughness: 0.6, metalness: 0.15 });
     scene.add(box(2.0, 0.04, 0.75, deskMat, 0, 0.73, -0.025));
     scene.add(box(0.04, 0.71, 0.7, deskMat, -0.95, 0.355, -0.025));
     scene.add(box(0.04, 0.71, 0.7, deskMat, 0.95, 0.355, -0.025));
     scene.add(box(1.9, 0.25, 0.02, deskMat, 0, 0.58, -0.37));
-    // desk mat
     scene.add(box(1.0, 0.004, 0.42, M(0x120d1c, { roughness: 0.95, metalness: 0 }), -0.15, 0.752, 0.1));
     const matEdge = rgb(1.3);
     scene.add(box(1.0, 0.001, 0.006, matEdge, -0.15, 0.7545, 0.311));
+
+    // Objetos de decoração
+    const mug = new THREE.Group();
+    mug.position.set(0.35, 0.75, -0.2);
+    mug.add(cyl(0.035, 0.03, 0.09, M(0xf5f5f5, {roughness:0.4}), 0, 0.045, 0));
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.005, 8, 16, Math.PI), M(0xf5f5f5));
+    handle.position.set(0.035, 0.045, 0);
+    handle.rotation.y = Math.PI / 2;
+    mug.add(handle);
+    scene.add(mug);
+
+    const plant = new THREE.Group();
+    plant.position.set(-0.85, 0.75, -0.2);
+    plant.add(cyl(0.04, 0.03, 0.08, M(0xc4bcd9, {roughness:0.9}), 0, 0.04, 0));
+    for(let i=0; i<5; i++) {
+        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), M(0x22c55e, {roughness:0.8}));
+        leaf.scale.set(1, 2, 1);
+        leaf.position.set((Math.random()-0.5)*0.04, 0.1 + Math.random()*0.05, (Math.random()-0.5)*0.04);
+        leaf.rotation.z = (Math.random()-0.5)*0.5;
+        plant.add(leaf);
+    }
+    scene.add(plant);
   }
 
   function buildMonitor() {
@@ -397,20 +443,38 @@ const Setup3D = (function () {
     g.add(box(0.26, 0.012, 0.17, black, 0, 0.006, 0.0));
     g.add(box(0.045, 0.22, 0.022, black, 0, 0.12, -0.035));
     g.add(box(0.57, 0.33, 0.025, black, 0, 0.255, 0));
-    const tex = textTex(1024, 576, function (c, w, h) {
-      const gr = c.createLinearGradient(0, 0, w, h);
+    
+    // Monitor canvas "vivo"
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 288;
+    const ctx = canvas.getContext('2d');
+    const tex = new THREE.CanvasTexture(canvas);
+    
+    function updateCanvas() {
+      const gr = ctx.createLinearGradient(0, 0, 512, 288);
       gr.addColorStop(0, '#1b0b3a'); gr.addColorStop(0.55, '#6d28d9'); gr.addColorStop(1, '#ec4899');
-      c.fillStyle = gr; c.fillRect(0, 0, w, h);
-      c.fillStyle = 'rgba(255,255,255,0.92)';
-      c.textAlign = 'center';
-      c.font = '700 84px sans-serif';
-      c.fillText('meu cantinho', w / 2, h / 2 + 10);
-      c.font = '64px sans-serif';
-      c.fillText('💜', w / 2, h / 2 + 100);
-      c.font = '600 28px sans-serif';
-      c.fillStyle = 'rgba(255,255,255,0.7)';
-      c.fillText('240 Hz', w - 90, h - 28);
-    });
+      ctx.fillStyle = gr; ctx.fillRect(0, 0, 512, 288);
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.textAlign = 'center';
+      ctx.font = '700 44px sans-serif';
+      ctx.fillText('meu cantinho', 256, 140);
+      ctx.font = '34px sans-serif';
+      ctx.fillText('💜', 256, 190);
+      
+      if (ultVivo) {
+        ctx.fillStyle = '#ff4d5f';
+        ctx.beginPath();
+        ctx.arc(40, 40, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = '700 20px sans-serif';
+        ctx.fillText('AO VIVO', 80, 47);
+      }
+      tex.needsUpdate = true;
+    }
+    updateCanvas();
+    setInterval(updateCanvas, 5000);
+
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.31), B(0xffffff, { map: tex }));
     screen.position.set(0, 0.255, 0.0135);
     g.add(screen);
@@ -420,7 +484,6 @@ const Setup3D = (function () {
     roomTargets.push({ root: g, fn: function () { abrirItemSetup('per', 4); } });
     addPin('room', '🖥️', 'Monitor', a, [0, 0.2, 1], function () { abrirItemSetup('per', 4); });
 
-    // iPhone 11 como webcam, em cima do monitor
     const ph = new THREE.Group();
     ph.position.set(0, 0.255 + 0.165 + 0.04, 0.0);
     const phBody = M(0x16161c, { roughness: 0.25, metalness: 0.6 });
@@ -439,7 +502,6 @@ const Setup3D = (function () {
   }
 
   function buildKeyboardMouse() {
-    // teclado TKL branco
     const kb = new THREE.Group();
     kb.position.set(-0.15, 0.754, 0.15);
     kb.add(box(0.37, 0.022, 0.145, M(0xeeeef5, { roughness: 0.35 }), 0, 0.011, 0));
@@ -469,7 +531,6 @@ const Setup3D = (function () {
     roomTargets.push({ root: kb, fn: function () { abrirItemSetup('per', 0); } });
     addPin('room', '⌨️', 'Teclado', anchor(kb, 0, 0.09, 0.02), [0, 1, 0.4], function () { abrirItemSetup('per', 0); });
 
-    // mouse
     const mo = new THREE.Group();
     mo.position.set(0.17, 0.754, 0.16);
     mo.rotation.y = 0.12;
@@ -490,11 +551,9 @@ const Setup3D = (function () {
     const g = new THREE.Group();
     const white = M(0xf4f4f8, { roughness: 0.35 });
     const dark = M(0x25252e, { roughness: 0.5, metalness: 0.3 });
-    // braço articulado
     g.add(box(0.06, 0.03, 0.05, dark, -0.62, 0.765, -0.3));
     g.add(cylBetween(new THREE.Vector3(-0.62, 0.78, -0.3), new THREE.Vector3(-0.62, 1.15, -0.3), 0.009, dark));
     g.add(cylBetween(new THREE.Vector3(-0.62, 1.15, -0.3), new THREE.Vector3(-0.47, 1.03, 0.1), 0.007, dark));
-    // microfone
     const mic = new THREE.Group();
     mic.position.set(-0.47, 1.03, 0.1);
     const pivot = new THREE.Group();
@@ -546,14 +605,13 @@ const Setup3D = (function () {
     addPin('room', '🎧', 'Headset', anchor(hs, 0, 0.14, 0), [0, 0.3, 1], function () { abrirItemSetup('per', 2); });
   }
 
-  function buildChair() {
+  function buildChairAndCat() {
     const g = new THREE.Group();
     g.position.set(-0.62, 0, 0.98);
     g.rotation.y = Math.PI + 0.5;
     const black = M(0x17141f, { roughness: 0.7, metalness: 0.05 });
     const accent = M(0xa855f7, { roughness: 0.6 });
     const metal = M(0x2b2b36, { roughness: 0.4, metalness: 0.6 });
-    // base estrela
     for (let k = 0; k < 5; k++) {
       const spoke = box(0.3, 0.03, 0.045, metal, 0.15, 0.09, 0);
       const holder = new THREE.Group();
@@ -565,10 +623,8 @@ const Setup3D = (function () {
       g.add(holder);
     }
     g.add(cyl(0.028, 0.028, 0.32, metal, 0, 0.26, 0, 14));
-    // assento
     g.add(box(0.5, 0.1, 0.5, black, 0, 0.46, 0));
     g.add(box(0.36, 0.012, 0.42, accent, 0, 0.516, 0.0));
-    // encosto
     const back = new THREE.Group();
     back.position.set(0, 0.52, -0.22);
     back.rotation.x = -0.12;
@@ -578,7 +634,6 @@ const Setup3D = (function () {
     back.add(box(0.04, 0.55, 0.012, accent, 0, 0.36, 0.05));
     back.add(box(0.26, 0.15, 0.07, black, 0, 0.86, 0.0));
     g.add(back);
-    // apoios de braço
     [-1, 1].forEach(function (s) {
       g.add(box(0.03, 0.2, 0.03, metal, s * 0.29, 0.62, 0.04));
       g.add(box(0.07, 0.03, 0.26, black, s * 0.29, 0.73, 0.05));
@@ -587,9 +642,53 @@ const Setup3D = (function () {
     const fn = function () { abrirItemSetup('extra', 0); };
     roomTargets.push({ root: g, fn: fn });
     addPin('room', '🪑', 'Cadeira', anchor(g, 0, 1.55, -0.25), [0, 0.3, 1], fn);
+
+    // ----- GATINHO (Easter Egg) -----
+    catGroup = new THREE.Group();
+    catGroup.position.set(0, 0.52, 0); // Em cima do assento
+    catGroup.rotation.y = -0.5;
+    
+    const catBlack = M(0x111111, { roughness: 0.8 });
+    // Corpo
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), catBlack);
+    body.scale.set(1, 0.8, 1.3);
+    body.position.set(0, 0.06, 0);
+    catGroup.add(body);
+    
+    // Cabeça
+    const head = new THREE.Group();
+    head.position.set(0, 0.13, 0.1);
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 12), catBlack);
+    head.add(skull);
+    // Orelhas
+    const earGeo = new THREE.ConeGeometry(0.02, 0.04, 4);
+    const earL = new THREE.Mesh(earGeo, catBlack); earL.position.set(-0.03, 0.05, 0); earL.rotation.z = 0.2; head.add(earL);
+    const earR = new THREE.Mesh(earGeo, catBlack); earR.position.set(0.03, 0.05, 0); earR.rotation.z = -0.2; head.add(earR);
+    // Olhos
+    const eyeGeo = new THREE.SphereGeometry(0.008, 8, 8);
+    const eyeMat = B(0xb7ff00); // Verde neon
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.position.set(-0.02, 0.01, 0.045); head.add(eyeL);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat); eyeR.position.set(0.02, 0.01, 0.045); head.add(eyeR);
+    
+    catGroup.add(head);
+    
+    // Rabo
+    const tailGeo = new THREE.CylinderGeometry(0.01, 0.005, 0.15, 8);
+    const tail = new THREE.Mesh(tailGeo, catBlack);
+    tail.position.set(0, 0.03, -0.12);
+    tail.rotation.x = 1.2;
+    catGroup.add(tail);
+    
+    g.add(catGroup);
+    
+    // Interação do Gato
+    roomTargets.push({ root: catGroup, fn: function() {
+      playSound('https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3'); // Meow placeholder
+      toast('Você encontrou o gatinho! 🐈‍⬛💜', 'ok');
+      catBreath = 1; // Pulo
+    }});
   }
 
-  /* ---------- PC com lateral que abre ---------- */
   function buildPC() {
     const D = 0.45, Hh = 0.48, Wd = 0.23;
     pcGroup = new THREE.Group();
@@ -600,20 +699,17 @@ const Setup3D = (function () {
     const glass = M(0x9ec0ff, { transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.1, depthWrite: false });
     const dark = M(0x15151c, { roughness: 0.5, metalness: 0.3 });
 
-    // ----- casca do gabinete -----
     caseShell = new THREE.Group();
     pcGroup.add(caseShell);
-    caseShell.add(box(D, Hh, 0.01, white, 0, 0, -Wd / 2 + 0.005));          // fundo
-    caseShell.add(box(D, 0.01, Wd, white, 0, Hh / 2 - 0.005, 0));            // topo
-    caseShell.add(box(D, 0.01, Wd, white, 0, -Hh / 2 + 0.005, 0));           // base
-    caseShell.add(box(0.01, Hh, Wd, white, D / 2 - 0.005, 0, 0));            // traseira
-    caseShell.add(box(0.008, Hh, Wd, glass, -D / 2 + 0.004, 0, 0));          // frente em vidro
-    caseShell.add(box(0.014, Hh, 0.014, white, -D / 2 + 0.007, 0, Wd / 2 - 0.007)); // moldura frontal
-    // pés
+    caseShell.add(box(D, Hh, 0.01, white, 0, 0, -Wd / 2 + 0.005));          
+    caseShell.add(box(D, 0.01, Wd, white, 0, Hh / 2 - 0.005, 0));            
+    caseShell.add(box(D, 0.01, Wd, white, 0, -Hh / 2 + 0.005, 0));           
+    caseShell.add(box(0.01, Hh, Wd, white, D / 2 - 0.005, 0, 0));            
+    caseShell.add(box(0.008, Hh, Wd, glass, -D / 2 + 0.004, 0, 0));          
+    caseShell.add(box(0.014, Hh, 0.014, white, -D / 2 + 0.007, 0, Wd / 2 - 0.007)); 
     caseShell.add(box(0.05, 0.02, 0.14, dark, -0.16, -Hh / 2 - 0.01, 0));
     caseShell.add(box(0.05, 0.02, 0.14, dark, 0.16, -Hh / 2 - 0.01, 0));
 
-    // porta de vidro (dobradiça na traseira)
     doorPivot = new THREE.Group();
     doorPivot.position.set(D / 2 - 0.005, 0, Wd / 2);
     const doorW = D - 0.012;
@@ -624,17 +720,15 @@ const Setup3D = (function () {
     doorPivot.add(box(0.012, Hh - 0.012, 0.01, white, -0.006, 0, 0));
     caseShell.add(doorPivot);
 
-    // ----- placa-mãe (X570 TUF Gaming) -----
     const moboG = new THREE.Group();
     moboG.add(box(0.24, 0.30, 0.004, M(0x17171f, { roughness: 0.6, metalness: 0.2 }), 0.02, 0, -0.1));
-    moboG.add(box(0.07, 0.05, 0.016, M(0x3a3a46, { roughness: 0.4, metalness: 0.6 }), -0.065, 0.125, -0.09));  // VRM
-    moboG.add(box(0.03, 0.14, 0.022, M(0x2b2b36, { roughness: 0.4, metalness: 0.6 }), 0.12, 0.095, -0.088));  // capa I/O
-    moboG.add(box(0.03, 0.004, 0.003, B(0xffc83d), 0.12, 0.03, -0.075));                                      // detalhe TUF
+    moboG.add(box(0.07, 0.05, 0.016, M(0x3a3a46, { roughness: 0.4, metalness: 0.6 }), -0.065, 0.125, -0.09));  
+    moboG.add(box(0.03, 0.14, 0.022, M(0x2b2b36, { roughness: 0.4, metalness: 0.6 }), 0.12, 0.095, -0.088));  
+    moboG.add(box(0.03, 0.004, 0.003, B(0xffc83d), 0.12, 0.03, -0.075));                                      
     moboG.add(box(0.2, 0.004, 0.0015, B(0xffc83d), 0.02, -0.14, -0.097));
-    moboG.add(box(0.05, 0.05, 0.012, M(0x3a3a46, { roughness: 0.4, metalness: 0.6 }), 0.07, -0.125, -0.093)); // chipset
+    moboG.add(box(0.05, 0.05, 0.012, M(0x3a3a46, { roughness: 0.4, metalness: 0.6 }), 0.07, -0.125, -0.093)); 
     pcGroup.add(moboG);
 
-    // ----- processador + bloco do water cooler -----
     const cpuG = new THREE.Group();
     cpuG.position.set(-0.02, 0.06, -0.083);
     const pump = cyl(0.04, 0.04, 0.03, dark, 0, 0, 0, 32);
@@ -651,11 +745,17 @@ const Setup3D = (function () {
     cpuG.add(pumpDot);
     pcGroup.add(cpuG);
 
-    // ----- water cooler (radiador 240 no topo + tubos) -----
     const coolerG = new THREE.Group();
     coolerG.add(box(0.28, 0.03, 0.12, M(0x1a1a22, { roughness: 0.5, metalness: 0.4 }), -0.05, 0.2, -0.04));
     [-0.115, 0.015].forEach(function (fx, i) {
       coolerG.add(box(0.12, 0.026, 0.12, dark, fx, 0.172, -0.04));
+      // Ventoinha
+      const fan = new THREE.Group();
+      fan.position.set(fx, 0.172, -0.04);
+      const fanBlade = box(0.1, 0.02, 0.01, M(0x333), 0, 0, 0);
+      fan.add(fanBlade);
+      fans.push(fan);
+      coolerG.add(fan);
       coolerG.add(box(0.1, 0.004, 0.003, rgb(1.0 + i * 0.7), fx, 0.172, 0.022));
     });
     const tubeMat = M(0x101016, { roughness: 0.6 });
@@ -665,7 +765,6 @@ const Setup3D = (function () {
     coolerG.add(new THREE.Mesh(new THREE.TubeGeometry(c2, 20, 0.007, 8, false), tubeMat));
     pcGroup.add(coolerG);
 
-    // ----- memória RAM (2 pentes) -----
     const ramG = new THREE.Group();
     [0.067, 0.082].forEach(function (rx, i) {
       ramG.add(box(0.007, 0.135, 0.03, M(0x2b2b36, { roughness: 0.4, metalness: 0.5 }), rx, 0.06, -0.083));
@@ -673,21 +772,25 @@ const Setup3D = (function () {
     });
     pcGroup.add(ramG);
 
-    // ----- SSD NVMe M.2 -----
     const ssdG = new THREE.Group();
     ssdG.add(box(0.075, 0.02, 0.008, M(0x3a3a48, { roughness: 0.4, metalness: 0.6 }), -0.035, -0.03, -0.094));
     ssdG.add(box(0.04, 0.006, 0.0015, B(0xa855f7), -0.045, -0.03, -0.0895));
     pcGroup.add(ssdG);
 
-    // ----- placa de vídeo RTX 3060 branca -----
     const gpuG = new THREE.Group();
     gpuG.add(box(0.24, 0.045, 0.11, M(0xf5f5fa, { roughness: 0.3, metalness: 0.15 }), 0.02, -0.09, -0.043));
     gpuG.add(box(0.2, 0.008, 0.002, M(0x2a2a38), 0.02, -0.09, 0.013));
     gpuG.add(box(0.05, 0.004, 0.002, B(0xb7ff00), 0.1, -0.09, 0.0135));
     gpuG.add(box(0.18, 0.001, 0.06, M(0x2a2a38), 0.02, -0.0674, -0.043));
+    // Ventoinha GPU
+    const gpuFan = new THREE.Group();
+    gpuFan.position.set(0.02, -0.09, -0.012);
+    const gpuBlade = box(0.06, 0.06, 0.002, M(0x333), 0, 0, 0);
+    gpuFan.add(gpuBlade);
+    fans.push(gpuFan);
+    gpuG.add(gpuFan);
     pcGroup.add(gpuG);
 
-    // ----- fonte (dentro da cobertura) -----
     const psuG = new THREE.Group();
     psuG.add(box(0.4, 0.07, 0.18, white, 0.005, -0.2, -0.02));
     const psuTex = textTex(512, 128, function (c, w, h) {
@@ -702,12 +805,10 @@ const Setup3D = (function () {
     psuG.add(box(0.4, 0.004, 0.003, rgb(2.4), 0.005, -0.166, 0.07));
     pcGroup.add(psuG);
 
-    // luz interna
     const inner = new THREE.PointLight(0xa855f7, 0.9, 1.1);
     inner.position.set(0.72, 1.03, -0.02);
     scene.add(inner);
 
-    // ----- alvos de clique (modo "PC aberto") -----
     const ctx = function (i) { return function () { abrirItemSetup('pc', i); }; };
     pcTargets.push({ root: cpuG, fn: ctx(0) });
     pcTargets.push({ root: gpuG, fn: ctx(1) });
@@ -718,11 +819,9 @@ const Setup3D = (function () {
     pcTargets.push({ root: psuG, fn: ctx(7) });
     pcTargets.push({ root: caseShell, fn: ctx(4) });
 
-    // ----- alvo no modo normal: abre o PC -----
     roomTargets.push({ root: pcGroup, fn: enterPC });
     addPin('room', '💻', 'PC Gamer (clique para abrir)', anchor(pcGroup, 0, Hh / 2 + 0.05, 0), [0, 0.3, 1], enterPC);
 
-    // ----- pins dos componentes -----
     addPin('pc', '🧠', 'Processador', anchor(pcGroup, -0.02, 0.06, -0.06), [0, 0, 1], ctx(0));
     addPin('pc', '🎮', 'Placa de Vídeo', anchor(pcGroup, 0.06, -0.09, 0.018), [0, 0, 1], ctx(1));
     addPin('pc', '🧩', 'Memória RAM', anchor(pcGroup, 0.075, 0.14, -0.06), [0, 0, 1], ctx(2));
@@ -731,6 +830,21 @@ const Setup3D = (function () {
     addPin('pc', '💧', 'Water Cooler', anchor(pcGroup, -0.115, 0.172, 0.03), [0, 0, 1], ctx(5));
     addPin('pc', '💾', 'SSD NVMe', anchor(pcGroup, -0.035, -0.03, -0.08), [0, 0, 1], ctx(6));
     addPin('pc', '⚡', 'Fonte', anchor(pcGroup, 0.12, -0.2, 0.075), [0, 0, 1], ctx(7));
+  }
+
+  function buildRain() {
+    const geo = new THREE.BufferGeometry();
+    const count = 400;
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      pos[i*3] = -3.5 + Math.random() * 2.0; // X (fora da janela)
+      pos[i*3+1] = Math.random() * 3.2;      // Y
+      pos[i*3+2] = -0.4 + Math.random() * 0.5; // Z
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({ color: 0x7dd3fc, size: 0.015, transparent: true, opacity: 0.6 });
+    rainMesh = new THREE.Points(geo, mat);
+    scene.add(rainMesh);
   }
 
   function buildLights() {
@@ -758,7 +872,13 @@ const Setup3D = (function () {
     lb.textContent = label;
     el.appendChild(ic);
     el.appendChild(lb);
-    el.addEventListener('click', function (e) { e.stopPropagation(); if (!flying) fn(); });
+    el.addEventListener('click', function (e) { 
+      e.stopPropagation(); 
+      if (!flying) {
+        playSound('https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3'); // Click sound
+        fn(); 
+      }
+    });
     pinLayer.appendChild(el);
     pins.push({ el: el, mode: pinMode, anchor: anch, face: new THREE.Vector3(face[0], face[1], face[2]).normalize(), on: false });
   }
@@ -818,7 +938,10 @@ const Setup3D = (function () {
   function bindPointer() {
     const el = renderer.domElement;
     let down = null, moveQueued = false, lastMove = null;
-    el.addEventListener('pointerdown', function (e) { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+    el.addEventListener('pointerdown', function (e) { 
+      down = { x: e.clientX, y: e.clientY, t: performance.now() }; 
+      initAudio(); // Inicia o contexto de áudio no primeiro clique
+    });
     el.addEventListener('pointerup', function (e) {
       if (!down) return;
       const dx = e.clientX - down.x, dy = e.clientY - down.y;
@@ -826,7 +949,10 @@ const Setup3D = (function () {
       down = null;
       if (dx * dx + dy * dy > 36 || dt > 600) return;
       const t = pick(e);
-      if (t) t.fn();
+      if (t) {
+        playSound('https://cdn.pixabay.com/audio/2022/03/15/audio_c8c8a73467.mp3');
+        t.fn();
+      }
     });
     el.addEventListener('pointermove', function (e) {
       if (e.pointerType === 'touch') return;
@@ -896,19 +1022,51 @@ const Setup3D = (function () {
   /* ============================================================
      LOOP, RESIZE E INICIALIZAÇÃO
      ============================================================ */
-  function animateRGB(t) {
+  function animateRGB(t, speed) {
     for (let i = 0; i < rgbMats.length; i++) {
       const r = rgbMats[i];
-      r.m.color.setHSL(0.72 + 0.14 * Math.sin(t * 0.9 + r.off), 0.9, 0.58);
+      if (speed === 0) {
+         // Se a cor for definida (ex: controle de LED), mantemos
+      } else {
+         r.m.color.setHSL(0.72 + 0.14 * Math.sin(t * 0.9 + r.off), 0.9, 0.58);
+      }
     }
   }
+  
+  let globalLedSpeed = 1;
+  let globalLedHue = null;
+
   function tick() {
     raf = 0;
     if (!built || !visible) return;
     const now = performance.now();
     runTweens(now);
     if (controls.enabled) controls.update();
-    animateRGB(now / 1000);
+    
+    // Animações
+    if (globalLedHue !== null) {
+      rgbMats.forEach(r => r.m.color.setHSL(globalLedHue, 0.9, 0.58));
+    } else {
+      animateRGB(now / 1000);
+    }
+
+    if (rainMesh) {
+      const positions = rainMesh.geometry.attributes.position.array;
+      for(let i=0; i<positions.length; i+=3) {
+        positions[i+1] -= 0.03;
+        if (positions[i+1] < 0) positions[i+1] = 3.2;
+      }
+      rainMesh.geometry.attributes.position.needsUpdate = true;
+    }
+
+    if (catGroup) {
+      catBreath += 0.05;
+      catGroup.scale.y = 1 + Math.sin(catBreath) * 0.03;
+      if (catGroup.children[2]) catGroup.children[2].rotation.y = Math.sin(catBreath * 0.5) * 0.2; // rabo
+    }
+
+    fans.forEach(f => { f.rotation.z += 0.2; });
+
     updatePins();
     renderer.render(scene, camera);
     raf = requestAnimationFrame(tick);
@@ -953,6 +1111,27 @@ const Setup3D = (function () {
     back.textContent = '← Voltar ao setup';
     back.addEventListener('click', exitPC);
     wrap.appendChild(back);
+
+    // CONTROLE DE LED
+    ledPanel = document.createElement('div');
+    ledPanel.className = 's3d-led-panel';
+    ['purple', 'pink', 'cyan', 'gold', 'off'].forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 's3d-led-color';
+      btn.dataset.color = c;
+      btn.title = 'Mudar cor do LED';
+      btn.addEventListener('click', () => {
+        if (c === 'purple') globalLedHue = 0.72;
+        else if (c === 'pink') globalLedHue = 0.88;
+        else if (c === 'cyan') globalLedHue = 0.55;
+        else if (c === 'gold') globalLedHue = 0.12;
+        else if (c === 'off') globalLedHue = 0; // Actually black/off
+        initAudio();
+        playAmbient();
+      });
+      ledPanel.appendChild(btn);
+    });
+    wrap.appendChild(ledPanel);
   }
 
   function showFallback(msg) {
@@ -990,8 +1169,9 @@ const Setup3D = (function () {
     buildKeyboardMouse();
     buildMic();
     buildHeadset();
-    buildChair();
+    buildChairAndCat();
     buildPC();
+    buildRain();
 
     const pose = roomPose();
     camera.position.copy(pose.pos);
