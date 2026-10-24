@@ -382,3 +382,80 @@ function setupSetup3D(){
     });
   });
 }
+
+/* ============================================================
+   VISUALIZADOR 360° DO SETUP (Photo Sphere Viewer)
+   ============================================================ */
+function iniciarSetup360() {
+  const container = document.getElementById('setup360Container');
+  if (!container || typeof PhotoSphereViewer === 'undefined') return;
+
+  // --- ATENÇÃO: SUBSTITUA PELA URL DA SUA FOTO 360° AQUI ---
+  // Por enquanto, usamos uma imagem genérica de um parque só para você testar o giro e os pontos.
+  const urlFoto360 = 'https://photo-sphere-viewer.js.org/assets/parc.jpg'; 
+
+  const viewer = new PhotoSphereViewer.Viewer({
+    container: container,
+    panorama: urlFoto360,
+    caption: 'Arraste para explorar o setup 360° 💜',
+    loadingImg: 'https://photo-sphere-viewer.js.org/assets/photosphere-logo.gif',
+    loadingTxt: 'Carregando cantinho...',
+    touchmoveTwoFingers: false, // Permite arrastar com 1 dedo no celular
+    mousewheelCtrlKey: false,   // Permite dar zoom com a rodinha do mouse direto
+    defaultYaw: '0deg',
+    defaultPitch: '0deg',
+    navbar: false, // Esconde a barra de ferramentas padrão para ficar mais limpo
+    plugins: [
+      [PhotoSphereViewer.MarkersPlugin, {
+        markers: [
+          // 1. PC Gamer
+          {
+            id: 'pc',
+            position: { yaw: '2.9rad', pitch: '0.1rad' }, // Coordenadas de teste
+            html: '<div class="custom-hotspot" title="Ver PC Gamer">💻</div>',
+            tooltip: 'Ver PC Gamer',
+            click: () => {
+              abrirItemSetup('pc', 0); // Abre o Processador do grupo PC
+            }
+          },
+          // 2. Microfone
+          {
+            id: 'microfone',
+            position: { yaw: '1.2rad', pitch: '-0.1rad' },
+            html: '<div class="custom-hotspot" title="Ver Microfone">🎙️</div>',
+            tooltip: 'Ver Microfone',
+            click: () => {
+              abrirItemSetup('per', 3); // Abre o Microfone
+            }
+          },
+          // 3. Monitor
+          {
+            id: 'monitor',
+            position: { yaw: '2.0rad', pitch: '0.2rad' },
+            html: '<div class="custom-hotspot" title="Ver Monitor">🖥️</div>',
+            tooltip: 'Ver Monitor',
+            click: () => {
+              abrirItemSetup('per', 4); // Abre o Monitor
+            }
+          },
+          // 4. Teclado
+          {
+            id: 'teclado',
+            position: { yaw: '2.8rad', pitch: '-0.3rad' },
+            html: '<div class="custom-hotspot" title="Ver Teclado">⌨️</div>',
+            tooltip: 'Ver Teclado',
+            click: () => {
+              abrirItemSetup('per', 0); // Abre o Teclado
+            }
+          }
+        ]
+      }]
+    ]
+  });
+}
+
+// Inicia o visualizador quando a página carregar
+document.addEventListener('DOMContentLoaded', () => {
+  // Um pequeno delay para garantir que os scripts do CDN carregaram
+  setTimeout(iniciarSetup360, 500);
+});

@@ -22,6 +22,10 @@
 <link rel="stylesheet" href="css/setup.css">
 <link rel="stylesheet" href="css/admin.css">
 <link rel="stylesheet" href="css/tierlist.css">
+
+<!-- Photo Sphere Viewer CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5/index.css">
 </head>
 <body>
 
@@ -507,7 +511,7 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>As ferramentas que fazem a mágica acontecer. Clique num item pra ver os detalhes.</p>
+    <p>Arraste para explorar o cantinho em 360° e clique nos itens para ver os detalhes.</p>
   </header>
 
   <div class="setup-controls reveal">
@@ -521,9 +525,9 @@
     </div>
   </div>
 
-  <div class="setup-foto reveal" id="setupFoto">
-    <img src="img/setup.jpg" alt="Foto do setup da Soso" loading="lazy"
-         onerror="this.parentNode.innerHTML='<div class=&quot;sf-placeholder&quot;><span>📷</span><b>Foto do setup em breve</b><small>A Soso tá preparando uma foto especial do cantinho 💜</small></div>'">
+  <!-- VISUALIZADOR 360° -->
+  <div class="setup-360-wrap reveal" id="setup360Wrap">
+    <div id="setup360Container"></div>
   </div>
 
   <div class="setup-groups reveal" id="setupGrid"></div>
@@ -711,6 +715,11 @@
   </div>
 </dialog>
 
+<!-- Photo Sphere Viewer JS -->
+<script src="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5/index.js"></script>
+
+<!-- Seus Scripts -->
 <script src="js/utils/dom.js"></script>
 <script src="js/utils/format.js"></script>
 <script src="js/api/client.js"></script>
