@@ -301,10 +301,8 @@
     </div>
   </header>
 
-  <!-- Resumo/Stats -->
   <div class="tl-overview" id="stats" aria-label="Resumo da lista"></div>
 
-  <!-- Controles -->
   <div class="tl-toolbar">
     <div class="tl-search">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
@@ -330,7 +328,6 @@
     <span class="tl-count" id="tlContador" aria-live="polite"></span>
   </div>
 
-  <!-- Filtros -->
   <div class="tl-filters">
     <div class="tl-frow">
       <span class="tl-flabel">Status</span>
@@ -342,7 +339,6 @@
     </div>
   </div>
 
-  <!-- Dica Admin -->
   <p class="tl-hint">
     <span>💡 <b>Modo Admin:</b></span>
     <span>Arraste um card pra outra tier</span>
@@ -351,12 +347,10 @@
     <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz</span>
   </p>
 
-  <!-- Quadro de Tiers -->
   <div class="tl-board" id="tiers"></div>
   <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes fornecidos por: TMDB.</p>
 </section>
 
-<!-- Modal Sorteio -->
 <dialog id="roletaDlg" class="tl-roll-dlg" aria-labelledby="roletaDesc">
   <div class="tl-roll-body">
     <div class="tl-roll-slot" id="roletaSlot"></div>
@@ -375,13 +369,13 @@
 
 <!-- ==================== COMUNIDADE ==================== -->
 <section id="sec-comunidade" class="page-section">
-  <header class="section-header reveal">
+  <header class="section-header">
     <span class="section-kicker">💬 Comunidade</span>
     <h2>Faz parte do cantinho</h2>
     <p>Entre no Discord, veja os clipes, escute a playlist e conheça as regras.</p>
   </header>
 
-  <div class="sub-tabs reveal" id="comunidadeTabs">
+  <div class="sub-tabs" id="comunidadeTabs">
     <button class="sub-tab on" data-tab="discord">💬 Comunidade</button>
     <button class="sub-tab" data-tab="clipes">🎬 Clipes</button>
     <button class="sub-tab" data-tab="playlist">🎵 Playlist</button>
@@ -390,14 +384,14 @@
   </div>
 
   <div class="sub-panel on" data-panel="discord">
-    <div class="dc-cta reveal">
+    <div class="dc-cta">
       <div>
         <b>💬 Discord da Soso</b>
         <span id="dcMembros">Avisos de live, resenha e novidades do cantinho.</span>
       </div>
       <a class="btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Entrar no Discord →</a>
     </div>
-    <div class="dc-info reveal">
+    <div class="dc-info">
       <p>Aqui é onde a comunidade se reúne fora das lives: avisos de live em primeira mão, memes, calls de jogo e resenha. Um cantinho pra quem gosta de conversar e jogar junto. 💜</p>
       <ul class="dc-perks">
         <li>📢 Avisos de live em primeira mão</li>
@@ -406,7 +400,7 @@
         <li>🎬 Indicações de jogos e filmes da galera</li>
       </ul>
     </div>
-    <div class="metas-comunidade reveal">
+    <div class="metas-comunidade">
       <span class="ap-h">🎯 Metas da comunidade</span>
       <div class="goals3" style="grid-template-columns:1fr 1fr;margin:0">
         <div class="goalc">
@@ -435,7 +429,7 @@
   </div>
 
   <div class="sub-panel" data-panel="playlist">
-    <div class="card music-full reveal">
+    <div class="card music-full">
       <div class="music-full-head">
         <span class="music-ic" aria-hidden="true">
           <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
@@ -455,7 +449,7 @@
   </div>
 
   <div class="sub-panel" data-panel="sub">
-    <div class="sub-beneficios reveal">
+    <div class="sub-beneficios">
       <h3>✨ Benefícios exclusivos</h3>
       <div class="benefits-grid benefits-grid-2">
         <div class="benefit"><b>🎁 Emotes personalizados pro chat</b><span>Use os emotes exclusivos dos subs em qualquer live.</span></div>
@@ -464,12 +458,12 @@
         <div class="benefit"><b>💜 Apoio direto ao cantinho</b><span>Cada Sub ajuda a manter o canal ativo e melhorar o setup.</span></div>
       </div>
     </div>
-    <div class="sub-emotes reveal">
+    <div class="sub-emotes">
       <h3>🎨 Preview dos emotes</h3>
       <p>Um gostinho do que você desbloqueia virando Sub. 💜</p>
       <div class="emotes-grid" id="emotesGridComunidade"></div>
     </div>
-    <div class="sub-cta reveal">
+    <div class="sub-cta">
       <div>
         <b>Pronto pra apoiar o cantinho?</b>
         <span>Vira Sub na Twitch e vem fazer parte!</span>
@@ -480,7 +474,7 @@
 
   <div class="sub-panel" data-panel="info">
     <div class="info-grid">
-      <div class="cmds-wrap reveal">
+      <div class="cmds-wrap">
         <h3>🤖 Comandos do chat</h3>
         <p style="color:var(--mute);font-size:.85rem">Busque rápido e copie com 1 clique.</p>
         <input class="cmds-search" id="buscaCmd" type="search" placeholder="Buscar comando (ex: discord, uptime...)">
@@ -490,7 +484,7 @@
         </table>
         <p class="cmds-empty" id="cmdsEmpty" style="display:none">Nenhum comando encontrado.</p>
       </div>
-      <div class="rules-wrap reveal">
+      <div class="rules-wrap">
         <h3>📜 Regras da comunidade</h3>
         <div class="rules-grid">
           <div class="rule-card"><i>01</i><span class="rc-ic">💜</span><div><strong>Respeito em primeiro lugar</strong><p>Nada de discurso de ódio, preconceito, racismo, homofobia ou assédio.</p></div></div>
@@ -508,18 +502,18 @@
 
 <!-- ==================== SETUP ==================== -->
 <section id="sec-setup" class="page-section">
-  <header class="section-header reveal">
+  <header class="section-header">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
     <p>Arraste para explorar o cantinho em 360° e clique nos pontinhos brilhantes para ver os detalhes.</p>
   </header>
 
   <!-- VISUALIZADOR 360° -->
-  <div class="setup-360-wrap reveal" id="setup360Wrap">
+  <div class="setup-360-wrap" id="setup360Wrap">
     <div id="setup360Container"></div>
   </div>
 
-  <div class="setup-sonhos reveal" id="setupSonhos">
+  <div class="setup-sonhos" id="setupSonhos">
     <div class="sonhos-head">
       <span class="sh-kicker">✨ Setup dos sonhos</span>
       <h3>Ajuda a Soso a conquistar 💜</h3>
@@ -528,7 +522,7 @@
     <div class="sonhos-lista" id="sonhosLista"></div>
   </div>
 
-  <div class="setup-apoiadores reveal" id="setupApoiadores">
+  <div class="setup-apoiadores" id="setupApoiadores">
     <div class="apoiadores-head">
       <span class="ap-kicker">🏆 Apoiadores</span>
       <h3>Quem tá ajudando a Soso a realizar os sonhos</h3>
@@ -539,7 +533,7 @@
 
 <!-- ==================== SUGESTÕES ==================== -->
 <section id="sec-sugestoes" class="page-section">
-  <header class="section-header reveal">
+  <header class="section-header">
     <span class="section-kicker">💡 Sua voz conta</span>
     <h2>Sugestões & Votação</h2>
     <p>Vote no próximo jogo ou mande uma ideia.</p>

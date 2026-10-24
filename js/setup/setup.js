@@ -3,7 +3,7 @@
    ============================================================ */
 let _sonhoSelecionado = null;
 
-// LISTA ATUALIZADA COM OS COMPONENTES DA SOSO
+// LISTA COMPLETA COM OS 15 COMPONENTES DA SOSO
 const SETUP_DATA = [
   {
     id: 'pc',
@@ -283,9 +283,8 @@ function iniciarSetup360() {
   const container = document.getElementById('setup360Container');
   if (!container) return;
   
-  // Se a biblioteca não carregou, mostra um erro no console
   if (typeof PhotoSphereViewer === 'undefined') {
-    console.error("Erro: Photo Sphere Viewer não carregou os scripts JS.");
+    console.error("Erro: Photo Sphere Viewer não carregou.");
     return;
   }
 
@@ -297,61 +296,62 @@ function iniciarSetup360() {
     panorama: urlFoto360,
     caption: 'Arraste para explorar o setup 360° 💜',
     loadingTxt: 'Carregando o cantinho...',
-    touchmoveTwoFingers: false, // Permite arrastar com 1 dedo no celular
-    mousewheelCtrlKey: false,   // Permite dar zoom com a rodinha do mouse direto
+    touchmoveTwoFingers: false,
+    mousewheelCtrlKey: false,
     defaultYaw: '0deg',
     defaultPitch: '0deg',
-    navbar: false, // Esconde a barra de ferramentas padrão para ficar mais limpo
+    navbar: false,
     plugins: [
       [PhotoSphereViewer.MarkersPlugin, {
         markers: [
-          // 1. PC Gamer
           {
             id: 'pc',
             position: { yaw: '2.9rad', pitch: '0.1rad' }, 
             html: '<div class="custom-hotspot" title="Ver PC Gamer">💻</div>',
             tooltip: 'Ver PC Gamer',
-            click: () => { abrirItemSetup('pc', 0); } // Abre o Processador
+            click: () => { abrirItemSetup('pc', 0); }
           },
-          // 2. Microfone
           {
             id: 'microfone',
             position: { yaw: '1.2rad', pitch: '-0.1rad' },
             html: '<div class="custom-hotspot" title="Ver Microfone">🎙️</div>',
             tooltip: 'Ver Microfone',
-            click: () => { abrirItemSetup('per', 3); } // Abre o Microfone
+            click: () => { abrirItemSetup('per', 3); }
           },
-          // 3. Monitor
           {
             id: 'monitor',
             position: { yaw: '2.0rad', pitch: '0.2rad' },
             html: '<div class="custom-hotspot" title="Ver Monitor">🖥️</div>',
             tooltip: 'Ver Monitor',
-            click: () => { abrirItemSetup('per', 4); } // Abre o Monitor
+            click: () => { abrirItemSetup('per', 4); }
           },
-          // 4. Teclado
           {
             id: 'teclado',
             position: { yaw: '2.8rad', pitch: '-0.3rad' },
             html: '<div class="custom-hotspot" title="Ver Teclado">⌨️</div>',
             tooltip: 'Ver Teclado',
-            click: () => { abrirItemSetup('per', 0); } // Abre o Teclado
+            click: () => { abrirItemSetup('per', 0); }
           },
-          // 5. Mouse
           {
             id: 'mouse',
             position: { yaw: '3.2rad', pitch: '-0.4rad' },
             html: '<div class="custom-hotspot" title="Ver Mouse">🖱️</div>',
             tooltip: 'Ver Mouse',
-            click: () => { abrirItemSetup('per', 1); } // Abre o Mouse
+            click: () => { abrirItemSetup('per', 1); }
           },
-          // 6. Headset
           {
             id: 'headset',
             position: { yaw: '1.8rad', pitch: '-0.2rad' },
             html: '<div class="custom-hotspot" title="Ver Headset">🎧</div>',
             tooltip: 'Ver Headset',
-            click: () => { abrirItemSetup('per', 2); } // Abre o Headset
+            click: () => { abrirItemSetup('per', 2); }
+          },
+          {
+            id: 'cadeira',
+            position: { yaw: '0.5rad', pitch: '-0.5rad' },
+            html: '<div class="custom-hotspot" title="Ver Cadeira">🪑</div>',
+            tooltip: 'Ver Cadeira',
+            click: () => { abrirItemSetup('extra', 0); }
           }
         ]
       }]
@@ -359,8 +359,6 @@ function iniciarSetup360() {
   });
 }
 
-// Inicia o visualizador quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
-  // Um pequeno delay para garantir que a página e os scripts estejam 100% prontos
   setTimeout(iniciarSetup360, 600);
 });
