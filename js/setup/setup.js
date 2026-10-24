@@ -1,9 +1,6 @@
 /* ============================================================
-   SETUP — 3D + LISTA + SONHOS + APOIADORES
+   SETUP — 360° + SONHOS + APOIADORES
    ============================================================ */
-const SETUP_VIEW_KEY = 'setup:view';
-let setupView = '3d';
-let setupBusca = '';
 let _sonhoSelecionado = null;
 
 const SETUP_DATA = [
@@ -13,30 +10,14 @@ const SETUP_DATA = [
     accent: 'blue',
     tipo: 'real',
     itens: [
-      { ic:'🧠', cat:'Processador', nome:'Ryzen 9 5900x', ano:2023, nota:10,
-        comentario:'Monstro pra jogos e streaming ao mesmo tempo. Nunca travou.' },
-      { ic:'🎮', cat:'Placa de Vídeo', nome:'RX 6750 XT', ano:2024, nota:8,
-        comentario:'Roda tudo em 1440p liso. CxB excelente.' },
-      { ic:'🧩', cat:'Memória RAM', nome:'48GB DDR4', ano:2023, nota:9,
-        comentario:'Sobra RAM pra jogar, streamar e editar junto.' },
-      { ic:'🔌', cat:'Placa Mãe', nome:'X570 TUF Gaming', ano:2023, nota:8,
-        comentario:'Ótima construção, várias portas USB e boa dissipação.' },
-      { ic:'🗄️', cat:'Gabinete', nome:'Risemode Aquarium branco', ano:2023, nota:8,
-        comentario:'Gabinete branco compacto, airflow ótimo e visual limpo.' },
-      { ic:'💧', cat:'Water cooler', nome:'Risemode Aura RGB', ano:2023, nota:7,
-        comentario:'Mantém a temperatura baixa, RGB de sobra.' }
-    ]
-  },
-  {
-    id: 'arm',
-    titulo: '💾 Armazenamento & Energia',
-    accent: 'cyan',
-    tipo: 'real',
-    itens: [
-      { ic:'💾', cat:'Armazenamento', nome:'SSD 2TB NVMe M2', ano:2024, nota:9,
-        comentario:'Leitura rápida, jogo carrega em segundos.' },
-      { ic:'⚡', cat:'Fonte', nome:'Corsair RM800w', ano:2023, nota:9,
-        comentario:'80 Plus Gold, silenciosa e confiável.' }
+      { ic:'🧠', cat:'Processador', nome:'Ryzen 9 5900x', ano:2023, nota:10, comentario:'Monstro pra jogos e streaming.' },
+      { ic:'🎮', cat:'Placa de Vídeo', nome:'Rtx 3060 12GB Branca', ano:2023, nota:9, comentario:'Linda e roda tudo liso.' },
+      { ic:'🧩', cat:'Memória RAM', nome:'48GB de RAM', ano:2023, nota:9, comentario:'Sobra RAM pra jogar e streamar.' },
+      { ic:'🔌', cat:'Placa Mãe', nome:'x570 TUF Gaming', ano:2023, nota:8, comentario:'Ótima construção e dissipação.' },
+      { ic:'🗄️', cat:'Gabinete', nome:'Risemode Aquarium branco', ano:2023, nota:8, comentario:'Visual limpo e airflow top.' },
+      { ic:'💧', cat:'Water cooler', nome:'Risemode Aura RGB', ano:2023, nota:7, comentario:'Mantém a temperatura baixa.' },
+      { ic:'💾', cat:'Armazenamento', nome:'SSD - 2tb NvME M2', ano:2024, nota:9, comentario:'Leitura rápida, carrega em segundos.' },
+      { ic:'⚡', cat:'Fonte', nome:'Corsair RM800w', ano:2023, nota:9, comentario:'80 Plus Gold, silenciosa.' }
     ]
   },
   {
@@ -45,18 +26,21 @@ const SETUP_DATA = [
     accent: 'pink',
     tipo: 'real',
     itens: [
-      { ic:'⌨️', cat:'Teclado', nome:'AULA H88', ano:2023, nota:8,
-        comentario:'Switch gateron amarelo, ótimo pra digitar e jogar.' },
-      { ic:'🖱️', cat:'Mouse', nome:'Logitech G502X Superlight', ano:2024, nota:10,
-        comentario:'Leve, preciso e com sensor TOP. Melhor mouse que já tive.' },
-      { ic:'🎧', cat:'Headset', nome:'Astro A50', ano:2023, nota:9,
-        comentario:'Áudio muito bom e microfone que capta bem.' },
-      { ic:'🎙️', cat:'Microfone', nome:'FIFINE AM8 Branco', ano:2024, nota:8,
-        comentario:'USB, com ganho bom e acabamento bonito.' },
-      { ic:'🖥️', cat:'Monitor', nome:'AOC 240Hz', ano:2023, nota:9,
-        comentario:'240Hz faz MUITA diferença em FPS.' },
-      { ic:'📷', cat:'Webcam', nome:'Logitech C920', ano:2023, nota:7,
-        comentario:'Clássica, boa pra live. Com luz fica ótima.' }
+      { ic:'⌨️', cat:'Teclado', nome:'Logitech G PRO X TKL Branco', ano:2023, nota:10, comentario:'Switch top, ótimo pra jogar.' },
+      { ic:'🖱️', cat:'Mouse', nome:'Logitech g502x Superlight RGB', ano:2024, nota:10, comentario:'Leve, preciso e TOP.' },
+      { ic:'🎧', cat:'Headset', nome:'Astro A30', ano:2023, nota:9, comentario:'Áudio excelente.' },
+      { ic:'🎙️', cat:'Microfone', nome:'FIFINE AM8 Branco', ano:2024, nota:8, comentario:'Ganho bom e bonito.' },
+      { ic:'🖥️', cat:'Monitor', nome:'AOC 240hz', ano:2023, nota:9, comentario:'240Hz faz MUITA diferença.' },
+      { ic:'📷', cat:'Webcam', nome:'iPhone 11', ano:2023, nota:8, comentario:'Usando como webcam, qualidade ótima.' }
+    ]
+  },
+  {
+    id: 'extra',
+    titulo: '🪑 Mesa & Cadeira',
+    accent: 'cyan',
+    tipo: 'real',
+    itens: [
+      { ic:'🪑', cat:'Cadeira', nome:'XT Racer', ano:2023, nota:8, comentario:'Confortável pra longas lives.' }
     ]
   }
 ];
@@ -83,60 +67,6 @@ const SONHOS_DATA = [
     contribuintes: []
   }
 ];
-
-function setupRender(){
-  const grid = $('setupGrid'); if(!grid) return;
-
-  const q = setupBusca.toLowerCase().trim();
-  const normQ = norm(q);
-
-  grid.className = 'setup-groups view-' + setupView;
-
-  const gruposFiltrados = SETUP_DATA.map(g => {
-    const itens = g.itens.filter(it => {
-      if(!q) return true;
-      return norm(it.nome).includes(normQ) || norm(it.cat).includes(normQ);
-    });
-    return { ...g, itensFiltrados: itens };
-  }).filter(g => g.itensFiltrados.length > 0);
-
-  if(!gruposFiltrados.length){
-    grid.innerHTML = `
-      <div class="logs-empty">
-        <b>Nenhum item encontrado</b>
-        Tenta buscar outro termo (ex: "mouse", "ryzen", "corsair").
-      </div>`;
-    return;
-  }
-
-  grid.innerHTML = gruposFiltrados.map(g => `
-    <div class="setup-group" data-accent="${g.accent}">
-      <div class="sg-head">
-        <h3>${g.titulo}</h3>
-        <span class="sg-count">${g.itensFiltrados.length}</span>
-      </div>
-      <div class="sg-list">
-        ${g.itensFiltrados.map((it) => {
-          const idx = g.itens.indexOf(it);
-          return `
-            <button type="button" class="setup-item setup-item-3d" data-grupo="${g.id}" data-idx="${idx}">
-              <span class="si-ic-wrap" data-ic-cat="${esc(it.cat)}">
-                <span class="si-ic">${it.ic}</span>
-                <span class="si-lupa">🔍</span>
-              </span>
-              <span class="si-tx">
-                <span class="si-cat">${esc(it.cat)}</span>
-                <span class="si-nome">${esc(it.nome)}</span>
-                <span class="si-meta">${it.ano ? it.ano : ''}${it.ano && it.nota ? ' · ' : ''}${it.nota ? '⭐ ' + it.nota : ''}</span>
-              </span>
-              <span class="si-set">→</span>
-            </button>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  `).join('');
-}
 
 function abrirItemSetup(grupoId, idx){
   const g = SETUP_DATA.find(x => x.id === grupoId);
@@ -168,18 +98,6 @@ function abrirItemSetup(grupoId, idx){
   $('dlg').showModal();
 }
 window.abrirItemSetup = abrirItemSetup;
-
-function setupSetView(view){
-  setupView = view;
-  try { localStorage.setItem(SETUP_VIEW_KEY, view); } catch(e){}
-  document.querySelectorAll('.svt-btn').forEach(b => {
-    const on = b.dataset.view === view;
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
-  });
-  setupRender();
-}
-window.setupSetView = setupSetView;
 
 /* ---------- Sonhos (vaquinha) ---------- */
 function renderSonhos(){
@@ -356,49 +274,25 @@ async function enviarContribuicao(){
 }
 window.enviarContribuicao = enviarContribuicao;
 
-function setupSetup3D(){
-  if(matchMedia('(max-width:960px)').matches) return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  const grid = $('setupGrid');
-  if(!grid) return;
-
-  grid.addEventListener('mousemove', (e) => {
-    const card = e.target.closest('.setup-item-3d');
-    if(!card) return;
-    const rect = card.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    const rotY = x * 10;
-    const rotX = -y * 8;
-    card.style.setProperty('--rx', rotX + 'deg');
-    card.style.setProperty('--ry', rotY + 'deg');
-  });
-
-  grid.addEventListener('mouseleave', () => {
-    grid.querySelectorAll('.setup-item-3d').forEach(c => {
-      c.style.setProperty('--rx', '0deg');
-      c.style.setProperty('--ry', '0deg');
-    });
-  });
-}
-
 /* ============================================================
    VISUALIZADOR 360° DO SETUP (Photo Sphere Viewer)
    ============================================================ */
 function iniciarSetup360() {
   const container = document.getElementById('setup360Container');
-  if (!container || typeof PhotoSphereViewer === 'undefined') return;
+  if (!container) return;
+  if (typeof PhotoSphereViewer === 'undefined') {
+    console.error("Photo Sphere Viewer não carregou.");
+    return;
+  }
 
   // --- ATENÇÃO: SUBSTITUA PELA URL DA SUA FOTO 360° AQUI ---
-  // Por enquanto, usamos uma imagem genérica de um parque só para você testar o giro e os pontos.
-  const urlFoto360 = 'https://photo-sphere-viewer.js.org/assets/parc.jpg'; 
+  // Essa é uma imagem de teste do Pannellum (sala de aula) que sempre funciona.
+  const urlFoto360 = 'https://pannellum.org/images/alma.jpg'; 
 
   const viewer = new PhotoSphereViewer.Viewer({
     container: container,
     panorama: urlFoto360,
     caption: 'Arraste para explorar o setup 360° 💜',
-    loadingImg: 'https://photo-sphere-viewer.js.org/assets/photosphere-logo.gif',
     loadingTxt: 'Carregando cantinho...',
     touchmoveTwoFingers: false, // Permite arrastar com 1 dedo no celular
     mousewheelCtrlKey: false,   // Permite dar zoom com a rodinha do mouse direto
@@ -408,15 +302,13 @@ function iniciarSetup360() {
     plugins: [
       [PhotoSphereViewer.MarkersPlugin, {
         markers: [
-          // 1. PC Gamer
+          // 1. PC Gamer (Processador)
           {
             id: 'pc',
-            position: { yaw: '2.9rad', pitch: '0.1rad' }, // Coordenadas de teste
+            position: { yaw: '2.9rad', pitch: '0.1rad' }, 
             html: '<div class="custom-hotspot" title="Ver PC Gamer">💻</div>',
             tooltip: 'Ver PC Gamer',
-            click: () => {
-              abrirItemSetup('pc', 0); // Abre o Processador do grupo PC
-            }
+            click: () => { abrirItemSetup('pc', 0); }
           },
           // 2. Microfone
           {
@@ -424,9 +316,7 @@ function iniciarSetup360() {
             position: { yaw: '1.2rad', pitch: '-0.1rad' },
             html: '<div class="custom-hotspot" title="Ver Microfone">🎙️</div>',
             tooltip: 'Ver Microfone',
-            click: () => {
-              abrirItemSetup('per', 3); // Abre o Microfone
-            }
+            click: () => { abrirItemSetup('per', 3); }
           },
           // 3. Monitor
           {
@@ -434,9 +324,7 @@ function iniciarSetup360() {
             position: { yaw: '2.0rad', pitch: '0.2rad' },
             html: '<div class="custom-hotspot" title="Ver Monitor">🖥️</div>',
             tooltip: 'Ver Monitor',
-            click: () => {
-              abrirItemSetup('per', 4); // Abre o Monitor
-            }
+            click: () => { abrirItemSetup('per', 4); }
           },
           // 4. Teclado
           {
@@ -444,9 +332,23 @@ function iniciarSetup360() {
             position: { yaw: '2.8rad', pitch: '-0.3rad' },
             html: '<div class="custom-hotspot" title="Ver Teclado">⌨️</div>',
             tooltip: 'Ver Teclado',
-            click: () => {
-              abrirItemSetup('per', 0); // Abre o Teclado
-            }
+            click: () => { abrirItemSetup('per', 0); }
+          },
+          // 5. Mouse
+          {
+            id: 'mouse',
+            position: { yaw: '3.2rad', pitch: '-0.4rad' },
+            html: '<div class="custom-hotspot" title="Ver Mouse">🖱️</div>',
+            tooltip: 'Ver Mouse',
+            click: () => { abrirItemSetup('per', 1); }
+          },
+          // 6. Headset
+          {
+            id: 'headset',
+            position: { yaw: '1.8rad', pitch: '-0.2rad' },
+            html: '<div class="custom-hotspot" title="Ver Headset">🎧</div>',
+            tooltip: 'Ver Headset',
+            click: () => { abrirItemSetup('per', 2); }
           }
         ]
       }]
@@ -456,6 +358,5 @@ function iniciarSetup360() {
 
 // Inicia o visualizador quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {
-  // Um pequeno delay para garantir que os scripts do CDN carregaram
   setTimeout(iniciarSetup360, 500);
 });

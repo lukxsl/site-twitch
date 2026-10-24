@@ -1,19 +1,14 @@
 /* ============================================================
-   SETUP — 3D + LISTA + SONHOS + APOIADORES
+   SETUP — 360° + SONHOS + APOIADORES
    ============================================================ */
-.setup-controls{display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
-.setup-controls .search-wrap{flex:1;max-width:420px;min-width:220px}
-.setup-view-toggle{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:4px;flex:none}
-.svt-btn{background:none;border:0;color:var(--mute);font-family:inherit;font-weight:700;font-size:.8rem;padding:8px 16px;border-radius:99px;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
-.svt-btn.on{background:linear-gradient(135deg,var(--purple-2),var(--purple-3));color:#fff;box-shadow:0 6px 16px -4px rgba(168,85,247,.5)}
 
 /* ============================================================
    SETUP 360° (PHOTO SPHERE VIEWER)
    ============================================================ */
 .setup-360-wrap {
   width: 100%;
-  height: 500px;
-  margin-bottom: 24px;
+  height: 600px; /* Aumentei a altura para ficar mais imersivo */
+  margin-bottom: 30px;
   border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid var(--line-2);
@@ -29,248 +24,44 @@
 
 @media (max-width: 720px) {
   .setup-360-wrap {
-    height: 350px;
+    height: 400px;
   }
 }
 
 /* Estilo dos Pontinhos (Hotspots) */
 .custom-hotspot {
-  width: 44px;
-  height: 44px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: rgba(10, 5, 17, 0.85);
   border: 2px solid var(--purple-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   cursor: pointer;
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
   transition: transform 0.2s, background 0.2s;
   animation: pulseHotspot 2s infinite;
 }
 
 .custom-hotspot:hover {
-  transform: scale(1.15);
+  transform: scale(1.2);
   background: var(--purple-3);
   border-color: #fff;
   animation: none;
+  box-shadow: 0 0 30px rgba(168, 85, 247, 1);
 }
 
 @keyframes pulseHotspot {
   0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7); }
-  70% { box-shadow: 0 0 0 15px rgba(168, 85, 247, 0); }
+  70% { box-shadow: 0 0 0 20px rgba(168, 85, 247, 0); }
   100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
 }
 
 /* ============================================================
-   FOTO ESTÁTICA (Fallback antigo)
+   SONHOS (vaquinha)
    ============================================================ */
-.setup-foto{position:relative;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);margin-bottom:20px;box-shadow:var(--sh-lg),var(--sh-floor);background:#0a0511;min-height:180px}
-.setup-foto img{display:block;width:100%;height:auto;max-height:480px;object-fit:cover}
-.sf-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:60px 20px;text-align:center;background:radial-gradient(circle at 50% 50%, rgba(168,85,247,.16), transparent 70%),linear-gradient(135deg, rgba(168,85,247,.08), rgba(168,85,247,.02))}
-.sf-placeholder span{font-size:3rem;line-height:1;filter:drop-shadow(0 4px 12px rgba(168,85,247,.5))}
-.sf-placeholder b{color:var(--white);font-size:1.05rem;font-family:'Bricolage Grotesque',sans-serif}
-.sf-placeholder small{color:var(--mute);font-size:.82rem}
-
-.setup-groups{display:grid;gap:14px;margin-bottom:26px}
-.setup-groups.view-3d{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
-.setup-groups.view-list{grid-template-columns:1fr;gap:10px}
-
-.setup-group{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),var(--sh),var(--sh-floor);position:relative;overflow:hidden;transition:.25s var(--ease)}
-.setup-group::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent,var(--purple)),transparent 70%);opacity:.8}
-.setup-group[data-accent="blue"]{--accent:#3b82f6}
-.setup-group[data-accent="cyan"]{--accent:#06b6d4}
-.setup-group[data-accent="pink"]{--accent:#ec4899}
-
-.sg-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
-.sg-head h3{font-size:1.02rem;color:var(--accent,var(--purple-2));font-weight:800;flex:1}
-.sg-count{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:var(--mute);background:rgba(255,255,255,.04);border:1px solid var(--line);padding:2px 9px;border-radius:99px}
-.sg-list{display:flex;flex-direction:column;gap:8px}
-
-/* ====== MODO 3D (Galeria) ====== */
-.setup-groups.view-3d{
-  perspective:1400px;
-  perspective-origin:50% 30%;
-}
-.setup-groups.view-3d .sg-list{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:14px 12px;
-  padding:8px 6px 14px;
-}
-.setup-groups.view-3d .setup-item-3d{
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:8px;
-  padding:16px 12px 12px;
-  background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-  border:1px solid var(--line);
-  border-radius:var(--r);
-  cursor:pointer;
-  text-align:center;
-  font-family:inherit;
-  color:inherit;
-  transform-style:preserve-3d;
-  transform:
-    perspective(900px)
-    rotateY(var(--ry, -4deg))
-    rotateX(var(--rx, 2deg))
-    translateZ(0);
-  transition:transform .35s var(--ease), border-color .3s, box-shadow .35s, background .3s;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.1),
-    0 8px 18px -6px rgba(0,0,0,.6),
-    0 18px 32px -20px rgba(0,0,0,.9);
-  will-change:transform;
-  overflow:visible;
-}
-.setup-groups.view-3d .setup-item-3d::after{
-  content:'';
-  position:absolute;
-  left:12%;
-  right:12%;
-  bottom:-14px;
-  height:18px;
-  background:radial-gradient(ellipse at center, rgba(0,0,0,.55), transparent 70%);
-  filter:blur(10px);
-  border-radius:50%;
-  transform:translateZ(-1px);
-  z-index:-1;
-  transition:opacity .3s, transform .35s;
-}
-.setup-groups.view-3d .setup-item-3d::before{
-  content:'';
-  position:absolute;
-  inset:0;
-  border-radius:inherit;
-  padding:1px;
-  background:linear-gradient(160deg, rgba(255,255,255,.35), transparent 40%, rgba(0,0,0,.2));
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;mask-composite:exclude;
-  pointer-events:none;
-}
-.setup-groups.view-3d .setup-item-3d:hover{
-  --ry:0deg;
-  --rx:0deg;
-  transform:
-    perspective(900px)
-    rotateY(0deg)
-    rotateX(0deg)
-    translateY(-10px)
-    translateZ(20px)
-    scale(1.03);
-  border-color:var(--accent,var(--purple));
-  background:linear-gradient(160deg, rgba(168,85,247,.14), rgba(168,85,247,.04));
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.15),
-    0 14px 28px -8px rgba(168,85,247,.4),
-    0 30px 60px -24px rgba(0,0,0,.9);
-  z-index:2;
-}
-.setup-groups.view-3d .setup-item-3d:hover::after{
-  transform:translateZ(-1px) scale(1.1);
-  opacity:.9;
-}
-.setup-groups.view-3d .setup-item-3d .si-ic-wrap{
-  width:56px;
-  height:56px;
-  border-radius:16px;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(255,255,255,.2), transparent 60%),
-    linear-gradient(160deg, var(--accent,rgba(168,85,247,.3)), rgba(168,85,247,.05));
-  border:1px solid var(--line);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.2),
-    inset 0 -6px 12px rgba(0,0,0,.3),
-    0 8px 18px -8px rgba(0,0,0,.7);
-}
-.setup-groups.view-3d .setup-item-3d .si-ic{
-  font-size:1.6rem;
-  filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));
-}
-.setup-groups.view-3d .setup-item-3d .si-tx{align-items:center}
-.setup-groups.view-3d .setup-item-3d .si-cat{font-size:.62rem;color:var(--mute);text-align:center}
-.setup-groups.view-3d .setup-item-3d .si-nome{
-  font-size:.86rem;
-  font-weight:700;
-  color:#fff;
-  text-align:center;
-  white-space:normal;
-  line-height:1.25;
-  overflow:visible;
-  text-overflow:clip;
-}
-.setup-groups.view-3d .setup-item-3d .si-meta{
-  font-size:.66rem;
-  color:var(--purple-2);
-  font-weight:700;
-}
-.setup-groups.view-3d .setup-item-3d .si-set{
-  position:absolute;
-  right:10px;top:10px;
-  font-size:.75rem;
-  opacity:.35;
-}
-.setup-groups.view-3d .setup-item-3d:hover .si-set{
-  color:var(--accent,var(--purple));
-  opacity:1;
-  transform:translate(2px, -2px);
-}
-
-/* Mobile desliga o 3D */
-@media (max-width:720px){
-  .setup-groups.view-3d{perspective:none}
-  .setup-groups.view-3d .setup-item-3d{
-    transform:none;
-  }
-  .setup-groups.view-3d .setup-item-3d:hover{
-    transform:translateY(-3px);
-  }
-  .setup-groups.view-3d .setup-item-3d::after{display:none}
-}
-
-/* ====== MODO LISTA ====== */
-.setup-groups.view-list .setup-group{padding:14px 18px}
-.setup-groups.view-list .sg-list{display:flex;flex-direction:column;gap:6px}
-.setup-groups.view-list .setup-item{
-  display:flex;
-  flex-direction:row;
-  align-items:center;
-  gap:12px;
-  padding:10px 12px;
-  background:rgba(255,255,255,.02);
-  border:1px solid var(--line);
-  border-radius:var(--r-sm);
-  cursor:pointer;
-  text-align:left;
-  font-family:inherit;
-  color:inherit;
-  width:100%;
-  transition:.2s;
-}
-.setup-groups.view-list .setup-item:hover{
-  border-color:var(--accent,var(--purple));
-  background:rgba(168,85,247,.06);
-  transform:translateX(3px);
-}
-.setup-groups.view-list .si-ic-wrap{
-  width:40px;height:40px;border-radius:11px;flex:none;
-  background:rgba(168,85,247,.12);
-  display:grid;place-items:center;position:relative;
-}
-.setup-groups.view-list .si-ic{font-size:1.1rem;line-height:1}
-.setup-groups.view-list .si-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.setup-groups.view-list .si-cat{font-size:.64rem;color:var(--mute);font-weight:600}
-.setup-groups.view-list .si-nome{font-size:.88rem;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.setup-groups.view-list .si-meta{font-size:.68rem;color:var(--mute);font-weight:600}
-.setup-groups.view-list .si-set{flex:none;color:var(--mute);font-size:.85rem;opacity:.5;transition:.2s}
-.setup-groups.view-list .setup-item:hover .si-set{color:var(--accent,var(--purple));opacity:1}
-
-/* ====== SONHOS (vaquinha) ====== */
 .setup-sonhos{
   background:
     radial-gradient(circle at 50% 0%, rgba(168,85,247,.14), transparent 60%),
@@ -372,7 +163,9 @@
 .sonho-actions{position:relative;z-index:1;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
 .sonho-actions .btn{flex:1;min-width:140px}
 
-/* ====== APOIADORES ====== */
+/* ============================================================
+   APOIADORES
+   ============================================================ */
 .setup-apoiadores{
   background:var(--surface);
   border:1px solid var(--line);
@@ -414,7 +207,7 @@
   .ar-sonhos{grid-column:1/-1;justify-content:flex-start}
 }
 
-/* Modal setup 3D */
+/* Modal de Detalhes (que abre ao clicar no pontinho) */
 .setup-modal-item{display:flex;flex-direction:column;gap:18px}
 .smi-hero{position:relative;display:grid;place-items:center;padding:36px 20px;border-radius:var(--r);background:radial-gradient(circle at 50% 50%, var(--accent,rgba(168,85,247,.3)), transparent 70%),linear-gradient(135deg, rgba(168,85,247,.1), rgba(168,85,247,.02));border:1px solid var(--line);overflow:hidden}
 .smi-hero-ic{position:relative;z-index:1;font-size:4rem;line-height:1;filter:drop-shadow(0 10px 24px rgba(0,0,0,.6))}
@@ -446,18 +239,3 @@
 .cm-form input{background:rgba(26,16,45,.75);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;color:var(--ink);font-family:inherit;font-size:.86rem}
 .cm-form input:focus{border-color:var(--purple);outline:none;box-shadow:0 0 0 4px rgba(168,85,247,.14)}
 .cm-aviso{color:var(--mute);font-size:.7rem;text-align:center;font-style:italic;margin-top:2px}
-
-/* Responsive Setup */
-@media (max-width:1100px){
-  .setup-groups.view-3d{grid-template-columns:1fr}
-  .setup-groups.view-3d .sg-list{grid-template-columns:repeat(3,1fr)}
-}
-@media (max-width:960px){
-  .setup-groups.view-3d .sg-list{grid-template-columns:repeat(2,1fr)}
-}
-@media (max-width:720px){
-  .setup-groups.view-3d .sg-list{grid-template-columns:1fr 1fr}
-  .setup-view-toggle{width:100%}
-  .svt-btn{flex:1;justify-content:center}
-  .setup-controls .search-wrap{max-width:none}
-}
