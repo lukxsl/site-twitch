@@ -3,13 +3,9 @@
    ============================================================ */
 let _sonhoSelecionado = null;
 
-// LISTA COMPLETA COM OS 15 COMPONENTES DA SOSO
 const SETUP_DATA = [
   {
-    id: 'pc',
-    titulo: '💻 PC Gamer',
-    accent: 'blue',
-    tipo: 'real',
+    id: 'pc', titulo: '💻 PC Gamer', accent: 'blue', tipo: 'real',
     itens: [
       { ic:'🧠', cat:'Processador', nome:'Ryzen 9 5900x', ano:2023, nota:10, comentario:'Monstro pra jogos e streaming.' },
       { ic:'🎮', cat:'Placa de Vídeo', nome:'Rtx 3060 12GB Branca', ano:2023, nota:9, comentario:'Linda e roda tudo liso.' },
@@ -22,10 +18,7 @@ const SETUP_DATA = [
     ]
   },
   {
-    id: 'per',
-    titulo: '🖱️ Periféricos',
-    accent: 'pink',
-    tipo: 'real',
+    id: 'per', titulo: '🖱️ Periféricos', accent: 'pink', tipo: 'real',
     itens: [
       { ic:'⌨️', cat:'Teclado', nome:'Logitech G PRO X TKL Branco', ano:2023, nota:10, comentario:'Switch top, ótimo pra jogar.' },
       { ic:'🖱️', cat:'Mouse', nome:'Logitech g502x Superlight RGB', ano:2024, nota:10, comentario:'Leve, preciso e TOP.' },
@@ -36,10 +29,7 @@ const SETUP_DATA = [
     ]
   },
   {
-    id: 'extra',
-    titulo: '🪑 Mesa & Cadeira',
-    accent: 'cyan',
-    tipo: 'real',
+    id: 'extra', titulo: '🪑 Mesa & Cadeira', accent: 'cyan', tipo: 'real',
     itens: [
       { ic:'🪑', cat:'Cadeira', nome:'XT Racer', ano:2023, nota:8, comentario:'Confortável pra longas lives.' }
     ]
@@ -47,27 +37,18 @@ const SETUP_DATA = [
 ];
 
 const SONHOS_DATA = [
-  {
-    id: 'sony-zv-e10',
-    icon: '🎥',
-    cat: 'Câmera profissional',
-    nome: 'Sony ZV-E10',
-    descricao: 'Pra dar um upgrade monstro no visual da live.',
-    meta: 3500,
-    arrecadado: 0,
-    contribuintes: []
-  },
-  {
-    id: 'shure-sm7b',
-    icon: '🎤',
-    cat: 'Microfone pro',
-    nome: 'Shure SM7B',
-    descricao: 'O sonho de todo streamer, mas precisa de interface.',
-    meta: 4200,
-    arrecadado: 0,
-    contribuintes: []
-  }
+  { id: 'sony-zv-e10', icon: '🎥', cat: 'Câmera profissional', nome: 'Sony ZV-E10', descricao: 'Pra dar um upgrade monstro no visual da live.', meta: 3500, arrecadado: 0, contribuintes: [] },
+  { id: 'shure-sm7b', icon: '🎤', cat: 'Microfone pro', nome: 'Shure SM7B', descricao: 'O sonho de todo streamer, mas precisa de interface.', meta: 4200, arrecadado: 0, contribuintes: [] }
 ];
+
+/* ============================================================
+   🆕 FUNÇÃO VAZIA (OBRIGATÓRIA)
+   Se o main.js chama setupRender() e ela não existe, o site inteiro trava.
+   Deixando vazia, o main.js ignora e carrega o resto perfeitamente.
+   ============================================================ */
+function setupRender() {}
+window.setupRender = setupRender;
+
 
 /* Função que abre o Modal (chamada quando clica no pontinho) */
 function abrirItemSetup(grupoId, idx){
@@ -197,7 +178,6 @@ function abrirContribuirSonho(id){
   const s = SONHOS_DATA.find(x => x.id === id);
   if(!s) return;
   _sonhoSelecionado = s;
-
   const pct = s.meta > 0 ? Math.min(100, Math.round((s.arrecadado / s.meta) * 100)) : 0;
 
   $('dTitle').textContent = '💜 Apoiar ' + s.nome;
@@ -205,30 +185,16 @@ function abrirContribuirSonho(id){
     <div class="contribuir-modal">
       <div class="cm-head">
         <span class="cm-ic">${s.icon}</span>
-        <div>
-          <b>${esc(s.nome)}</b>
-          <small>${esc(s.cat)}</small>
-        </div>
+        <div><b>${esc(s.nome)}</b><small>${esc(s.cat)}</small></div>
       </div>
-
       <div class="cm-progresso">
         <div class="sonho-bar"><i style="width:${pct}%"></i></div>
-        <div class="cm-prog-info">
-          <b>${fmtBRL(s.arrecadado)}</b>
-          <span>de ${fmtBRL(s.meta)}</span>
-          <span class="sonho-pct">${pct}%</span>
-        </div>
+        <div class="cm-prog-info"><b>${fmtBRL(s.arrecadado)}</b><span>de ${fmtBRL(s.meta)}</span><span class="sonho-pct">${pct}%</span></div>
       </div>
-
       <div class="cm-info">
         <b>💜 Como contribuir</b>
-        <ol>
-          <li>Faz um Pix de qualquer valor</li>
-          <li>Volta aqui e avisa a Soso</li>
-          <li>A contribuição aparece após confirmação</li>
-        </ol>
+        <ol><li>Faz um Pix de qualquer valor</li><li>Volta aqui e avisa a Soso</li><li>A contribuição aparece após confirmação</li></ol>
       </div>
-
       <div class="cm-pix">
         <label>📋 Chave Pix</label>
         <div class="cm-pix-box">
@@ -236,13 +202,11 @@ function abrirContribuirSonho(id){
           <button type="button" class="btn ghost" onclick="copiarPix()">📋 Copiar</button>
         </div>
       </div>
-
       <div class="cm-form">
         <label>Depois de fazer o Pix, me avisa:</label>
         <input type="text" id="contribNome" placeholder="Seu nome/apelido" maxlength="40">
         <input type="number" id="contribValor" placeholder="Valor em R$" min="1" step="1">
         <button type="button" class="btn big" onclick="enviarContribuicao()">💜 Já fiz o Pix, avisar Soso</button>
-        <small class="cm-aviso">* O valor só aparece depois que a Soso confirmar</small>
       </div>
     </div>
   `;
@@ -251,13 +215,9 @@ function abrirContribuirSonho(id){
 window.abrirContribuirSonho = abrirContribuirSonho;
 
 function copiarPix(){
-  const input = $('pixKeyInput');
-  if(!input) return;
-  try {
-    input.select();
-    navigator.clipboard.writeText(input.value);
-    toast('Chave Pix copiada! 💜', 'ok');
-  } catch(e){ toast('Erro ao copiar', 'erro'); }
+  const input = $('pixKeyInput'); if(!input) return;
+  try { input.select(); navigator.clipboard.writeText(input.value); toast('Chave Pix copiada! 💜', 'ok'); }
+  catch(e){ toast('Erro ao copiar', 'erro'); }
 }
 window.copiarPix = copiarPix;
 
@@ -266,34 +226,22 @@ async function enviarContribuicao(){
   const valor = Number($('contribValor')?.value) || 0;
   if(!nome){ toast('Digita seu nome/apelido!', 'warn'); return; }
   if(valor <= 0){ toast('Informa o valor do Pix!', 'warn'); return; }
-
-  try{
-    toast(`✅ Aviso enviado! Assim que a Soso confirmar, @${nome} aparece na lista 💜`, 'ok');
-    if($('dlg')) $('dlg').close();
-  }catch(e){
-    toast('Não consegui enviar. Manda no Discord 💜', 'warn');
-  }
+  try{ toast(`✅ Aviso enviado! Assim que a Soso confirmar, @${nome} aparece na lista 💜`, 'ok'); if($('dlg')) $('dlg').close(); }
+  catch(e){ toast('Não consegui enviar. Manda no Discord 💜', 'warn'); }
 }
 window.enviarContribuicao = enviarContribuicao;
 
 /* ============================================================
-   VISUALIZADOR 360° (A MÁGICA ACONTECE AQUI)
+   VISUALIZADOR 360°
    ============================================================ */
 function iniciarSetup360() {
   const container = document.getElementById('setup360Container');
   if (!container) return;
-  
-  if (typeof PhotoSphereViewer === 'undefined') {
-    console.error("Erro: Photo Sphere Viewer não carregou.");
-    return;
-  }
-
-  // IMAGEM DE TESTE (Sala de Aula). Depois troque pela sua foto do quarto.
-  const urlFoto360 = 'https://pannellum.org/images/alma.jpg'; 
+  if (typeof PhotoSphereViewer === 'undefined') return;
 
   const viewer = new PhotoSphereViewer.Viewer({
     container: container,
-    panorama: urlFoto360,
+    panorama: 'https://pannellum.org/images/alma.jpg', // Imagem de teste
     caption: 'Arraste para explorar o setup 360° 💜',
     loadingTxt: 'Carregando o cantinho...',
     touchmoveTwoFingers: false,
@@ -304,55 +252,13 @@ function iniciarSetup360() {
     plugins: [
       [PhotoSphereViewer.MarkersPlugin, {
         markers: [
-          {
-            id: 'pc',
-            position: { yaw: '2.9rad', pitch: '0.1rad' }, 
-            html: '<div class="custom-hotspot" title="Ver PC Gamer">💻</div>',
-            tooltip: 'Ver PC Gamer',
-            click: () => { abrirItemSetup('pc', 0); }
-          },
-          {
-            id: 'microfone',
-            position: { yaw: '1.2rad', pitch: '-0.1rad' },
-            html: '<div class="custom-hotspot" title="Ver Microfone">🎙️</div>',
-            tooltip: 'Ver Microfone',
-            click: () => { abrirItemSetup('per', 3); }
-          },
-          {
-            id: 'monitor',
-            position: { yaw: '2.0rad', pitch: '0.2rad' },
-            html: '<div class="custom-hotspot" title="Ver Monitor">🖥️</div>',
-            tooltip: 'Ver Monitor',
-            click: () => { abrirItemSetup('per', 4); }
-          },
-          {
-            id: 'teclado',
-            position: { yaw: '2.8rad', pitch: '-0.3rad' },
-            html: '<div class="custom-hotspot" title="Ver Teclado">⌨️</div>',
-            tooltip: 'Ver Teclado',
-            click: () => { abrirItemSetup('per', 0); }
-          },
-          {
-            id: 'mouse',
-            position: { yaw: '3.2rad', pitch: '-0.4rad' },
-            html: '<div class="custom-hotspot" title="Ver Mouse">🖱️</div>',
-            tooltip: 'Ver Mouse',
-            click: () => { abrirItemSetup('per', 1); }
-          },
-          {
-            id: 'headset',
-            position: { yaw: '1.8rad', pitch: '-0.2rad' },
-            html: '<div class="custom-hotspot" title="Ver Headset">🎧</div>',
-            tooltip: 'Ver Headset',
-            click: () => { abrirItemSetup('per', 2); }
-          },
-          {
-            id: 'cadeira',
-            position: { yaw: '0.5rad', pitch: '-0.5rad' },
-            html: '<div class="custom-hotspot" title="Ver Cadeira">🪑</div>',
-            tooltip: 'Ver Cadeira',
-            click: () => { abrirItemSetup('extra', 0); }
-          }
+          { id: 'pc', position: { yaw: '2.9rad', pitch: '0.1rad' }, html: '<div class="custom-hotspot" title="Ver PC Gamer">💻</div>', click: () => abrirItemSetup('pc', 0) },
+          { id: 'microfone', position: { yaw: '1.2rad', pitch: '-0.1rad' }, html: '<div class="custom-hotspot" title="Ver Microfone">🎙️</div>', click: () => abrirItemSetup('per', 3) },
+          { id: 'monitor', position: { yaw: '2.0rad', pitch: '0.2rad' }, html: '<div class="custom-hotspot" title="Ver Monitor">🖥️</div>', click: () => abrirItemSetup('per', 4) },
+          { id: 'teclado', position: { yaw: '2.8rad', pitch: '-0.3rad' }, html: '<div class="custom-hotspot" title="Ver Teclado">⌨️</div>', click: () => abrirItemSetup('per', 0) },
+          { id: 'mouse', position: { yaw: '3.2rad', pitch: '-0.4rad' }, html: '<div class="custom-hotspot" title="Ver Mouse">🖱️</div>', click: () => abrirItemSetup('per', 1) },
+          { id: 'headset', position: { yaw: '1.8rad', pitch: '-0.2rad' }, html: '<div class="custom-hotspot" title="Ver Headset">🎧</div>', click: () => abrirItemSetup('per', 2) },
+          { id: 'cadeira', position: { yaw: '0.5rad', pitch: '-0.5rad' }, html: '<div class="custom-hotspot" title="Ver Cadeira">🪑</div>', click: () => abrirItemSetup('extra', 0) }
         ]
       }]
     ]

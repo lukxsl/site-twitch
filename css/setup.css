@@ -1,13 +1,18 @@
 /* ============================================================
-   SETUP — 360° + SONHOS + APOIADORES
+   SETUP — 3D + LISTA + SONHOS + APOIADORES
    ============================================================ */
+.setup-controls{display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.setup-controls .search-wrap{flex:1;max-width:420px;min-width:220px}
+.setup-view-toggle{display:inline-flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:99px;padding:4px;flex:none}
+.svt-btn{background:none;border:0;color:var(--mute);font-family:inherit;font-weight:700;font-size:.8rem;padding:8px 16px;border-radius:99px;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.svt-btn.on{background:linear-gradient(135deg,var(--purple-2),var(--purple-3));color:#fff;box-shadow:0 6px 16px -4px rgba(168,85,247,.5)}
 
 /* ============================================================
    VISUALIZADOR 360°
    ============================================================ */
 .setup-360-wrap {
   width: 100%;
-  height: 65vh; /* Usa a altura da tela para ficar imersivo */
+  height: 65vh;
   min-height: 500px;
   max-height: 800px;
   margin-bottom: 30px;
@@ -18,37 +23,21 @@
   position: relative;
   background: #0a0511;
 }
-
-#setup360Container {
-  width: 100%;
-  height: 100%;
-}
-
-/* Pontinhos Interativos (Hotspots) */
+#setup360Container { width: 100%; height: 100%; }
 .custom-hotspot {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
+  width: 50px; height: 50px; border-radius: 50%;
   background: rgba(10, 5, 17, 0.85);
   border: 2px solid var(--purple-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; cursor: pointer;
   box-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
   transition: transform 0.2s, background 0.2s;
   animation: pulseHotspot 2s infinite;
 }
-
 .custom-hotspot:hover {
-  transform: scale(1.2);
-  background: var(--purple-3);
-  border-color: #fff;
-  animation: none;
-  box-shadow: 0 0 30px rgba(168, 85, 247, 1);
+  transform: scale(1.2); background: var(--purple-3); border-color: #fff;
+  animation: none; box-shadow: 0 0 30px rgba(168, 85, 247, 1);
 }
-
 @keyframes pulseHotspot {
   0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7); }
   70% { box-shadow: 0 0 0 20px rgba(168, 85, 247, 0); }
@@ -56,8 +45,33 @@
 }
 
 /* ============================================================
-   SONHOS (vaquinha)
+   FOTO ESTÁTICA (Mantido caso precise voltar)
    ============================================================ */
+.setup-foto{position:relative;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);margin-bottom:20px;box-shadow:var(--sh-lg),var(--sh-floor);background:#0a0511;min-height:180px}
+.setup-foto img{display:block;width:100%;height:auto;max-height:480px;object-fit:cover}
+.sf-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:60px 20px;text-align:center;background:radial-gradient(circle at 50% 50%, rgba(168,85,247,.16), transparent 70%),linear-gradient(135deg, rgba(168,85,247,.08), rgba(168,85,247,.02))}
+.sf-placeholder span{font-size:3rem;line-height:1;filter:drop-shadow(0 4px 12px rgba(168,85,247,.5))}
+.sf-placeholder b{color:var(--white);font-size:1.05rem;font-family:'Bricolage Grotesque',sans-serif}
+.sf-placeholder small{color:var(--mute);font-size:.82rem}
+
+.setup-groups{display:grid;gap:14px;margin-bottom:26px}
+.setup-groups.view-3d{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.setup-groups.view-list{grid-template-columns:1fr;gap:10px}
+
+.setup-group{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),var(--sh),var(--sh-floor);position:relative;overflow:hidden;transition:.25s var(--ease)}
+.setup-group::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent,var(--purple)),transparent 70%);opacity:.8}
+.setup-group[data-accent="blue"]{--accent:#3b82f6}
+.setup-group[data-accent="cyan"]{--accent:#06b6d4}
+.setup-group[data-accent="pink"]{--accent:#ec4899}
+
+.sg-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+.sg-head h3{font-size:1.02rem;color:var(--accent,var(--purple-2));font-weight:800;flex:1}
+.sg-count{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:var(--mute);background:rgba(255,255,255,.04);border:1px solid var(--line);padding:2px 9px;border-radius:99px}
+.sg-list{display:flex;flex-direction:column;gap:8px}
+
+/* ... (Mantendo os estilos de sonhos e apoiadores originais) ... */
+
+/* ====== SONHOS (vaquinha) ====== */
 .setup-sonhos{
   background: radial-gradient(circle at 50% 0%, rgba(168,85,247,.14), transparent 60%), var(--surface);
   border:1px solid var(--line-2);
@@ -99,9 +113,7 @@
 .sonho-actions{position:relative;z-index:1;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
 .sonho-actions .btn{flex:1;min-width:140px}
 
-/* ============================================================
-   APOIADORES
-   ============================================================ */
+/* ====== APOIADORES ====== */
 .setup-apoiadores{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),var(--sh),var(--sh-floor)}
 .apoiadores-head{margin-bottom:16px}
 .ap-kicker{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;padding:3px 10px;border-radius:99px;background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.25)}
@@ -115,12 +127,7 @@
 .ar-total{font-family:'JetBrains Mono',monospace;color:var(--gold);font-weight:800;font-size:.85rem;white-space:nowrap}
 .ar-sonhos{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
 .ar-sonho-chip{padding:2px 8px;border-radius:99px;background:rgba(168,85,247,.12);border:1px solid var(--line);color:var(--purple-2);font-size:.62rem;font-weight:700}
-
-@media (max-width:720px){
-  .sonhos-lista{grid-template-columns:1fr}
-  .apoiador-row{grid-template-columns:32px 1fr auto;gap:8px}
-  .ar-sonhos{grid-column:1/-1;justify-content:flex-start}
-}
+@media (max-width:720px){.sonhos-lista{grid-template-columns:1fr}.apoiador-row{grid-template-columns:32px 1fr auto;gap:8px}.ar-sonhos{grid-column:1/-1;justify-content:flex-start}}
 
 /* Modais */
 .setup-modal-item{display:flex;flex-direction:column;gap:18px}
