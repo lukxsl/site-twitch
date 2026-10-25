@@ -56,8 +56,6 @@ function copiarLinkItem(nome){
 }
 window.copiarLinkItem = copiarLinkItem;
 
-/* (Funções de Sonhos e Apoiadores mantidas iguais ao seu código original) */
-
 const Setup3D = (function () {
   let started = false, built = false, visible = false;
   let container, wrap, pinLayer, hintEl, ledPanel, W = 0, H = 0;
@@ -114,9 +112,7 @@ const Setup3D = (function () {
     osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1);
   }
 
-  // Helpers com Materiais Físicos para Realismo
   function M(color, o) { return new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.6, metalness: 0.1 }, o || {})); }
-  function P(color, o) { return new THREE.MeshPhysicalMaterial(Object.assign({ color, roughness: 0.2, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.1 }, o || {})); }
   function B(color, o) { return new THREE.MeshBasicMaterial(Object.assign({ color }, o || {})); }
   function rgb(off) { const m = B(0xa855f7); rgbMats.push({ m, off: off || 0 }); return m; }
   function box(w, h, d, mat, x, y, z) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x||0, y||0, z||0); m.castShadow = true; m.receiveShadow = true; return m; }
@@ -150,38 +146,30 @@ const Setup3D = (function () {
     return { pos: target.clone().addScaledVector(dir, dist), target };
   }
 
-  /* ---------- Construção da Cena ---------- */
   function buildRoom() {
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), P(0x15101f, { roughness: 0.4, metalness: 0.3 }));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), M(0x15101f, { roughness: 0.8, metalness: 0.2 }));
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
 
-    const rug = new THREE.Mesh(new THREE.CircleGeometry(1.4, 48), M(0x2a1a4d, { roughness: 1, metalness: 0 }));
+    const rug = new THREE.Mesh(new THREE.CircleGeometry(1.4, 48), M(0x2a1a4d, { roughness: 0.95, metalness: 0 }));
     rug.rotation.x = -Math.PI / 2; rug.position.set(0, 0.005, 0.75); rug.receiveShadow = true; scene.add(rug);
 
     const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(8, 3.5), M(0x1a1030, { roughness: 0.9, metalness: 0 }));
     wallBack.position.set(0, 1.75, -0.6); wallBack.receiveShadow = true; scene.add(wallBack);
 
-    // Janela Realista
     const windowGroup = new THREE.Group(); windowGroup.position.set(-1.4, 1.6, -0.58);
-    windowGroup.add(box(0.8, 1.0, 0.1, M(0x222222), 0, 0, 0)); // Moldura
-    const glassMat = P(0x111122, { transmission: 0.95, opacity: 0.3, transparent: true, roughness: 0.05, metalness: 0.1 });
-    windowGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), glassMat));
-    // Parapeito
+    windowGroup.add(box(0.8, 1.0, 0.1, M(0x222222), 0, 0, 0));
+    windowGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), M(0x111122, { transparent: true, opacity: 0.3, roughness: 0.1, metalness: 0.8 })));
     windowGroup.add(box(0.9, 0.05, 0.2, M(0xe0e0e5), 0, -0.52, 0.05));
     scene.add(windowGroup);
 
-    // Fundo da janela (Cidade e Lua)
     const cityCanvas = document.createElement('canvas'); cityCanvas.width = 256; cityCanvas.height = 256;
-    const cCtx = cityCanvas.getContext('2d');
-    cCtx.fillStyle = '#050309'; cCtx.fillRect(0, 0, 256, 256);
-    cCtx.fillStyle = '#1a1035'; // Prédios
-    for(let i=0; i<10; i++) cCtx.fillRect(i*25, 150 - Math.random()*50, 20, 106);
-    cCtx.fillStyle = '#fff'; cCtx.beginPath(); cCtx.arc(200, 50, 20, 0, Math.PI*2); cCtx.fill(); // Lua
+    const cCtx = cityCanvas.getContext('2d'); cCtx.fillStyle = '#050309'; cCtx.fillRect(0, 0, 256, 256);
+    cCtx.fillStyle = '#1a1035'; for(let i=0; i<10; i++) cCtx.fillRect(i*25, 150 - Math.random()*50, 20, 106);
+    cCtx.fillStyle = '#fff'; cCtx.beginPath(); cCtx.arc(200, 50, 20, 0, Math.PI*2); cCtx.fill();
     const cityTex = new THREE.CanvasTexture(cityCanvas);
     const cityPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), B(0xffffff, { map: cityTex }));
     cityPlane.position.set(-1.4, 1.6, -0.65); scene.add(cityPlane);
 
-    // Chuva Fora
     const geo = new THREE.BufferGeometry(); const count = 400; const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       pos[i*3] = -1.8 + Math.random() * 0.8; pos[i*3+1] = 1.0 + Math.random() * 1.2; pos[i*3+2] = -0.7 - Math.random() * 0.3;
@@ -190,7 +178,6 @@ const Setup3D = (function () {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     rainMesh = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x7dd3fc, size: 0.008, transparent: true, opacity: 0.5 })); scene.add(rainMesh);
 
-    // Neon
     const signGroup = new THREE.Group(); signGroup.position.set(1.4, 1.8, -0.58);
     signGroup.add(box(0.7, 0.3, 0.02, M(0x050309), 0, 0, 0));
     const signCanvas = document.createElement('canvas'); signCanvas.width = 512; signCanvas.height = 213;
@@ -203,22 +190,18 @@ const Setup3D = (function () {
   }
 
   function buildDeskAndPeripherals() {
-    // Mesa Branca
-    const deskMat = P(0xf0f0f5, { roughness: 0.4, metalness: 0.1 });
+    const deskMat = M(0xf0f0f5, { roughness: 0.4, metalness: 0.1 });
     scene.add(box(2.4, 0.04, 0.9, deskMat, 0, 0.73, -0.025));
     scene.add(box(0.04, 0.71, 0.85, deskMat, -1.15, 0.355, -0.025));
     scene.add(box(0.04, 0.71, 0.85, deskMat, 1.15, 0.355, -0.025));
 
-    // Mousepad
     scene.add(box(1.2, 0.005, 0.5, M(0x101015, { roughness: 1, metalness: 0 }), -0.2, 0.753, 0.15));
 
-    // Monitor Ultrawide
     const monGroup = new THREE.Group(); monGroup.position.set(-0.2, 0.75, -0.2);
-    monGroup.add(box(0.3, 0.015, 0.2, M(0x111111), 0, 0.007, 0)); // Base
-    monGroup.add(box(0.06, 0.25, 0.03, M(0x111111), 0, 0.13, -0.05)); // Haste
-    monGroup.add(box(0.9, 0.4, 0.02, M(0x111111), 0, 0.3, 0)); // Tela Frame
+    monGroup.add(box(0.3, 0.015, 0.2, M(0x111111), 0, 0.007, 0));
+    monGroup.add(box(0.06, 0.25, 0.03, M(0x111111), 0, 0.13, -0.05));
+    monGroup.add(box(0.9, 0.4, 0.02, M(0x111111), 0, 0.3, 0));
     
-    // Tela do Monitor (Canvas)
     monitorCanvas = document.createElement('canvas'); monitorCanvas.width = 1024; monitorCanvas.height = 512;
     monitorCtx = monitorCanvas.getContext('2d'); monitorTex = new THREE.CanvasTexture(monitorCanvas);
     const updateMonitor = () => {
@@ -237,18 +220,16 @@ const Setup3D = (function () {
       monitorTex.needsUpdate = true;
     }
     updateMonitor(); setInterval(updateMonitor, 5000);
-    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 0.38), P(0xffffff, { map: monitorTex, roughness: 0.1, metalness: 0.5 }));
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 0.38), M(0xffffff, { map: monitorTex, roughness: 0.1, metalness: 0.5 }));
     screen.position.set(0, 0.3, 0.011); monGroup.add(screen);
     
-    // Reflexo de vidro na tela
-    const glassGlare = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 0.38), P(0xffffff, { transmission: 1, opacity: 0.1, transparent: true, roughness: 0.05, metalness: 0 }));
+    const glassGlare = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 0.38), M(0xffffff, { transparent: true, opacity: 0.1, roughness: 0.05, metalness: 0 }));
     glassGlare.position.set(0, 0.3, 0.012); monGroup.add(glassGlare);
     scene.add(monGroup);
     addPin('room', '🖥️', 'Monitor', anchor(monGroup, 0.3, 0.4, 0.03), [0, 0.2, 1], () => abrirItemSetup('per', 4));
 
-    // Teclado (TKL)
     const kb = new THREE.Group(); kb.position.set(-0.2, 0.755, 0.2);
-    kb.add(box(0.35, 0.02, 0.13, M(0x222222), 0, 0.01, 0)); // Base escura
+    kb.add(box(0.35, 0.02, 0.13, M(0x222222), 0, 0.01, 0));
     const keys = new THREE.InstancedMesh(new THREE.BoxGeometry(0.02, 0.008, 0.02), M(0xffffff), 80);
     const d = new THREE.Object3D(); let idx = 0;
     for (let r = 0; r < 5; r++) for (let c = 0; c < 15; c++) { 
@@ -258,42 +239,37 @@ const Setup3D = (function () {
     keys.instanceMatrix.needsUpdate = true; kb.add(keys); scene.add(kb);
     addPin('room', '⌨️', 'Teclado', anchor(kb, 0, 0.05, 0), [0, 1, 0.4], () => abrirItemSetup('per', 0));
 
-    // Mouse (G502 shape)
     const mo = new THREE.Group(); mo.position.set(0.15, 0.755, 0.2);
     const mBody = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), M(0x111111)); mBody.scale.set(0.035, 0.02, 0.06); mBody.position.y = 0.01; mo.add(mBody);
-    mo.add(box(0.03, 0.01, 0.06, rgb(2.0), 0, 0.015, 0)); // RGB interno
+    mo.add(box(0.03, 0.01, 0.06, rgb(2.0), 0, 0.015, 0));
     scene.add(mo);
     addPin('room', '🖱️', 'Mouse', anchor(mo, 0, 0.05, 0), [0, 1, 0.4], () => abrirItemSetup('per', 1));
 
-    // Microfone (Boom arm realista)
     const micArm = new THREE.Group(); micArm.position.set(-0.9, 0.75, -0.2);
-    micArm.add(cyl(0.05, 0.05, 0.02, M(0x111111), 0, 0.01, 0)); // C-clamp
+    micArm.add(cyl(0.05, 0.05, 0.02, M(0x111111), 0, 0.01, 0));
     const a1 = cyl(0.015, 0.015, 0.5, M(0x222222), 0.15, 0.25, 0); a1.rotation.z = -0.6; micArm.add(a1);
     const a2 = cyl(0.015, 0.015, 0.4, M(0x222222), 0.35, 0.45, 0); a2.rotation.z = 0.6; micArm.add(a2);
-    const mic = cyl(0.025, 0.025, 0.12, P(0xffffff), 0.5, 0.3, 0); mic.rotation.x = Math.PI/2; micArm.add(mic);
+    const mic = cyl(0.025, 0.025, 0.12, M(0xffffff), 0.5, 0.3, 0); mic.rotation.x = Math.PI/2; micArm.add(mic);
     const popFilter = cyl(0.04, 0.04, 0.01, M(0x111111), 0.56, 0.3, 0); popFilter.rotation.x = Math.PI/2; micArm.add(popFilter);
     scene.add(micArm);
     addPin('room', '🎙️', 'Microfone', anchor(micArm, 0.5, 0.3, 0), [0, 1, 0.4], () => abrirItemSetup('per', 3));
 
-    // Suporte de Headset
     const hsStand = new THREE.Group(); hsStand.position.set(-1.0, 0.75, 0.1);
-    hsStand.add(cyl(0.06, 0.06, 0.02, M(0x111111), 0, 0.01, 0)); // Base
-    hsStand.add(cyl(0.01, 0.01, 0.25, M(0x111111), 0, 0.13, 0)); // Haste
-    const hsHead = box(0.1, 0.03, 0.02, M(0x111111), 0, 0.26, 0); hsStand.add(hsHead); // Gancho
-    hsStand.add(box(0.08, 0.04, 0.1, M(0xffffff), 0, 0.21, 0)); // Headset pendurado
+    hsStand.add(cyl(0.06, 0.06, 0.02, M(0x111111), 0, 0.01, 0));
+    hsStand.add(cyl(0.01, 0.01, 0.25, M(0x111111), 0, 0.13, 0));
+    hsStand.add(box(0.1, 0.03, 0.02, M(0x111111), 0, 0.26, 0));
+    hsStand.add(box(0.08, 0.04, 0.1, M(0xffffff), 0, 0.21, 0));
     scene.add(hsStand);
     addPin('room', '🎧', 'Headset', anchor(hsStand, 0, 0.2, 0), [0, 1, 0.4], () => abrirItemSetup('per', 2));
 
-    // Xícara / Café
-    const mug = new THREE.Group(); mug.position.set(0.5, 0.75, -0.3); mug.add(cyl(0.04, 0.035, 0.1, P(0xffffff), 0, 0.05, 0)); scene.add(mug);
+    const mug = new THREE.Group(); mug.position.set(0.5, 0.75, -0.3); mug.add(cyl(0.04, 0.035, 0.1, M(0xffffff), 0, 0.05, 0)); scene.add(mug);
     const steamGeo = new THREE.BufferGeometry(); const steamPos = new Float32Array(20 * 3);
     for(let i=0; i<20; i++) { steamPos[i*3] = 0.5; steamPos[i*3+1] = 0.8; steamPos[i*3+2] = -0.3; }
     steamGeo.setAttribute('position', new THREE.BufferAttribute(steamPos, 3));
     coffeeSteam = new THREE.Points(steamGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.01, transparent: true, opacity: 0.3 })); scene.add(coffeeSteam);
 
-    // Monster Energy
     const monster = new THREE.Group(); monster.position.set(0.45, 0.755, 0.2);
-    monster.add(cyl(0.03, 0.03, 0.12, M(0x111111), 0, 0.06, 0)); // Lata preta
+    monster.add(cyl(0.03, 0.03, 0.12, M(0x111111), 0, 0.06, 0));
     const monCanvas = document.createElement('canvas'); monCanvas.width = 128; monCanvas.height = 128;
     const mCtx = monCanvas.getContext('2d'); mCtx.fillStyle = '#111111'; mCtx.fillRect(0,0,128,128);
     mCtx.strokeStyle = '#b7ff00'; mCtx.lineWidth = 8; mCtx.beginPath();
@@ -302,9 +278,8 @@ const Setup3D = (function () {
     const monLabel = new THREE.Mesh(new THREE.CylinderGeometry(0.031, 0.031, 0.08, 32, 1, true), B(0xffffff, { map: monTex }));
     monLabel.position.set(0, 0.06, 0); monster.add(monLabel); scene.add(monster);
 
-    // Celular com Spotify
     const phone = new THREE.Group(); phone.position.set(0.05, 0.755, -0.05); phone.rotation.y = 0.5; phone.rotation.x = -Math.PI/2;
-    phone.add(box(0.08, 0.16, 0.01, P(0x111111), 0, 0, 0));
+    phone.add(box(0.08, 0.16, 0.01, M(0x111111), 0, 0, 0));
     const pCanvas = document.createElement('canvas'); pCanvas.width = 128; pCanvas.height = 256;
     const pCtx = pCanvas.getContext('2d'); pCtx.fillStyle = '#121212'; pCtx.fillRect(0,0,128,256);
     pCtx.fillStyle = '#1DB954'; pCtx.beginPath(); pCtx.arc(64, 100, 35, 0, Math.PI*2); pCtx.fill();
@@ -314,24 +289,19 @@ const Setup3D = (function () {
     const pScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.075, 0.15), B(0xffffff, { map: pTex }));
     pScreen.position.set(0, 0, 0.006); phone.add(pScreen); scene.add(phone);
 
-    // Funkos (Detalhados)
     const buildFunko = (color, x, z, hatType) => {
       const f = new THREE.Group(); f.position.set(x, 0.75, z); f.rotation.y = 0.5;
-      // Corpo
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.04, 16), M(color)); body.position.y = 0.02; f.add(body);
-      // Cabeça
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.025, 16, 16), M(0xffdab9)); head.position.y = 0.06; f.add(head);
-      // Olhos
       f.add(box(0.006, 0.006, 0.002, M(0x000000), -0.008, 0.065, 0.022));
       f.add(box(0.006, 0.006, 0.002, M(0x000000), 0.008, 0.065, 0.022));
-      
       if (hatType === 'cowboy') {
         const hatBase = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.003, 16), M(0x5c4033)); hatBase.position.y = 0.082; f.add(hatBase);
         const hatTop = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.025, 16), M(0x5c4033)); hatTop.position.y = 0.095; f.add(hatTop);
       } else if (hatType === 'hogwarts') {
         const hat = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.06, 8), M(0x4a2e15)); hat.position.set(0, 0.1, 0); hat.rotation.z = 0.2; f.add(hat);
       } else if (hatType === 'detroit') {
-        f.add(box(0.004, 0.004, 0.002, B(0x00ffff), 0.015, 0.065, 0.02)); // LED
+        f.add(box(0.004, 0.004, 0.002, B(0x00ffff), 0.015, 0.065, 0.02));
       }
       scene.add(f);
     };
@@ -344,19 +314,17 @@ const Setup3D = (function () {
     const D = 0.5, Hh = 0.5, Wd = 0.25;
     pcGroup = new THREE.Group(); pcGroup.position.set(0.85, 0.77 + Hh / 2, -0.1); scene.add(pcGroup);
 
-    const white = P(0xe0e0e5, { roughness: 0.3, metalness: 0.2 }); // Branco brilhante
+    const white = M(0xe0e0e5, { roughness: 0.3, metalness: 0.2 });
     const dark = M(0x15151c, { roughness: 0.6, metalness: 0.4 });
-    const glass = new THREE.MeshPhysicalMaterial({ color: 0x111111, transmission: 0.95, opacity: 0.15, transparent: true, roughness: 0.05, metalness: 0.1, depthWrite: false });
+    const glass = M(0x111111, { transparent: true, opacity: 0.15, roughness: 0.1, metalness: 0.5, depthWrite: false });
 
     caseShell = new THREE.Group(); pcGroup.add(caseShell);
-    // Estrutura do Gabinete
     caseShell.add(box(D, Hh, 0.01, white, 0, 0, -Wd / 2 + 0.005));
     caseShell.add(box(D, 0.01, Wd, white, 0, Hh / 2 - 0.005, 0));
     caseShell.add(box(D, 0.01, Wd, white, 0, -Hh / 2 + 0.005, 0));
     caseShell.add(box(0.01, Hh, Wd, white, D / 2 - 0.005, 0, 0));
-    caseShell.add(box(0.008, Hh, Wd, glass, -D / 2 + 0.004, 0, 0)); // Vidro Lateral
+    caseShell.add(box(0.008, Hh, Wd, glass, -D / 2 + 0.004, 0, 0));
 
-    // Porta Frontal (Vidro)
     doorPivot = new THREE.Group(); doorPivot.position.set(D / 2 - 0.005, 0, Wd / 2);
     const doorW = D - 0.012;
     doorPivot.add(box(doorW, Hh - 0.012, 0.006, glass, -doorW / 2, 0, 0));
@@ -364,18 +332,13 @@ const Setup3D = (function () {
     doorPivot.add(box(doorW, 0.012, 0.01, white, -doorW / 2, -(Hh - 0.012) / 2 + 0.006, 0));
     caseShell.add(doorPivot);
 
-    // Placa Mãe
     const moboG = box(0.28, 0.35, 0.01, M(0x111111), 0.02, 0, -0.11); pcGroup.add(moboG);
-    
-    // Dissipadores (Heatsinks)
-    moboG.add(box(0.08, 0.08, 0.02, M(0x333333), 0.08, 0.1, 0.01)); // VRM Esquerdo
-    moboG.add(box(0.1, 0.04, 0.02, M(0x333333), 0.05, 0.15, 0.01)); // VRM Topo
+    moboG.add(box(0.08, 0.08, 0.02, M(0x333333), 0.08, 0.1, 0.01));
+    moboG.add(box(0.1, 0.04, 0.02, M(0x333333), 0.05, 0.15, 0.01));
 
-    // Water Cooler
     const cpuG = new THREE.Group(); cpuG.position.set(-0.02, 0.06, -0.083);
     const pump = cyl(0.045, 0.045, 0.035, dark, 0, 0, 0, 32); pump.rotation.x = Math.PI / 2; cpuG.add(pump);
     const pumpRing = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.004, 8, 36), rgb(0.3)); pumpRing.position.z = 0.0185; cpuG.add(pumpRing);
-    // Tela LCD no Water Cooler
     const lcdCanvas = document.createElement('canvas'); lcdCanvas.width = 64; lcdCanvas.height = 64;
     const lCtx = lcdCanvas.getContext('2d'); lCtx.fillStyle = '#000'; lCtx.fillRect(0,0,64,64);
     lCtx.fillStyle = '#0ff'; lCtx.font = 'bold 20px sans-serif'; lCtx.textAlign = 'center'; lCtx.fillText('65°C', 32, 40);
@@ -383,48 +346,40 @@ const Setup3D = (function () {
     const lcd = new THREE.Mesh(new THREE.CircleGeometry(0.025, 32), B(0xffffff, { map: lcdTex }));
     lcd.position.z = 0.0186; cpuG.add(lcd);
     pcGroup.add(cpuG);
-    pcTargets.push({ root: cpuG, fn: () => abrirItemSetup('pc', 5) }); 
+    pcTargets.push({ root: cpuG, fn: () => abrirItemSetup('pc', 5) });
     addPin('pc', '💧', 'Water Cooler', anchor(cpuG, 0, 0, 0.03), [0, 0, 1], () => abrirItemSetup('pc', 5));
 
-    // Memórias RAM
     const ramGroup = new THREE.Group(); ramGroup.position.set(0.09, 0.06, -0.09);
     for(let i=0; i<4; i++) {
       const stick = box(0.007, 0.1, 0.04, M(0x222222), i*0.012, 0, 0);
-      stick.add(box(0.006, 0.005, 0.035, rgb(0.5), 0, 0.052, 0)); // Difusor RGB
+      stick.add(box(0.006, 0.005, 0.035, rgb(0.5), 0, 0.052, 0));
       ramGroup.add(stick);
     }
     pcGroup.add(ramGroup);
     pcTargets.push({ root: ramGroup, fn: () => abrirItemSetup('pc', 2) });
     addPin('pc', '🧩', 'Memórias RAM', anchor(ramGroup, 0, 0.06, 0), [0, 0, 1], () => abrirItemSetup('pc', 2));
 
-    // Placa de Vídeo (RTX 3060)
     const gpuG = new THREE.Group();
-    gpuG.add(box(0.28, 0.06, 0.12, P(0xeeeeee), 0.02, -0.09, -0.043)); // Shroud Branco
-    // Fans da GPU
+    gpuG.add(box(0.28, 0.06, 0.12, M(0xeeeeee), 0.02, -0.09, -0.043));
     for(let i=0; i<3; i++) {
       const fanG = new THREE.Group(); fanG.position.set(-0.06 + i*0.08, -0.09, 0.018);
       fanG.add(cyl(0.025, 0.025, 0.005, M(0x333333), 0, 0, 0));
       const blade = box(0.04, 0.04, 0.002, M(0x111111)); fanG.add(blade);
       fans.push(fanG); gpuG.add(fanG);
     }
-    gpuG.add(box(0.08, 0.01, 0.002, B(0xb7ff00), 0.08, -0.09, 0.022)); // Logo RTX brilhando
+    gpuG.add(box(0.08, 0.01, 0.002, B(0xb7ff00), 0.08, -0.09, 0.022));
     pcGroup.add(gpuG);
-    pcTargets.push({ root: gpuG, fn: () => abrirItemSetup('pc', 1) }); 
+    pcTargets.push({ root: gpuG, fn: () => abrirItemSetup('pc', 1) });
     addPin('pc', '🎮', 'Placa de Vídeo RTX', anchor(gpuG, 0, -0.06, 0), [0, 0, 1], () => abrirItemSetup('pc', 1));
 
-    // Fans do Gabinete
     for(let i=0; i<3; i++) {
       const fan = new THREE.Group(); fan.position.set(-0.05 + i*0.06, 0.05, -0.12);
       fan.add(cyl(0.035, 0.035, 0.01, M(0x222222), 0, 0, 0));
       const b = box(0.05, 0.05, 0.002, M(0x111111)); fan.add(b); fans.push(fan); pcGroup.add(fan);
     }
 
-    // Mangueiras do Water Cooler
     const t1 = cyl(0.01, 0.01, 0.2, M(0xffffff), -0.02, 0.16, -0.08); t1.rotation.x = 0.5; pcGroup.add(t1);
-    
-    // Cabos (24pin e GPU)
     const cable1 = box(0.04, 0.15, 0.01, M(0x111111), 0.1, 0.05, -0.08); pcGroup.add(cable1);
-
     const inner = new THREE.PointLight(0xa855f7, 2.5, 1.0); inner.position.set(0.85, 1.03, -0.02); scene.add(inner);
 
     roomTargets.push({ root: pcGroup, fn: enterPC });
@@ -433,27 +388,23 @@ const Setup3D = (function () {
 
   function buildChairAndCat() {
     const g = new THREE.Group(); g.position.set(-0.8, 0, 1.1); g.rotation.y = Math.PI + 0.3;
-    const white = P(0xe0e0e5, { roughness: 0.6, metalness: 0.1 }); // Couro branco
-    const accent = M(0xa855f7, { roughness: 0.7 }); // Detalhe roxo
+    const white = M(0xe0e0e5, { roughness: 0.6, metalness: 0.1 });
+    const accent = M(0xa855f7, { roughness: 0.7 });
     
-    // Base e Rodinhas
     for(let i=0; i<5; i++) {
       const leg = box(0.04, 0.04, 0.25, M(0x222222), 0, 0.05, 0); leg.rotation.y = i * Math.PI * 2 / 5; leg.position.x = Math.sin(leg.rotation.y)*0.15; leg.position.z = Math.cos(leg.rotation.y)*0.15; g.add(leg);
     }
-    g.add(cyl(0.03, 0.03, 0.3, M(0x333333), 0, 0.2, 0, 16)); // Pistão
+    g.add(cyl(0.03, 0.03, 0.3, M(0x333333), 0, 0.2, 0, 16));
 
-    // Assento estilo Bucket
     g.add(box(0.5, 0.08, 0.5, white, 0, 0.45, 0));
-    g.add(box(0.06, 0.1, 0.45, white, 0.25, 0.5, 0)); // Lateral Direita
-    g.add(box(0.06, 0.1, 0.45, white, -0.25, 0.5, 0)); // Lateral Esquerda
-    g.add(box(0.35, 0.01, 0.4, accent, 0, 0.495, 0)); // Almofada roxa
+    g.add(box(0.06, 0.1, 0.45, white, 0.25, 0.5, 0));
+    g.add(box(0.06, 0.1, 0.45, white, -0.25, 0.5, 0));
+    g.add(box(0.35, 0.01, 0.4, accent, 0, 0.495, 0));
 
-    // Encosto
     const back = box(0.5, 0.8, 0.1, white, 0, 0.9, -0.2); back.rotation.x = -0.15; g.add(back);
-    g.add(box(0.35, 0.3, 0.02, accent, 0, 0.9, -0.15)); // Detalhe encosto
+    g.add(box(0.35, 0.3, 0.02, accent, 0, 0.9, -0.15));
     const headrest = box(0.2, 0.1, 0.05, white, 0, 1.35, -0.25); headrest.rotation.x = -0.15; g.add(headrest);
-    
-    // Apoios de braço 3D
+
     g.add(cyl(0.015, 0.015, 0.15, M(0x222222), 0.28, 0.55, 0));
     g.add(box(0.06, 0.02, 0.25, M(0x222222), 0.28, 0.62, 0));
     g.add(cyl(0.015, 0.015, 0.15, M(0x222222), -0.28, 0.55, 0));
@@ -462,19 +413,18 @@ const Setup3D = (function () {
     scene.add(g);
     addPin('room', '🪑', 'Cadeira', anchor(g, 0, 1.4, -0.2), [0, 0.3, 1], () => abrirItemSetup('extra', 0));
 
-    // Gato na Cadeira (Sucrilhas)
     catGroup = new THREE.Group(); catGroup.position.set(0, 0.5, 0.1); catGroup.rotation.y = -0.5;
     const cWhite = M(0xffffff, { roughness: 1, metalness: 0 });
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), cWhite); body.scale.set(1, 0.8, 1.4); body.position.set(0, 0.06, 0); catGroup.add(body);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 12), cWhite); head.position.set(0, 0.12, 0.1); catGroup.add(head);
-    // Orelhas
-    catGroup.add(new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.04, 4), cWhite)).position.set(-0.03, 0.17, 0.1);
-    catGroup.add(new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.04, 4), cWhite)).position.set(0.03, 0.17, 0.1);
-    // Olhos
+
+    const earL = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.04, 4), cWhite); earL.position.set(-0.03, 0.17, 0.1); catGroup.add(earL);
+    const earR = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.04, 4), cWhite); earR.position.set(0.03, 0.17, 0.1); catGroup.add(earR);
+    
     const eyeMat = B(0x44aaff);
-    catGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), eyeMat)).position.set(-0.02, 0.13, 0.14);
-    catGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), eyeMat)).position.set(0.02, 0.13, 0.14);
-    // Rabo
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), eyeMat); eyeL.position.set(-0.02, 0.13, 0.14); catGroup.add(eyeL);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), eyeMat); eyeR.position.set(0.02, 0.13, 0.14); catGroup.add(eyeR);
+
     catTail = new THREE.Group(); catTail.position.set(0, 0.05, -0.1);
     const tM = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.005, 0.2), cWhite); tM.rotation.x = Math.PI/2; tM.position.z = -0.1; catTail.add(tM); catGroup.add(catTail);
     g.add(catGroup);
@@ -494,7 +444,6 @@ const Setup3D = (function () {
     const p2 = new THREE.PointLight(0xff6ec7, 1.5, 4); p2.position.set(-1.2, 1.3, 0.8); scene.add(p2);
   }
 
-  // (Funções de adicionar pinos, updatePins, bindPointer e pick mantidas iguais ao seu código anterior, com pequenos ajustes)
   function addPin(pinMode, icon, label, anch, face, fn) {
     const el = document.createElement('button'); el.type = 'button'; el.className = 's3d-pin';
     el.innerHTML = `<span>${icon}</span><span class="s3d-pin-label">${label}</span>`;
@@ -502,6 +451,7 @@ const Setup3D = (function () {
     pinLayer.appendChild(el);
     pins.push({ el, mode: pinMode, anchor: anch, face: new THREE.Vector3(face[0], face[1], face[2]).normalize(), on: false });
   }
+  
   function updatePins() {
     camera.getWorldPosition(camV);
     for (let i = 0; i < pins.length; i++) {
@@ -553,13 +503,11 @@ const Setup3D = (function () {
       }
     });
     
-    // Zoom com a rodinha do mouse
     el.addEventListener('wheel', (e) => {
       if (mode !== 'room' || flying) return;
       e.preventDefault();
       const factor = e.deltaY > 0 ? 1.05 : 0.95;
       const off = camera.position.clone().sub(controls.target).multiplyScalar(factor);
-      // Limita o zoom
       if (off.length() > 0.8 && off.length() < 7) {
         camera.position.copy(controls.target).add(off);
         controls.update();
@@ -681,10 +629,8 @@ const Setup3D = (function () {
     }
     runTweens(now); if (controls.enabled) controls.update();
     
-    // Atualiza LEDs
     if (globalLedHue !== null) { rgbMats.forEach(r => r.m.color.setHSL(globalLedHue, 0.9, 0.6)); } else { rgbMats.forEach(r => r.m.color.setHex(0x111111)); }
     
-    // Animações (Chuva, Café, Gato, Fans)
     if (rainMesh) {
       const p = rainMesh.geometry.attributes.position.array;
       for (let i = 0; i < p.length/3; i++) { p[i*3+1] -= rainVel[i]; if (p[i*3+1] < 1.0) p[i*3+1] = 2.0; }
@@ -699,7 +645,18 @@ const Setup3D = (function () {
     fans.forEach(f => { f.rotation.z += 0.2; });
     
     updatePins();
-    if (composer) { composer.render(); } else { renderer.render(scene, camera); }
+    
+    try {
+      if (composer) { composer.render(); } else { renderer.render(scene, camera); }
+    } catch(e) {
+      console.error('Erro no render:', e);
+      // Se o composer falhar, tenta renderizar normal
+      if (composer) {
+        composer = null;
+        try { renderer.render(scene, camera); } catch(e2){}
+      }
+    }
+    
     raf = requestAnimationFrame(tick);
   }
   function kick() { if (!raf && built && visible) { lastFrameTime = performance.now(); raf = requestAnimationFrame(tick); } }
@@ -718,33 +675,63 @@ const Setup3D = (function () {
       renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.2;
       renderer.outputEncoding = THREE.sRGBEncoding;
     } catch (err) {
-      container.innerHTML = '<div class="s3d-fallback">Seu navegador não conseguiu abrir o modo 3D. Tente atualizar o navegador 💜</div>'; return;
+      container.innerHTML = '<div class="s3d-fallback" style="color:#ff8a95">Seu navegador não conseguiu abrir o modo 3D. Tente atualizar o navegador 💜</div>'; return;
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setSize(w, h); renderer.setClearColor(0x0a0511, 1);
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none;outline:none;cursor:grab';
     container.appendChild(renderer.domElement); W = w; H = h;
 
     scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(45, w / h, 0.05, 40); raycaster = new THREE.Raycaster();
-    addHud(); buildLights(); buildRoom(); buildDeskAndPeripherals(); buildChairAndCat(); buildPC();
+    
+    // ADD HUD (BOTÕES)
+    addHud(); 
+    
+    // BUILD SCENE
+    try {
+      buildLights(); buildRoom(); buildDeskAndPeripherals(); buildChairAndCat(); buildPC();
+    } catch(e) {
+      console.error('Erro ao construir cena:', e);
+      container.innerHTML = `<div class="s3d-fallback" style="color:#ff8a95">Erro ao montar cena: ${e.message}</div>`;
+      return;
+    }
 
     const saved = localStorage.getItem('setup_led') || 'purple';
     if (saved === 'purple') globalLedHue = 0.75; else if (saved === 'pink') globalLedHue = 0.9; else if (saved === 'cyan') globalLedHue = 0.55; else if (saved === 'gold') globalLedHue = 0.12; else globalLedHue = null;
 
     const pose = roomPose(); camera.position.copy(pose.pos);
+    
+    if (typeof THREE.OrbitControls === 'undefined') {
+      container.innerHTML = '<div class="s3d-fallback" style="color:#ff8a95">OrbitControls não carregou. Recarregue a página.</div>'; return;
+    }
     controls = new THREE.OrbitControls(camera, renderer.domElement); controls.target.copy(pose.target);
     controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false; controls.enableZoom = false;
     controls.rotateSpeed = 0.7; controls.minDistance = 0.8; controls.maxDistance = 7; controls.minPolarAngle = 0.15; controls.maxPolarAngle = Math.PI * 0.49;
     controls.update();
 
-    const renderScene = new THREE.RenderPass(scene, camera);
-    bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.0, 0.4, 0.85);
-    composer = new THREE.EffectComposer(renderer); composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); composer.setSize(w, h);
-    composer.addPass(renderScene); composer.addPass(bloomPass);
+    // POST-PROCESSING (COM FALLBACK)
+    if (typeof THREE.EffectComposer !== 'undefined' && typeof THREE.UnrealBloomPass !== 'undefined') {
+      try {
+        const renderScene = new THREE.RenderPass(scene, camera);
+        bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.0, 0.4, 0.85);
+        composer = new THREE.EffectComposer(renderer); 
+        composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); 
+        composer.setSize(w, h);
+        composer.addPass(renderScene); 
+        composer.addPass(bloomPass);
 
-    fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
-    const pixelRatio = renderer.getPixelRatio();
-    fxaaPass.material.uniforms['resolution'].value.x = 1 / (w * pixelRatio); fxaaPass.material.uniforms['resolution'].value.y = 1 / (h * pixelRatio);
-    composer.addPass(fxaaPass);
+        fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
+        const pixelRatio = renderer.getPixelRatio();
+        fxaaPass.material.uniforms['resolution'].value.x = 1 / (w * pixelRatio); 
+        fxaaPass.material.uniforms['resolution'].value.y = 1 / (h * pixelRatio);
+        composer.addPass(fxaaPass);
+      } catch(e) {
+        console.warn('Falha no pós-processamento:', e);
+        composer = null; // Fallback para renderização padrão
+      }
+    } else {
+      console.warn('Bibliotecas de pós-processamento não carregadas. Usando renderização padrão.');
+      composer = null;
+    }
 
     bindPointer(); scene.updateMatrixWorld(true); built = true; kick();
   }
@@ -752,9 +739,16 @@ const Setup3D = (function () {
   function init() {
     if (started) return; container = document.getElementById('setup360Container'); if (!container) return;
     started = true; wrap = container.closest('.setup-360-wrap') || container;
-    if (typeof THREE === 'undefined' || !THREE.OrbitControls) {
-      container.innerHTML = '<div class="s3d-fallback">Não consegui carregar o 3D. Recarregue a página 💜</div>'; return;
+    if (typeof THREE === 'undefined') {
+      container.innerHTML = '<div class="s3d-fallback" style="color:#ff8a95">Não consegui carregar o Three.js. Recarregue a página 💜</div>'; return;
     }
+    
+    // Fallback para quando a página carrega com a aba do setup oculta
+    setTimeout(() => {
+      const w = container.clientWidth, h = container.clientHeight;
+      if (w > 0 && h > 0 && !built) build(w, h);
+    }, 100);
+
     const ro = new ResizeObserver(() => { const w = container.clientWidth, h = container.clientHeight; if (!w || !h) return; if (!built) build(w, h); else resize(w, h); });
     ro.observe(container);
     const io = new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; if (visible) kick(); }, { threshold: 0.01 });
