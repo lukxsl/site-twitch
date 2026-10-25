@@ -282,7 +282,7 @@ const Setup3D = (function () {
     wallBack.position.set(0, 1.6, -0.5); wallBack.receiveShadow = true;
     scene.add(wallBack);
 
-    // Janela com Chuva (Corrigida)
+    // Janela com Chuva
     const windowGroup = new THREE.Group();
     windowGroup.position.set(-1.2, 1.6, -0.49);
     
@@ -301,7 +301,7 @@ const Setup3D = (function () {
     for (let i = 0; i < count; i++) {
       pos[i*3] = -1.5 + Math.random() * 0.6;
       pos[i*3+1] = 1.2 + Math.random() * 0.8;
-      pos[i*3+2] = -0.6 - Math.random() * 0.2; // Mais para trás
+      pos[i*3+2] = -0.6 - Math.random() * 0.2;
       rainVel.push(0.01 + Math.random() * 0.02);
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -314,7 +314,6 @@ const Setup3D = (function () {
     const signBg = box(0.6, 0.25, 0.02, M(0x050309), 0, 0, 0);
     signGroup.add(signBg);
     
-    // Canvas para o texto Neon
     const signCanvas = document.createElement('canvas');
     signCanvas.width = 512; signCanvas.height = 213;
     const sCtx = signCanvas.getContext('2d');
@@ -370,7 +369,6 @@ const Setup3D = (function () {
     const g = new THREE.Group();
     g.position.set(-0.15, 0.75, -0.2);
     
-    // Monitor Branco
     const white = M(0xe8e8e8, { roughness: 0.3, metalness: 0.1 });
     
     const stand = box(0.26, 0.015, 0.17, white, 0, 0.007, 0); g.add(stand);
@@ -379,7 +377,6 @@ const Setup3D = (function () {
     const screenFrame = box(0.61, 0.37, 0.025, white, 0, 0.27, 0);
     g.add(screenFrame);
 
-    // Canvas do Monitor (Alta Resolução)
     monitorCanvas = document.createElement('canvas');
     monitorCanvas.width = 1024; monitorCanvas.height = 576;
     monitorCtx = monitorCanvas.getContext('2d');
@@ -387,12 +384,10 @@ const Setup3D = (function () {
 
     function updateMonitor() {
       if (window.ultVivo) {
-        // Tela da Live
         const gr = monitorCtx.createLinearGradient(0, 0, 1024, 576);
         gr.addColorStop(0, '#1b0b3a'); gr.addColorStop(0.55, '#6d28d9'); gr.addColorStop(1, '#ec4899');
         monitorCtx.fillStyle = gr; monitorCtx.fillRect(0, 0, 1024, 576);
         
-        // Borda AO VIVO
         monitorCtx.fillStyle = '#ff4d5f';
         monitorCtx.fillRect(40, 40, 180, 50);
         monitorCtx.fillStyle = '#fff';
@@ -404,7 +399,6 @@ const Setup3D = (function () {
         monitorCtx.textAlign = 'center';
         monitorCtx.fillText(window.ultGame ? window.ultGame.name : 'Live na Twitch', 512, 320);
       } else {
-        // Tela Offline (Wallpaper Bonito)
         const gr = monitorCtx.createLinearGradient(0, 0, 1024, 576);
         gr.addColorStop(0, '#050309'); gr.addColorStop(1, '#1a1035');
         monitorCtx.fillStyle = gr; monitorCtx.fillRect(0, 0, 1024, 576);
@@ -435,11 +429,9 @@ const Setup3D = (function () {
     const kb = new THREE.Group();
     kb.position.set(-0.15, 0.755, 0.15);
     
-    // Teclado TKL Branco
     const kbBase = box(0.3, 0.022, 0.12, M(0xf0f0f0), 0, 0.011, 0);
     kb.add(kbBase);
     
-    // Luz RGB do teclado (Under-glow)
     const glow = box(0.31, 0.005, 0.13, rgb(2.0), 0, 0.005, 0);
     kb.add(glow);
 
@@ -461,7 +453,6 @@ const Setup3D = (function () {
     scene.add(kb);
     addPin('room', '⌨️', 'Teclado', anchor(kb, 0, 0.09, 0.02), [0, 1, 0.4], () => abrirItemSetup('per', 0));
 
-    // Mouse Branco
     const mo = new THREE.Group();
     mo.position.set(0.12, 0.755, 0.16);
     const mouseBody = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), M(0xf0f0f0));
@@ -472,7 +463,6 @@ const Setup3D = (function () {
     scene.add(mo);
     addPin('room', '🖱️', 'Mouse', anchor(mo, 0, 0.07, 0), [0, 1, 0.4], () => abrirItemSetup('per', 1));
 
-    // Braço do Microfone
     const micArm = new THREE.Group();
     micArm.position.set(-0.7, 0.75, -0.2);
     micArm.add(cyl(0.04, 0.04, 0.02, M(0x111111), 0, 0.01, 0)); 
@@ -489,11 +479,9 @@ const Setup3D = (function () {
     pcGroup.position.set(0.72, 0.77 + Hh / 2, -0.1);
     scene.add(pcGroup);
 
-    // Branco Fosco 
     const white = M(0xe0e0e5, { roughness: 0.4, metalness: 0.05 });
     const dark = M(0x15151c, { roughness: 0.5, metalness: 0.3 });
     
-    // Vidro Fumê 
     const glass = new THREE.MeshPhysicalMaterial({ 
       color: 0x111111, transmission: 0.95, opacity: 0.2, transparent: true, roughness: 0.05, metalness: 0.1, depthWrite: false 
     });
@@ -501,16 +489,12 @@ const Setup3D = (function () {
     caseShell = new THREE.Group();
     pcGroup.add(caseShell);
     
-    // Estrutura do Gabinete
     caseShell.add(box(D, Hh, 0.01, white, 0, 0, -Wd / 2 + 0.005));
     caseShell.add(box(D, 0.01, Wd, white, 0, Hh / 2 - 0.005, 0));
     caseShell.add(box(D, 0.01, Wd, white, 0, -Hh / 2 + 0.005, 0));
     caseShell.add(box(0.01, Hh, Wd, white, D / 2 - 0.005, 0, 0));
-    
-    // Vidro Lateral
     caseShell.add(box(0.008, Hh, Wd, glass, -D / 2 + 0.004, 0, 0));
 
-    // Porta Frontal (Vidro)
     doorPivot = new THREE.Group();
     doorPivot.position.set(D / 2 - 0.005, 0, Wd / 2);
     const doorW = D - 0.012;
@@ -519,16 +503,13 @@ const Setup3D = (function () {
     doorPivot.add(box(doorW, 0.012, 0.01, white, -doorW / 2, -(Hh - 0.012) / 2 + 0.006, 0));
     caseShell.add(doorPivot);
 
-    // Componentes Internos
     const moboG = box(0.24, 0.30, 0.004, M(0x17171f), 0.02, 0, -0.1); pcGroup.add(moboG);
     
-    // Water Cooler (Anel RGB)
     const cpuG = new THREE.Group(); cpuG.position.set(-0.02, 0.06, -0.083);
     const pump = cyl(0.04, 0.04, 0.03, dark, 0, 0, 0, 32); pump.rotation.x = Math.PI / 2; cpuG.add(pump);
     const pumpRing = new THREE.Mesh(new THREE.TorusGeometry(0.033, 0.0032, 8, 36), rgb(0.3)); pumpRing.position.z = 0.0165; cpuG.add(pumpRing);
     pcGroup.add(cpuG);
 
-    // Placa de Vídeo
     const gpuG = new THREE.Group();
     const gpuBody = box(0.24, 0.045, 0.11, M(0xeeeeee), 0.02, -0.09, -0.043);
     gpuG.add(gpuBody);
@@ -539,24 +520,16 @@ const Setup3D = (function () {
     fans.push(gpuFan); gpuG.add(gpuFan);
     pcGroup.add(gpuG);
 
-    // Mangueiras do Water Cooler (Brancas)
     const tube1 = cyl(0.008, 0.008, 0.2, M(0xffffff), -0.02, 0.16, -0.08); tube1.rotation.x = 0.5; pcGroup.add(tube1);
 
-    // Iluminação Interna (Roxa)
     const inner = new THREE.PointLight(0xa855f7, 1.5, 0.8);
     inner.position.set(0.72, 1.03, -0.02); scene.add(inner);
 
-    // ==========================================
-    // EASTER EGGS: Os 3 Funkos Pops (RDR2, Hogwarts, Detroit)
-    // ==========================================
     const buildFunko = (color, x, z, hatType) => {
       const f = new THREE.Group();
       f.position.set(x, -0.16, z);
-      // Corpo
       f.add(box(0.03, 0.04, 0.02, M(color), 0, 0.02, 0));
-      // Cabeça 
       f.add(box(0.04, 0.04, 0.035, M(0xffdab9), 0, 0.06, 0));
-      // Olhos
       f.add(box(0.008, 0.008, 0.002, M(0x000000), -0.01, 0.06, 0.018));
       f.add(box(0.008, 0.008, 0.002, M(0x000000), 0.01, 0.06, 0.018));
       
@@ -572,9 +545,9 @@ const Setup3D = (function () {
       return f;
     };
 
-    pcGroup.add(buildFunko(0x8b0000, 0.0, -0.043, 'cowboy')); // RDR2
-    pcGroup.add(buildFunko(0x111111, 0.06, -0.043, 'hogwarts')); // Hogwarts
-    pcGroup.add(buildFunko(0x444444, 0.12, -0.043, 'detroit')); // Detroit
+    pcGroup.add(buildFunko(0x8b0000, 0.0, -0.043, 'cowboy'));
+    pcGroup.add(buildFunko(0x111111, 0.06, -0.043, 'hogwarts'));
+    pcGroup.add(buildFunko(0x444444, 0.12, -0.043, 'detroit'));
 
     roomTargets.push({ root: pcGroup, fn: enterPC });
     addPin('room', '💻', 'PC Gamer', anchor(pcGroup, 0, Hh / 2 + 0.05, 0), [0, 0.3, 1], enterPC);
@@ -585,7 +558,6 @@ const Setup3D = (function () {
     g.position.set(-0.62, 0, 0.98);
     g.rotation.y = Math.PI + 0.5;
     
-    // Cadeira Gamer (Branca)
     const white = M(0xe0e0e5, { roughness: 0.7 });
     const accent = M(0xa855f7, { roughness: 0.6 });
     
@@ -602,7 +574,6 @@ const Setup3D = (function () {
     scene.add(g);
     addPin('room', '🪑', 'Cadeira', anchor(g, 0, 1.55, -0.25), [0, 0.3, 1], () => abrirItemSetup('extra', 0));
 
-    // Gato Branco (Sucrilhas)
     catGroup = new THREE.Group();
     catGroup.position.set(-0.3, 0.765, 0.2); 
     catGroup.rotation.y = -0.8;
@@ -895,14 +866,12 @@ const Setup3D = (function () {
     runTweens(now);
     if (controls.enabled) controls.update();
 
-    // Atualiza Cores RGB
     if (globalLedHue !== null) {
       rgbMats.forEach(r => r.m.color.setHSL(globalLedHue, 0.9, 0.6));
     } else {
       rgbMats.forEach(r => r.m.color.setHex(0x111111));
     }
 
-    // Chuva
     if (rainMesh) {
       const positions = rainMesh.geometry.attributes.position.array;
       for (let i = 0; i < positions.length/3; i++) {
@@ -912,7 +881,6 @@ const Setup3D = (function () {
       rainMesh.geometry.attributes.position.needsUpdate = true;
     }
 
-    // Vapor do Café
     if (coffeeSteam) {
       const p = coffeeSteam.geometry.attributes.position.array;
       for (let i = 0; i < p.length; i += 3) {
@@ -922,7 +890,6 @@ const Setup3D = (function () {
       coffeeSteam.geometry.attributes.position.needsUpdate = true;
     }
 
-    // Gato
     if (catGroup) {
       catBreath += 0.05;
       catGroup.scale.y = 1 + Math.sin(catBreath) * 0.03;
@@ -1004,7 +971,6 @@ const Setup3D = (function () {
     controls.minPolarAngle = 0.15; controls.maxPolarAngle = Math.PI * 0.49;
     controls.update();
 
-    // Post Processing Setup (BLOOM)
     const renderScene = new THREE.RenderPass(scene, camera);
     bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.2, 0.5, 0.85);
     
@@ -1014,7 +980,6 @@ const Setup3D = (function () {
     composer.addPass(renderScene);
     composer.addPass(bloomPass);
 
-    // FXAA (Anti-aliasing extra)
     fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
     const pixelRatio = renderer.getPixelRatio();
     fxaaPass.material.uniforms['resolution'].value.x = 1 / (w * pixelRatio);
