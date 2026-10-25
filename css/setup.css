@@ -100,18 +100,10 @@
 }
 .s3d-action-btn:hover { background: var(--purple-3); border-color: var(--purple-2); }
 
-.s3d-search {
-  margin-left: auto; background: rgba(10,5,17,0.85); border: 1px solid var(--line-2);
-  color: #fff; padding: 8px 14px; border-radius: 99px; font-family: inherit; font-size: .8rem;
-  width: 200px; backdrop-filter: blur(8px); outline: none;
-}
-.s3d-search:focus { border-color: var(--purple-2); box-shadow: 0 0 0 3px rgba(168,85,247,.3); }
-
 @media (max-width:600px){
   .s3d-hint{max-width:calc(100% - 28px);bottom:62px;font-size:.7rem}
   .s3d-pin{width:40px;height:40px;margin:-20px 0 0 -20px;font-size:1.1rem}
   .s3d-topbar{flex-wrap:wrap}
-  .s3d-search{width:100%;margin-left:0}
 }
 
 /* Sonhos */
