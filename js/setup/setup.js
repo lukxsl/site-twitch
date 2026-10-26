@@ -154,7 +154,8 @@ const Setup3D = (function () {
     const loader = new THREE.GLTFLoader();
     if (typeof THREE.DRACOLoader !== 'undefined') {
       const dracoLoader = new THREE.DRACOLoader();
-      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/');
+      // 🆕 CORREÇÃO AQUI: Baixando do jsdelivr em vez do gstatic.com
+      dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
       loader.setDRACOLoader(dracoLoader);
     }
 
