@@ -23,7 +23,6 @@
 <link rel="stylesheet" href="css/admin.css">
 <link rel="stylesheet" href="css/tierlist.css">
 <link rel="stylesheet" href="css/experience.css">
-
 </head>
 <body>
 
@@ -79,7 +78,6 @@
 
 <!-- ==================== INÍCIO ==================== -->
 <section id="sec-inicio" class="page-section ativo">
-
   <a class="hero-banner reveal" id="heroBanner" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" aria-label="Abrir canal na Twitch">
     <img class="banner-bg" src="img/banner.png" alt="" aria-hidden="true">
     <img id="bannerImg" src="img/banner.png" alt="Bem-vindo ao meu cantinho - asemtet0">
@@ -261,9 +259,7 @@
           <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
         </div>
         <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
-
         <h3 style="margin-top: 10px; margin-bottom: 12px; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">🏆 Top Doadores</h3>
-        
         <div class="hall-lista" id="hallLista">
           <div class="hall-empty">
             <span class="hall-empty-ic">🏆</span>
@@ -291,15 +287,12 @@
       </div>
     </div>
   </header>
-
   <div class="tl-overview" id="stats" aria-label="Resumo da lista"></div>
-
   <div class="tl-toolbar">
     <div class="tl-search">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
       <input id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar na lista" autocomplete="off">
     </div>
-
     <label class="tl-select">
       <span>Ordenar por</span>
       <select id="sortSelect">
@@ -310,15 +303,12 @@
         <option value="favoritos">Favoritos primeiro</option>
       </select>
     </label>
-
     <button class="tl-roll" id="btnRoleta" type="button" title="Sorteia um item dentro dos filtros atuais">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>
       Sortear um
     </button>
-
     <span class="tl-count" id="tlContador" aria-live="polite"></span>
   </div>
-
   <div class="tl-filters">
     <div class="tl-frow">
       <span class="tl-flabel">Status</span>
@@ -329,7 +319,6 @@
       <div class="tl-chips" id="generoChips" role="group" aria-label="Filtrar por gênero"></div>
     </div>
   </div>
-
   <p class="tl-hint">
     <span>💡 <b>Modo Admin:</b></span>
     <span>Arraste um card pra outra tier</span>
@@ -337,7 +326,6 @@
     <span>Botão direito favorita</span>
     <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz</span>
   </p>
-
   <div class="tl-board" id="tiers"></div>
   <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes fornecidos por: TMDB.</p>
 </section>
@@ -365,7 +353,6 @@
     <h2>Faz parte do cantinho</h2>
     <p>Entre no Discord, veja os clipes, escute a playlist e conheça as regras.</p>
   </header>
-
   <div class="sub-tabs reveal" id="comunidadeTabs">
     <button class="sub-tab on" data-tab="discord">💬 Comunidade</button>
     <button class="sub-tab" data-tab="clipes">🎬 Clipes</button>
@@ -373,7 +360,6 @@
     <button class="sub-tab" data-tab="sub">👑 Seja Sub</button>
     <button class="sub-tab" data-tab="info">📖 Info</button>
   </div>
-
   <div class="sub-panel on" data-panel="discord">
     <div class="dc-cta reveal">
       <div>
@@ -407,7 +393,6 @@
       </div>
     </div>
   </div>
-
   <div class="sub-panel" data-panel="clipes">
     <div class="clips-box" id="clipsBox" style="display:none">
       <h3>
@@ -418,7 +403,6 @@
     </div>
     <p class="tm-h4" id="clipsVazio" style="padding:20px;text-align:center;display:none">Nenhum clipe disponível agora. Volta mais tarde! 💜</p>
   </div>
-
   <div class="sub-panel" data-panel="playlist">
     <div class="card music-full reveal">
       <div class="music-full-head">
@@ -438,7 +422,6 @@
       </a>
     </div>
   </div>
-
   <div class="sub-panel" data-panel="sub">
     <div class="sub-beneficios reveal">
       <h3>✨ Benefícios exclusivos</h3>
@@ -462,7 +445,6 @@
       <a href="https://www.twitch.tv/subs/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch →</a>
     </div>
   </div>
-
   <div class="sub-panel" data-panel="info">
     <div class="info-grid">
       <div class="cmds-wrap reveal">
@@ -498,12 +480,10 @@
     <h2>Meu Setup</h2>
     <p>Arraste para girar o cantinho em 3D, clique nos pontinhos brilhantes para ver cada item e clique no PC para abri-lo e ver os componentes detalhados.</p>
   </header>
-
   <!-- VISUALIZADOR 360° -->
   <div class="setup-360-wrap reveal" id="setup360Wrap">
     <div id="setup360Container"></div>
   </div>
-
   <div class="setup-sonhos reveal" id="setupSonhos">
     <div class="sonhos-head">
       <span class="sh-kicker">✨ Setup dos sonhos</span>
@@ -512,7 +492,6 @@
     </div>
     <div class="sonhos-lista" id="sonhosLista"></div>
   </div>
-
   <div class="setup-apoiadores reveal" id="setupApoiadores">
     <div class="apoiadores-head">
       <span class="ap-kicker">🏆 Apoiadores</span>
@@ -533,7 +512,6 @@
       <button type="button" class="sug-tab" data-tab="sugerir">💡 Sugerir</button>
     </div>
   </header>
-
   <div class="sug-shell">
     <div class="sug-panel on" data-panel="votar" id="sugPanelVotar">
       <div class="voto-panel-head">
@@ -543,12 +521,10 @@
           <span class="vit-item" id="votoCountdown">— </span>
         </div>
       </div>
-
       <div id="destaqueBox"></div>
       <div class="voto-grid-lista" id="votoLista">
         <div class="vazio-voto">Carregando votação…</div>
       </div>
-
       <div class="voto-foot">
         <b id="votoStatOpcoes">0</b><span id="votoLblOpcoes">opções</span>
         <span class="dot">·</span>
@@ -558,7 +534,6 @@
         <button type="button" class="voto-add-btn" id="sugBtnIrSugerir">➕ Sugerir novo jogo</button>
       </div>
     </div>
-
     <div class="sug-panel" data-panel="sugerir" id="sugPanelSugerir">
       <div class="sugerir-cols">
         <div class="sug-form-col">
@@ -603,7 +578,6 @@
             </div>
           </div>
         </div>
-
         <div class="sir-list-col">
           <div class="sir-head">
             <div class="sir-head-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;width:100%">
@@ -643,7 +617,6 @@
   <span class="flb-dot"></span>
   Voltar pra live
 </button>
-
 </main>
 
 <footer>
@@ -687,11 +660,15 @@
   </div>
 </dialog>
 
-<!-- Three.js (cena 3D do setup) -->
+<!-- Three.js Core -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-<!-- Bibliotecas de Pós-Processamento (Bloom / Neon e Anti-Aliasing) -->
+<!-- Loaders (Modelos 3D e Iluminação Realista HDRI) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+
+<!-- Pós-Processamento (Bloom / Neon e Anti-Aliasing) -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
