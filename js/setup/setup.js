@@ -61,30 +61,17 @@ window.copiarLinkItem = copiarLinkItem;
    ============================================================ */
 const Setup3D = (function () {
   let started = false, built = false, visible = false;
-  let container, wrap, pinLayer, hintEl, ledPanel, W = 0, H = 0;
+  let container, wrap, W = 0, H = 0;
   let renderer, scene, camera, controls, raycaster;
-  let composer, bloomPass, fxaaPass;
   let model = null;
-  let mode = 'room';
   let flying = false;
   let raf = 0;
   let savedPose = null;
-  const pins = [];
   const roomTargets = [];
   const tweens = [];
-  let tmpV = null, camV = null;
   let hoveredObject = null;
   let dayNight = 'day';
-  let ledColor = '#a855f7';
-  let tourIndex = -1;
-  let tourTimer = null;
-  let lowQuality = false;
-  let ambientAudio = null;
-  let isMuted = false;
   let audioCtx = null;
-  
-  let initialCameraPos = new THREE.Vector3();
-  let initialTargetPos = new THREE.Vector3();
 
   const MAPA_OBJETOS = {
     'Cube320':   { grupo: 'pc',    idx: 0 } 
@@ -139,9 +126,6 @@ const Setup3D = (function () {
       loader.load('/assets/models/room.glb', (gltf) => {
         model = gltf.scene;
         
-        // 1. Ajustar o tamanho/escala do modelo se necessário
-        model.scale.set(1, 1, 1);
-        
         model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
@@ -162,31 +146,20 @@ const Setup3D = (function () {
   }
 
   function setupLights() {
-    // Luz ambiente para o modelo não ficar 100% preto
-    const ambient = new THREE.AmbientLight(0xffffff, 1.5); 
+    // Luz ambiente BRUTA pra ter certeza que nada fica preto
+    const ambient = new THREE.AmbientLight(0xffffff, 3.0); 
     scene.add(ambient);
     
-    const hemi = new THREE.HemisphereLight(0xb9a6ff, 0x1a0f2b, 1.0);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 2.0);
     scene.add(hemi);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 4.0);
     dirLight.position.set(5, 10, 5);
     scene.add(dirLight);
-    scene.userData.dirLight = dirLight;
-  }
-
-  function setupPostProcessing() {
-    try {
-      const renderScene = new THREE.RenderPass(scene, camera);
-      bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.8, 0.4, 0.85);
-      composer = new THREE.EffectComposer(renderer);
-      composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      composer.setSize(W, H);
-      composer.addPass(renderScene);
-      composer.addPass(bloomPass);
-    } catch (e) {
-      composer = null;
-    }
+    
+    const dirLight2 = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight2.position.set(-5, -10, -5);
+    scene.add(dirLight2);
   }
 
   function setupInteractivity() {
@@ -206,10 +179,8 @@ const Setup3D = (function () {
       const hits = raycaster.intersectObjects(scene.children, true);
       if (hits.length > 0) {
         let obj = hits[0].object;
-        // Procura a raiz que tem o nome do mapa
         while (obj.parent && obj.parent !== scene) obj = obj.parent;
         
-        // O nome do objeto que veio no GLB é Cube320
         if (MAPA_OBJETOS[obj.name]) {
           const info = MAPA_OBJETOS[obj.name];
           abrirItemSetup(info.grupo, info.idx);
@@ -220,11 +191,15 @@ const Setup3D = (function () {
     });
   }
 
-  function tick() {
+  function tick(now) {
     if (!built || !visible) return;
+    
+    if (now) runTweens(now);
     if (controls && controls.enabled) controls.update();
-    if (composer) composer.render();
-    else renderer.render(scene, camera);
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
+    
     raf = requestAnimationFrame(tick);
   }
 
@@ -233,44 +208,49 @@ const Setup3D = (function () {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(w, h);
-    renderer.setClearColor(0x1a102d, 1); // Cor de fundo roxa, pra ver se a cena ta rodando
+    // Fundo roxo pra debug
+    renderer.setClearColor(0x1a102d, 1); 
     container.appendChild(renderer.domElement);
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 10000);
     raycaster = new THREE.Raycaster();
 
     setupLights();
-    setupPostProcessing();
 
     loadModel().then(() => {
-      // 2. AUTO-FRAME: Calcula o tamanho do modelo e posiciona a câmera
+      // 2. AUTO-FRAME MANUAL E SEGURO
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
-
-      // Define o alvo no centro do modelo
-      const target = center.clone();
       
-      // Calcula a distância necessária para enquadrar o modelo
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const fov = camera.fov * (Math.PI / 180);
-      let distance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-      distance *= 1.2; // Dá um pequeno zoom out
+      console.log('🔍 DEBUG DO MODELO:');
+      console.log('Tamanho (size):', size);
+      console.log('Centro (center):', center);
 
-      // Posição inicial da câmera
-      const pos = center.clone().add(new THREE.Vector3(distance, distance * 0.5, distance));
-      
-      camera.position.copy(pos);
+      // Fallback se o cálculo der NaN (modelo quebrado)
+      if (isNaN(size.x) || size.x === 0) {
+          camera.position.set(0, 5, 15);
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.target.set(0, 0, 0);
+      } else {
+          // Posiciona a câmera muito longe pra ver a sala inteira
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const fov = camera.fov * (Math.PI / 180);
+          let distance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+          distance *= 1.5; // Zoom out extra
 
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.target.copy(target);
-      controls.enableDamping = true;
-      controls.update();
+          const pos = center.clone().add(new THREE.Vector3(distance, distance * 0.5, distance));
+          camera.position.copy(pos);
+          camera.lookAt(center);
 
-      // Salva a posição inicial para o botão Resetar funcionar
-      initialCameraPos.copy(pos);
-      initialTargetPos.copy(target);
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.target.copy(center);
+          controls.enableDamping = true;
+          controls.update();
+          
+          savedPose = { pos: pos.clone(), target: center.clone() };
+      }
 
       setupInteractivity();
       built = true;
@@ -279,11 +259,10 @@ const Setup3D = (function () {
       container.innerHTML = '<div style="color:#fff;text-align:center;padding-top:20%">Erro ao carregar a sala.</div>';
     });
 
-    // UI básica
     const backBtn = document.createElement('button');
     backBtn.className = 's3d-back';
     backBtn.innerHTML = '⟲ Resetar Câmera';
-    backBtn.onclick = () => flyTo(initialCameraPos, initialTargetPos, 1000);
+    backBtn.onclick = () => { if(savedPose) flyTo(savedPose.pos, savedPose.target, 1000); };
     container.appendChild(backBtn);
   }
 
