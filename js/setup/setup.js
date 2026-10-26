@@ -1,5 +1,5 @@
 /* ============================================================
-   SETUP — CENA 3D INTERATIVA PREMIUM (REALISTA)
+   SETUP — CENA 3D INTERATIVA PREMIUM (INSPIRADO EM ROOM PORTFOLIO)
    ============================================================ */
 let _sonhoSelecionado = null;
 const SETUP_VIEW_KEY = 'setup_view_v1';
@@ -78,7 +78,6 @@ const Setup3D = (function () {
   let catGroup, catBreath = 0, catTail;
   let fans = [];
   let coffeeSteam;
-  let interactiveKeys = [];
   let ambientAudio = null;
   let isMuted = false;
   let isNight = false;
@@ -88,6 +87,14 @@ const Setup3D = (function () {
   let tourTimer = null;
   let lowQuality = false;
   let monitorTex, monitorCtx, monitorCanvas;
+
+  // NOVOS OBJETOS INTERATIVOS
+  let chairGroup, plantGroup, drawerGroup, paintingGroup;
+  let plantGrow = 0, plantGrowing = false;
+  let drawerOpen = false, drawerAnim = 0;
+  let chairSpinning = false, chairSpinSpeed = 0;
+  let paintingIndex = 0;
+  const paintings = [0xa855f7, 0xff6ec7, 0x7dd3fc, 0xffd166];
 
   function initAudio() {
     if (audioCtx) return;
@@ -187,6 +194,68 @@ const Setup3D = (function () {
     const signTex = new THREE.CanvasTexture(signCanvas);
     const signPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.68, 0.28), B(0xffffff, { map: signTex, transparent: true }));
     signPlane.position.z = 0.011; signGroup.add(signPlane); scene.add(signGroup);
+  }
+
+  // ========== NOVO: OBJETOS INTERATIVOS ==========
+  function buildInteractiveObjects() {
+    // Planta
+    plantGroup = new THREE.Group();
+    plantGroup.position.set(-1.2, 0.75, 0.3);
+    const pot = cyl(0.08, 0.06, 0.12, M(0x8b4513), 0, 0.06, 0);
+    plantGroup.add(pot);
+    const leafMat = M(0x228b22);
+    for (let i = 0; i < 5; i++) {
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), leafMat);
+      leaf.scale.set(0.5, 1.5, 0.5);
+      leaf.position.set(Math.sin(i * 1.2) * 0.05, 0.15 + i * 0.02, Math.cos(i * 1.2) * 0.05);
+      plantGroup.add(leaf);
+    }
+    scene.add(plantGroup);
+    addInteractiveObject(plantGroup, '🌱', 'Regar planta', () => {
+      if (!plantGrowing) { plantGrowing = true; plantGrow = 0; }
+    }, [0, 0.3, 0.4]);
+
+    // Gaveta da mesa
+    drawerGroup = new THREE.Group();
+    drawerGroup.position.set(0.6, 0.72, 0.4);
+    const drawerBody = box(0.25, 0.02, 0.15, M(0xffffff), 0, 0.01, 0);
+    drawerGroup.add(drawerBody);
+    const handle = box(0.04, 0.02, 0.02, M(0x333333), 0, 0.02, 0.07);
+    drawerGroup.add(handle);
+    scene.add(drawerGroup);
+    addInteractiveObject(drawerGroup, '🗄️', 'Abrir gaveta', () => {
+      drawerOpen = !drawerOpen;
+    }, [0, 0, 1]);
+
+    // Quadro na parede
+    paintingGroup = new THREE.Group();
+    paintingGroup.position.set(0.5, 1.8, -0.58);
+    paintingGroup.add(box(0.4, 0.3, 0.02, M(0x111111), 0, 0, 0));
+    const paintingMat = M(paintings[0]);
+    const paintingMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.26), paintingMat);
+    paintingMesh.position.z = 0.011;
+    paintingGroup.add(paintingMesh);
+    scene.add(paintingGroup);
+    addInteractiveObject(paintingGroup, '🖼️', 'Mudar quadro', () => {
+      paintingIndex = (paintingIndex + 1) % paintings.length;
+      paintingMat.color.setHex(paintings[paintingIndex]);
+    }, [0, 0, 1]);
+  }
+
+  // Helper para objetos interativos (não-pin)
+  function addInteractiveObject(root, icon, label, onClick, face) {
+    // Cria um pin especial (visível apenas no hover, mas que também pode ser clicado)
+    const el = document.createElement('button');
+    el.type = 'button'; el.className = 's3d-pin s3d-pin-interactive';
+    el.innerHTML = `<span>${icon}</span><span class="s3d-pin-label">${label}</span>`;
+    el.style.opacity = '0'; // Começa invisível
+    el.style.pointerEvents = 'none';
+    el.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+    pinLayer.appendChild(el);
+    const p = { el, mode: 'room', anchor: anchor(root, 0, 0.1, 0), face: new THREE.Vector3(...face).normalize(), on: false, isInteractive: true };
+    pins.push(p);
+    // Adiciona ao target do raycaster para hover
+    roomTargets.push({ root, fn: onClick, isInteractive: true, pinRef: p });
   }
 
   function buildDeskAndPeripherals() {
@@ -387,31 +456,35 @@ const Setup3D = (function () {
   }
 
   function buildChairAndCat() {
-    const g = new THREE.Group(); g.position.set(-0.8, 0, 1.1); g.rotation.y = Math.PI + 0.3;
+    chairGroup = new THREE.Group(); chairGroup.position.set(-0.8, 0, 1.1); chairGroup.rotation.y = Math.PI + 0.3;
     const white = M(0xe0e0e5, { roughness: 0.6, metalness: 0.1 });
     const accent = M(0xa855f7, { roughness: 0.7 });
     
     for(let i=0; i<5; i++) {
-      const leg = box(0.04, 0.04, 0.25, M(0x222222), 0, 0.05, 0); leg.rotation.y = i * Math.PI * 2 / 5; leg.position.x = Math.sin(leg.rotation.y)*0.15; leg.position.z = Math.cos(leg.rotation.y)*0.15; g.add(leg);
+      const leg = box(0.04, 0.04, 0.25, M(0x222222), 0, 0.05, 0); leg.rotation.y = i * Math.PI * 2 / 5; leg.position.x = Math.sin(leg.rotation.y)*0.15; leg.position.z = Math.cos(leg.rotation.y)*0.15; chairGroup.add(leg);
     }
-    g.add(cyl(0.03, 0.03, 0.3, M(0x333333), 0, 0.2, 0, 16));
+    chairGroup.add(cyl(0.03, 0.03, 0.3, M(0x333333), 0, 0.2, 0, 16));
 
-    g.add(box(0.5, 0.08, 0.5, white, 0, 0.45, 0));
-    g.add(box(0.06, 0.1, 0.45, white, 0.25, 0.5, 0));
-    g.add(box(0.06, 0.1, 0.45, white, -0.25, 0.5, 0));
-    g.add(box(0.35, 0.01, 0.4, accent, 0, 0.495, 0));
+    chairGroup.add(box(0.5, 0.08, 0.5, white, 0, 0.45, 0));
+    chairGroup.add(box(0.06, 0.1, 0.45, white, 0.25, 0.5, 0));
+    chairGroup.add(box(0.06, 0.1, 0.45, white, -0.25, 0.5, 0));
+    chairGroup.add(box(0.35, 0.01, 0.4, accent, 0, 0.495, 0));
 
-    const back = box(0.5, 0.8, 0.1, white, 0, 0.9, -0.2); back.rotation.x = -0.15; g.add(back);
-    g.add(box(0.35, 0.3, 0.02, accent, 0, 0.9, -0.15));
-    const headrest = box(0.2, 0.1, 0.05, white, 0, 1.35, -0.25); headrest.rotation.x = -0.15; g.add(headrest);
+    const back = box(0.5, 0.8, 0.1, white, 0, 0.9, -0.2); back.rotation.x = -0.15; chairGroup.add(back);
+    chairGroup.add(box(0.35, 0.3, 0.02, accent, 0, 0.9, -0.15));
+    const headrest = box(0.2, 0.1, 0.05, white, 0, 1.35, -0.25); headrest.rotation.x = -0.15; chairGroup.add(headrest);
 
-    g.add(cyl(0.015, 0.015, 0.15, M(0x222222), 0.28, 0.55, 0));
-    g.add(box(0.06, 0.02, 0.25, M(0x222222), 0.28, 0.62, 0));
-    g.add(cyl(0.015, 0.015, 0.15, M(0x222222), -0.28, 0.55, 0));
-    g.add(box(0.06, 0.02, 0.25, M(0x222222), -0.28, 0.62, 0));
+    chairGroup.add(cyl(0.015, 0.015, 0.15, M(0x222222), 0.28, 0.55, 0));
+    chairGroup.add(box(0.06, 0.02, 0.25, M(0x222222), 0.28, 0.62, 0));
+    chairGroup.add(cyl(0.015, 0.015, 0.15, M(0x222222), -0.28, 0.55, 0));
+    chairGroup.add(box(0.06, 0.02, 0.25, M(0x222222), -0.28, 0.62, 0));
     
-    scene.add(g);
-    addPin('room', '🪑', 'Cadeira', anchor(g, 0, 1.4, -0.2), [0, 0.3, 1], () => abrirItemSetup('extra', 0));
+    scene.add(chairGroup);
+    addPin('room', '🪑', 'Cadeira', anchor(chairGroup, 0, 1.4, -0.2), [0, 0.3, 1], () => abrirItemSetup('extra', 0));
+    // Interatividade: girar cadeira
+    addInteractiveObject(chairGroup, '🔄', 'Girar cadeira', () => {
+      chairSpinning = true; chairSpinSpeed = 0.1;
+    }, [0, 0.5, 1]);
 
     catGroup = new THREE.Group(); catGroup.position.set(0, 0.5, 0.1); catGroup.rotation.y = -0.5;
     const cWhite = M(0xffffff, { roughness: 1, metalness: 0 });
@@ -427,7 +500,7 @@ const Setup3D = (function () {
 
     catTail = new THREE.Group(); catTail.position.set(0, 0.05, -0.1);
     const tM = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.005, 0.2), cWhite); tM.rotation.x = Math.PI/2; tM.position.z = -0.1; catTail.add(tM); catGroup.add(catTail);
-    g.add(catGroup);
+    chairGroup.add(catGroup);
     addPin('room', '🐈', 'Sucrilhas', anchor(catGroup, 0, 0.18, 0), [0, 1, 0.4], () => toast('Miau! Mó paz com você sucrilhas 💜', 'ok'));
   }
 
@@ -496,10 +569,18 @@ const Setup3D = (function () {
           if (hoveredObj) hoveredObj.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0x000000); });
           hoveredObj = rootHit; hoveredObj.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0x220044); });
           el.style.cursor = 'pointer';
+          // Mostra o pin interativo correspondente
+          const target = targets.find(t => t.root === rootHit);
+          if (target && target.isInteractive && target.pinRef) {
+            target.pinRef.el.style.opacity = '1';
+            target.pinRef.el.style.pointerEvents = 'auto';
+          }
         }
       } else {
         if (hoveredObj) { hoveredObj.traverse(c => { if (c.material && c.material.emissive) c.material.emissive.setHex(0x000000); }); hoveredObj = null; }
         el.style.cursor = 'grab';
+        // Esconde todos os pins interativos
+        pins.forEach(p => { if (p.isInteractive) { p.el.style.opacity = '0'; p.el.style.pointerEvents = 'none'; } });
       }
     });
     
@@ -643,14 +724,31 @@ const Setup3D = (function () {
     }
     if (catGroup) { catBreath += 0.05; catGroup.scale.y = 1 + Math.sin(catBreath) * 0.03; if(catTail) catTail.rotation.y = Math.sin(catBreath * 0.5) * 0.3; }
     fans.forEach(f => { f.rotation.z += 0.2; });
-    
+
+    // Animações de objetos interativos
+    if (plantGrowing) {
+      plantGrow = Math.min(1, plantGrow + 0.02);
+      if (plantGroup) {
+        plantGroup.scale.y = 1 + plantGrow * 0.5;
+        plantGroup.scale.x = 1 + plantGrow * 0.2;
+        plantGroup.scale.z = 1 + plantGrow * 0.2;
+      }
+      if (plantGrow >= 1) { plantGrowing = false; plantGrow = 0; }
+    }
+    if (drawerOpen && drawerAnim < 1) { drawerAnim = Math.min(1, drawerAnim + 0.05); if (drawerGroup) drawerGroup.position.z = 0.4 + drawerAnim * 0.2; }
+    if (!drawerOpen && drawerAnim > 0) { drawerAnim = Math.max(0, drawerAnim - 0.05); if (drawerGroup) drawerGroup.position.z = 0.4 + drawerAnim * 0.2; }
+    if (chairSpinning) {
+      if (chairGroup) chairGroup.rotation.y += chairSpinSpeed;
+      chairSpinSpeed *= 0.98;
+      if (chairSpinSpeed < 0.001) { chairSpinning = false; chairSpinSpeed = 0; }
+    }
+
     updatePins();
     
     try {
       if (composer) { composer.render(); } else { renderer.render(scene, camera); }
     } catch(e) {
       console.error('Erro no render:', e);
-      // Se o composer falhar, tenta renderizar normal
       if (composer) {
         composer = null;
         try { renderer.render(scene, camera); } catch(e2){}
@@ -683,12 +781,10 @@ const Setup3D = (function () {
 
     scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(45, w / h, 0.05, 40); raycaster = new THREE.Raycaster();
     
-    // ADD HUD (BOTÕES)
     addHud(); 
     
-    // BUILD SCENE
     try {
-      buildLights(); buildRoom(); buildDeskAndPeripherals(); buildChairAndCat(); buildPC();
+      buildLights(); buildRoom(); buildDeskAndPeripherals(); buildChairAndCat(); buildPC(); buildInteractiveObjects();
     } catch(e) {
       console.error('Erro ao construir cena:', e);
       container.innerHTML = `<div class="s3d-fallback" style="color:#ff8a95">Erro ao montar cena: ${e.message}</div>`;
@@ -708,7 +804,6 @@ const Setup3D = (function () {
     controls.rotateSpeed = 0.7; controls.minDistance = 0.8; controls.maxDistance = 7; controls.minPolarAngle = 0.15; controls.maxPolarAngle = Math.PI * 0.49;
     controls.update();
 
-    // POST-PROCESSING (COM FALLBACK)
     if (typeof THREE.EffectComposer !== 'undefined' && typeof THREE.UnrealBloomPass !== 'undefined') {
       try {
         const renderScene = new THREE.RenderPass(scene, camera);
@@ -726,7 +821,7 @@ const Setup3D = (function () {
         composer.addPass(fxaaPass);
       } catch(e) {
         console.warn('Falha no pós-processamento:', e);
-        composer = null; // Fallback para renderização padrão
+        composer = null;
       }
     } else {
       console.warn('Bibliotecas de pós-processamento não carregadas. Usando renderização padrão.');
@@ -743,7 +838,6 @@ const Setup3D = (function () {
       container.innerHTML = '<div class="s3d-fallback" style="color:#ff8a95">Não consegui carregar o Three.js. Recarregue a página 💜</div>'; return;
     }
     
-    // Fallback para quando a página carrega com a aba do setup oculta
     setTimeout(() => {
       const w = container.clientWidth, h = container.clientHeight;
       if (w > 0 && h > 0 && !built) build(w, h);
@@ -759,10 +853,6 @@ const Setup3D = (function () {
   return { init };
 })();
 
-// ==========================================
-// CORREÇÃO APLICADA AQUI
-// A função initSetup agora impede que erros externos quebrem a cena 3D
-// ==========================================
 async function initSetup() {
   try {
     await carregarSetupData();
@@ -773,7 +863,6 @@ async function initSetup() {
   if (typeof renderSonhos === 'function') { try { renderSonhos(); } catch(e){} }
   if (typeof renderApoiadores === 'function') { try { renderApoiadores(); } catch(e){} }
   
-  // Inicializa a cena 3D independente de qualquer erro anterior
   Setup3D.init();
 }
 window.initSetup = initSetup;
