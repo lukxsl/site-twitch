@@ -477,7 +477,7 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>Arraste para girar o cantinho em 3D. Clique no computador para entrar nele!</p>
+    <p>Arraste para girar o cantinho em 3D. Clique no computador para ver os componentes!</p>
   </header>
   
   <!-- VISUALIZADOR 360° (FOCO TOTAL) -->
@@ -635,6 +635,15 @@
   </div>
 </footer>
 
+<!-- MODAL DE COMPONENTE DO PC -->
+<dialog id="pcModal" style="background: #1a102d; color: #fff; border: 1px solid #a855f7; border-radius: 16px; padding: 20px; max-width: 400px; width: 90%;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h3 id="pcModalTitle" style="font-size: 1.2rem; margin: 0; color: #c084fc;">Componente</h3>
+    <button onclick="document.getElementById('pcModal').close()" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+  </div>
+  <div id="pcModalBody"></div>
+</dialog>
+
 <dialog id="dlg" aria-labelledby="dTitle">
   <div class="dh">
     <h3 id="dTitle"></h3>
@@ -662,16 +671,6 @@
 <!-- Loaders -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
-
-<!-- Pós-Processamento -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
 
 <!-- Seus Scripts -->
 <script src="js/utils/dom.js"></script>
