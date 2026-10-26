@@ -22,7 +22,6 @@
 <link rel="stylesheet" href="css/setup.css">
 <link rel="stylesheet" href="css/admin.css">
 <link rel="stylesheet" href="css/tierlist.css">
-<!-- 🆕 Removido o link do experience.css que estava dando erro -->
 </head>
 <body>
 
@@ -478,26 +477,12 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>Arraste para girar o cantinho em 3D, clique nos pontinhos brilhantes para ver cada item e clique no PC para abri-lo e ver os componentes detalhados.</p>
+    <p>Arraste para girar o cantinho em 3D.</p>
   </header>
-  <!-- VISUALIZADOR 360° -->
-  <div class="setup-360-wrap reveal" id="setup360Wrap">
-    <div id="setup360Container"></div>
-  </div>
-  <div class="setup-sonhos reveal" id="setupSonhos">
-    <div class="sonhos-head">
-      <span class="sh-kicker">✨ Setup dos sonhos</span>
-      <h3>Ajuda a Soso a conquistar 💜</h3>
-      <p>Tudo aqui é um sonho que quero realizar um dia.</p>
-    </div>
-    <div class="sonhos-lista" id="sonhosLista"></div>
-  </div>
-  <div class="setup-apoiadores reveal" id="setupApoiadores">
-    <div class="apoiadores-head">
-      <span class="ap-kicker">🏆 Apoiadores</span>
-      <h3>Quem tá ajudando a Soso a realizar os sonhos</h3>
-    </div>
-    <div class="apoiadores-lista" id="apoiadoresLista"></div>
+  
+  <!-- VISUALIZADOR 360° (FOCO TOTAL) -->
+  <div class="setup-360-wrap reveal" id="setup360Wrap" style="height: 80vh; min-height: 600px; width: 100%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(168,85,247,0.35); background: #0a0511; box-shadow: 0 20px 50px -10px rgba(10, 5, 17, 0.9), 0 0 35px rgba(168, 85, 247, 0.2);">
+    <div id="setup360Container" style="width: 100%; height: 100%;"></div>
   </div>
 </section>
 
@@ -664,12 +649,12 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
-<!-- Loaders (Modelos 3D e Iluminação Realista HDRI) -->
+<!-- Loaders -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
 
-<!-- Pós-Processamento (Bloom / Neon e Anti-Aliasing) -->
+<!-- Pós-Processamento -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
@@ -686,6 +671,5 @@
 <script src="js/setup/setup.js"></script>
 <script src="js/setup/accordion.js"></script>
 <script src="js/main.js"></script>
-<!-- 🆕 Removido o script experience.js que estava dando erro -->
 </body>
 </html>
