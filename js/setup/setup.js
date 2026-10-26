@@ -759,8 +759,22 @@ const Setup3D = (function () {
   return { init };
 })();
 
+// ==========================================
+// CORREÇÃO APLICADA AQUI
+// A função initSetup agora impede que erros externos quebrem a cena 3D
+// ==========================================
 async function initSetup() {
-  await carregarSetupData(); renderSonhos(); renderApoiadores(); Setup3D.init();
+  try {
+    await carregarSetupData();
+  } catch(e) {
+    console.warn('Erro ao carregar dados do setup:', e);
+  }
+  
+  if (typeof renderSonhos === 'function') { try { renderSonhos(); } catch(e){} }
+  if (typeof renderApoiadores === 'function') { try { renderApoiadores(); } catch(e){} }
+  
+  // Inicializa a cena 3D independente de qualquer erro anterior
+  Setup3D.init();
 }
 window.initSetup = initSetup;
 window.setupSetup3D = initSetup; 
