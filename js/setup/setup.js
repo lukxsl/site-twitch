@@ -14,15 +14,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0511);
 
-  const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000); // Aspect ratio inicial seguro
   
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
   container.appendChild(renderer.domElement);
+
+  // === O SEGREDO PARA NÃO FICAR PRETO ===
+  // Isso avisa o 3D para se ajustar quando a aba do setup for aberta
+  const resizeObserver = new ResizeObserver(() => {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (w > 0 && h > 0) {
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+  });
+  resizeObserver.observe(container);
+  // =======================================
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -64,20 +77,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- CRIAÇÃO DOS OBJETOS INTERATIVOS ---
     
     // A) A HITBOX DO PC (Caixa Vermelha no modo debug)
-    const hitboxGeo = new THREE.BoxGeometry(2, 2, 2); // Tamanho da caixa
+    // Olhando sua foto, o PC fica na mesa da direita. Vamos mover a caixa pra lá.
+    const hitboxGeo = new THREE.BoxGeometry(2, 2, 2); 
     const hitboxMat = new THREE.MeshBasicMaterial({ 
       color: 0xff0000, 
       transparent: true, 
-      opacity: DEBUG_MODE ? 0.5 : 0, // Invisível no modo normal
+      opacity: DEBUG_MODE ? 0.5 : 0, 
       depthWrite: false
     });
     pcHitbox = new THREE.Mesh(hitboxGeo, hitboxMat);
-    pcHitbox.position.set(2, 1.5, -1); // <--- MUDE AQUI PARA MOVER A CAIXA DO PC
+    pcHitbox.position.set(3, 2, -1); // <--- Mudei para 3, 2, -1. Vamos ajustar!
     pcHitbox.userData.type = 'pc';
     scene.add(pcHitbox);
 
     // B) A TELA DO MONITOR (Quadrado Azul no modo debug)
-    const screenGeo = new THREE.PlaneGeometry(4, 2.5); // Largura e Altura da tela
+    const screenGeo = new THREE.PlaneGeometry(3, 1.8); // Tamanho mais próximo de um monitor
     const screenMat = new THREE.MeshBasicMaterial({ 
       color: 0x0000ff, 
       side: THREE.DoubleSide,
@@ -85,8 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
       opacity: DEBUG_MODE ? 0.5 : 0
     });
     monitorScreen = new THREE.Mesh(screenGeo, screenMat);
-    monitorScreen.position.set(-0.5, 1.8, 0); // <--- MUDE AQUI PARA MOVER A TELA
-    monitorScreen.rotation.y = Math.PI; // Gira a tela
+    monitorScreen.position.set(2, 2.2, -0.5); // <--- Ajustei para ficar na frente da tela
+    monitorScreen.rotation.y = -Math.PI / 2; // Gira a tela para ficar de frente pro jogador
     monitorScreen.userData.type = 'screen';
     scene.add(monitorScreen);
 
@@ -119,8 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function animateCamera(time) {
       const elapsed = time - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
-      // Efeito de aceleração/desaceleração (Ease In Out)
       const ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
       camera.position.lerpVectors(startPos, targetPos, ease);
@@ -139,30 +151,25 @@ document.addEventListener('DOMContentLoaded', () => {
   function enterPC() {
     if (isInsidePC) return;
     isInsidePC = true;
-    controls.enabled = false; // Trava o mouse
+    controls.enabled = false;
 
-    // Salva onde a câmera estava
     savedCameraPos.copy(camera.position);
     savedControlsTarget.copy(controls.target);
 
-    // Posição onde a câmera vai parar (ajuste conforme a posição do seu PC)
-    // O ideal é que ela fique de frente para a monitorScreen
-    const targetPos = new THREE.Vector3(pcHitbox.position.x, pcHitbox.position.y, pcHitbox.position.z + 4);
-    const targetLook = pcHitbox.position.clone();
+    // Vai pra frente da tela do monitor
+    const targetPos = new THREE.Vector3(monitorScreen.position.x + 3, monitorScreen.position.y, monitorScreen.position.z);
+    const targetLook = monitorScreen.position.clone();
 
-    // Faz o voo
     flyToCamera(targetPos, targetLook, 1500, () => {
-      // Quando chegar, liga a tela!
       monitorScreen.material.opacity = 1;
       monitorScreen.material.color.setHex(0x111111); 
       
-      // Se você tiver uma imagem pra colocar na tela:
-      // new THREE.TextureLoader().load('url_da_sua_foto.jpg', (tex) => {
+      // Coloque a URL da sua foto da tela do PC aqui:
+      // new THREE.TextureLoader().load('https://sualink.com/foto.jpg', (tex) => {
       //   monitorScreen.material.map = tex;
       //   monitorScreen.material.needsUpdate = true;
       // });
       
-      // Mostra botão de voltar
       document.getElementById('btnSairPC').style.display = 'block';
     });
   }
@@ -170,21 +177,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function exitPC() {
     if (!isInsidePC) return;
     isInsidePC = false;
-    
-    // Esconde botão de voltar
     document.getElementById('btnSairPC').style.display = 'none';
 
-    // Apaga a tela
     monitorScreen.material.opacity = DEBUG_MODE ? 0.5 : 0;
     monitorScreen.material.color.setHex(0x0000ff);
 
-    // Volta a câmera
     flyToCamera(savedCameraPos, savedControlsTarget, 1200, () => {
       controls.enabled = true;
     });
   }
 
-  // Expor a função de sair para o botão do HTML
   window.exitPC = exitPC;
 
   // ==========================================
@@ -194,28 +196,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = renderer.domElement;
     let down = null;
 
-    el.addEventListener('pointerdown', (e) => { 
-      down = { x: e.clientX, y: e.clientY }; 
-    });
+    el.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
 
     el.addEventListener('pointerup', (e) => {
       if (!down) return;
       const dx = e.clientX - down.x, dy = e.clientY - down.y;
-      if (dx * dx + dy * dy > 36) return; // Se arrastou o mouse, ignora
+      if (dx * dx + dy * dy > 36) return; 
       down = null;
       
-      // Calcula posição do clique
       const rect = el.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       
       raycaster.setFromCamera(mouse, camera);
-      
-      // Verifica colisão
       const hits = raycaster.intersectObjects([pcHitbox], true);
       
       if (hits.length > 0 && !isInsidePC) {
-        enterPC(); // Se clicou no PC, entra!
+        enterPC();
       }
     });
   }
@@ -224,14 +221,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function animate() {
     requestAnimationFrame(animate);
     if (controls.enabled) controls.update();
-    renderer.render(scene, camera);
+    
+    // Só renderiza se a tela tiver tamanho (evita erro)
+    if (container.clientWidth > 0 && container.clientHeight > 0) {
+        renderer.render(scene, camera);
+    }
   }
   animate();
-
-  // Ajustar tamanho da tela
-  window.addEventListener('resize', () => {
-    camera.aspect = container.clientWidth / container.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(container.clientWidth, container.clientHeight);
-  });
 });
