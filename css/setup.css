@@ -66,17 +66,18 @@
   background-size: cover;
   background-position: center bottom;
   background-repeat: no-repeat;
-  image-rendering: pixelated; /* Deixa os pixels nítidos */
+  image-rendering: pixelated;
 }
 
 /* TELA DO STARDEW VALLEY (Sobreposição) */
 .monitor-screen {
   position: absolute;
-  /* Essas posições vão encaixar a tela do jogo em cima do monitor da sua imagem */
   left: 42.5%;
   top: 36.5%;
   width: 15%;
   height: 18%;
+  /* AQUI ESTÁ O LINK DIRETO DA IMAGEM DO STARDEW */
+  background-image: url('https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/413150/ss_a3d74c3b4db7ad92ec9b7e23796f8a8d95db23b8.1920x1080.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -84,7 +85,7 @@
   z-index: 5;
   border-radius: 2px;
   box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-  pointer-events: none; /* O clique passa direto para o hotspot do monitor */
+  pointer-events: none;
 }
 
 /* Overlay escuro suave para destacar a interface */
