@@ -477,22 +477,76 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>Arraste para girar o cantinho em 3D. Clique no computador para ver os componentes!</p>
+    <p>Clique nos componentes ou deixe o Lukzin te guiar pelo cantinho!</p>
   </header>
   
-  <!-- VISUALIZADOR 360° (FOCO TOTAL) -->
-  <div class="setup-360-wrap reveal" id="setup360Wrap" style="position: relative; height: 80vh; min-height: 600px; width: 100%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(168,85,247,0.35); background: #0a0511; box-shadow: 0 20px 50px -10px rgba(10, 5, 17, 0.9), 0 0 35px rgba(168, 85, 247, 0.2);">
+  <div class="setup-game-container reveal">
     
-    <div id="setup360Container" style="width: 100%; height: 100%;"></div>
-    
-    <!-- BOTÃO DE SAIR DO PC -->
-    <button id="btnSairPC" 
-            style="display:none; position:absolute; top:20px; left:20px; z-index:10; padding:12px 20px; border-radius:10px; background:linear-gradient(135deg, var(--purple-2), var(--purple-3)); color:white; font-weight:bold; cursor:pointer; border:none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: transform 0.2s; font-family: inherit;"
-            onmouseover="this.style.transform='scale(1.05)'" 
-            onmouseout="this.style.transform='scale(1)'"
-            onclick="window.exitPC()">
-      ⬅️ Sair do PC
-    </button>
+    <div class="setup-controls">
+      <button id="btnTourSetup" class="btn btn-tour" onclick="iniciarTour()">
+        <span class="play-icon">▶</span> Iniciar Tour com Lukzin
+      </button>
+      <button id="btnPararTour" class="btn ghost" onclick="pararTour()" style="display:none;">
+        ⏹ Parar Tour
+      </button>
+      <span class="setup-progress" id="setupProgress" style="display:none;">0 / 0</span>
+    </div>
+
+    <div class="setup-scene-wrap">
+      <div class="setup-scene" id="setupScene">
+        
+        <div class="scene-wall"></div>
+        <div class="scene-floor"></div>
+
+        <div class="scene-desk">
+          <div class="s-object obj-monitor" data-item="monitor" onclick="irParaItem('monitor')">
+            <div class="m-screen"><span class="m-glare"></span></div>
+            <div class="m-base"></div>
+            <div class="s-hotspot">+</div>
+          </div>
+          <div class="s-object obj-keyboard" data-item="teclado" onclick="irParaItem('teclado')">
+            <div class="k-keys"></div>
+            <div class="s-hotspot">+</div>
+          </div>
+          <div class="s-object obj-mouse" data-item="mouse" onclick="irParaItem('mouse')">
+            <div class="s-hotspot">+</div>
+          </div>
+          <div class="s-object obj-mic" data-item="microfone" onclick="irParaItem('microfone')">
+            <div class="s-hotspot">+</div>
+          </div>
+        </div>
+
+        <div class="s-object obj-pc" data-item="gabinete" onclick="irParaItem('gabinete')">
+          <div class="pc-glass">
+             <div class="pc-fans"><span></span><span></span><span></span></div>
+          </div>
+          <div class="s-hotspot">+</div>
+        </div>
+
+        <div class="s-object obj-chair" data-item="cadeira" onclick="irParaItem('cadeira')">
+          <div class="s-hotspot">+</div>
+        </div>
+
+        <div class="luk-character" id="lukChar">
+          <div class="luk-avatar">
+            <div class="luk-head">😎</div>
+            <div class="luk-body"></div>
+          </div>
+          <div class="luk-shadow"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="dialogue-box" id="setupDialogue">
+      <div class="dlg-avatar">👨‍💻</div>
+      <div class="dlg-content">
+        <div class="dlg-name">Lukzin <span class="dlg-badge">DEV DO SITE</span></div>
+        <div class="dlg-text" id="dlgText">E aí! Eu sou o Luk, desenvolvedor do site. Quer dar uma olhada no setup da Soso? Clica nos pontinhos roxos ou aperta o botão "Iniciar Tour" ali em cima!</div>
+      </div>
+      <div class="dlg-continue" id="dlgContinue" style="display:none;">▼</div>
+    </div>
+
   </div>
 </section>
 
@@ -635,7 +689,6 @@
   </div>
 </footer>
 
-<!-- MODAL DE COMPONENTE DO PC -->
 <dialog id="pcModal" style="background: #1a102d; color: #fff; border: 1px solid #a855f7; border-radius: 16px; padding: 20px; max-width: 400px; width: 90%;">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
     <h3 id="pcModalTitle" style="font-size: 1.2rem; margin: 0; color: #c084fc;">Componente</h3>
@@ -664,21 +717,11 @@
   </div>
 </dialog>
 
-<!-- Three.js Core -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-
-<!-- Loaders -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
-
-<!-- Seus Scripts -->
 <script src="js/utils/dom.js"></script>
 <script src="js/utils/format.js"></script>
 <script src="js/api/client.js"></script>
 <script src="js/twitch/twitch.js"></script>
 <script src="js/setup/setup.js"></script>
-<script src="js/setup/accordion.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

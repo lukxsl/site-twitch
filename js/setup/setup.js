@@ -1,112 +1,164 @@
 /* ============================================================
-   SETUP — ARRASTAR E SOLTAR (DRAG & DROP)
+   SETUP — MINI GAME 2D ISOMÉTRICO (TOUR DO LUKZIN)
    ============================================================ */
 
-document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('setup360Container');
-  if (!container) return;
+const SETUP_DATA = {
+  gabinete: {
+    title: 'Gabinete Risemode Aquarium Branco',
+    text: 'O cérebro do setup! Um Risemode Aquarium branco, com vidro na frente e na lateral pra mostrar todo o RGB. Dentro dele tem um Ryzen 9 5900X, 48GB de RAM, uma RX 9060 XT, SSD de 2TB e uma fonte Corsair RM800W. É uma nave! 🚀',
+    x: '75%', y: '55%'
+  },
+  monitor: {
+    title: 'Monitor AOC 240Hz',
+    text: 'Aqui é onde a mágica acontece! Um AOC de 240Hz que deixa a gameplay super lisa. Perfeito pra não perder nenhum frame nos jogos mais rápidos. 🎮',
+    x: '35%', y: '40%'
+  },
+  teclado: {
+    title: 'Teclado AULA H68',
+    text: 'O barulhinho delicioso das teclas! Um AULA H68, super compacto e estiloso, perfeito pra digitar e jogar. ⌨️',
+    x: '30%', y: '60%'
+  },
+  mouse: {
+    title: 'Mouse Logitech G502 X Superlight RGB',
+    text: 'Leve como uma pena e preciso como um laser. O G502 X Superlight é o companheiro perfeito pra qualquer headshot. 🖱️',
+    x: '45%', y: '65%'
+  },
+  microfone: {
+    title: 'Microfone FIFINE AM8 Branco',
+    text: 'A voz doce da Soso passa por aqui! Um FIFINE AM8 branco, super profissional, pra galera ouvir cada detalhe e cada risada. 🎙️',
+    x: '20%', y: '50%'
+  },
+  cadeira: {
+    title: 'Cadeira XT Racer',
+    text: 'A base de tudo! Uma XT Racer super confortável pra aguentar aquelas lives longas de 8 horas sem doer as costas. 🪑',
+    x: '50%', y: '65%'
+  }
+};
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0511);
+let tourAtivo = false;
+let tourIndex = 0;
+let tourTimer = null;
+let typeTimer = null;
+let lukPos = { x: '50%', y: '60%' };
+const CHAVES_TOUR = ['gabinete', 'monitor', 'teclado', 'mouse', 'microfone', 'cadeira'];
+
+function moverLuk(x, y) {
+  const char = document.getElementById('lukChar');
+  if (!char) return;
   
-  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  container.appendChild(renderer.domElement);
+  char.classList.add('walking');
+  
+  // Inverte a direção do boneco dependendo de onde ele vai
+  const currentX = parseFloat(char.style.left || '50');
+  const targetX = parseFloat(x);
+  if (targetX < currentX) {
+    char.style.transform = 'scaleX(-1)';
+  } else {
+    char.style.transform = 'scaleX(1)';
+  }
 
-  const resizeObserver = new ResizeObserver(() => {
-    const w = container.clientWidth, h = container.clientHeight;
-    if (w > 0 && h > 0) {
-      renderer.setSize(w, h);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
+  char.style.left = x;
+  char.style.top = y;
+
+  setTimeout(() => {
+    char.classList.remove('walking');
+  }, 800);
+}
+
+function digitarTexto(texto) {
+  const el = document.getElementById('dlgText');
+  if (!el) return;
+  el.innerHTML = '';
+  if (typeTimer) clearInterval(typeTimer);
+  
+  let i = 0;
+  el.innerHTML = '<span class="typing-cursor">|</span>';
+  
+  typeTimer = setInterval(() => {
+    if (i < texto.length) {
+      el.innerHTML = texto.substring(0, i + 1) + '<span class="typing-cursor">|</span>';
+      i++;
+    } else {
+      clearInterval(typeTimer);
+      el.innerHTML = texto;
     }
-  });
-  resizeObserver.observe(container);
+  }, 25);
+}
 
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
+function irParaItem(itemId) {
+  if (tourAtivo) pararTour(); // Para o tour automático se o usuário clicar manualmente
+  
+  const item = SETUP_DATA[itemId];
+  if (!item) return;
 
-  scene.add(new THREE.AmbientLight(0xffffff, 2));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-  dirLight.position.set(5, 10, 5);
-  scene.add(dirLight);
+  moverLuk(item.x, item.y);
+  
+  setTimeout(() => {
+    digitarTexto(`<strong>${item.title}</strong><br><br>${item.text}`);
+  }, 600); // Espera o boneco andar um pouco antes de falar
+}
 
-  let roomModel = null;
-  let pcRealista = null;
-  let dragControls = null;
-
-  const loader = new THREE.GLTFLoader();
-  const dracoLoader = new THREE.DRACOLoader();
-  dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
-  loader.setDRACOLoader(dracoLoader);
-
-  // 1. Carrega a Sala
-  loader.load('/assets/models/room.glb', (gltf) => {
-    roomModel = gltf.scene;
-    const box = new THREE.Box3().setFromObject(roomModel);
-    const center = box.getCenter(new THREE.Vector3());
-    roomModel.position.sub(center);
-    scene.add(roomModel);
-
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    camera.position.set(maxDim * 1.2, maxDim * 0.8, maxDim * 1.5);
-    controls.target.set(0, 0, 0);
-    controls.update();
-    
-    // 2. Carrega o PC e ativa o Arrastar
-    carregarPCRealista();
-  });
-
-  function carregarPCRealista() {
-    loader.load('/assets/models/free_gaming_pc.glb', (gltf) => {
-      pcRealista = gltf.scene;
-      
-      // Ajusta o tamanho
-      const box = new THREE.Box3().setFromObject(pcRealista);
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      pcRealista.scale.set(1.2/maxDim, 1.2/maxDim, 1.2/maxDim); // Ajuste o tamanho aqui se precisar
-      
-      // Posição inicial (ele vai nascer no meio, vc arrasta ele pra mesa)
-      pcRealista.position.set(0, 0, 0); 
-      
-      scene.add(pcRealista);
-
-      // Ativa o controle de arrastar
-      configurarArrastar();
-
-    }, undefined, (error) => console.error(error));
+function iniciarTour() {
+  if (tourAtivo) return;
+  tourAtivo = true;
+  tourIndex = 0;
+  
+  const btnTour = document.getElementById('btnTourSetup');
+  const btnParar = document.getElementById('btnPararTour');
+  const progress = document.getElementById('setupProgress');
+  
+  if (btnTour) btnTour.style.display = 'none';
+  if (btnParar) btnParar.style.display = 'flex';
+  if (progress) {
+    progress.style.display = 'inline-block';
+    progress.textContent = `1 / ${CHAVES_TOUR.length}`;
   }
 
-  function configurarArrastar() {
-    // Cria o controle de arrastar do Three.js
-    dragControls = new THREE.DragControls([pcRealista], camera, renderer.domElement);
-    
-    // Quando começar a arrastar, desliga a rotação da câmera
-    dragControls.addEventListener('dragstart', function () {
-      controls.enabled = false;
-      pcRealista.rotation.y = 0; // Alinha o PC para frente quando você pegar ele
-    });
+  executarPassoDoTour();
+}
 
-    // Quando soltar o mouse, liga a rotação da câmera de novo e mostra a posição
-    dragControls.addEventListener('dragend', function () {
-      controls.enabled = true;
-      console.log(`📍 POSIÇÃO FINAL DO PC: X: ${pcRealista.position.x.toFixed(2)}, Y: ${pcRealista.position.y.toFixed(2)}, Z: ${pcRealista.position.z.toFixed(2)}`);
-      
-      // Dica: Aqui a gente pode salvar a posição no navegador pra ele lembrar
-      localStorage.setItem('pcX', pcRealista.position.x);
-      localStorage.setItem('pcY', pcRealista.position.y);
-      localStorage.setItem('pcZ', pcRealista.position.z);
-    });
+function executarPassoDoTour() {
+  if (!tourAtivo) return;
+  if (tourIndex >= CHAVES_TOUR.length) {
+    // Fim do tour
+    const progress = document.getElementById('setupProgress');
+    if (progress) progress.textContent = 'Concluído! ✅';
+    digitarTexto('E aí, curtiu o setup da Soso? Ela montou com muito carinho! Se quiser ver de novo, só clicar no botão de iniciar tour. 💜');
+    setTimeout(pararTour, 4000); // Para o tour automaticamente após o fim
+    return;
   }
 
-  function animate() {
-    requestAnimationFrame(animate);
-    if (controls.enabled) controls.update();
-    renderer.render(scene, camera);
+  const itemId = CHAVES_TOUR[tourIndex];
+  const progress = document.getElementById('setupProgress');
+  if (progress) progress.textContent = `${tourIndex + 1} / ${CHAVES_TOUR.length}`;
+  
+  irParaItem(itemId);
+  tourIndex++;
+  
+  tourTimer = setTimeout(executarPassoDoTour, 4500); // Tempo entre cada parada do tour
+}
+
+function pararTour() {
+  tourAtivo = false;
+  if (tourTimer) clearTimeout(tourTimer);
+  
+  const btnTour = document.getElementById('btnTourSetup');
+  const btnParar = document.getElementById('btnPararTour');
+  const progress = document.getElementById('setupProgress');
+  
+  if (btnTour) btnTour.style.display = 'flex';
+  if (btnParar) btnParar.style.display = 'none';
+  if (progress) progress.style.display = 'none';
+  
+  moverLuk('50%', '60%');
+}
+
+// Inicialização básica quando o DOM carregar
+document.addEventListener('DOMContentLoaded', () => {
+  // Garante que o boneco comece na posição inicial
+  const char = document.getElementById('lukChar');
+  if (char) {
+    char.style.left = lukPos.x;
+    char.style.top = lukPos.y;
   }
-  animate();
 });

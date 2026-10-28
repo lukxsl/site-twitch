@@ -31,7 +31,7 @@ const STATUS_TOOLTIP = {
   'Dropado': 'Comecei mas não vou continuar', 'Na fila': 'Quero jogar/assistir em breve',
   'Assistindo': 'Estou assistindo agora', 'Assistido': 'Já assisti'
 };
-const SUG_MAX_CHARS = 200;
+const SUG_MAX_CHARS = 300;
 const STATUS_SUG = {
   nova:     { label: '🟡 Nova',       cor: 'amarelo',   desc: 'Acabou de chegar' },
   analise:  { label: '👀 Em análise', cor: 'azul',      desc: 'A Soso viu e tá pensando' },
@@ -66,9 +66,7 @@ let ADMIN_MULTISEL = { ativo: false, ids: new Set() };
 let vodAtual = null, assistindoVod = false;
 let videosTw = [];
 let inicioLive = null;
-let modo = 'jogos';
-let filtro = [];
-let favoritosFiltro = false;
+let modo = 'jogos', filtro = 'Todos';
 let CONFIG_GERAL = {
   aviso: null, donate: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, top3: [], hall: [], votosFechamento: null
 };
@@ -76,29 +74,19 @@ let musicaTocando = false;
 let revealObs = null;
 let sugTipoAtual = 'Sugestão / ideia';
 let sirFiltro = 'all';
-let sirStatusFiltro = 'all';
 let SIR_ITENS_CACHE = [];
 let _musicaAtual = null;
 let _recentes = [];
 let _musicaPronta = false;
 
 let HALL_DADOS = null;
-let HALL_ABA = 'doadores';
+let HALL_ABA = 'gift';
 let HALL_TIMER = null;
 
+/* 🆕 Tier List V2 */
 let sortMode = 'nota';
-let generoFiltro = [];
+let generoFiltro = 'all';
 let _jogoAoVivoNome = null;
-let _roletaRodando = false;
-
-/* ============================================================
-   EXPOR ultVivo / ultGame PRA CENA 3D (via window getter)
-   A cena 3D usa window.ultVivo no monitor "AO VIVO"
-   ============================================================ */
-try {
-  Object.defineProperty(window, 'ultVivo', { get: () => ultVivo, configurable: true });
-  Object.defineProperty(window, 'ultGame', { get: () => ultGame, configurable: true });
-} catch(e){}
 
 /* ============================================================
    HELPERS
@@ -234,6 +222,7 @@ function renderRecado(){
         : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
     }
   }
+
   const card = $('recadoCard');
   const texto = $('recadoTexto');
   if(card && texto){
@@ -307,7 +296,7 @@ function setupSubShortcuts(){
 }
 
 /* ============================================================
-   HALL DA FAMA (Apenas Doadores)
+   HALL DA FAMA
    ============================================================ */
 async function carregarHall(){
   const lista = $('hallLista'); if(!lista) return;
@@ -317,7 +306,7 @@ async function carregarHall(){
     HALL_DADOS = d;
     renderHall();
   } catch(e){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>Nenhum doador ainda.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
   }
 }
 
@@ -328,20 +317,25 @@ function renderHall(){
   const d = HALL_DADOS;
 
   if(!d || d.vazio){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>Nenhum doador ainda.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
     if(updated) updated.style.display = 'none';
     return;
   }
 
-  const itens = (d.doadores || []).slice(0, 5);
+  const itens = (HALL_ABA === 'gift' ? (d.gift || [])
+              : HALL_ABA === 'fieis' ? (d.fieis || [])
+              : (d.doadores || [])).slice(0, 3);
 
   if(!itens.length){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>Nenhum doador ainda.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
+    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
   } else {
     const medalhas = ['🥇','🥈','🥉'];
     lista.innerHTML = itens.map((p, i) => {
       const medalha = medalhas[i] || `${i+1}º`;
-      const meta = fmtBRL(p.total);
+      let meta = '';
+      if(HALL_ABA === 'gift') meta = `${p.total} gift${p.total === 1 ? '' : 's'}`;
+      else if(HALL_ABA === 'fieis') meta = `${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
+      else meta = fmtBRL(p.total);
 
       const avatarHTML = p.avatar
         ? `<img class="hr-avatar" src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hr-avatar-ph',textContent:'👤'}))">`
@@ -380,7 +374,20 @@ function atualizarTextoHallUpdated(ts){
   el.textContent = texto;
 }
 
+function setupHallTabs(){
+  const wrap = $('hallTabs'); if(!wrap || wrap.dataset.bound) return;
+  wrap.dataset.bound = '1';
+  wrap.addEventListener('click', e => {
+    const btn = e.target.closest('.hall-tab');
+    if(!btn) return;
+    wrap.querySelectorAll('.hall-tab').forEach(t => t.classList.toggle('on', t === btn));
+    HALL_ABA = btn.dataset.hall || 'gift';
+    renderHall();
+  });
+}
+
 function iniciarHall(){
+  setupHallTabs();
   carregarHall();
   if(HALL_TIMER) clearInterval(HALL_TIMER);
   HALL_TIMER = setInterval(() => {
@@ -685,12 +692,9 @@ function renderComandos(filtroTxt = ''){
 }
 
 /* ============================================================
-   TIER LIST V5 — PREMIUM DASHBOARD REDESIGN
+   TIER LIST V2
    ============================================================ */
 const TIERS = ['S','A','B','C'];
-const PLATAFORMA_NOME = { steam:'Steam', epic:'Epic', ps:'PlayStation', xbox:'Xbox', switch:'Switch', nintendo:'Nintendo', gog:'GOG' };
-const ICO_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.5 6.1 20.7l1.2-6.6L2.5 9.5l6.6-.9L12 2.5z"/></svg>';
-
 const JOGOS_FALLBACK = [
   { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando', horas:50, nota:8,
     capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
@@ -706,9 +710,6 @@ const FILMES_FALLBACK = [
     comentario:'As reservas naturais da Terra estão chegando ao fim.', generos:['Ficção'] }
 ];
 
-let _bibliotecaCarregada = false;
-let _roletaVencedor = null;
-
 async function carregarBiblioteca(){
   try{
     const r = await fetch('/api/tierlist');
@@ -716,7 +717,6 @@ async function carregarBiblioteca(){
     JOGOS = (Array.isArray(d.jogos) && d.jogos.length) ? d.jogos : JOGOS_FALLBACK;
     FILMES = (Array.isArray(d.filmes) && d.filmes.length) ? d.filmes : FILMES_FALLBACK;
   }catch(e){ JOGOS = JOGOS_FALLBACK; FILMES = FILMES_FALLBACK; }
-  _bibliotecaCarregada = true;
   desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
 }
 window.carregarBiblioteca = carregarBiblioteca;
@@ -725,597 +725,396 @@ const MODOS = {
   jogos: {
     get lista(){ return JOGOS; },
     status:['Todos','Jogando','Zerado','Dropado','Na fila'],
-    feito:'Zerado', sing:'jogo', plural:'jogos',
-    hrs:'jogadas', hl:'horas jogadas', l4:'jogos zerados', l4s:'jogo zerado',
-    horasLabel:'Mais horas jogadas', sorteio:'Que tal jogar este?',
-    titulo:'Tier List de Jogos',
+    feito:'Zerado', plural:'jogos', hrs:'horas jogadas', hl:'horas jogadas',
+    l4:'jogos zerados', titulo:'Tier List de Jogos',
     sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior.',
     busca:'Buscar jogo...', vazio:'Nenhum jogo aqui'
   },
   filmes: {
     get lista(){ return FILMES; },
     status:['Todos','Assistindo','Assistido','Na fila'],
-    feito:'Assistido', sing:'filme', plural:'filmes',
-    hrs:'de duração', hl:'duração', l4:'filmes assistidos', l4s:'filme assistido',
-    horasLabel:'Mais longos', sorteio:'Que tal assistir este?',
-    titulo:'Tier List de Filmes',
+    feito:'Assistido', plural:'filmes', hrs:'duração total', hl:'duração',
+    l4:'filmes assistidos', titulo:'Tier List de Filmes',
     sub:'Tudo o que eu já assisti ou pretendo assistir.',
     busca:'Buscar filme...', vazio:'Nenhum filme aqui'
   }
 };
 const LISTA = () => MODOS[modo].lista;
 const fh = h => (Math.round(h * 10) / 10).toLocaleString('pt-BR') + 'h';
-const _tierDe = j => TIERS.includes(j.tier) ? j.tier : 'NR';
-const _ehAdmin = () => !!(USUARIO && USUARIO.admin);
-const _arr = v => Array.isArray(v) ? v : [];
 
-function _salvarBiblioteca(logAcao){
-  return fetch('/api/admin?action=tierlist-set', {
-    method:'POST', headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({ jogos: JOGOS, filmes: FILMES, logAcao })
-  }).catch(e => console.warn('Erro ao salvar', e));
-}
-const _snapshot = () => ({ jogos: JSON.parse(JSON.stringify(JOGOS)), filmes: JSON.parse(JSON.stringify(FILMES)) });
-
-const UNDO_STACK = [];
-const UNDO_MAX = 5;
-function pushUndo(snapshot){
-  UNDO_STACK.push(snapshot);
-  if(UNDO_STACK.length > UNDO_MAX) UNDO_STACK.shift();
-}
-async function desfazerUltima(){
-  if(!UNDO_STACK.length){ toast('Nada pra desfazer', 'warn'); return; }
-  const snap = UNDO_STACK.pop();
-  if(snap.jogos) JOGOS = snap.jogos;
-  if(snap.filmes) FILMES = snap.filmes;
-  desenharStats(); desenhar();
-  await _salvarBiblioteca('Desfez última ação (undo)');
-  toast('↩️ Desfeito', 'ok');
-}
-window.desfazerUltima = desfazerUltima;
-
-/* ---------- Resumo + distribuição por tier ---------- */
 function desenharStats(){
-  const el = $('stats'); if(!el) return;
-  const m = MODOS[modo], L = m.lista;
-  renderChips();
-  renderGeneroChips();
-
-  if(!L.length){ el.hidden = true; el.innerHTML = ''; return; }
-  el.hidden = false;
-
-  const comNota = L.filter(j => j.nota > 0);
-  const media = comNota.length ? comNota.reduce((a,j) => a + j.nota, 0) / comNota.length : 0;
-  const feitos = L.filter(j => j.status === m.feito).length;
-  let volume = null;
-  if(modo === 'filmes'){
-    const t = L.reduce((a,j) => a + (j.duracao || 0), 0);
-    volume = t ? fmtDuracao(t) : null;
+  const m = MODOS[modo], L = m.lista, cn = L.filter(j => j.nota > 0);
+  const media = cn.length ? cn.reduce((a,j) => a + j.nota, 0) / cn.length : 0;
+  let totalLabel;
+  if (modo === 'filmes') {
+    const totalMin = L.reduce((a,j) => a + (j.duracao || 0), 0);
+    totalLabel = fmtDuracao(totalMin) || '—';
   } else {
-    const h = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
-    volume = h ? h.toLocaleString('pt-BR') + 'h' : null;
+    const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
+    totalLabel = hs.toLocaleString('pt-BR');
   }
+  const el = $('stats'); if(!el) return;
+  const dados = [
+    [L.length, m.plural + ' na lista'],
+    [totalLabel, m.hrs],
+    [media ? n1(media) : '—', 'média das notas'],
+    [L.filter(j => j.status === m.feito).length, m.l4]
+  ];
+  el.innerHTML = dados.map(x => `<div class="stat"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+  const bEls = el.querySelectorAll('.stat b');
+  if(bEls[0] && !isNaN(Number(dados[0][0]))) animarNumero(bEls[0], Number(dados[0][0]));
+  if(bEls[3] && !isNaN(Number(dados[3][0]))) animarNumero(bEls[3], Number(dados[3][0]));
 
-  const figs = [
-    [L.length, plural(L.length, m.sing, m.plural)],
-    volume ? [volume, m.hrs] : null,
-    media ? [n1(media), 'nota média'] : null,
-    [feitos, feitos === 1 ? m.l4s : m.l4]
-  ].filter(Boolean)
-   .map(([v, l]) => `<div class="tl-fig"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  renderPodium();
+  renderGeneroChips();
+}
 
-  const dist = { S:0, A:0, B:0, C:0, NR:0 };
-  L.forEach(j => dist[_tierDe(j)]++);
-  const segs = ['S','A','B','C','NR'].filter(t => dist[t]).map(t => {
-    const nome = t === 'NR' ? 'Sem tier' : 'Tier ' + t;
-    const txt = `${dist[t]} ${plural(dist[t], 'item', 'itens')}`;
-    return `<button type="button" class="tl-seg" data-tier="${t}" data-go="${t}" style="--n:${dist[t]}" title="${nome}: ${txt}" aria-label="Ir para ${nome} (${txt})"><span>${t === 'NR' ? '?' : t}</span><small>${dist[t]}</small></button>`;
+/* ---------- Pódio Top 3 ---------- */
+function renderPodium(){
+  const wrap = $('podium'); if(!wrap) return;
+  const L = LISTA().filter(j => j.nota > 0);
+  if(L.length < 3){ wrap.style.display = 'none'; return; }
+  const top = [...L].sort((a,b) => (b.nota||0) - (a.nota||0)).slice(0, 3);
+  const medalhas = ['🥇','🥈','🥉'];
+  wrap.style.display = '';
+  wrap.innerHTML = top.map((j, i) => {
+    const pos = i + 1;
+    const chipTier = j.tier && j.tier !== 'NR' ? `<span class="podium-chip tr">Tier ${esc(j.tier)}</span>` : '';
+    const chipNota = j.nota > 0 ? `<span class="podium-chip nota">⭐ ${n1(j.nota)}</span>` : '';
+    const chipMeta = modo === 'jogos' && j.horas > 0
+      ? `<span class="podium-chip">⏱ ${fh(j.horas)}</span>`
+      : (j.duracao > 0 ? `<span class="podium-chip">${fmtDuracao(j.duracao)}</span>` : '');
+    const capaHTML = j.capa
+      ? `<img class="podium-img" src="${esc(j.capa)}" alt="${esc(j.nome)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'podium-img',style:'display:grid;place-items:center;font-size:1.6rem',textContent:'🎮'}))">`
+      : `<div class="podium-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>`;
+    return `
+      <div class="podium-card pos-${pos}">
+        <span class="podium-medal">${medalhas[i]}</span>
+        ${capaHTML}
+        <div class="podium-nome">${esc(j.nome)}</div>
+        <div class="podium-chips">${chipTier}${chipNota}${chipMeta}</div>
+      </div>
+    `;
   }).join('');
-
-  el.innerHTML = `<div class="tl-figs">${figs}</div><div class="tl-spread" role="group" aria-label="Distribuição por tier">${segs}</div>`;
 }
 
 /* ---------- Chips de gênero ---------- */
 function renderGeneroChips(){
-  const wrap = $('generoChips'), row = $('generoRow'); if(!wrap) return;
+  const wrap = $('generoChips'); if(!wrap) return;
   const L = LISTA();
   const contagem = {};
-  L.forEach(j => _arr(j.generos).forEach(g => {
+  L.forEach(j => (j.generos || []).forEach(g => {
     const k = String(g).trim();
-    if(k) contagem[k] = (contagem[k] || 0) + 1;
+    if(!k) return;
+    contagem[k] = (contagem[k] || 0) + 1;
   }));
   const generos = Object.keys(contagem).sort((a,b) => contagem[b] - contagem[a]);
-  if(row) row.hidden = !generos.length;
-  if(!generos.length){ wrap.innerHTML = ''; return; }
-  const ativos = _arr(generoFiltro);
-  wrap.innerHTML =
-    `<button type="button" class="tl-chip" data-gen="all" aria-pressed="${!ativos.length}">Todos <b>${L.length}</b></button>` +
-    generos.map(g => `<button type="button" class="tl-chip" data-gen="${esc(g)}" aria-pressed="${ativos.includes(g)}">${esc(g)} <b>${contagem[g]}</b></button>`).join('');
+  if(!generos.length){ wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const iconeGenero = g => {
+    const t = g.toLowerCase();
+    if(/a[çc][aã]o/.test(t)) return '⚔️';
+    if(/aventura/.test(t)) return '🗺️';
+    if(/rpg/.test(t)) return '🎭';
+    if(/terror|horror/.test(t)) return '👻';
+    if(/fps|shooter|tiro/.test(t)) return '🎯';
+    if(/simula/.test(t)) return '🏡';
+    if(/estrat/.test(t)) return '♟️';
+    if(/esporte/.test(t)) return '⚽';
+    if(/corrida/.test(t)) return '🏎️';
+    if(/puzzle/.test(t)) return '🧩';
+    if(/plataforma/.test(t)) return '🦘';
+    if(/metroidvania/.test(t)) return '🗡️';
+    if(/fic[çc]/.test(t)) return '🚀';
+    if(/anima/.test(t)) return '🎨';
+    if(/com[ée]dia/.test(t)) return '😄';
+    if(/drama/.test(t)) return '🎬';
+    if(/fantasia/.test(t)) return '🧙';
+    return '🎮';
+  };
+  wrap.innerHTML = `
+    <button type="button" class="gen-chip ${generoFiltro === 'all' ? 'on' : ''}" data-gen="all">
+      Todos <b>${L.length}</b>
+    </button>
+    ${generos.map(g => `
+      <button type="button" class="gen-chip ${generoFiltro === g ? 'on' : ''}" data-gen="${esc(g)}">
+        ${iconeGenero(g)} ${esc(g)} <b>${contagem[g]}</b>
+      </button>
+    `).join('')}
+  `;
 }
 
 /* ---------- Chips de status ---------- */
 function renderChips(){
-  const wrap = $('chips'); if(!wrap) return;
-  const ativos = _arr(filtro);
-  const L = LISTA();
-  wrap.innerHTML = MODOS[modo].status.map(s => {
-    const on = s === 'Todos' ? !ativos.length : ativos.includes(s);
-    const qtd = s === 'Todos' ? L.length : L.filter(j => j.status === s).length;
-    return `<button type="button" class="tl-chip" data-s="${esc(s)}" aria-pressed="${on}" title="${esc(STATUS_TOOLTIP[s] || s)}">${esc(s)} <b>${qtd}</b></button>`;
-  }).join('') + `<button type="button" class="tl-chip fav" data-fav="1" aria-pressed="${favoritosFiltro}" title="Só favoritos">${ICO_STAR}Favoritos</button>`;
+  $('chips').innerHTML = MODOS[modo].status.map(s => {
+    const tip = STATUS_TOOLTIP[s] || s;
+    return `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}" title="${esc(tip)}">${s}</button>`;
+  }).join('');
 }
 
 function aplicarModo(novo, salvar = true){
   if(!MODOS[novo]) novo = 'jogos';
-  modo = novo; filtro = []; generoFiltro = []; favoritosFiltro = false;
-  const q = $('q'); if(q){ q.value = ''; q.placeholder = MODOS[modo].busca; }
-  document.querySelectorAll('#modo button').forEach(x => {
-    const on = x.dataset.m === modo;
-    x.classList.toggle('on', on);
-    x.setAttribute('aria-pressed', String(on));
-  });
+  modo = novo; filtro = 'Todos'; generoFiltro = 'all';
+  $('q').value = '';
+  document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x.dataset.m === modo));
   const m = MODOS[modo];
   $('tlTitulo').textContent = m.titulo;
   $('tlSub').textContent = m.sub;
-  const opt = document.querySelector('#sortSelect option[value="horas"]');
-  if(opt) opt.textContent = m.horasLabel;
-  desenharStats(); desenhar();
+  $('q').placeholder = m.busca;
+  renderChips(); desenharStats(); desenhar();
   $('tmdbNote').style.display = modo === 'filmes' ? '' : 'none';
   if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
 }
 
-function limparFiltros(){
-  filtro = []; generoFiltro = []; favoritosFiltro = false;
-  const q = $('q'); if(q) q.value = '';
-  renderChips(); renderGeneroChips(); desenhar();
-}
-
-/* ---------- Card ---------- */
-function cartao(j, i){
+/* ---------- Cartão com tilt + tooltip + live ---------- */
+function cartao(j,i){
   const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
-  const podeArrastar = _ehAdmin() && !ADMIN_MULTISEL.ativo;
+  const podeArrastar = !!(USUARIO && USUARIO.admin) && !ADMIN_MULTISEL.ativo;
+  const conq = j.conquistas && j.conquistas.total
+    ? `<span class="conq">🏆 ${j.conquistas.obtidas}/${j.conquistas.total}</span>` : '';
+  const novo = ehNovo(j) ? `<span class="novo">Novo</span>` : '';
+
   const aoVivo = _jogoAoVivoNome && norm(j.nome) === norm(_jogoAoVivoNome);
+  const liveBadge = aoVivo ? `<span class="live-now">Ao vivo</span>` : '';
 
-  const conq = (j.conquistas && j.conquistas.total > 0) ? j.conquistas : null;
-  const pct = conq ? Math.round((conq.obtidas / conq.total) * 100) : 0;
-  const platina = (conq && conq.obtidas === conq.total) ? `<span class="tl-plat" title="100% completado">100%</span>` : '';
-  const prog = (j.status === 'Jogando' && pct > 0) ? `<span class="tl-prog"><i style="width:${pct}%"></i></span>` : '';
-  const nota = j.nota > 0 ? `<span class="tl-rate">${ICO_STAR}${n1(j.nota)}</span>` : '';
-
-  const txt = (j.comentario || j.sinopse || '').trim();
-  const gens = _arr(j.generos).slice(0, 3).map(g => `<span>${esc(g)}</span>`).join('');
-  const peek = (gens || txt)
-    ? `<span class="tl-peek">${gens ? `<span class="tl-peek-gen">${gens}</span>` : ''}${txt ? `<span class="tl-peek-txt">${esc(txt.slice(0, 140))}${txt.length > 140 ? '…' : ''}</span>` : ''}</span>`
+  const tooltip = (j.comentario || '').trim()
+    ? ` data-tooltip="${esc(j.comentario.slice(0, 180))}${j.comentario.length > 180 ? '…' : ''}"`
     : '';
 
-  const valor = j.horas > 0 ? fh(j.horas) : (j.duracao > 0 ? fmtDuracao(j.duracao) : '');
-  const status = j.status ? `<span class="tl-st"><i class="tl-dot" data-s="${esc(j.status)}"></i>${esc(j.status)}</span>` : '';
-  const info = (status || valor)
-    ? `<span class="tl-info">${status}${valor ? `<span>${esc(valor)}</span>` : ''}</span>` : '';
-
-  const img = j.capa
-    ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">`
-    : '';
+  const tierCls = j.tier && j.tier !== 'NR' ? `t-${j.tier}` : '';
 
   return `
-    <button type="button" class="tl-card${j.favorito ? ' favorito' : ''}" data-i="${i}" data-id="${esc(j.id)}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}">
-      <span class="tl-poster">
-        <span class="tl-ph">${esc(ini)}</span>
-        ${img}
-        <span class="tl-flags">
-          <span class="tl-flag fav" aria-hidden="true">${ICO_STAR}</span>
-          ${aoVivo ? `<span class="tl-flag live">Ao vivo</span>` : ''}
-          ${ehNovo(j) ? `<span class="tl-flag novo">Novo</span>` : ''}
-        </span>
-        ${nota}${platina}${prog}${peek}
-      </span>
-      <span class="tl-name">${esc(j.nome)}</span>
-      ${info}
-    </button>`;
+    <button class="g ${tierCls}" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}"${tooltip}>
+      <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
+        <div class="ph">${esc(ini)}</div>
+        ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
+        ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
+        ${liveBadge}
+        ${novo}
+        ${j.nota > 0 ? `<span class="nt">⭐ ${n1(j.nota)}</span>` : ''}
+      </div>
+      <div class="cap">
+        <span class="cn">${esc(j.nome)}</span>
+        ${j.horas > 0 ? `<span class="ch">${fh(j.horas)}</span>` : ''}
+        ${j.duracao > 0 ? `<span class="ch">${fmtDuracao(j.duracao)}</span>` : ''}
+      </div>
+      ${conq}
+    </button>
+  `;
 }
 
-/* ---------- Linha de tier ---------- */
-function linha(tier, lista){
-  const m = MODOS[modo];
-  const n = lista.length;
-  const comNota = lista.filter(j => j.nota > 0);
-  const media = comNota.length ? n1(comNota.reduce((a,j) => a + j.nota, 0) / comNota.length) : '';
-  const rotulo = tier === 'NR' ? '?' : tier;
-  const nome = tier === 'NR' ? 'Sem tier' : 'Tier ' + tier;
-  const vazio = (_ehAdmin() && !ADMIN_MULTISEL.ativo) ? `Arraste um ${m.sing} pra cá` : m.vazio;
+function linha(cls, rotulo, lista){
+  const L = LISTA();
+  const totalItens = lista.length;
+  let resumo = '';
+  if(totalItens > 0){
+    const comNota = lista.filter(j => j.nota > 0);
+    const media = comNota.length
+      ? (comNota.reduce((a,j) => a + j.nota, 0) / comNota.length).toFixed(1)
+      : null;
+    const somaHoras = modo === 'jogos'
+      ? Math.round(lista.reduce((a,j) => a + (j.horas || 0), 0))
+      : 0;
+    const partes = [`${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`];
+    if(media) partes.push(`média ${media}`);
+    if(somaHoras > 0) partes.push(`${somaHoras}h`);
+    resumo = partes.join(' · ');
+  }
   return `
-    <div class="tl-tier${n ? '' : ' is-empty'}" id="tl-tier-${tier}" data-tier="${tier}">
-      <div class="tl-tab" title="${nome}">
-        <span class="tl-letter">${rotulo}</span>
-        <span class="tl-tab-meta">
-          <span>${n ? `${n} ${plural(n, 'item', 'itens')}` : 'vazio'}</span>
-          ${media ? `<span>média ${media}</span>` : ''}
-        </span>
+    <div class="tier t-${cls}">
+      <div class="label">
+        <div>${rotulo}</div>
+        ${resumo ? `<span class="tier-resumo">${esc(resumo)}</span>` : ''}
       </div>
-      <div class="tl-shelf" data-tier="${tier}">
-        ${n ? lista.map(j => cartao(j, LISTA().indexOf(j))).join('') : `<span class="tl-empty">${vazio}</span>`}
+      <div class="games">
+        ${lista.length ? lista.map(j => cartao(j, L.indexOf(j))).join('') : `<span class="empty">${MODOS[modo].vazio}</span>`}
       </div>
-    </div>`;
+    </div>
+  `;
 }
 
-/* ---------- Filtros + ordenação ---------- */
-function _filtrosAtivos(){
-  return !!(($('q')?.value || '').trim() || _arr(filtro).length || _arr(generoFiltro).length || favoritosFiltro);
+/* ---------- Tilt 3D ---------- */
+function setupCardTiltTier(){
+  if(matchMedia('(max-width: 960px)').matches) return;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  document.querySelectorAll('#tiers .g').forEach(card => {
+    if(card.dataset.tiltBound === '1') return;
+    card.dataset.tiltBound = '1';
+    let raf = 0, ev = null;
+    const aplicar = () => {
+      raf = 0;
+      if(!ev) return;
+      const rect = card.getBoundingClientRect();
+      const px = ev.clientX - rect.left, py = ev.clientY - rect.top;
+      const x = px / rect.width - 0.5, y = py / rect.height - 0.5;
+      card.style.setProperty('--tilt-ry', (x * 8).toFixed(2) + 'deg');
+      card.style.setProperty('--tilt-rx', (-y * 6).toFixed(2) + 'deg');
+    };
+    card.addEventListener('mousemove', (e) => {
+      ev = e;
+      if(!raf) raf = requestAnimationFrame(aplicar);
+    }, { passive: true });
+    card.addEventListener('mouseleave', () => {
+      ev = null;
+      card.style.setProperty('--tilt-ry', '0deg');
+      card.style.setProperty('--tilt-rx', '0deg');
+    });
+  });
 }
 
+/* ---------- Drag & drop ---------- */
+function setupDragDrop(){
+  if(!USUARIO || !USUARIO.admin || ADMIN_MULTISEL.ativo) return;
+  document.querySelectorAll('.g').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      const i = Number(el.dataset.i);
+      dragItem = { idx: i, nome: LISTA()[i].nome };
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', dragItem.nome); } catch(err){}
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+      document.querySelectorAll('.games.drag-over').forEach(x => x.classList.remove('drag-over'));
+      dragItem = null;
+    });
+  });
+  document.querySelectorAll('.games').forEach(gEl => {
+    gEl.addEventListener('dragover', e => {
+      if(!dragItem) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      gEl.classList.add('drag-over');
+    });
+    gEl.addEventListener('dragleave', e => {
+      if(!gEl.contains(e.relatedTarget)) gEl.classList.remove('drag-over');
+    });
+    gEl.addEventListener('drop', async e => {
+      e.preventDefault();
+      gEl.classList.remove('drag-over');
+      if(!dragItem) return;
+      const tierEl = gEl.closest('.tier');
+      if(!tierEl) return;
+      const m = tierEl.className.match(/t-(\w+)/);
+      if(!m) return;
+      const novoTier = m[1];
+      const item = LISTA()[dragItem.idx];
+      if(!item || item.tier === novoTier){ dragItem = null; return; }
+      const tierAntigo = item.tier;
+      item.tier = novoTier;
+      desenharStats(); desenhar();
+      toast(`✅ "${item.nome}" movido de ${tierAntigo} para ${novoTier}`, 'ok');
+      try {
+        await fetch('/api/admin?action=tierlist-set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jogos: JOGOS, filmes: FILMES, logAcao: `Moveu "${item.nome}" de ${tierAntigo} pra ${novoTier}` })
+        });
+      } catch(e){ console.warn('Erro ao salvar', e); }
+      dragItem = null;
+    });
+  });
+}
+
+/* ---------- Filtros + Ordenação ---------- */
 function _aplicarFiltrosOrdenacao(){
-  const q = norm($('q')?.value || '');
-  const ativos = _arr(filtro);
-  const gens = _arr(generoFiltro).map(g => g.toLowerCase());
-
-  const lista = LISTA().filter(j => {
-    if(ativos.length && !ativos.includes(j.status)) return false;
-    if(favoritosFiltro && !j.favorito) return false;
-    if(gens.length){
-      const jg = _arr(j.generos).map(g => String(g).toLowerCase());
-      if(!gens.some(g => jg.includes(g))) return false;
+  const q = ($('q')?.value || '').trim().toLowerCase();
+  let lista = LISTA().filter(j => {
+    if(filtro !== 'Todos' && j.status !== filtro) return false;
+    if(generoFiltro !== 'all'){
+      const temGen = (j.generos || []).some(g => String(g).toLowerCase() === generoFiltro.toLowerCase());
+      if(!temGen) return false;
     }
-    if(q && !norm(j.nome).includes(q)) return false;
+    if(q && !j.nome.toLowerCase().includes(q)) return false;
     return true;
   });
 
-  const cmp = {
-    nome: (a,b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity:'base' }),
-    horas: (a,b) => (b.horas || b.duracao || 0) - (a.horas || a.duracao || 0),
-    recentes: (a,b) => {
-      const ta = a.adicionadoEm ? new Date(a.adicionadoEm).getTime() : 0;
-      const tb = b.adicionadoEm ? new Date(b.adicionadoEm).getTime() : 0;
-      return tb - ta;
-    },
-    favoritos: (a,b) => (b.favorito ? 1 : 0) - (a.favorito ? 1 : 0),
-    nota: (a,b) => (b.nota || 0) - (a.nota || 0)
-  };
-  const prim = cmp[sortMode] || cmp.nota;
-  const sec = (sortMode === 'nota' || sortMode === 'favoritos') ? cmp.horas : cmp.nota;
-  return lista.sort((a,b) => prim(a,b) || sec(a,b));
+  lista.sort((a,b) => {
+    switch(sortMode){
+      case 'nome':
+        return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
+      case 'horas':
+        return (b.horas || b.duracao || 0) - (a.horas || a.duracao || 0);
+      case 'recentes': {
+        const ta = a.adicionadoEm ? new Date(a.adicionadoEm).getTime() : 0;
+        const tb = b.adicionadoEm ? new Date(b.adicionadoEm).getTime() : 0;
+        return tb - ta;
+      }
+      case 'nota':
+      default:
+        return (b.nota || 0) - (a.nota || 0) || (b.horas || 0) - (a.horas || 0);
+    }
+  });
+
+  return lista;
 }
 
 function desenhar(){
   const el = $('tiers'); if(!el) return;
-  const m = MODOS[modo];
   const lista = _aplicarFiltrosOrdenacao();
   const total = LISTA().length;
 
   const cont = $('tlContador');
   if(cont){
-    cont.innerHTML = `<b>${lista.length}</b> de ${total} ${plural(total, 'item', 'itens')}`;
-    cont.hidden = !total;
+    cont.innerHTML = `<b>${lista.length}</b> de ${total} ${total === 1 ? 'item' : 'itens'}`;
+    cont.style.display = total ? '' : 'none';
   }
 
-  if(!total){
-    if(_bibliotecaCarregada){
-      el.innerHTML = `<div class="tl-none"><p>A lista de ${m.plural} ainda está vazia.</p></div>`;
-    } else {
-      el.innerHTML = TIERS.map(t => `
-        <div class="tl-tier" data-tier="${t}">
-          <div class="tl-tab"><span class="tl-letter">${t}</span></div>
-          <div class="tl-shelf">${'<div class="tl-card skeleton"><span class="tl-poster"></span><span class="tl-name"></span></div>'.repeat(3)}</div>
-        </div>`).join('');
-    }
-    return;
-  }
-
-  if(!lista.length){
-    el.innerHTML = `<div class="tl-none"><p>Nenhum ${m.sing} bate com esses filtros.</p><button type="button" class="tl-chip" data-act="limpar">Limpar filtros</button></div>`;
-    return;
-  }
-
-  const filtrando = _filtrosAtivos();
-  el.innerHTML = [...TIERS, 'NR'].map(t => {
-    const itens = lista.filter(j => _tierDe(j) === t);
-    if(!itens.length && (filtrando || t === 'NR')) return '';
-    return linha(t, itens);
-  }).join('');
-  setupDragDrop();
-}
-
-/* ---------- Mover de tier (drag, teclado) ---------- */
-function _moverTier(item, novoTier, origem){
-  const antigo = _tierDe(item);
-  if(antigo === novoTier) return false;
-  pushUndo(_snapshot());
-  item.tier = novoTier;
-  desenharStats(); desenhar();
-  toast(`✅ "${item.nome}": ${antigo} → ${novoTier}`, 'ok');
-  _salvarBiblioteca(`${origem}: moveu "${item.nome}" de ${antigo} pra ${novoTier}`);
-  return true;
-}
-
-function setupDragDrop(){
-  if(!_ehAdmin() || ADMIN_MULTISEL.ativo) return;
-  document.querySelectorAll('#tiers .tl-card[draggable="true"]').forEach(el => {
-    el.addEventListener('dragstart', e => {
-      const i = Number(el.dataset.i);
-      dragItem = { idx: i, id: LISTA()[i].id };
-      el.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      try { e.dataTransfer.setData('text/plain', LISTA()[i].nome); } catch(err){}
-    });
-    el.addEventListener('dragend', () => {
-      el.classList.remove('dragging');
-      document.querySelectorAll('.tl-shelf.drag-over').forEach(x => x.classList.remove('drag-over'));
-      dragItem = null;
-    });
-  });
-  document.querySelectorAll('#tiers .tl-shelf').forEach(shelf => {
-    shelf.addEventListener('dragover', e => {
-      if(!dragItem) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      shelf.classList.add('drag-over');
-    });
-    shelf.addEventListener('dragleave', e => {
-      if(!shelf.contains(e.relatedTarget)) shelf.classList.remove('drag-over');
-    });
-    shelf.addEventListener('drop', e => {
-      e.preventDefault();
-      shelf.classList.remove('drag-over');
-      if(!dragItem) return;
-      const item = LISTA()[dragItem.idx];
-      const novo = shelf.dataset.tier;
-      dragItem = null;
-      if(item && novo) _moverTier(item, novo, 'Arrastou');
-    });
-  });
-}
-
-/* ---------- Detalhes (dialog compartilhado #dlg) ---------- */
-function abrirDetalhe(j){
-  const m = MODOS[modo];
-  $('dTitle').textContent = j.nome;
-  let terceiro = '';
-  if(modo === 'jogos'){
-    if(j.conquistas && j.conquistas.total) terceiro = `<div><b>${j.conquistas.obtidas}/${j.conquistas.total}</b><span>conquistas</span></div>`;
-  } else if(j.ano){
-    terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
-  }
-  const generosHTML = _arr(j.generos).length
-    ? `<div class="badges">${j.generos.map(g => `<span class="bd">${esc(g)}</span>`).join('')}</div>` : '';
-  const plat = PLATAFORMA_NOME[j.plataforma] ? `<span class="bd">${PLATAFORMA_NOME[j.plataforma]}</span>` : '';
-  $('dBody').innerHTML = `
-    <div class="mrow">
-      ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
-      <div class="mside">
-        <div class="badges">
-          <span class="bd">${_tierDe(j) === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
-          ${j.status ? `<span class="bd">${esc(j.status)}</span>` : ''}
-          ${plat}
-          ${j.favorito ? `<span class="bd">⭐ Favorito</span>` : ''}
+  if(!lista.length && !total){
+    el.innerHTML = TIERS.map(t => `
+      <div class="tier t-${t}">
+        <div class="label"><div>${t}</div></div>
+        <div class="games">
+          <div class="g skeleton"></div>
+          <div class="g skeleton"></div>
+          <div class="g skeleton"></div>
         </div>
-        ${generosHTML}
-        <div class="kv">
-          <div><b>${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '—')}</b><span>${m.hl}</span></div>
-          <div><b>${j.nota > 0 ? '⭐ ' + n1(j.nota) : '—'}</b><span>nota</span></div>
-          ${terceiro}
-        </div>
-        ${(j.comentario || j.sinopse) ? `<p>${esc(j.comentario || j.sinopse)}</p>` : ''}
       </div>
-    </div>`;
-  $('dlg').showModal();
+    `).join('');
+    return;
+  }
+
+  const tiers = TIERS.map(t => linha(t, t, lista.filter(j => j.tier === t)));
+  const nr = lista.filter(j => j.tier === 'NR');
+  if(nr.length) tiers.push(linha('NR', '?', nr));
+  el.innerHTML = tiers.join('');
+  setupDragDrop();
+  setTimeout(setupCardTiltTier, 30);
 }
 
-/* ---------- Sorteio ---------- */
-function abrirRoleta(){
-  const dlg = $('roletaDlg'); if(!dlg) return;
-  const lista = _aplicarFiltrosOrdenacao();
-  if(!lista.length){ toast('Nada pra sortear com esses filtros 😢', 'warn'); return; }
-  dlg.showModal();
-  rodarRoleta(lista);
-}
-
-function _slotHTML(j){
-  const ini = j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
-  return `<span class="tl-roll-ph">${esc(ini)}</span>` +
-    (j.capa ? `<img src="${esc(j.capa)}" alt="" onerror="this.remove()">` : '');
-}
-
-function rodarRoleta(lista){
-  const slot = $('roletaSlot');
-  if(!slot || _roletaRodando || !lista.length) return;
-  _roletaRodando = true;
-  _roletaVencedor = null;
-
-  const info = $('roletaInfo'), ver = $('roletaVer'), desc = $('roletaDesc');
-  const novamente = $('roletaNovamente');
-  slot.classList.add('rolling');
-  slot.classList.remove('done');
-  info.hidden = true;
-  ver.hidden = true;
-  if(novamente) novamente.disabled = true;
-  desc.textContent = 'Sorteando…';
-
-  const total = 22 + Math.floor(Math.random() * 8);
-  const vencedor = lista[Math.floor(Math.random() * lista.length)];
-  let n = 0;
-
-  const timer = setInterval(() => {
-    slot.innerHTML = _slotHTML(lista[Math.floor(Math.random() * lista.length)]);
-    if(++n < total) return;
-    clearInterval(timer);
-    slot.innerHTML = _slotHTML(vencedor);
-    slot.classList.remove('rolling');
-    slot.classList.add('done');
-    desc.textContent = MODOS[modo].sorteio;
-    $('roletaNome').textContent = vencedor.nome;
-    const partes = [];
-    if(_tierDe(vencedor) !== 'NR') partes.push(`Tier ${vencedor.tier}`);
-    if(vencedor.nota > 0) partes.push(`nota ${n1(vencedor.nota)}`);
-    if(modo === 'jogos' && vencedor.horas > 0) partes.push(fh(vencedor.horas));
-    if(vencedor.status) partes.push(vencedor.status);
-    $('roletaMeta').textContent = partes.join(' · ');
-    info.hidden = false;
-    ver.hidden = false;
-    if(novamente) novamente.disabled = false;
-    _roletaVencedor = vencedor;
-    _roletaRodando = false;
-  }, 80);
-}
-
-function _irParaItem(item){
-  const card = document.querySelector(`#tiers .tl-card[data-id="${CSS.escape(String(item.id))}"]`);
-  if(!card){ toast('Esse item não está visível com os filtros atuais', 'warn'); return; }
-  card.scrollIntoView({ behavior:'smooth', block:'center' });
-  card.classList.remove('pulse');
-  void card.offsetWidth;
-  card.classList.add('pulse');
-  setTimeout(() => card.classList.remove('pulse'), 1800);
-}
-
-function setupRoleta(){
-  const btn = $('btnRoleta'); if(!btn) return;
-  btn.addEventListener('click', abrirRoleta);
-  const dlg = $('roletaDlg'); if(!dlg) return;
-  $('roletaFechar')?.addEventListener('click', () => dlg.close());
-  dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
-  $('roletaNovamente')?.addEventListener('click', () => rodarRoleta(_aplicarFiltrosOrdenacao()));
-  $('roletaVer')?.addEventListener('click', () => {
-    const v = _roletaVencedor;
-    dlg.close();
-    if(v) setTimeout(() => _irParaItem(v), 120);
-  });
-}
-
-/* ---------- Atalhos de teclado (admin) ---------- */
-function setupKeyboardShortcuts(){
-  let selectedId = null;
-
-  document.addEventListener('click', e => {
-    const card = e.target.closest('#tiers .tl-card');
-    if(!card || !_ehAdmin() || e.ctrlKey || e.metaKey) return;
-    document.querySelectorAll('#tiers .tl-card.is-selected').forEach(c => c.classList.remove('is-selected'));
-    card.classList.add('is-selected');
-    selectedId = card.dataset.id;
-  });
-
-  document.addEventListener('keydown', e => {
-    if(!_ehAdmin()) return;
-    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'){
-      if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-      e.preventDefault();
-      desfazerUltima();
-      return;
-    }
-    if(!selectedId) return;
-    if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-    if(e.ctrlKey || e.metaKey || e.altKey) return;
-
-    const key = e.key.toLowerCase();
-    if(key === 'escape'){
-      document.querySelectorAll('#tiers .tl-card.is-selected').forEach(c => c.classList.remove('is-selected'));
-      selectedId = null;
-      return;
-    }
-    const map = { s:'S', a:'A', b:'B', c:'C', n:'NR' };
-    if(!map[key]) return;
-    const item = LISTA().find(j => String(j.id) === selectedId);
-    if(!item) return;
-    e.preventDefault();
-    if(_moverTier(item, map[key], 'Teclado')){
-      setTimeout(() => {
-        const card = document.querySelector(`#tiers .tl-card[data-id="${CSS.escape(selectedId)}"]`);
-        if(card) card.classList.add('is-selected');
-      }, 60);
-    }
-  });
-}
-
-/* ---------- Favoritar (botão direito, admin) ---------- */
-function setupFavoritoContext(){
-  document.addEventListener('contextmenu', e => {
-    const card = e.target.closest('#tiers .tl-card');
-    if(!card || !_ehAdmin()) return;
-    e.preventDefault();
-    const item = LISTA().find(j => String(j.id) === card.dataset.id);
-    if(!item) return;
-    item.favorito = !item.favorito;
-    card.classList.toggle('favorito', item.favorito);
-    toast(item.favorito ? `⭐ "${item.nome}" favoritado` : `"${item.nome}" desfavoritado`, 'ok');
-    _salvarBiblioteca(`${item.favorito ? 'Favoritou' : 'Desfavoritou'} "${item.nome}"`);
-  });
-}
-
-/* ---------- Setup geral ---------- */
 function setupTierList(){
-  if(setupTierList._ok) return;
-  setupTierList._ok = true;
-
-  $('modo')?.addEventListener('click', e => {
-    const b = e.target.closest('button');
-    if(!b || b.dataset.m === modo) return;
-    aplicarModo(b.dataset.m);
-  });
-
-  $('q')?.addEventListener('input', desenhar);
-
-  const sel = $('sortSelect');
-  if(sel){
-    try{
+  const sel = $('sortSelect'); if(sel && !sel.dataset.bound){
+    sel.dataset.bound = '1';
+    try {
       const salvo = localStorage.getItem('tier:sort');
-      if(salvo && sel.querySelector(`option[value="${salvo}"]`)){ sortMode = salvo; sel.value = salvo; }
-    }catch(e){}
+      if(salvo) { sortMode = salvo; sel.value = salvo; }
+    } catch(e){}
     sel.addEventListener('change', () => {
       sortMode = sel.value || 'nota';
-      try{ localStorage.setItem('tier:sort', sortMode); }catch(e){}
+      try { localStorage.setItem('tier:sort', sortMode); } catch(e){}
       desenhar();
     });
   }
 
-  $('chips')?.addEventListener('click', e => {
-    const b = e.target.closest('.tl-chip'); if(!b) return;
-    if(b.dataset.fav){ favoritosFiltro = !favoritosFiltro; }
-    else {
-      const s = b.dataset.s;
-      if(s === 'Todos') filtro = [];
-      else {
-        filtro = _arr(filtro).slice();
-        const idx = filtro.indexOf(s);
-        if(idx >= 0) filtro.splice(idx, 1); else filtro.push(s);
-      }
-    }
-    renderChips();
-    desenhar();
-  });
-
-  $('generoChips')?.addEventListener('click', e => {
-    const b = e.target.closest('.tl-chip'); if(!b) return;
-    const g = b.dataset.gen;
-    if(g === 'all') generoFiltro = [];
-    else {
-      generoFiltro = _arr(generoFiltro).slice();
-      const idx = generoFiltro.indexOf(g);
-      if(idx >= 0) generoFiltro.splice(idx, 1); else generoFiltro.push(g);
-    }
-    renderGeneroChips();
-    desenhar();
-  });
-
-  $('stats')?.addEventListener('click', e => {
-    const b = e.target.closest('[data-go]'); if(!b) return;
-    document.getElementById('tl-tier-' + b.dataset.go)?.scrollIntoView({ behavior:'smooth', block:'start' });
-  });
-
-  $('tiers')?.addEventListener('click', e => {
-    if(e.target.closest('[data-act="limpar"]')){ limparFiltros(); return; }
-    const b = e.target.closest('.tl-card'); if(!b) return;
-    if(b.classList.contains('dragging') || b.classList.contains('is-selected')) return;
-    const j = LISTA()[+b.dataset.i];
-    if(j) abrirDetalhe(j);
-  });
-
-  setupRoleta();
-  setupKeyboardShortcuts();
-  setupFavoritoContext();
+  const wrap = $('generoChips'); if(wrap && !wrap.dataset.bound){
+    wrap.dataset.bound = '1';
+    wrap.addEventListener('click', e => {
+      const b = e.target.closest('.gen-chip'); if(!b) return;
+      generoFiltro = b.dataset.gen || 'all';
+      renderGeneroChips();
+      desenhar();
+    });
+  }
 }
 window.setupTierList = setupTierList;
 
+/* ---------- Jogo ao vivo (chamado pelo twitch.js) ---------- */
 window.setJogoAoVivo = function(nome){
   _jogoAoVivoNome = nome || null;
-  if(document.getElementById('sec-tierlist')?.classList.contains('active') || document.getElementById('sec-tierlist')?.classList.contains('ativo')) desenhar();
+  if(document.getElementById('sec-tierlist')?.classList.contains('ativo')){
+    desenhar();
+  }
 };
 
 /* ============================================================
@@ -1448,28 +1247,6 @@ function renderVotacao(){
   const infoTop = $('votoInfoTop');
   const statusEl = $('votoStatus');
   const countdownEl = $('votoCountdown');
-
-  const semOpcoes = !VOTOS_DADOS.length && votoStatus === 'ok';
-
-  const proxHalf = document.querySelector('.jogos-card .jogo-half:nth-child(2)');
-  if(proxHalf) proxHalf.style.display = semOpcoes ? 'none' : '';
-
-  if(semOpcoes){
-    if(infoTop) infoTop.style.display = 'none';
-    destBox.innerHTML = '';
-    listaBox.innerHTML = `
-      <div class="voto-vazio">
-        <span class="vv-emoji">🗳️</span>
-        <b>Nenhuma votação rolando agora</b>
-        <p>A Soso ainda não abriu uma nova votação. Volta mais tarde ou passa no Discord pra ficar por dentro 💜</p>
-        <a class="btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">💬 Falar no Discord</a>
-      </div>`;
-    if(proxCover) proxCover.style.display = 'none';
-    if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
-    if($('proxNome')) $('proxNome').textContent = 'Sem votação';
-    if($('proxInfo')) $('proxInfo').textContent = 'Aguardando a Soso abrir a próxima votação 💜';
-    return;
-  }
 
   const countdown = tempoRestante(VOTOS_FECHAMENTO);
   const fechada = countdown && countdown.encerrado;
@@ -1672,9 +1449,11 @@ function setupSugForm(){
       const sel = $('sugTipo'); if(sel) sel.value = sugTipoAtual;
     });
   });
+
   const ta = $('sugTexto');
   const counter = $('sugCounter');
   const btn = $('sugBtn');
+
   function atualizarContador(){
     if(!counter || !ta) return;
     const n = ta.value.length;
@@ -1722,14 +1501,8 @@ async function enviarSugestao(){
       if(success){ success.hidden = false; setTimeout(() => { success.hidden = true; }, 6000); }
       toast('Ideia enviada! Obrigado 💜', 'ok');
       carregarUltimasIdeias();
-    } else if(res.status === 400 && dados && dados.error){
-      toast(dados.error, 'warn');
-      $('sugTexto').classList.add('erro');
-    } else if(res.status === 429){
-      toast((dados && dados.error) || 'Calma! Aguarde alguns segundos.', 'warn');
-    } else {
-      toast((dados && dados.error) || 'Não consegui enviar agora.', 'erro');
-    }
+    } else if(res.status === 429){ toast('Calma! Aguarde alguns segundos.', 'warn'); }
+    else { toast('Não consegui enviar agora.', 'erro'); }
   }catch(e){ toast('Sem conexão com o servidor.', 'erro'); }
   finally { setTimeout(() => { const txt = ($('sugTexto')?.value || '').trim(); if(btn) btn.disabled = txt.length < 3; }, 100); }
 }
@@ -1751,60 +1524,21 @@ function tipoInfoSug(tipo){
   if(t.includes('feedback')) return { ic: '💬', label: 'feedback' };
   return { ic: '💡', label: 'sugestao' };
 }
-
 function renderSirFiltros(itens){
   const wrap = $('sirFiltros'); if(!wrap) return;
-
-  const tiposDisponiveis = { 'all': true, 'sugestao': false, 'jogo': false, 'feedback': false, 'bug': false };
+  const tipos = { 'all': true, 'sugestao': false, 'jogo': false, 'feedback': false, 'bug': false };
   itens.forEach(i => {
     const t = tipoInfoSug(i.tipo).label;
-    if(tiposDisponiveis[t] !== undefined) tiposDisponiveis[t] = true;
+    if(tipos[t] !== undefined) tipos[t] = true;
   });
-
-  const statCount = { nova:0, analise:0, aceita:0, recusada:0, concluido:0 };
-  itens.forEach(i => {
-    const st = i.status || 'nova';
-    if(statCount[st] !== undefined) statCount[st]++;
-  });
-
-  const statusOpts = [
-    { id:'all',       ic:'·',  label:'Todas' },
-    { id:'nova',      ic:'🟡', label:'Nova' },
-    { id:'analise',   ic:'👀', label:'Em análise' },
-    { id:'aceita',    ic:'✅', label:'Aceita' },
-    { id:'recusada',  ic:'❌', label:'Recusada' },
-    { id:'concluido', ic:'🏁', label:'Concluída' }
-  ];
-
-  const tipoOpts = [
-    { id:'all',      label:'Todos' },
-    { id:'sugestao', label:'💡' },
-    { id:'jogo',     label:'🎮' },
-    { id:'feedback', label:'💬' },
-    { id:'bug',      label:'🐛' }
-  ].filter(o => o.id === 'all' || tiposDisponiveis[o.id]);
-
-  wrap.innerHTML = `
-    <div class="sir-filtros-grupo">
-      ${tipoOpts.map(o => `
-        <button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}">
-          ${o.label}
-        </button>
-      `).join('')}
-    </div>
-    <div class="sir-filtros-grupo sir-filtros-status">
-      ${statusOpts.filter(o => o.id === 'all' || statCount[o.id] > 0).map(o => {
-        const n = o.id === 'all' ? itens.length : statCount[o.id];
-        return `
-          <button type="button" class="sir-chip sir-status-chip ${sirStatusFiltro === o.id ? 'on' : ''}" data-status="${o.id}">
-            <span class="sic-ic">${o.ic}</span>
-            <span class="sic-lb">${o.label}</span>
-            <b class="sic-count">${n}</b>
-          </button>
-        `;
-      }).join('')}
-    </div>
-  `;
+  const opts = [
+    { id: 'all', label: 'Todas' },
+    { id: 'sugestao', label: '💡' },
+    { id: 'jogo', label: '🎮' },
+    { id: 'feedback', label: '💬' },
+    { id: 'bug', label: '🐛' }
+  ].filter(o => o.id === 'all' || tipos[o.id]);
+  wrap.innerHTML = opts.map(o => `<button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}">${o.label}</button>`).join('');
 }
 
 async function carregarUltimasIdeias(){
@@ -1820,12 +1554,9 @@ async function carregarUltimasIdeias(){
       lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhuma ideia ainda. Seja a primeira 💜</small></div>`;
       return;
     }
-    let filtrados = itens;
-    if(sirFiltro !== 'all') filtrados = filtrados.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
-    if(sirStatusFiltro !== 'all') filtrados = filtrados.filter(i => (i.status || 'nova') === sirStatusFiltro);
-
+    const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
     if(!filtrados.length){
-      lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada com esse filtro</small></div>`;
+      lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada nesse filtro</small></div>`;
       return;
     }
     lista.innerHTML = filtrados.slice(0, 20).map(i => {
@@ -1851,18 +1582,13 @@ async function carregarUltimasIdeias(){
     lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Sugestões aparecem aqui após o primeiro envio 💜</small></div>`;
   }
 }
-
 function setupSirFiltros(){
   const wrap = $('sirFiltros'); if(!wrap || wrap.dataset.bound) return;
   wrap.dataset.bound = '1';
   wrap.addEventListener('click', e => {
-    const btnTipo = e.target.closest('.sir-chip[data-filtro]');
-    const btnStatus = e.target.closest('.sir-chip[data-status]');
-    if(btnTipo){
-      sirFiltro = btnTipo.dataset.filtro || 'all';
-    } else if(btnStatus){
-      sirStatusFiltro = btnStatus.dataset.status || 'all';
-    } else return;
+    const b = e.target.closest('.sir-chip'); if(!b) return;
+    wrap.querySelectorAll('.sir-chip').forEach(c => c.classList.toggle('on', c === b));
+    sirFiltro = b.dataset.filtro || 'all';
     carregarUltimasIdeias();
   });
 }
@@ -1999,33 +1725,17 @@ function setupBurger(){
 function setupFloatingLive(){
   const btn = document.getElementById('floatLiveBtn');
   if(!btn) return;
-
   window.addEventListener('scroll', () => {
     if(!ultVivo) { btn.classList.remove('show'); return; }
     const player = document.querySelector('.twitch-player-box');
-
-    if(!player || player.offsetParent === null) {
-      btn.classList.remove('show');
-      return;
-    }
-
+    if(!player) { btn.classList.remove('show'); return; }
     const r = player.getBoundingClientRect();
     if(r.bottom < 100) btn.classList.add('show');
     else btn.classList.remove('show');
   }, { passive: true });
-
   btn.addEventListener('click', () => {
     const player = document.querySelector('.twitch-player-box');
-
-    if(!player || player.offsetParent === null) {
-      mudarAba('inicio');
-      setTimeout(() => {
-        const p = document.querySelector('.twitch-player-box');
-        if(p) p.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
-    } else {
-      player.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    if(player) player.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 }
 
@@ -2054,20 +1764,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   iniciarHall();
   renderOuvindo();
 
-  /* ========================================================
-     SETUP — estado inicial + boot da cena 3D
-     O setup.js se auto-inicializa via DOMContentLoaded.
-     Aqui apenas garantimos o estado "loading" dos sonhos e,
-     como fallback, chamamos initSetup() se ainda não rodou.
-     ======================================================== */
-  if (typeof renderSonhos === 'function') { try { renderSonhos(); } catch(e){} }
-  if (typeof renderApoiadores === 'function') { try { renderApoiadores(); } catch(e){} }
-
-  if (!window.__setupIniciado && typeof initSetup === 'function') {
-    window.__setupIniciado = true;
-    initSetup();
-  }
-
+  // O setup agora é tratado inteiramente pelo setup.js, não precisamos mais inicializar o Three.js aqui.
+  
   setupSugForm();
   setupSirFiltros();
   setupSugTabs();
@@ -2090,7 +1788,60 @@ window.addEventListener('DOMContentLoaded', async () => {
     if(d){ d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
   }
 
+  const modoEl = $('modo');
+  if(modoEl) modoEl.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if(!b || b.dataset.m === modo) return;
+    aplicarModo(b.dataset.m);
+  });
+  const chipsEl = $('chips');
+  if(chipsEl) chipsEl.addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if(!b) return;
+    filtro = b.dataset.s;
+    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.s === filtro));
+    desenhar();
+  });
+  const qEl = $('q');
+  if(qEl) qEl.addEventListener('input', desenhar);
+
   try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
+
+  const tiersEl = $('tiers');
+  if(tiersEl) tiersEl.addEventListener('click', e => {
+    const b = e.target.closest('.g'); if(!b) return;
+    if(b.classList.contains('dragging')) return;
+    const m = MODOS[modo];
+    const j = LISTA()[+b.dataset.i];
+    $('dTitle').textContent = j.nome;
+    let terceiro = '';
+    if (modo === 'jogos') {
+      if (j.conquistas && j.conquistas.total) terceiro = `<div><b>${j.conquistas.obtidas}/${j.conquistas.total}</b><span>conquistas</span></div>`;
+    } else {
+      if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
+    }
+    const generosHTML = (j.generos && j.generos.length)
+      ? `<div class="badges">${j.generos.map(g => `<span class="bd">${esc(g)}</span>`).join('')}</div>`
+      : '';
+    $('dBody').innerHTML = `
+      <div class="mrow">
+        ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
+        <div class="mside">
+          <div class="badges">
+            <span class="bd">${j.tier === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
+            <span class="bd">${esc(j.status)}</span>
+          </div>
+          ${generosHTML}
+          <div class="kv">
+            <div><b>${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '—')}</b><span>${m.hl}</span></div>
+            <div><b>${j.nota > 0 ? '⭐ ' + n1(j.nota) : '—'}</b><span>nota</span></div>
+            ${terceiro}
+          </div>
+          ${(j.comentario || j.sinopse) ? `<p>${esc(j.comentario || j.sinopse)}</p>` : ''}
+        </div>
+      </div>
+    `;
+    $('dlg').showModal();
+  });
 
   const dlgEl = $('dlg');
   if(dlgEl){

@@ -1,102 +1,373 @@
 /* ============================================================
-   SETUP — 3D INTERATIVO AAA
+   SETUP — MINI GAME 2D ISOMÉTRICO (TOUR DO LUKZIN)
    ============================================================ */
-.setup-controls{display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
-.setup-360-wrap {
-  width: 100%; height: 75vh; min-height: 550px; max-height: 850px;
-  margin-bottom: 30px; border-radius: 20px; overflow: hidden;
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 20px 50px -10px rgba(10, 5, 17, 0.9), 0 0 35px rgba(168, 85, 247, 0.2);
-  position: relative; background: radial-gradient(circle at 50% 40%, #1c0e35 0%, #07030f 100%);
-}
-#setup360Container { width: 100%; height: 100%; outline: none; cursor: grab; }
-#setup360Container:active { cursor: grabbing; }
 
-/* Pins (pontinhos clicáveis) refinados */
-@keyframes pulseHotspot {
-  0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.8); }
-  70% { box-shadow: 0 0 0 15px rgba(168, 85, 247, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+.setup-game-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
 }
-.s3d-pins{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
-.s3d-pin{
-  position:absolute;left:0;top:0;width:36px;height:36px;margin:-18px 0 0 -18px;padding:0;
-  display:grid;place-items:center;font-size:1rem;line-height:1;color:#fff;cursor:pointer;
-  background:rgba(17, 9, 31, 0.85);border:2px solid var(--purple-2);border-radius:50%;
-  box-shadow:0 0 15px rgba(168,85,247,.7);
-  pointer-events:auto;opacity:0;visibility:hidden;
-  transition:opacity .25s, visibility .25s, background .2s, border-color .2s, transform .2s;
-  will-change:transform;animation:pulseHotspot 2.5s infinite;
-}
-.s3d-pin.on{opacity:1;visibility:visible}
-.s3d-pin:hover,.s3d-pin:focus-visible{background:var(--purple-3);border-color:#fff;transform:scale(1.15);animation:none;box-shadow:0 0 25px rgba(168,85,247,1);z-index:5;outline:none}
-.s3d-pin-label{
-  position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
-  white-space:nowrap;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.7rem;line-height:1;
-  padding:6px 10px;border-radius:99px;background:rgba(10,5,17,.95);border:1px solid var(--line-2);
-  opacity:0;pointer-events:none;transition:opacity .2s;box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-}
-.s3d-pin:hover .s3d-pin-label,.s3d-pin:focus-visible .s3d-pin-label{opacity:1}
 
-/* HUD */
-.s3d-hint{
-  position:absolute;left:16px;bottom:16px;z-index:3;pointer-events:none;
-  max-width:calc(100% - 190px);font-size:.75rem;font-weight:600;color:#e2d9f3;line-height:1.4;
-  padding:8px 14px;border-radius:12px;background:rgba(10,5,17,.8);border:1px solid var(--line);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition: background .3s, color .3s;
+.setup-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.s3d-ctrls{position:absolute;right:16px;bottom:16px;z-index:3;display:flex;gap:6px}
-.s3d-btn{
-  width:38px;height:38px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:1rem;font-weight:800;color:#fff;
-  background:rgba(10,5,17,.8);border:1px solid var(--line-2);transition:.2s;
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-}
-.s3d-btn:hover{background:var(--purple-3);border-color:var(--purple-2);transform:translateY(-1px)}
 
-/* Botão de voltar (Sair do PC) */
-.s3d-back{
-  position:absolute;left:16px;top:16px;z-index:100;display:none;align-items:center;gap:8px;cursor:pointer;
-  font-family:inherit;font-size:.85rem;font-weight:700;color:#fff;padding:10px 18px;border-radius:99px;
-  background:linear-gradient(135deg,var(--purple-2),var(--purple-3));border:0;
-  box-shadow:0 6px 16px -4px rgba(168,85,247,.5);transition:.2s;
-}
-.s3d-back:hover{transform:translateY(-1px);filter:brightness(1.1)}
-.setup-360-wrap[data-mode="pc"] .s3d-back{display:inline-flex}
-.s3d-fallback{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--mute);font-size:.9rem}
-
-/* Painel de LED */
-.s3d-led-panel {
-  position: absolute; right: 16px; top: 16px; z-index: 3;
-  background: rgba(10,5,17,.8); border: 1px solid var(--line-2); border-radius: 12px;
-  padding: 6px; display: flex; gap: 4px; backdrop-filter: blur(10px);
-}
-.s3d-led-color {
-  width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent;
+.btn-tour {
+  background: linear-gradient(135deg, var(--purple-2), var(--purple-3));
+  color: #fff;
+  padding: 12px 24px;
+  font-size: .95rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px -6px rgba(168,85,247,0.5);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   transition: transform 0.2s;
 }
-.s3d-led-color:hover { transform: scale(1.15); border-color: #fff; }
-.s3d-led-color[data-color="purple"] { background: #a855f7; }
-.s3d-led-color[data-color="pink"] { background: #ec4899; }
-.s3d-led-color[data-color="cyan"] { background: #06b6d4; }
-.s3d-led-color[data-color="gold"] { background: #ffd166; }
-.s3d-led-color[data-color="off"] { background: #333; }
+.btn-tour:hover { transform: translateY(-2px); }
+.play-icon { font-size: 0.8rem; }
 
-.s3d-topbar {
-  position: absolute; top: 16px; left: 16px; right: 16px; z-index: 10;
-  display: flex; gap: 8px; align-items: center; flex-wrap: wrap; pointer-events: none;
-}
-.s3d-topbar > * { pointer-events: auto; }
-.s3d-action-btn {
-  background: rgba(10,5,17,0.85); border: 1px solid var(--line-2); color: #fff;
-  padding: 7px 12px; border-radius: 99px; font-family: inherit; font-size: .75rem; font-weight: 700;
-  cursor: pointer; backdrop-filter: blur(8px); transition: .2s;
-}
-.s3d-action-btn:hover { background: var(--purple-3); border-color: var(--purple-2); }
-
-@media (max-width:600px){
-  .s3d-hint{max-width:calc(100% - 28px);bottom:62px;font-size:.7rem}
-  .s3d-pin{width:32px;height:32px;margin:-16px 0 0 -16px;font-size:.9rem}
-  .s3d-topbar{flex-wrap:wrap}
+.setup-progress {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--purple-2);
+  background: rgba(168,85,247,0.1);
+  padding: 6px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--line-2);
 }
 
-/* ... (O restante do CSS de Sonhos e Apoiadores pode ficar igual ao seu anterior) ... */
+/* --- CENA --- */
+.setup-scene-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  min-height: 450px;
+  background: radial-gradient(circle at 50% 30%, rgba(168,85,247,0.15), #0a0511 80%);
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.8), 0 20px 40px -10px rgba(0,0,0,0.6);
+  perspective: 1000px;
+}
+
+.setup-scene {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* Chão e Parede Isométricos */
+.scene-wall {
+  position: absolute;
+  top: -10%; left: -10%; right: -10%; height: 60%;
+  background: linear-gradient(180deg, #1a1035, #0f0820);
+  border-bottom: 2px solid rgba(168,85,247,0.2);
+}
+.scene-floor {
+  position: absolute;
+  top: 50%; left: -20%; right: -20%; bottom: -20%;
+  background: repeating-linear-gradient(45deg, #150b26 0 2px, #1a1030 2px 4px);
+  transform: rotateX(60deg);
+  box-shadow: inset 0 100px 100px -50px rgba(168,85,247,0.15);
+  border-top: 2px solid rgba(168,85,247,0.3);
+}
+
+/* Objetos base */
+.s-object {
+  position: absolute;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 5;
+}
+.s-object:hover {
+  transform: scale(1.05) translateY(-5px);
+  z-index: 10;
+}
+
+/* Hotspot (Pontinho brilhante) */
+.s-hotspot {
+  position: absolute;
+  top: -10px; right: -10px;
+  width: 24px; height: 24px;
+  background: var(--purple-2);
+  color: #fff;
+  font-weight: 800;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  box-shadow: 0 0 15px var(--purple-2), inset 0 0 5px #fff;
+  animation: pulseHotspot 2s infinite;
+  z-index: 10;
+}
+@keyframes pulseHotspot {
+  0% { box-shadow: 0 0 0 0 rgba(168,85,247,0.7); }
+  70% { box-shadow: 0 0 0 12px rgba(168,85,247,0); }
+  100% { box-shadow: 0 0 0 0 rgba(168,85,247,0); }
+}
+
+/* --- MESA --- */
+.scene-desk {
+  position: absolute;
+  top: 45%; left: 15%; width: 45%; height: 12%;
+  background: linear-gradient(180deg, #2a1a4d, #1a1035);
+  border-radius: 4px;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+  border-top: 3px solid #4a3660;
+  z-index: 2;
+}
+.scene-desk::before {
+  content: ''; position: absolute; top: 100%; left: 5%; width: 10px; height: 120px; background: #1a1035; border-radius: 0 0 4px 4px; box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+}
+.scene-desk::after {
+  content: ''; position: absolute; top: 100%; right: 5%; width: 10px; height: 120px; background: #1a1035; border-radius: 0 0 4px 4px; box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+}
+
+/* Monitor */
+.obj-monitor {
+  top: -80px; left: 25%;
+  width: 140px; height: 85px;
+}
+.m-screen {
+  width: 100%; height: 100%;
+  background: #0f0820;
+  border: 4px solid #2a1a4d;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(125,211,252,0.2);
+}
+.m-screen::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(45deg, transparent 40%, rgba(125,211,252,0.1) 45%, transparent 50%);
+}
+.m-base {
+  position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+  width: 40px; height: 20px; background: #2a1a4d; border-radius: 0 0 4px 4px;
+}
+
+/* Teclado */
+.obj-keyboard {
+  bottom: 20px; left: 20%;
+  width: 100px; height: 30px;
+  background: #1d1433;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+}
+.obj-keyboard::before {
+  content: ''; position: absolute; inset: 4px;
+  background: repeating-linear-gradient(90deg, #2a1a4d 0 6px, transparent 6px 8px);
+}
+
+/* Mouse */
+.obj-mouse {
+  bottom: 20px; left: 50%;
+  width: 25px; height: 35px;
+  background: #1d1433;
+  border-radius: 12px 12px 8px 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+}
+
+/* Microfone */
+.obj-mic {
+  bottom: 50px; right: 15%;
+  width: 15px; height: 60px;
+  background: #e0d9ec;
+  border-radius: 10px;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+}
+.obj-mic::before {
+  content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+  width: 25px; height: 25px; background: #1d1433; border-radius: 50%; border: 2px solid #e0d9ec;
+}
+
+/* --- GABINETE --- */
+.obj-pc {
+  bottom: 10%; right: 10%;
+  width: 120px; height: 200px;
+  background: #e0d9ec;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.7), inset -10px 0 20px rgba(0,0,0,0.1);
+}
+.pc-glass {
+  position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px;
+  background: rgba(15, 8, 32, 0.9);
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.2);
+  overflow: hidden;
+}
+.pc-fans {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px;
+}
+.pc-fans span {
+  display: block; width: 100%; height: 35px;
+  border-radius: 4px;
+  background: radial-gradient(circle, rgba(168,85,247,0.8) 0%, transparent 70%);
+  border: 1px solid rgba(168,85,247,0.5);
+  animation: fanGlow 2s infinite alternate;
+}
+.pc-fans span:nth-child(2) { animation-delay: 0.5s; }
+.pc-fans span:nth-child(3) { animation-delay: 1s; }
+@keyframes fanGlow {
+  0% { box-shadow: 0 0 5px rgba(168,85,247,0.5); }
+  100% { box-shadow: 0 0 15px rgba(168,85,247,1); }
+}
+
+/* --- CADEIRA --- */
+.obj-chair {
+  bottom: -20px; left: 45%;
+  width: 80px; height: 120px;
+  background: #1a1035;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+}
+.obj-chair::before {
+  content: ''; position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
+  width: 60px; height: 10px; background: #2a1a4d; border-radius: 50%;
+}
+
+/* --- LUKZIN (PERSONAGEM) --- */
+.luk-character {
+  position: absolute;
+  top: 60%; left: 50%;
+  width: 40px; height: 70px;
+  transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 20;
+  display: flex; flex-direction: column; align-items: center;
+  pointer-events: none; /* Deixa os cliques passarem para os objetos embaixo */
+}
+
+.luk-shadow {
+  width: 30px; height: 10px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  position: absolute; bottom: -5px;
+  filter: blur(2px);
+}
+
+.luk-avatar {
+  position: relative;
+  width: 100%; height: 100%;
+  animation: lukIdle 2s infinite ease-in-out;
+}
+@keyframes lukIdle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.luk-character.walking .luk-avatar {
+  animation: lukWalk 0.3s infinite alternate;
+}
+@keyframes lukWalk {
+  from { transform: translateY(0) rotate(-5deg); }
+  to { transform: translateY(-5px) rotate(5deg); }
+}
+
+.luk-head {
+  width: 32px; height: 32px;
+  background: #ffd166; /* Tom de pele/emoji */
+  border-radius: 50%;
+  margin: 0 auto;
+  display: grid; place-items: center;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+  border: 2px solid #fff;
+  position: relative; z-index: 2;
+}
+.luk-body {
+  width: 24px; height: 30px;
+  background: var(--purple);
+  border-radius: 8px 8px 4px 4px;
+  margin: -5px auto 0;
+  border: 2px solid #fff;
+  position: relative; z-index: 1;
+}
+
+/* --- CAIXA DE DIÁLOGO --- */
+.dialogue-box {
+  display: flex;
+  gap: 16px;
+  background: rgba(22, 13, 40, 0.95);
+  border: 2px solid var(--purple);
+  border-radius: 16px;
+  padding: 20px;
+  position: relative;
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.6), inset 0 0 20px rgba(168,85,247,0.1);
+  backdrop-filter: blur(10px);
+}
+
+.dlg-avatar {
+  width: 50px; height: 50px;
+  background: linear-gradient(135deg, var(--purple-2), var(--purple-3));
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 1.8rem;
+  flex: none;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.dlg-content { flex: 1; }
+
+.dlg-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--white);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dlg-badge {
+  background: var(--purple);
+  color: #fff;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dlg-text {
+  color: #ddd5eb;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  min-height: 40px;
+}
+
+.dlg-continue {
+  position: absolute;
+  bottom: 10px; right: 16px;
+  color: var(--purple-2);
+  font-size: 0.8rem;
+  animation: blink 1s infinite;
+  cursor: pointer;
+}
+@keyframes blink { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+/* Responsivo para o Setup */
+@media (max-width: 768px) {
+  .setup-scene-wrap { min-height: 300px; }
+  .obj-monitor { width: 100px; height: 60px; top: -60px; }
+  .obj-pc { width: 80px; height: 140px; right: 5%; }
+  .obj-keyboard { width: 70px; height: 20px; }
+  .obj-chair { width: 60px; height: 80px; left: 50%; }
+  .luk-character { width: 30px; height: 50px; }
+  .luk-head { width: 24px; height: 24px; font-size: 0.9rem; }
+  .luk-body { width: 18px; height: 20px; }
+  .dialogue-box { padding: 14px; gap: 10px; }
+  .dlg-avatar { width: 40px; height: 40px; font-size: 1.4rem; }
+  .dlg-text { font-size: 0.82rem; }
+}
