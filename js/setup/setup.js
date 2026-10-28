@@ -1,37 +1,67 @@
 /* ============================================================
-   SETUP — MINI GAME 2D ISOMÉTRICO (TOUR DO LUKZIN)
+   SETUP — MINI GAME 2D (TOUR DO LUKZIN)
    ============================================================ */
 
 const SETUP_DATA = {
-  gabinete: {
-    title: 'Gabinete Risemode Aquarium Branco',
-    text: 'O cérebro do setup! Um Risemode Aquarium branco, com vidro na frente e na lateral pra mostrar todo o RGB. Dentro dele tem um Ryzen 9 5900X, 48GB de RAM, uma RX 9060 XT, SSD de 2TB e uma fonte Corsair RM800W. É uma nave! 🚀',
-    x: '75%', y: '55%'
+  estante: {
+    title: 'Estante de Zerados 🏆',
+    text: 'O hall da fama! Temos o chapéu do Red Dead Redemption 2, a pulseira do Detroit, o Homem-Aranha e a Clove do Valorant. Só jogos que marcaram história!',
+    x: '22%', y: '75%'
+  },
+  quadro: {
+    title: 'Quadro do Gatinho 🐱',
+    text: 'A Soso ama gatos! Esse quadro fofo aí dá toda a energia boa pro cantinho.',
+    x: '50%', y: '70%'
+  },
+  webcam: {
+    title: 'Webcam (iPhone 11)',
+    text: 'A Soso usa um iPhone 11 como webcam! A qualidade é simplesmente insana, dá pra ver cada detalhe da live. 📱',
+    x: '50%', y: '75%'
   },
   monitor: {
     title: 'Monitor AOC 240Hz',
-    text: 'Aqui é onde a mágica acontece! Um AOC de 240Hz que deixa a gameplay super lisa. Perfeito pra não perder nenhum frame nos jogos mais rápidos. 🎮',
-    x: '35%', y: '40%'
+    text: 'Aqui é onde a mágica acontece! Um AOC de 240Hz que deixa a gameplay super lisa. E não é que ela tá jogando Stardew Valley agora? 🎮',
+    x: '50%', y: '75%'
+  },
+  microfone: {
+    title: 'Microfone FIFINE AM8',
+    text: 'A voz doce da Soso passa por aqui! Um FIFINE AM8 branco, super profissional, pra galera ouvir cada detalhe e risada. 🎙️',
+    x: '38%', y: '75%'
+  },
+  garrafa: {
+    title: 'Garrafa Stanley Branca',
+    text: 'A famosa Stanley! Água gelada pra aguentar as lives longas. E branca, pra combinar com o setup. 🥤',
+    x: '32%', y: '75%'
   },
   teclado: {
     title: 'Teclado AULA H68',
     text: 'O barulhinho delicioso das teclas! Um AULA H68, super compacto e estiloso, perfeito pra digitar e jogar. ⌨️',
-    x: '30%', y: '60%'
+    x: '45%', y: '85%'
   },
   mouse: {
-    title: 'Mouse Logitech G502 X Superlight RGB',
+    title: 'Mouse Logitech G502 X',
     text: 'Leve como uma pena e preciso como um laser. O G502 X Superlight é o companheiro perfeito pra qualquer headshot. 🖱️',
-    x: '45%', y: '65%'
+    x: '57%', y: '85%'
   },
-  microfone: {
-    title: 'Microfone FIFINE AM8 Branco',
-    text: 'A voz doce da Soso passa por aqui! Um FIFINE AM8 branco, super profissional, pra galera ouvir cada detalhe e cada risada. 🎙️',
-    x: '20%', y: '50%'
+  headset: {
+    title: 'Headset Astro A50',
+    text: 'O famoso Astro A50! Som imersivo pra ouvir até o passo do inimigo mais longe. 🎧',
+    x: '65%', y: '75%'
+  },
+  gabinete: {
+    title: 'Gabinete Risemode Aquarium',
+    text: 'O coração da máquina! Um Risemode Aquarium branco. Dentro dele tem um Ryzen 9 5900X, 48GB de RAM, RX 9060 XT, SSD 2TB e fonte Corsair RM800W. 🚀',
+    x: '72%', y: '75%'
+  },
+  pantufas: {
+    title: 'Pantufas de Coelho Roxas',
+    text: 'O item mais importante do setup! Conforto máximo pros pés enquanto joga. 🐰',
+    x: '30%', y: '88%'
   },
   cadeira: {
     title: 'Cadeira XT Racer',
     text: 'A base de tudo! Uma XT Racer super confortável pra aguentar aquelas lives longas de 8 horas sem doer as costas. 🪑',
-    x: '50%', y: '65%'
+    x: '58%', y: '85%'
   }
 };
 
@@ -39,8 +69,7 @@ let tourAtivo = false;
 let tourIndex = 0;
 let tourTimer = null;
 let typeTimer = null;
-let lukPos = { x: '50%', y: '60%' };
-const CHAVES_TOUR = ['gabinete', 'monitor', 'teclado', 'mouse', 'microfone', 'cadeira'];
+const CHAVES_TOUR = ['gabinete', 'monitor', 'teclado', 'mouse', 'microfone', 'garrafa', 'headset', 'estante', 'pantufas', 'cadeira'];
 
 function moverLuk(x, y) {
   const char = document.getElementById('lukChar');
@@ -48,13 +77,12 @@ function moverLuk(x, y) {
   
   char.classList.add('walking');
   
-  // Inverte a direção do boneco dependendo de onde ele vai
   const currentX = parseFloat(char.style.left || '50');
   const targetX = parseFloat(x);
   if (targetX < currentX) {
-    char.style.transform = 'scaleX(-1)';
+    char.querySelector('.luk-avatar').style.transform = 'scaleX(-1)';
   } else {
-    char.style.transform = 'scaleX(1)';
+    char.querySelector('.luk-avatar').style.transform = 'scaleX(1)';
   }
 
   char.style.left = x;
@@ -82,11 +110,11 @@ function digitarTexto(texto) {
       clearInterval(typeTimer);
       el.innerHTML = texto;
     }
-  }, 25);
+  }, 20);
 }
 
 function irParaItem(itemId) {
-  if (tourAtivo) pararTour(); // Para o tour automático se o usuário clicar manualmente
+  if (tourAtivo) pararTour();
   
   const item = SETUP_DATA[itemId];
   if (!item) return;
@@ -94,8 +122,8 @@ function irParaItem(itemId) {
   moverLuk(item.x, item.y);
   
   setTimeout(() => {
-    digitarTexto(`<strong>${item.title}</strong><br><br>${item.text}`);
-  }, 600); // Espera o boneco andar um pouco antes de falar
+    digitarTexto(`<strong style="color:var(--purple-2)">${item.title}</strong><br><br>${item.text}`);
+  }, 700);
 }
 
 function iniciarTour() {
@@ -120,11 +148,10 @@ function iniciarTour() {
 function executarPassoDoTour() {
   if (!tourAtivo) return;
   if (tourIndex >= CHAVES_TOUR.length) {
-    // Fim do tour
     const progress = document.getElementById('setupProgress');
     if (progress) progress.textContent = 'Concluído! ✅';
     digitarTexto('E aí, curtiu o setup da Soso? Ela montou com muito carinho! Se quiser ver de novo, só clicar no botão de iniciar tour. 💜');
-    setTimeout(pararTour, 4000); // Para o tour automaticamente após o fim
+    setTimeout(pararTour, 5000);
     return;
   }
 
@@ -135,7 +162,7 @@ function executarPassoDoTour() {
   irParaItem(itemId);
   tourIndex++;
   
-  tourTimer = setTimeout(executarPassoDoTour, 4500); // Tempo entre cada parada do tour
+  tourTimer = setTimeout(executarPassoDoTour, 5000);
 }
 
 function pararTour() {
@@ -150,15 +177,5 @@ function pararTour() {
   if (btnParar) btnParar.style.display = 'none';
   if (progress) progress.style.display = 'none';
   
-  moverLuk('50%', '60%');
+  moverLuk('50%', '88%');
 }
-
-// Inicialização básica quando o DOM carregar
-document.addEventListener('DOMContentLoaded', () => {
-  // Garante que o boneco comece na posição inicial
-  const char = document.getElementById('lukChar');
-  if (char) {
-    char.style.left = lukPos.x;
-    char.style.top = lukPos.y;
-  }
-});

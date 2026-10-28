@@ -477,14 +477,14 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>Clique nos componentes ou deixe o Lukzin te guiar pelo cantinho!</p>
+    <p>Clique nos itens para o Lukzin te mostrar as configurações!</p>
   </header>
   
   <div class="setup-game-container reveal">
     
     <div class="setup-controls">
       <button id="btnTourSetup" class="btn btn-tour" onclick="iniciarTour()">
-        <span class="play-icon">▶</span> Iniciar Tour com Lukzin
+        <span class="play-icon">▶</span> Iniciar Tour Guiado
       </button>
       <button id="btnPararTour" class="btn ghost" onclick="pararTour()" style="display:none;">
         ⏹ Parar Tour
@@ -492,61 +492,88 @@
       <span class="setup-progress" id="setupProgress" style="display:none;">0 / 0</span>
     </div>
 
-    <div class="setup-scene-wrap">
-      <div class="setup-scene" id="setupScene">
-        
-        <div class="scene-wall"></div>
-        <div class="scene-floor"></div>
+    <div class="setup-scene-wrap" id="setupScene">
+      <div class="scene-bg"></div>
+      
+      <!-- A MÁGICA ACONTECE AQUI: Tela do Stardew Valley por cima do monitor -->
+      <div class="monitor-screen" id="stardewScreen" style="background-image: url('img/stardew-screen.png');"></div>
 
-        <div class="scene-desk">
-          <div class="s-object obj-monitor" data-item="monitor" onclick="irParaItem('monitor')">
-            <div class="m-screen"><span class="m-glare"></span></div>
-            <div class="m-base"></div>
-            <div class="s-hotspot">+</div>
-          </div>
-          <div class="s-object obj-keyboard" data-item="teclado" onclick="irParaItem('teclado')">
-            <div class="k-keys"></div>
-            <div class="s-hotspot">+</div>
-          </div>
-          <div class="s-object obj-mouse" data-item="mouse" onclick="irParaItem('mouse')">
-            <div class="s-hotspot">+</div>
-          </div>
-          <div class="s-object obj-mic" data-item="microfone" onclick="irParaItem('microfone')">
-            <div class="s-hotspot">+</div>
-          </div>
+      <div class="scene-overlay"></div>
+
+      <!-- Estante -->
+      <div class="hotspot" style="left: 17%; top: 45%;" onclick="irParaItem('estante')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Quadro do Gato -->
+      <div class="hotspot" style="left: 47%; top: 22%;" onclick="irParaItem('quadro')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Webcam -->
+      <div class="hotspot" style="left: 50%; top: 35%;" onclick="irParaItem('webcam')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Microfone -->
+      <div class="hotspot" style="left: 35%; top: 53%;" onclick="irParaItem('microfone')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Garrafa Stanley -->
+      <div class="hotspot" style="left: 32%; top: 59%;" onclick="irParaItem('garrafa')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Teclado -->
+      <div class="hotspot" style="left: 45%; top: 63%;" onclick="irParaItem('teclado')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Mouse -->
+      <div class="hotspot" style="left: 57%; top: 63%;" onclick="irParaItem('mouse')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Headset -->
+      <div class="hotspot" style="left: 65%; top: 53%;" onclick="irParaItem('headset')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Gabinete -->
+      <div class="hotspot" style="left: 78%; top: 50%;" onclick="irParaItem('gabinete')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Pantufas -->
+      <div class="hotspot" style="left: 28%; top: 85%;" onclick="irParaItem('pantufas')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Cadeira -->
+      <div class="hotspot" style="left: 58%; top: 78%;" onclick="irParaItem('cadeira')">
+        <span class="hs-pulse"></span>
+      </div>
+
+      <!-- Personagem: Lukzin -->
+      <div class="luk-character" id="lukChar" style="left: 50%; top: 88%;">
+        <div class="luk-avatar">
+          <div class="luk-head">😎</div>
+          <div class="luk-body"></div>
         </div>
-
-        <div class="s-object obj-pc" data-item="gabinete" onclick="irParaItem('gabinete')">
-          <div class="pc-glass">
-             <div class="pc-fans"><span></span><span></span><span></span></div>
-          </div>
-          <div class="s-hotspot">+</div>
-        </div>
-
-        <div class="s-object obj-chair" data-item="cadeira" onclick="irParaItem('cadeira')">
-          <div class="s-hotspot">+</div>
-        </div>
-
-        <div class="luk-character" id="lukChar">
-          <div class="luk-avatar">
-            <div class="luk-head">😎</div>
-            <div class="luk-body"></div>
-          </div>
-          <div class="luk-shadow"></div>
-        </div>
-
+        <div class="luk-shadow"></div>
       </div>
     </div>
 
-    <div class="dialogue-box" id="setupDialogue">
-      <div class="dlg-avatar">👨‍💻</div>
-      <div class="dlg-content">
-        <div class="dlg-name">Lukzin <span class="dlg-badge">DEV DO SITE</span></div>
-        <div class="dlg-text" id="dlgText">E aí! Eu sou o Luk, desenvolvedor do site. Quer dar uma olhada no setup da Soso? Clica nos pontinhos roxos ou aperta o botão "Iniciar Tour" ali em cima!</div>
+    <!-- Caixa de Diálogo RPG -->
+    <div class="rpg-dialogue" id="setupDialogue">
+      <div class="rpg-avatar">👨‍💻</div>
+      <div class="rpg-content">
+        <div class="rpg-name">Lukzin <span class="rpg-badge">DEV</span></div>
+        <div class="rpg-text" id="dlgText">E aí! Clica nos pontinhos roxos pra ver as peças do setup da Soso, ou aperta o botão de Tour ali em cima!</div>
       </div>
-      <div class="dlg-continue" id="dlgContinue" style="display:none;">▼</div>
+      <div class="rpg-continue">▼</div>
     </div>
-
   </div>
 </section>
 

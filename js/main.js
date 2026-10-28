@@ -83,7 +83,6 @@ let HALL_DADOS = null;
 let HALL_ABA = 'gift';
 let HALL_TIMER = null;
 
-/* 🆕 Tier List V2 */
 let sortMode = 'nota';
 let generoFiltro = 'all';
 let _jogoAoVivoNome = null;
