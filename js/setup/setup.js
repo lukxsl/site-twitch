@@ -21,8 +21,7 @@ const P = (nome, q, detalhe = '', extra = {}) => ({ nome, q, detalhe, ...extra }
 const CATS = {
   pc:          { nome: 'PC',              emoji: '🚀' },
   perifericos: { nome: 'Periféricos',     emoji: '🖱️' },
-  conforto:    { nome: 'Conforto & Vibe', emoji: '🐰' },
-  colecao:     { nome: 'Coleção',         emoji: '🏆' }
+  conforto:    { nome: 'Conforto & Vibe', emoji: '🐰' }
 };
 
 const SETUP_DATA = {
@@ -84,32 +83,6 @@ const SETUP_DATA = {
     texto: 'Aqui nasce a voz que você ouve nas lives! O FIFINE AM8 branco é um microfone dinâmico que capta bem a voz e ignora boa parte do barulho do quarto. Ótimo pra risadas e também pros gritos de susto.',
     pecas: [P('Microfone FIFINE AM8 Branco', 'microfone fifine am8 branco', 'Dinâmico, USB e XLR')]
   },
-  garrafa: {
-    titulo: 'Garrafa Stanley Branca', emoji: '🥤', cat: 'conforto', raridade: 'raro',
-    x: 34.8, y: 59.9, stand: { x: 35, y: 90 },
-    fala: 'Hidratação em dia! 💧',
-    texto: 'A famosa Stanley branca! Água gelada por perto garante energia pras lives compridas, e ela ainda combina com o resto do setup. Esse sim é um item de suporte.',
-    pecas: [P('Garrafa Stanley Branca', 'stanley copo termico branco', 'Mantém a bebida gelada por horas')]
-  },
-  estante: {
-    titulo: 'Estante de Zerados', emoji: '🏆', cat: 'colecao', raridade: 'lendario',
-    x: 23, y: 41, stand: { x: 21, y: 84 },
-    fala: 'O hall da fama! 🏆',
-    texto: 'O hall da fama dos jogos zerados! Cada boneco aqui é uma memória: o chapéu do Red Dead Redemption 2, a pulseira do Detroit, o Homem-Aranha e a Clove do Valorant. Só jogo que marcou história entra nessa prateleira.',
-    pecas: [
-      P('Chapéu do Red Dead Redemption 2', 'chapeu red dead redemption 2 colecionavel', 'Arthur Morgan vibes'),
-      P('Pulseira do Detroit: Become Human', 'pulseira detroit become human', 'Direto de Detroit'),
-      P('Boneco Homem-Aranha', 'boneco homem aranha colecionavel', 'Amigo da vizinhança'),
-      P('Boneca Clove (Valorant)', 'clove valorant colecionavel', 'Agente do Valorant')
-    ]
-  },
-  pantufas: {
-    titulo: 'Pantufas de Coelho Roxas', emoji: '🐰', cat: 'conforto', raridade: 'epico',
-    x: 28.3, y: 88.3, stand: { x: 34, y: 92 },
-    fala: 'O item mais importante! 🐰',
-    texto: 'Atenção: esse é o item MAIS importante do setup! As pantufas de coelho roxas garantem conforto máximo pros pés e carisma máximo pro quarto. Sem elas, a performance cai pela metade (cientificamente comprovado por mim).',
-    pecas: [P('Pantufas de Coelho Roxas', 'pantufa coelho roxa', 'Fofura nível máximo')]
-  },
   cadeira: {
     titulo: 'Cadeira XT Racer', emoji: '🪑', cat: 'conforto', raridade: 'raro',
     x: 62.3, y: 78.7, stand: { x: 74, y: 92 },
@@ -126,9 +99,8 @@ const SETUP_DATA = {
   }
 };
 
-// Rota do tour: um circuito pelo quarto
-const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinete',
-                    'cadeira', 'pantufas', 'garrafa', 'microfone', 'estante'];
+// Rota do tour: um circuito pelo quarto (Itens removidos não estão aqui)
+const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinete', 'cadeira', 'microfone'];
 const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
 
@@ -144,7 +116,6 @@ const LOJAS = [
   { id: 'amazon', nome: 'Amazon', url: (q) => `https://www.amazon.com.br/s?k=${encodeURIComponent(q).replace(/%20/g, '+')}` }
 ];
 
-// Chamada segura ao áudio (funciona mesmo se audio.js não carregar)
 const snd = (nome, ...args) => {
   const A = window.GameAudio;
   if (A && typeof A[nome] === 'function') A[nome](...args);
@@ -171,8 +142,9 @@ const S = {
 };
 try { S.gatoVisto = localStorage.getItem('setup_gato') === '1'; } catch (_) { /* ignore */ }
 
+// Gato é filtrado do catálogo e só existe como Easter Egg no mini-game
 const itensVisiveis = () =>
-  Object.entries(SETUP_DATA).filter(([id, it]) => !it.oculto || (id === 'gato' && S.gatoVisto));
+  Object.entries(SETUP_DATA).filter(([id, it]) => !it.oculto);
 
 /* ============================================================
    3. LUKZIN
@@ -211,7 +183,7 @@ function moverLuk(x, y) {
   return new Promise((res) => {
     setTimeout(() => {
       clearInterval(passos);
-      if (id === S.walkId) {          // ignora caminhadas que já foram substituídas
+      if (id === S.walkId) {
         el.classList.remove('walking');
         void el.offsetWidth;
         el.classList.add('landing');
@@ -222,7 +194,6 @@ function moverLuk(x, y) {
   });
 }
 
-/* Vira o corpo para o item e inclina um pouco antes de falar */
 async function olharPara(it, dest) {
   const el = char();
   const dx = it.x - dest.x;
@@ -317,12 +288,23 @@ function digitar(el, texto) {
   });
 }
 
-function prepararDialogo(nome) {
+function prepararDialogo(titulo) {
   const d = $('setupDialogue');
   d.classList.remove('closed', 'is-recap', 'enter');
-  void d.offsetWidth;                 // reinicia a animação de entrada
+  void d.offsetWidth;
   d.classList.add('enter');
-  $('dlgName').textContent = nome;
+
+  // 🆕 NOME DINÂMICO
+  let nick = 'Lukzin';
+  if (typeof USUARIO !== 'undefined' && USUARIO && USUARIO.username) {
+    nick = `@${USUARIO.username}`;
+  }
+  
+  const nameContainer = $('dlgNameContainer');
+  if (nameContainer) {
+    nameContainer.innerHTML = `<span class="rpg-name-main">${nick}</span> <span class="rpg-name-sub">Lukzin</span> <span class="rpg-badge">DEV</span>`;
+  }
+
   $('dlgChips').replaceChildren();
   $('dlgRecap').replaceChildren();
   $('dlgRecap').hidden = true;
@@ -350,7 +332,7 @@ async function visitar(id, run) {
   if (hs) hs.classList.add('is-visited');
   foco(it.x, it.y);
 
-  await olharPara(it, it.stand);          // olha pro item ANTES de falar
+  await olharPara(it, it.stand);
   if (run !== S.run) return false;
 
   snd(id === 'gato' ? 'playMeow' : 'playPop');
@@ -449,7 +431,7 @@ async function recapFinal(run) {
 
   S.tour = false;
   setTourUI(false);
-  $('setupProgress').classList.add('on');   // mantém "Concluído!" visível
+  $('setupProgress').classList.add('on');
 }
 
 /* ============================================================
@@ -466,17 +448,17 @@ function pop(texto) {
 
 function ligarGato() {
   const hot = $('catHotspot');
-  if (!hot || hot.dataset.bound) return;     // nunca liga duas vezes
+  if (!hot || hot.dataset.bound) return;
   hot.dataset.bound = '1';
 
   hot.addEventListener('click', (e) => {
-    e.stopPropagation();                      // não dispara outros cliques da cena
+    e.stopPropagation();
     e.preventDefault();
-    if (e.timeStamp === S.catLastStamp) return;   // mesmo evento = ignora duplicata
+    if (e.timeStamp === S.catLastStamp) return;
     S.catLastStamp = e.timeStamp;
 
     clearTimeout(S.catReset);
-    S.catReset = setTimeout(() => { S.catClicks = 0; }, 2500);  // pausa longa zera a contagem
+    S.catReset = setTimeout(() => { S.catClicks = 0; }, 2500);
 
     S.catClicks += 1;
     hot.classList.remove('bump'); void hot.offsetWidth; hot.classList.add('bump');
@@ -490,7 +472,7 @@ function ligarGato() {
     clearTimeout(S.catReset);
     S.gatoVisto = true;
     try { localStorage.setItem('setup_gato', '1'); } catch (_) { /* ignore */ }
-    renderCatalogo();                         // o gato passa a aparecer no catálogo
+    // Gato continua sendo um item apenas do mini-game. Ao clicar 5 vezes, chama o diálogo.
     irParaItem('gato');
   });
 }
@@ -553,6 +535,8 @@ function abrirFicha(id) {
 function renderCatalogo() {
   const grid = $('catGrid');
   const q = filtro.busca.trim().toLowerCase();
+  
+  // itensVisiveis já filtra o gato (oculto), então ele não aparece aqui.
   const itens = itensVisiveis().filter(([, it]) => {
     if (filtro.cat !== 'todos' && it.cat !== filtro.cat) return false;
     if (!q) return true;
@@ -651,8 +635,6 @@ function init() {
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
   dlg.addEventListener('close', () => snd('playClose'));
 
-  // Som de clique em TODA a interface da seção (catálogo, abas, filtros, botões).
-  // Hotspots e gato têm sons próprios, então ficam de fora.
   sec.addEventListener('click', (e) => {
     const alvo = e.target.closest('button, a');
     if (!alvo || alvo.closest('.hotspot') || alvo.id === 'btnMute') return;

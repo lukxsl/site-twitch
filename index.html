@@ -534,12 +534,15 @@
         <div class="scene-sparks" id="sceneSparks" aria-hidden="true"></div>
       </div>
 
-      <!-- Caixa de diálogo RPG -->
+      <!-- Caixa de diálogo RPG (Atualizada com nome dinâmico e avatar L) -->
       <div class="rpg-dialogue enter" id="setupDialogue">
         <button type="button" class="rpg-close" id="dlgClose" aria-label="Fechar diálogo">✕</button>
-        <div class="rpg-avatar" aria-hidden="true">👨‍💻</div>
+        <div class="rpg-avatar" aria-hidden="true">L</div>
         <div class="rpg-content">
-          <div class="rpg-name"><span id="dlgName">Lukzin</span> <span class="rpg-badge">DEV</span></div>
+          <div class="rpg-name" id="dlgNameContainer">
+            <span class="rpg-name-main">Lukzin</span> 
+            <span class="rpg-badge">DEV</span>
+          </div>
           <div class="rpg-text" id="dlgText">E aí! Clica nos pontinhos roxos pra ver as peças do setup da Soso, ou aperta o botão de Tour ali em cima!</div>
           <div class="rpg-chips" id="dlgChips"></div>
           <div class="rpg-recap" id="dlgRecap" hidden></div>
@@ -739,7 +742,7 @@
 
 <script src="js/utils/dom.js"></script>
 <script src="js/utils/format.js"></script>
-<script src="js/utils/audio.js"></script> <!-- NOVO ARQUIVO DE ÁUDIO -->
+<script src="js/utils/audio.js"></script>
 <script src="js/api/client.js"></script>
 <script src="js/twitch/twitch.js"></script>
 <script src="js/setup/setup.js"></script>

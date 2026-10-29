@@ -1,8 +1,5 @@
 /* ============================================================
    SETUP — MINI-GAME 2D + CATÁLOGO (TOUR DO LUKZIN)
-   1. Base e tokens   4. Lukzin            7. Catálogo
-   2. Abas            5. Balão e sparks    8. Ficha (modal)
-   3. Cena e hotspots 6. Diálogo e recap   9. Responsivo / reduced-motion
    ============================================================ */
 
 /* ---------- 1. BASE E TOKENS ---------- */
@@ -111,7 +108,7 @@
 .setup-scene-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 2048 / 1144;   /* mesma proporção do quarto-setup.png */
+  aspect-ratio: 2048 / 1144;
   border-radius: 24px;
   border: 2px solid var(--sg-line);
   overflow: hidden;
@@ -146,7 +143,6 @@
   pointer-events: none;
 }
 
-/* vinheta + leve scanline */
 .scene-overlay {
   position: absolute; inset: 0; z-index: 30;
   background:
@@ -190,7 +186,6 @@
 }
 .hotspot:hover .hs-pulse, .hotspot:focus-visible .hs-pulse { transform: scale(1.3); background: #fff; box-shadow: 0 0 25px #fff; }
 
-/* item alvo: Lukzin está indo até ele */
 .hotspot.is-target { z-index: 12; }
 .hotspot.is-target .hs-pulse {
   transform: scale(1.9);
@@ -202,7 +197,6 @@
 .hotspot.is-target .hs-pulse::after { border-color: #ec4899; animation-duration: .8s; }
 @keyframes targetBeat { to { transform: scale(2.3); } }
 
-/* já visitado no tour */
 .hotspot.is-visited .hs-pulse { background: #86efac; box-shadow: 0 0 12px #4ade80; }
 .hotspot.is-visited .hs-pulse::after { border-color: #4ade80; }
 
@@ -223,13 +217,13 @@
 .luk-character {
   --walk-ms: 800ms;
   position: absolute;
-  width: clamp(30px, 6.6%, 84px);              /* proporcional à cena */
-  transform: translate(-50%, -100%);           /* âncora = pés */
+  width: clamp(22px, 4.5%, 56px);               /* 🆕 REDUZIDO */
+  transform: translate(-50%, -100%);
   transition: left var(--walk-ms) cubic-bezier(.45, .05, .25, 1), top var(--walk-ms) cubic-bezier(.45, .05, .25, 1);
   z-index: 20;
   pointer-events: none;
 }
-.luk-character::before {                       /* glow roxo atrás */
+.luk-character::before {
   content: ''; position: absolute; left: 50%; top: 55%; z-index: 0;
   width: 230%; aspect-ratio: 1;
   transform: translate(-50%, -50%);
@@ -241,7 +235,7 @@
 .luk-flip {
   position: relative; z-index: 2;
   transform: scaleX(1);
-  transition: transform .35s var(--spring);    /* "vira" com efeito de mola */
+  transition: transform .35s var(--spring);
 }
 .luk-character[data-dir="left"] .luk-flip { transform: scaleX(-1); }
 
@@ -253,7 +247,6 @@
   60%  { transform: scale(1.04, .97); }
   100% { transform: scale(1, 1); }
 }
-/* olha pro item antes de falar: inclina na direção em que está virado */
 .luk-character.looking .luk-squash { animation: lukLook .5s var(--ease) forwards; }
 .luk-character.looking.look-up .luk-squash { animation-name: lukLookUp; }
 @keyframes lukLook   { to { transform: rotate(4deg) scale(1.01, 1.02); } }
@@ -284,7 +277,6 @@
   to   { transform: translateY(-7px) rotate(3deg); }
 }
 
-/* sombra: elipse embaixo dos pés, atrás do sprite */
 .luk-shadow {
   position: absolute; left: 50%; bottom: -3px; z-index: 1;
   width: 78%; height: 9px;
@@ -298,7 +290,6 @@
 .luk-character.walking .luk-shadow { animation: shadowWalk .34s infinite alternate ease-in-out; }
 @keyframes shadowWalk { to { transform: translateX(-50%) scale(.7); opacity: .5; } }
 
-/* gato (easter egg): área invisível + feedback */
 .hotspot-invisible { position: absolute; z-index: 15; cursor: pointer; border-radius: 10px; -webkit-tap-highlight-color: transparent; }
 .hotspot-invisible.bump { animation: catBump .35s var(--spring); }
 @keyframes catBump { 40% { background: rgba(192,132,252,.14); box-shadow: 0 0 30px rgba(192,132,252,.45); } }
@@ -377,7 +368,6 @@
   transition: opacity .35s var(--ease), transform .45s var(--ease), max-height .5s var(--ease), padding .5s var(--ease), margin .5s var(--ease), border-width .5s;
   overflow: hidden;
 }
-/* entrada suave sempre que um novo diálogo abre */
 .rpg-dialogue.enter { animation: dlgEnter .65s var(--ease); }
 @keyframes dlgEnter {
   0%   { opacity: 0; transform: translateY(22px) scale(.97); filter: blur(6px); }
@@ -402,22 +392,42 @@
 }
 .rpg-close:hover { background: #ec4899; color: #fff; transform: rotate(90deg) scale(1.1); }
 
+/* 🆕 AVATAR — OPÇÃO B (L em pixel/terminal) */
 .rpg-avatar {
   width: 56px; height: 56px; flex: none;
   display: grid; place-items: center;
-  background: linear-gradient(135deg, var(--sg-a), var(--sg-b));
-  border: 2px solid #fff; border-radius: 12px;
-  font-size: 2rem;
-  box-shadow: 0 4px 10px rgba(0,0,0,.5);
+  background: rgba(24, 16, 40, 0.95);
+  border: 2px solid var(--sg-a);
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 0 10px var(--sg-a), 0 0 20px var(--sg-a);
+  box-shadow: inset 0 0 15px rgba(168,85,247,0.3), 0 4px 10px rgba(0,0,0,.5);
 }
+
 .rpg-content { flex: 1; min-width: 0; padding-right: 26px; }
+
+/* 🆕 NOME DINÂMICO */
 .rpg-name {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   margin-bottom: 8px;
-  font: 800 1.1rem 'Bricolage Grotesque', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
+}
+.rpg-name-main {
+  font-size: 1.1rem; font-weight: 800;
   color: var(--sg-a);
   text-shadow: 1px 1px 0 #000;
 }
+.rpg-name-sub {
+  font-size: .8rem; font-weight: 700;
+  color: #c4b5fd;
+  background: rgba(168,85,247,.15);
+  padding: 2px 8px; border-radius: 6px;
+  border: 1px solid rgba(168,85,247,.3);
+}
+
 .rpg-badge { background: var(--purple, #7c3aed); color: #fff; font: .6rem 'DM Sans', sans-serif; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
 .rpg-text { color: #f5f3ff; font: 1rem/1.6 'DM Sans', sans-serif; min-height: 50px; }
 .rpg-text[hidden] { display: none; }
@@ -448,7 +458,6 @@
 @keyframes bounce { 50% { transform: translateY(4px); } }
 .rpg-dialogue.is-recap .rpg-continue { display: none; }
 
-/* recap final */
 .rpg-recap { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 14px; }
 .rpg-recap[hidden] { display: none; }
 .recap-col {
