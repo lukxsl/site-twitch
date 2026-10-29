@@ -1918,7 +1918,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             <div><b>${j.nota > 0 ? '⭐ ' + n1(j.nota) : '—'}</b><span>nota</span></div>
             ${terceiro}
           </div>
-          ${(j.comentario || j.sinopse) ? `<p>${esc(j.comentario || j.sinopse)}</p>` : ''}
+          ${(j.sinopse || j.comentario) ? `<section class="detail-synopsis"><h4>Sinopse</h4><p>${esc(j.sinopse || j.comentario)}</p></section>` : '<section class="detail-synopsis"><h4>Sinopse</h4><p>Sinopse ainda não disponível para este título.</p></section>'}
         </div>
       </div>
     `;

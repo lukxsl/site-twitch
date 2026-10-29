@@ -85,12 +85,19 @@ function lerSessao(req){
 }
 
 async function redis(cmds){
-  const r = await fetch(`${URL_}/pipeline`, {
+  if(!URL_ || !TOKEN) throw new Error('Redis não configurado: verifique as variáveis UPSTASH_REDIS_REST_URL/TOKEN.');
+  const endpoint = `${URL_.replace(/\/+$/, '')}/pipeline`;
+  const r = await fetch(endpoint, {
     method: 'POST',
     headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(cmds)
   });
-  return (await r.json()).map(x => x.result);
+  let data;
+  try { data = await r.json(); } catch { throw new Error(`Resposta inválida do Redis (HTTP ${r.status}).`); }
+  if(!r.ok || !Array.isArray(data)) throw new Error(data?.error || `Redis HTTP ${r.status}`);
+  const falha = data.find(x => x && x.error);
+  if(falha) throw new Error(`Redis: ${falha.error}`);
+  return data.map(x => x.result);
 }
 
 async function pegarPermissoes(){
@@ -118,15 +125,20 @@ async function logAcao(quem, cargo, acao){
 }
 
 async function traduzir(texto){
-  if(!texto) return null;
+  const original = String(texto || '').trim();
+  if(!original) return null;
   try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(texto)}`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    // O código "pt" do Translate retorna português brasileiro por padrão.
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(original.slice(0, 4200))}`;
+    const r = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; asemtet0/1.0)' },
+      signal: AbortSignal.timeout(7000)
+    });
     if(!r.ok) return null;
     const d = await r.json();
     if(Array.isArray(d) && Array.isArray(d[0])){
       const partes = d[0].map(seg => (Array.isArray(seg) ? seg[0] : '')).filter(Boolean);
-      return partes.join('') || null;
+      return partes.join('').trim() || null;
     }
     return null;
   } catch(e){ return null; }
@@ -201,6 +213,12 @@ async function igdbBuscar(nome){
         if(wikiEn) principal.sinopse = wikiEn;
       }
     }
+    // Sinopses do IGDB/Wikipedia são entregues em português para o formulário manual.
+    if(principal.sinopse){
+      const pt = await traduzir(principal.sinopse);
+      if(pt) principal.sinopse = pt;
+    }
+    resultados[0].sinopse = principal.sinopse || '';
     return { ...principal, resultados };
   } catch(e){ return { erro: 'Erro ao buscar no IGDB: ' + e.message }; }
 }
@@ -245,42 +263,175 @@ async function buscarConquistasSteam(appid){
   } catch(e){ return null; }
 }
 
+function limparHtmlDescricao(texto){
+  return String(texto || '')
+    .replace(/<br\s*\/?\s*>/gi, '\n')
+    .replace(/<\/p\s*>/gi, '\n\n')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/ {2,}/g, ' ')
+    .trim()
+    .slice(0, 4200);
+}
+
+async function buscarSinopseSteam(appid){
+  if(!appid) return null;
+  for(const idioma of ['brazilian', 'portuguese', 'english']){
+    try {
+      const url = 'https://store.steampowered.com/api/appdetails?appids=' + encodeURIComponent(appid) + '&cc=br&l=' + idioma;
+      const r = await fetch(url, { signal: AbortSignal.timeout(6500) });
+      if(!r.ok) continue;
+      const payload = await r.json();
+      const pacote = payload && payload[String(appid)];
+      const dados = pacote && pacote.success ? pacote.data : null;
+      if(!dados) continue;
+      const original = limparHtmlDescricao(dados.short_description || dados.about_the_game || dados.detailed_description || '');
+      if(!original) continue;
+      const pt = await traduzir(original);
+      const generos = Array.isArray(dados.genres) ? dados.genres.map(g => g.description).filter(Boolean) : [];
+      return { nome: dados.name || null, sinopse: pt || original, capa: dados.header_image || null, generos };
+    } catch(e) { /* tenta o próximo idioma */ }
+  }
+  return null;
+}
+
+async function buscarDadosJogo(nome, appid = null){
+  let igdb = {};
+  try { igdb = await igdbBuscar(nome); } catch(e){}
+  if(igdb && igdb.erro) igdb = {};
+
+  let steam = null;
+  if(appid && (!igdb.sinopse || !igdb.capa || !Array.isArray(igdb.generos) || !igdb.generos.length)){
+    steam = await buscarSinopseSteam(appid);
+  }
+
+  let sinopse = (igdb && igdb.sinopse) || (steam && steam.sinopse) || '';
+  if(!sinopse){
+    sinopse = await sinopseWikipedia(nome, 'pt') || '';
+    if(!sinopse){
+      const ingles = await sinopseWikipedia(nome, 'en');
+      if(ingles) sinopse = await traduzir(ingles) || ingles;
+    }
+  }
+  if(sinopse && !(igdb && igdb.sinopse) && !(steam && steam.sinopse)){
+    sinopse = await traduzir(sinopse) || sinopse;
+  }
+
+  return {
+    ...(igdb || {}),
+    nome: (igdb && igdb.nome) || (steam && steam.nome) || nome,
+    sinopse,
+    comentario: sinopse,
+    capa: (igdb && igdb.capa) || (steam && steam.capa) || null,
+    generos: (igdb && Array.isArray(igdb.generos) && igdb.generos.length) ? igdb.generos : ((steam && steam.generos) || [])
+  };
+}
+
+/* Merge atômico no Redis: não redefine tiers, notas, status ou comentários existentes. */
+const MERGE_STEAM_LUA = [
+  "local raw = redis.call('GET', KEYS[1])",
+  "local atuais = {}",
+  "if raw then local ok, parsed = pcall(cjson.decode, raw); if ok and type(parsed) == 'table' then atuais = parsed end end",
+  "local incoming = cjson.decode(ARGV[1])",
+  "local porApp = {}",
+  "local porNome = {}",
+  "for i, jogo in ipairs(atuais) do",
+  "  if jogo.appid then porApp[tostring(jogo.appid)] = i end",
+  "  if jogo.nome then porNome[string.lower(tostring(jogo.nome))] = i end",
+  "end",
+  "local adicionados = 0",
+  "local pulados = 0",
+  "for _, novo in ipairs(incoming) do",
+  "  local idx = nil",
+  "  if novo.appid then idx = porApp[tostring(novo.appid)] end",
+  "  if (not idx) and novo.nome then idx = porNome[string.lower(tostring(novo.nome))] end",
+  "  if idx then",
+  "    pulados = pulados + 1",
+  "    local atual = atuais[idx]",
+  "    if novo.appid and not atual.appid then atual.appid = novo.appid end",
+  "    if novo.horas and (not atual.horas or tonumber(novo.horas) > tonumber(atual.horas)) then atual.horas = novo.horas end",
+  "    if (not atual.capa or atual.capa == '') and novo.capa then atual.capa = novo.capa end",
+  "    local desc = atual.sinopse or atual.comentario",
+  "    local novaDesc = novo.sinopse or novo.comentario",
+  "    if (not desc or desc == '') and novaDesc and novaDesc ~= '' then atual.sinopse = novaDesc; atual.comentario = novaDesc end",
+  "    if (not atual.generos or #atual.generos == 0) and novo.generos and #novo.generos > 0 then atual.generos = novo.generos end",
+  "    if (not atual.conquistas or not atual.conquistas.total) and novo.conquistas then atual.conquistas = novo.conquistas end",
+  "    if (not atual.nota or tonumber(atual.nota) == 0) and novo.nota and tonumber(novo.nota) > 0 then atual.nota = novo.nota end",
+  "  else",
+  "    table.insert(atuais, novo)",
+  "    local pos = #atuais",
+  "    if novo.appid then porApp[tostring(novo.appid)] = pos end",
+  "    if novo.nome then porNome[string.lower(tostring(novo.nome))] = pos end",
+  "    adicionados = adicionados + 1",
+  "  end",
+  "end",
+  "redis.call('SET', KEYS[1], cjson.encode(atuais))",
+  "return cjson.encode({adicionados = adicionados, pulados = pulados, total = #atuais})"
+].join('\n');
+
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
-  const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
-  const r = await fetch(url);
-  if(!r.ok) return { error: `Steam HTTP ${r.status}` };
+  const url = 'https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=' + encodeURIComponent(STEAM_KEY) + '&steamid=' + STEAM_ID + '&include_appinfo=1&include_played_free_games=1&format=json';
+  const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
+  if(!r.ok) return { error: 'Steam HTTP ' + r.status };
   const sd = await r.json();
-  const lista = sd?.response?.games || [];
-  const jogados = lista.filter(g => g.playtime_forever > 0).sort((a,b) => b.playtime_forever - a.playtime_forever).slice(0, 60);
+  const lista = sd && sd.response && Array.isArray(sd.response.games) ? sd.response.games : [];
+  const jogados = lista.filter(g => g.appid && g.name && g.playtime_forever > 0)
+    .sort((a,b) => b.playtime_forever - a.playtime_forever).slice(0, 60);
+
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
   try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
-  const existentes = new Set(atuais.map(j => (j.nome || '').toLowerCase()));
-  let adicionados = 0, pulados = 0;
-  for(const g of jogados){
-    if(existentes.has(g.name.toLowerCase())){ pulados++; continue; }
-    const capaSteam = `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`;
-    let extra = {};
-    try { extra = await igdbBuscar(g.name); } catch(e){}
-    let comentario = extra.sinopse || '';
-    if(comentario){ try { const t = await traduzir(comentario); if(t) comentario = t; } catch(e){} }
+  if(!Array.isArray(atuais)) atuais = [];
+  const normalizarNome = nome => String(nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const idsExistentes = new Set(atuais.filter(j => j.appid).map(j => String(j.appid)));
+  const nomesExistentes = new Set(atuais.map(j => normalizarNome(j.nome)));
+  const candidatos = jogados.filter(g => !idsExistentes.has(String(g.appid)) && !nomesExistentes.has(normalizarNome(g.name)));
+  const puladosAntes = jogados.length - candidatos.length;
+  const novos = [];
+
+  for(const g of candidatos){
+    const extra = await buscarDadosJogo(g.name, g.appid);
     let conquistas = null;
     try { conquistas = await buscarConquistasSteam(g.appid); } catch(e){}
-    atuais.push({
+    const sinopse = extra.sinopse || '';
+    novos.push({
       id: g.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
-      appid: g.appid, nome: g.name, tier: 'NR', status: 'Jogando',
+      appid: g.appid,
+      nome: g.name,
+      tier: 'NR',
+      status: 'Jogando',
       horas: Math.round(g.playtime_forever / 6) / 10,
-      conquistas, nota: extra.nota || 0,
-      capa: extra.capa || capaSteam, comentario,
-      generos: extra.generos || [],
+      conquistas,
+      nota: extra.nota || 0,
+      capa: extra.capa || ('https://cdn.cloudflare.steamstatic.com/steam/apps/' + g.appid + '/library_600x900.jpg'),
+      comentario: sinopse,
+      sinopse,
+      generos: Array.isArray(extra.generos) ? extra.generos : [],
       adicionadoEm: new Date().toISOString()
     });
-    adicionados++;
-    existentes.add(g.name.toLowerCase());
   }
-  await redis([['SET', 'tierlist:jogos', JSON.stringify(atuais)]]);
-  return { ok: true, adicionados, pulados, total: jogados.length };
+
+  let merge = { adicionados: 0, pulados: 0, total: atuais.length };
+  if(novos.length){
+    const [resultado] = await redis([['EVAL', MERGE_STEAM_LUA, '1', 'tierlist:jogos', JSON.stringify(novos)]]);
+    try { merge = typeof resultado === 'string' ? JSON.parse(resultado) : resultado; }
+    catch(e){ throw new Error('O Redis salvou a importação, mas retornou uma confirmação inválida.'); }
+  }
+  return {
+    ok: true,
+    adicionados: Number(merge && merge.adicionados) || 0,
+    pulados: puladosAntes + (Number(merge && merge.pulados) || 0),
+    total: jogados.length,
+    totalSalvo: Number(merge && merge.total) || atuais.length
+  };
 }
 
 async function sincronizarHoras(){
@@ -331,6 +482,53 @@ async function sincronizarHoras(){
 
   if(atualizados) await redis([['SET', 'tierlist:jogos', JSON.stringify(atuais)]]);
   return { ok: true, atualizados, conqAtualizadas, total: atuais.length };
+}
+
+async function prepararJogosManuais(listaRecebida, listaAtual){
+  const atuais = Array.isArray(listaAtual) ? listaAtual : [];
+  const resultado = [];
+
+  for(const recebido of (Array.isArray(listaRecebida) ? listaRecebida : [])){
+    if(!recebido || typeof recebido !== 'object'){ resultado.push(recebido); continue; }
+    const item = { ...recebido };
+    const id = String(item.id || '');
+    const appid = item.appid ? String(item.appid) : '';
+    const anterior = atuais.find(j =>
+      (id && String(j.id || '') === id) ||
+      (appid && String(j.appid || '') === appid)
+    );
+    const descricao = String(item.sinopse || item.comentario || '').trim();
+    const descricaoAnterior = String((anterior && (anterior.sinopse || anterior.comentario)) || '').trim();
+    const descricaoMudou = Boolean(descricao && descricao !== descricaoAnterior);
+
+    // Traduz automaticamente texto recém-adicionado/alterado. Itens antigos não
+    // são retraduzidos em cada salvamento, preservando comentários já revisados.
+    if(!anterior || descricaoMudou){
+      if(descricao){
+        const pt = await traduzir(descricao);
+        const final = pt || descricao;
+        item.sinopse = final;
+        item.comentario = final;
+      } else {
+        let dados = {};
+        try { dados = await buscarDadosJogo(item.nome, item.appid || null); } catch(e){}
+        const sinopse = String((dados && dados.sinopse) || '').trim();
+        if(sinopse){
+          item.sinopse = sinopse;
+          item.comentario = sinopse;
+        }
+        if(!item.capa && dados && dados.capa) item.capa = dados.capa;
+        if((!Array.isArray(item.generos) || !item.generos.length) && dados && Array.isArray(dados.generos)){
+          item.generos = dados.generos;
+        }
+        if(!item.nota && dados && dados.nota) item.nota = dados.nota;
+      }
+    } else if(descricao && !item.sinopse){
+      item.sinopse = descricao;
+    }
+    resultado.push(item);
+  }
+  return resultado;
 }
 
 async function notificarStatus(item, novoStatus, motivo, quemMudou){
@@ -667,7 +865,14 @@ export default async function handler(req, res){
       if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const { jogos, filmes, logAcao: acao } = req.body || {};
       const cmds = [];
-      if(Array.isArray(jogos)) cmds.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]);
+      if(Array.isArray(jogos)){
+        const [rawAtuais] = await redis([['GET', 'tierlist:jogos']]);
+        let atuais = [];
+        try { atuais = rawAtuais ? JSON.parse(rawAtuais) : []; } catch(e) {}
+        if(rawAtuais && !Array.isArray(atuais)) throw new Error('A Tier List salva no Redis não é uma lista válida; nada foi sobrescrito.');
+        const processados = await prepararJogosManuais(jogos, atuais);
+        cmds.push(['SET', 'tierlist:jogos', JSON.stringify(processados)]);
+      }
       if(Array.isArray(filmes)) cmds.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
       await redis(cmds);

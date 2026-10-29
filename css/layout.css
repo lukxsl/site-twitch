@@ -219,32 +219,50 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
 }
 
 /* ============================================================
-   ALINHAMENTO HOME — COLUNA CENTRAL
+   HOME — GRID BENTO SEM ESPAÇOS ARTIFICIAIS
    ============================================================ */
-/* O player da Twitch não vai mais esticar para baixo */
-.bento-center > .twitch-player-box{flex:0 0 auto}
-.bento-center > .recado-card{flex:0 0 auto}
+@media (min-width:1281px) {
+  .bento { align-items: stretch; }
+  .bento-col {
+    align-self: stretch;
+    height: auto;
+    min-height: 0;
+  }
+  .bento-col > * { min-width: 0; }
+  .bento-col > *:last-child { flex: 1 1 0%; min-height: 0; }
 
-/* O card de jogos agora absorve o espaço extra para alinhar com as outras colunas */
-.bento-center > .card.jogos-card:last-child{
-  flex:1 1 auto; 
-  display:flex;
-  flex-direction:column;
+  /* O player mantém apenas a altura do vídeo; nunca absorve a coluna. */
+  .bento-center > .twitch-player-box { flex: 0 0 auto !important; }
+  .bento-center > .recado-card { flex: 0 0 auto !important; }
+  .bento-center > .jogos-card:last-child {
+    display: flex;
+    flex: 1 1 0%;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .bento-center > .jogos-card .jogo-half { min-width: 0; }
+  .bento-center > .jogos-card .foco-info { min-width: 0; }
+
+  .bento-center .twitch-player-box .twitch-player {
+    flex: 0 0 auto !important;
+    width: 100%;
+    height: auto;
+    min-height: 0 !important;
+    aspect-ratio: 16 / 9;
+  }
+
+  /* A coluna direita acompanha a altura das vizinhas e ancora a doação. */
+  .bento-right > .apoie { flex: 1 1 0%; min-height: 0; }
+  .bento-right > .apoie #donateLink { margin-top: auto; }
+}
+.twitch-player iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.bento-center > .card.jogos-card .jogo-half{
-  flex:1;
-}
-
-/* Garante que o player mantenha a proporção 16:9 correta */
-.twitch-player-box .twitch-player{
-  flex:none;
-  aspect-ratio:16/9;
-  min-height:340px;
-}
-.twitch-player iframe{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
+@media (max-width:1280px) {
+  .bento-center > .twitch-player-box { flex: 0 0 auto; }
+  .bento-center .twitch-player { flex: 0 0 auto; min-height: 0; aspect-ratio: 16 / 9; }
 }

@@ -104,8 +104,8 @@ const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinet
 const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
 
-// Onde o Lukzin fica sentado (centro da cadeira, em % da imagem do quarto)
-const CADEIRA = { x: 62.3, y: 79.5 }; // <-- POSIÇÃO CORRIGIDA AQUI
+// Âncora do assento (em % da cena). O sprite usa o fundo como ponto de apoio.
+const CADEIRA = { x: 62.3, y: 81.5 };
 const SENTADO_SPRITE = 'img/lukzin-sentado.png';   // OPCIONAL: se existir, é usado no lugar do corte em CSS
 const BAO_GREETING = 'Tudo bão? 💜 Clica em mim!';
 const BAO_FALAS = [
@@ -795,7 +795,7 @@ window.pararTour = pararTour;
 window.irParaItem = irParaItem;
 window.lukInteragir = interagir;
 // Ajuste fino no console: lukSentado({ drop: '45%' })  → quanto das pernas fica escondido
-//                          lukSentado({ x: 62.3, y: 78.7 }) → ponto da cadeira
+//                          lukSentado({ x: 62.3, y: 81.5 }) → ponto da cadeira
 window.lukSentado = (cfg = {}) => {
   const el = char();
   if (cfg.drop) el.style.setProperty('--sit-drop', cfg.drop);

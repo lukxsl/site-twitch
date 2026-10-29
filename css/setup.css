@@ -407,13 +407,15 @@
 }
 
 .rpg-avatar-img {
-  width: 250%; 
+  /* A imagem de origem mostra o corpo inteiro: zoom menor para enquadrar o rosto. */
+  width: 122%;
   height: auto;
+  max-width: none;
   position: absolute;
-  top: -10%; /* <-- CORRIGIDO AQUI */
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
-  image-rendering: pixelated; 
+  image-rendering: pixelated;
 }
 
 .rpg-content { flex: 1; min-width: 0; padding-right: 26px; }
