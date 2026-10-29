@@ -1536,3 +1536,15 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
   .pod,.hall-resto .hall-row,.cm-float,.cm-orb,.pod-crown,.pod-1::before,.music-full .music-ic,
   #sec-comunidade .sub-panel.on > *,#sec-comunidade .sub-tab.on::after{animation:none !important}
 }
+
+/* ============================================================
+   ALINHAMENTO HOME — BOTÃO DE DOAÇÃO
+   ============================================================ */
+.apoie {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.apoie #donateLink {
+  margin-top: auto;
+}

@@ -407,10 +407,10 @@
 }
 
 .rpg-avatar-img {
-  width: 220%; 
+  width: 250%; 
   height: auto;
   position: absolute;
-  top: -5%; 
+  top: -10%; /* <-- CORRIGIDO AQUI */
   left: 50%;
   transform: translateX(-50%);
   image-rendering: pixelated; 
@@ -631,7 +631,7 @@
    Teste ao vivo no console:  lukSentado({ drop: '45%' })
    ============================================================ */
 .luk-character {
-  --sit-drop: 42%;
+  --sit-drop: 48%;
   clip-path: inset(-600px -500px -80px -500px);          /* em pé: não corta nada */
   transition:
     left var(--walk-ms) cubic-bezier(.45, .05, .25, 1),

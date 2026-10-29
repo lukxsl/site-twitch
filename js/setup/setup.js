@@ -105,7 +105,7 @@ const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
 
 // Onde o Lukzin fica sentado (centro da cadeira, em % da imagem do quarto)
-const CADEIRA = { x: 62.3, y: 78.7 };
+const CADEIRA = { x: 62.3, y: 79.5 }; // <-- POSIÇÃO CORRIGIDA AQUI
 const SENTADO_SPRITE = 'img/lukzin-sentado.png';   // OPCIONAL: se existir, é usado no lugar do corte em CSS
 const BAO_GREETING = 'Tudo bão? 💜 Clica em mim!';
 const BAO_FALAS = [
