@@ -477,7 +477,7 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>Passeie pelo quarto com o Lukzin ou abra o catálogo com fichas, links e preços.</p>
+    <p>Passeie pelo quarto com o Lukzin ou abra o catálogo com as fichas técnicas.</p>
   </header>
 
   <div class="setup-game-container reveal">
@@ -496,6 +496,9 @@
           <span class="play-icon" aria-hidden="true">▶</span>
           <span class="btn-tour-label">Iniciar Tour Guiado</span>
         </button>
+        
+        <button type="button" id="btnMute" class="btn-icon" title="Ligar/Desligar som" aria-label="Ligar/Desligar som">🔊</button>
+
         <div class="setup-progress" id="setupProgress" hidden>
           <span id="setupProgressTxt">0 / 0</span>
           <span class="setup-progress-bar"><i id="setupProgressBar"></i></span>
@@ -509,30 +512,16 @@
           <!-- Tela do Stardew por cima do monitor -->
           <div class="monitor-screen" id="stardewScreen" style="background-image: url('img/stardew-screen.png');"></div>
 
-          <!-- Hotspots são gerados pelo JS a partir do SETUP_DATA -->
+          <!-- Hotspots são gerados pelo JS -->
           <div id="sceneHotspots"></div>
 
-          <!-- Lukzin -->
+          <!-- HOTSPOT INVISÍVEL DO GATO (Easter Egg) -->
+          <div class="hotspot-invisible" id="catHotspot" style="left: 40%; top: 15%; width: 18%; height: 25%;" title="Miau?"></div>
+
+          <!-- Lukzin em Pixel Art -->
           <div class="luk-character" id="lukChar" data-dir="right" style="left: 50%; top: 88%;">
             <div class="luk-bubble" id="lukBubble" role="status" aria-live="polite"></div>
-            <div class="luk-glow"></div>
-            <div class="luk-flip">
-              <div class="luk-squash">
-                <div class="luk-avatar">
-                  <div class="luk-head">
-                    <i class="luk-hair"></i>
-                    <i class="luk-eye l"></i><i class="luk-eye r"></i>
-                    <i class="luk-blush l"></i><i class="luk-blush r"></i>
-                    <i class="luk-mouth"></i>
-                    <i class="luk-phones"></i>
-                  </div>
-                  <div class="luk-body">
-                    <i class="luk-arm l"></i><i class="luk-arm r"></i>
-                  </div>
-                  <div class="luk-legs"><i class="luk-leg l"></i><i class="luk-leg r"></i></div>
-                </div>
-              </div>
-            </div>
+            <img src="img/lukzin.png" alt="Lukzin" class="luk-sprite">
             <div class="luk-shadow"></div>
           </div>
         </div>
@@ -569,7 +558,7 @@
       </div>
       <div class="cat-stats" id="catStats"></div>
       <div class="cat-grid" id="catGrid"></div>
-      <p class="cat-note">Preços e notas mudam o tempo todo. Os botões das lojas abrem a busca atualizada.</p>
+      <p class="cat-note">Clique para ver as especificações técnicas e onde encontrar os componentes.</p>
     </div>
 
     <!-- Ficha do item (modal) -->
@@ -746,6 +735,7 @@
 
 <script src="js/utils/dom.js"></script>
 <script src="js/utils/format.js"></script>
+<script src="js/utils/audio.js"></script> <!-- NOVO ARQUIVO DE ÁUDIO -->
 <script src="js/api/client.js"></script>
 <script src="js/twitch/twitch.js"></script>
 <script src="js/setup/setup.js"></script>
