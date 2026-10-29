@@ -289,7 +289,8 @@ dialog .card{transform:none !important}
   flex-direction:column;
   gap:12px;
   padding:20px;
-  flex: 0 0 auto !important; 
+  flex: 1 1 auto !important; 
+  height: 100%;
 }
 .apoie-head h3{font-size:1.1rem;color:var(--white);margin-bottom:4px}
 .apoie-head p{color:var(--mute);font-size:.82rem;line-height:1.45}
@@ -1547,31 +1548,4 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 }
 .apoie #donateLink {
   margin-top: auto;
-}
-
-/* HOME — proporções estáveis e CTA sempre ancorada no final do card */
-@media (min-width:1281px) {
-  .bento-col { min-height: 0; }
-  .bento-center > .twitch-player-box { flex: 0 0 auto !important; }
-  .bento-center > .twitch-player-box .twitch-player {
-    flex: 0 0 auto !important;
-    min-height: 0 !important;
-    height: auto;
-    aspect-ratio: 16 / 9;
-  }
-  .bento-center > .jogos-card { flex: 1 1 0%; min-height: 0; }
-  .bento-right > .apoie {
-    flex: 1 1 0% !important;
-    min-height: 0;
-  }
-  .bento-right > .apoie #hallLista { min-height: 0; }
-  .bento-right > .apoie #donateLink { margin-top: auto; }
-}
-@media (max-width:1280px) {
-  .bento-center > .twitch-player-box { flex: 0 0 auto !important; }
-  .bento-center > .twitch-player-box .twitch-player {
-    flex: 0 0 auto !important;
-    min-height: 0 !important;
-    aspect-ratio: 16 / 9;
-  }
 }

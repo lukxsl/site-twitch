@@ -12,20 +12,11 @@ const CONFIG = {
 };
 
 const AVISO = { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
-/* ------------------------------------------------------------
-   EMOTES DO CANAL (asemtet0)
-   Carregados sozinhos da Twitch via /api/config?action=emotes (tamanho 3.0 = 112x112).
-   O array abaixo é só o PLANO B (aparece se a API falhar). Pra fixar à mão, troque
-   emoji por img: emoteUrl('ID_DO_EMOTE')  → ID fica em twitchemotes.com ou no
-   Creator Dashboard > Emotes.
-   ------------------------------------------------------------ */
 const EMOTES = [
   { emoji: '🔥', nome: 'Hype' },   { emoji: '🥳', nome: 'YippeE' },
   { emoji: '😏', nome: 'Gotcha' }, { emoji: '😆', nome: 'Hehe' },
   { emoji: '🍿', nome: 'Flix' },   { emoji: '🫡', nome: 'F' }
 ];
-// Ordem de preferência dos 6 da vitrine da Home (nome sem o prefixo do canal).
-// Quer trocar a vitrine? É só mexer nesta lista.
 const EMOTES_DESTAQUE = ['Hype', 'YippeE', 'Gotcha', 'Hehe', 'Flix', 'F'];
 let EMOTES_TODOS = null;
 function emoteUrl(id, animado = false){
@@ -367,7 +358,6 @@ function hallValor(p){
 }
 
 function hallPodioHTML(itens){
-  // ordem visual: 2º · 1º · 3º
   const ordem = [1, 0, 2];
   const cls = ['pod-1', 'pod-2', 'pod-3'];
   const medalha = ['🥇', '🥈', '🥉'];
@@ -401,7 +391,6 @@ function renderHall(){
   if(!lista) return;
   const d = HALL_DADOS;
 
-  // foto quebrada -> inicial colorida (um único listener, delegado)
   if(!lista.dataset.errBound){
     lista.dataset.errBound = '1';
     lista.addEventListener('error', ev => {
@@ -468,10 +457,9 @@ function setupHallTabs(){
 
 function iniciarHall(){
   setupHallTabs();
-  renderHall();            // mostra o pódio "vazio" bonito enquanto carrega
+  renderHall();            
   carregarHall();
   if(HALL_TIMER) clearInterval(HALL_TIMER);
-  // a cada 60s busca de novo (a API só vai ao StreamElements a cada ~2 min) — "tempo real" sem WebSocket
   HALL_TIMER = setInterval(() => {
     if(document.hidden) return;
     carregarHall();
@@ -1845,8 +1833,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupSubShortcuts();
   iniciarHall();
   renderOuvindo();
-
-  // O setup agora é tratado inteiramente pelo setup.js, não precisamos mais inicializar o Three.js aqui.
   
   setupSugForm();
   setupSirFiltros();

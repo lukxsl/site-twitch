@@ -128,7 +128,6 @@ async function traduzir(texto){
   const original = String(texto || '').trim();
   if(!original) return null;
   try {
-    // O código "pt" do Translate retorna português brasileiro por padrão.
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(original.slice(0, 4200))}`;
     const r = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; asemtet0/1.0)' },
@@ -213,7 +212,6 @@ async function igdbBuscar(nome){
         if(wikiEn) principal.sinopse = wikiEn;
       }
     }
-    // Sinopses do IGDB/Wikipedia são entregues em português para o formulário manual.
     if(principal.sinopse){
       const pt = await traduzir(principal.sinopse);
       if(pt) principal.sinopse = pt;
@@ -501,8 +499,6 @@ async function prepararJogosManuais(listaRecebida, listaAtual){
     const descricaoAnterior = String((anterior && (anterior.sinopse || anterior.comentario)) || '').trim();
     const descricaoMudou = Boolean(descricao && descricao !== descricaoAnterior);
 
-    // Traduz automaticamente texto recém-adicionado/alterado. Itens antigos não
-    // são retraduzidos em cada salvamento, preservando comentários já revisados.
     if(!anterior || descricaoMudou){
       if(descricao){
         const pt = await traduzir(descricao);
