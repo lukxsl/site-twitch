@@ -257,15 +257,14 @@
           <h3>💜 Apoie o cantinho</h3>
           <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
         </div>
-        <a class="btn big" id="donateLink" href="#">💜 Fazer uma doação</a>
-        <h3 style="margin-top: 10px; margin-bottom: 12px; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">🏆 Top Doadores</h3>
-        <div class="hall-lista" id="hallLista">
-          <div class="hall-empty">
-            <span class="hall-empty-ic">🏆</span>
-            <small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small>
-          </div>
+        <div class="hall-head">
+          <h3>🏆 Top Doadores</h3>
+          <span class="hall-live" title="Atualiza sozinho"><i></i> ao vivo</span>
         </div>
+        <div class="hall-lista" id="hallLista" aria-live="polite"></div>
+        <div class="hall-total" id="hallTotal" hidden></div>
         <p class="hall-updated" id="hallUpdated" style="display:none"></p>
+        <a class="btn big block" id="donateLink" href="#">💜 Fazer uma doação</a>
       </article>
     </div>
   </div>
@@ -353,31 +352,40 @@
     <p>Entre no Discord, veja os clipes, escute a playlist e conheça as regras.</p>
   </header>
   <div class="sub-tabs reveal" id="comunidadeTabs">
-    <button class="sub-tab on" data-tab="discord">💬 Comunidade</button>
+    <button class="sub-tab on" data-tab="discord">💬 Discord</button>
     <button class="sub-tab" data-tab="clipes">🎬 Clipes</button>
     <button class="sub-tab" data-tab="playlist">🎵 Playlist</button>
     <button class="sub-tab" data-tab="sub">👑 Seja Sub</button>
     <button class="sub-tab" data-tab="info">📖 Info</button>
   </div>
   <div class="sub-panel on" data-panel="discord">
-    <div class="dc-cta reveal">
-      <div>
-        <b>💬 Discord da Soso</b>
-        <span id="dcMembros">Avisos de live, resenha e novidades do cantinho.</span>
+    <div class="cm-hero reveal">
+      <span class="cm-orb o1" aria-hidden="true"></span>
+      <span class="cm-orb o2" aria-hidden="true"></span>
+      <div class="cm-hero-copy">
+        <span class="cm-pill"><i class="cm-dot"></i> Comunidade ativa</span>
+        <h3>Seu lugar na resenha 💜</h3>
+        <p id="dcMembros">Avisos de live, resenha e novidades do cantinho.</p>
+        <div class="cm-hero-actions">
+          <a class="btn big cm-btn-dc" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">💬 Entrar no Discord →</a>
+          <a class="btn big ghost" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">📺 Ver a live</a>
+        </div>
       </div>
-      <a class="btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Entrar no Discord →</a>
+      <div class="cm-hero-art" aria-hidden="true">
+        <span class="cm-float f1">🎮</span>
+        <span class="cm-float f2">💬</span>
+        <span class="cm-float f3">📢</span>
+        <span class="cm-float f4">🎬</span>
+      </div>
     </div>
-    <div class="dc-info reveal">
-      <p>Aqui é onde a comunidade se reúne fora das lives: avisos de live em primeira mão, memes, calls de jogo e resenha. Um cantinho pra quem gosta de conversar e jogar junto. 💜</p>
-      <ul class="dc-perks">
-        <li>📢 Avisos de live em primeira mão</li>
-        <li>🎮 Calls e sessões de jogo em grupo</li>
-        <li>💬 Chat livre e memes</li>
-        <li>🎬 Indicações de jogos e filmes da galera</li>
-      </ul>
+    <div class="cm-perks">
+      <div class="cm-perk reveal"><span class="cm-perk-ic">📢</span><b>Avisos em primeira mão</b><span>Sabe quando a live começa antes de todo mundo.</span></div>
+      <div class="cm-perk reveal"><span class="cm-perk-ic">🎮</span><b>Calls e jogos em grupo</b><span>Sessões abertas pra jogar junto com a galera.</span></div>
+      <div class="cm-perk reveal"><span class="cm-perk-ic">💬</span><b>Chat livre e memes</b><span>Resenha, risada e zero cerimônia.</span></div>
+      <div class="cm-perk reveal"><span class="cm-perk-ic">🎬</span><b>Indicações da galera</b><span>Jogos, filmes e séries que valem o seu tempo.</span></div>
     </div>
     <div class="metas-comunidade reveal">
-      <span class="ap-h">🎯 Metas da comunidade</span>
+      <span class="ap-h">🎯 Metas da comunidade <small class="ap-sub">a gente chega lá junto</small></span>
       <div class="goals3" style="grid-template-columns:1fr 1fr;margin:0">
         <div class="goalc">
           <div class="gc-top"><span>💜 Seguidores</span><b id="goalSegNum">…</b></div>
@@ -497,6 +505,7 @@
           <span class="btn-tour-label">Iniciar Tour Guiado</span>
         </button>
 
+        <button type="button" id="btnLukFala" class="btn-icon" title="Chamar o Lukzin" aria-label="Conversar com o Lukzin">💬</button>
         <button type="button" id="btnMute" class="btn-icon" title="Ligar/Desligar som" aria-label="Ligar/Desligar som">🔊</button>
 
         <div class="setup-progress" id="setupProgress" hidden>
@@ -519,7 +528,7 @@
           <div class="hotspot-invisible" id="catHotspot" style="left: 42.5%; top: 10.5%; width: 19%; height: 20%;" title="Miau?"></div>
 
           <!-- Lukzin (sprite em pixel art) -->
-          <div class="luk-character" id="lukChar" data-dir="right" style="left: 50%; top: 88%;">
+          <div class="luk-character sitting" id="lukChar" data-dir="right" style="left: 62.3%; top: 78.7%;">
             <div class="luk-bubble" id="lukBubble" role="status" aria-live="polite"></div>
             <div class="luk-flip">
               <div class="luk-squash">
@@ -545,7 +554,7 @@
             <span class="rpg-name-main">Lukzin</span> 
             <span class="rpg-badge">DEV</span>
           </div>
-          <div class="rpg-text" id="dlgText">E aí! Clica nos pontinhos roxos pra ver as peças do setup da Soso, ou aperta o botão de Tour ali em cima!</div>
+          <div class="rpg-text" id="dlgText">E aí, tudo bão? Clica nos pontinhos roxos pra ver as peças do setup da Soso, ou me chama no Tour ali em cima que fica bão demais! Ah, e pode clicar em mim também. 💜</div>
           <div class="rpg-chips" id="dlgChips"></div>
           <div class="rpg-recap" id="dlgRecap" hidden></div>
           <div class="rpg-actions" id="dlgActions" hidden>

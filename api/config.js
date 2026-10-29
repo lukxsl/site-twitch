@@ -6,9 +6,12 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim();
 
-const HALL_CACHE_KEY = 'cache:hall_v13';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v13';
-const HALL_CACHE_TTL = 15 * 60;
+const CANAL = 'asemtet0';
+const HALL_CACHE_KEY = 'cache:hall_v14';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v14';
+const HALL_CACHE_TTL = 2 * 60;            // doadores: atualiza no máx. a cada 2 min
+const EMOTES_CACHE_KEY = 'cache:emotes_v1';
+const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
 
 const DEFAULT_SETUP = [
   { id: 'pc', titulo: '💻 PC Gamer', accent: 'blue', tipo: 'real', itens: [
@@ -127,25 +130,110 @@ async function streamElementsBuscar() {
   } catch(e) { return null; }
 }
 
+// ---------- Twitch: id do canal, avatares e emotes ----------
+async function twitchHeaders() {
+  const token = await twitchToken();
+  return { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` };
+}
+
+async function twitchUserId(login) {
+  const headers = await twitchHeaders();
+  const u = await (await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(login)}`, { headers })).json();
+  return u?.data?.[0]?.id || null;
+}
+
+// { login_minusculo: url_da_foto } — só acha quem tem o mesmo nome da Twitch
+async function twitchAvatares(nomes) {
+  if (!TWITCH_ID || !TWITCH_SECRET) return {};
+  const logins = [...new Set(nomes.map(n => String(n).toLowerCase().replace(/^@/, '')).filter(n => /^[a-z0-9_]{3,25}$/.test(n)))].slice(0, 100);
+  if (!logins.length) return {};
+  try {
+    const headers = await twitchHeaders();
+    const d = await (await fetch('https://api.twitch.tv/helix/users?' + logins.map(l => `login=${l}`).join('&'), { headers })).json();
+    const out = {};
+    (d?.data || []).forEach(u => { out[String(u.login).toLowerCase()] = u.profile_image_url; });
+    return out;
+  } catch (e) { return {}; }
+}
+
+async function twitchEmotes() {
+  if (!TWITCH_ID || !TWITCH_SECRET) return [];
+  try {
+    const headers = await twitchHeaders();
+    const id = await twitchUserId(CANAL);
+    if (!id) return [];
+    const d = await (await fetch(`https://api.twitch.tv/helix/chat/emotes?broadcaster_id=${id}`, { headers })).json();
+    return (d?.data || []).map(e => {
+      const base = `https://static-cdn.jtvnw.net/emoticons/v2/${encodeURIComponent(e.id)}`;
+      return {
+        id: e.id,
+        nome: e.name,
+        url: `${base}/default/dark/3.0`,                                   // 112x112
+        animada: Array.isArray(e.format) && e.format.includes('animated') ? `${base}/animated/dark/3.0` : null
+      };
+    });
+  } catch (e) { return []; }
+}
+
+// ---------- StreamElements: ranking de doadores 100% automático ----------
+async function seTodasAsGorjetas(h, cid, paginas = 5) {
+  const tips = [];
+  for (let p = 0; p < paginas; p++) {
+    const r = await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100&offset=${p * 100}&sort=-createdAt`, { headers: h });
+    if (!r.ok) break;
+    const d = await r.json();
+    const docs = Array.isArray(d?.docs) ? d.docs : [];
+    tips.push(...docs);
+    if (docs.length < 100) break;
+  }
+  return tips;
+}
+
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
   const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
-  const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json().catch(() => null);
-  const cid = me?._id;
-  if (!cid) return null;
   try {
-    const lbResp = await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips?limit=10`, { headers: h });
-    if (!lbResp.ok) throw new Error('Falha no leaderboard');
-    const lbData = await lbResp.json();
-    const lista = Array.isArray(lbData) ? lbData : (lbData.users || lbData.docs || []);
-    const doadoresRanking = lista.map(t => ({
-      nome: t.username || t.user?.username || t.donation?.user?.username || 'Anônimo',
-      total: Number(t.amount || t.points || t.donation?.amount) || 0,
-      avatar: null
-    })).filter(t => t.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
-    return { vazio: !doadoresRanking.length, gift: [], fieis: [], doadores: doadoresRanking };
+    const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
+    const cid = me?._id;
+    if (!cid) return null;
+
+    const tips = await seTodasAsGorjetas(h, cid);
+    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
+    const RUINS = ['failed', 'rejected', 'refunded', 'chargeback', 'cancelled', 'canceled'];
+
+    const porPessoa = {};
+    let totalMes = 0, ultimo = null;
+    tips.forEach(t => {
+      if (t.status && RUINS.includes(String(t.status).toLowerCase())) return;
+      const valor = Number(t.donation?.amount ?? t.amount) || 0;
+      if (valor <= 0) return;
+      const nome = safeStr(t.donation?.user?.username || t.username || 'Anônimo', 40);
+      const chave = nome.toLowerCase();
+      const quando = new Date(t.createdAt || t.updatedAt || 0).getTime();
+      if (!porPessoa[chave]) porPessoa[chave] = { nome, total: 0, ultima: 0 };
+      porPessoa[chave].total += valor;
+      porPessoa[chave].ultima = Math.max(porPessoa[chave].ultima, quando);
+      if (quando >= inicioMes.getTime()) totalMes += valor;
+      if (!ultimo || quando > ultimo.em) ultimo = { nome, valor, em: quando };
+    });
+
+    const ranking = Object.values(porPessoa).sort((a, b) => b.total - a.total).slice(0, 10);
+    const fotos = await twitchAvatares(ranking.map(r => r.nome));
+    const doadores = ranking.map(r => ({
+      nome: r.nome,
+      total: Math.round(r.total * 100) / 100,
+      avatar: fotos[r.nome.toLowerCase().replace(/^@/, '')] || null
+    }));
+
+    return {
+      vazio: !doadores.length,
+      doadores, gift: [], fieis: [],
+      totalMes: Math.round(totalMes * 100) / 100,
+      apoiadores: Object.keys(porPessoa).length,
+      ultimo
+    };
   } catch (e) {
-    return { vazio: true, doadores: [], gift: [], fieis: [] };
+    return null;
   }
 }
 
@@ -183,12 +271,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ setup, sonhos });
     }
 
-    if (action === 'debug-hall') {
-      const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
-      const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
-      const cid = me?._id;
-      const lbRaw = await (await fetch(`https://api.streamelements.com/kappa/v2/leaderboard/${cid}/tips?limit=10`, { headers: h })).json().catch(e => e.message);
-      return res.status(200).json({ cid, lbRaw });
+    // ===== EMOTES DO CANAL (Twitch Helix, cacheado) =====
+    if (action === 'emotes') {
+      res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+      try {
+        const [cached] = await redis([['GET', EMOTES_CACHE_KEY]]);
+        if (cached) return res.status(200).json({ emotes: JSON.parse(cached) });
+      } catch (e) {}
+      const emotes = await twitchEmotes();
+      if (emotes.length) { try { await redis([['SET', EMOTES_CACHE_KEY, JSON.stringify(emotes), 'EX', String(EMOTES_CACHE_TTL)]]); } catch (e) {} }
+      return res.status(200).json({ emotes });
     }
 
     if (action === 'apoiadores') {
@@ -226,13 +318,10 @@ export default async function handler(req, res) {
 
       if (cache && idade < HALL_CACHE_TTL) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
 
-      if (cache) {
-        (async () => { try { const n = await hallStreamElements(); if(n) await salvarHallCache(n); } catch(e){} })();
-        return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
-      }
-
+      // Cache vencido (ou inexistente): busca de novo. Se falhar, serve o cache antigo.
       const dados = await hallStreamElements();
       if (dados) { await salvarHallCache(dados); return res.status(200).json({ ...dados, updatedAt: Date.now() }); }
+      if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
       return res.status(200).json({ vazio: true, doadores: [], updatedAt: null });
     }
 

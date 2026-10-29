@@ -28,8 +28,8 @@ const SETUP_DATA = {
   gabinete: {
     titulo: 'Gabinete Risemode Aquarium', emoji: '🚀', cat: 'pc', raridade: 'lendario',
     x: 81.4, y: 45.5, stand: { x: 82, y: 82 },
-    fala: 'O coração da máquina! 🚀',
-    texto: 'Chegamos no cérebro da operação! Aqui dentro roda um Ryzen 9 5900X com 12 núcleos, 48GB de RAM, placa-mãe X570 TUF e uma RTX 3060 de 12GB branquinha, tudo refrigerado por um water cooler com RGB e enfeitado pelo vidro do Aquarium. Pode abrir 50 abas e a Soso ainda joga numa boa.',
+    fala: 'O coração da máquina! Tá bão demais! 🚀',
+    texto: 'Chegamos no cérebro da operação, e ó: tá bão demais! Aqui dentro roda um Ryzen 9 5900X com 12 núcleos, 48GB de RAM, placa-mãe X570 TUF e uma RTX 3060 de 12GB branquinha, tudo refrigerado por um water cooler com RGB e enfeitado pelo vidro do Aquarium. Pode abrir 50 abas e a Soso ainda joga numa boa.',
     pecas: [
       P('Processador AMD Ryzen 9 5900X', 'AMD Ryzen 9 5900X processador', '12 núcleos / 24 threads'),
       P('Memória RAM 48GB', 'memoria ram ddr4 48gb', 'Folga de sobra pra live + jogo'),
@@ -44,14 +44,14 @@ const SETUP_DATA = {
   monitor: {
     titulo: 'Monitor AOC 240Hz', emoji: '🖥️', cat: 'perifericos', raridade: 'epico',
     x: 52, y: 45, stand: { x: 52, y: 90 },
-    fala: 'Aqui a mágica acontece! ✨',
-    texto: 'Esse é o palco principal! Um monitor AOC de 240Hz deixa tudo absurdamente fluido, e olha só: a Soso está plantando coisa no Stardew Valley agora. Quem disse que setup gamer não pode ser fazendeiro?',
+    fala: 'Aqui a mágica acontece! Fica bão demais! ✨',
+    texto: 'Tudo bão por aqui? Esse é o palco principal! Um monitor AOC de 240Hz deixa tudo absurdamente fluido, e olha só: a Soso está plantando coisa no Stardew Valley agora. Quem disse que setup gamer não pode ser fazendeiro?',
     pecas: [P('Monitor Gamer AOC 240Hz', 'monitor gamer aoc 240hz 1ms', '240Hz, imagem lisinha')]
   },
   webcam: {
     titulo: 'Webcam iPhone 11', emoji: '📱', cat: 'perifericos', raridade: 'raro',
     x: 52, y: 34.5, stand: { x: 47, y: 88 },
-    fala: 'Olha o passarinho! 📸',
+    fala: 'Olha o passarinho, fica bão! 📸',
     texto: 'Plot twist: a webcam é um iPhone 11! A câmera dele entrega uma qualidade que muita webcam cara não alcança, e é por isso que a live aparece nítida mesmo com a iluminação neon do quarto.',
     pecas: [P('iPhone 11 (usado como webcam)', 'iphone 11 128gb', 'Câmera de celular trabalhando como webcam')]
   },
@@ -59,13 +59,13 @@ const SETUP_DATA = {
     titulo: 'Logitech G PRO X TKL', emoji: '⌨️', cat: 'perifericos', raridade: 'epico',
     x: 50.8, y: 62.2, stand: { x: 47, y: 90 },
     fala: 'Tec tec tec! ⌨️',
-    texto: 'O teclado é um Logitech G PRO X TKL branco: formato compacto (sem o numérico), que deixa um espaço enorme pro mouse, e é sem fio. Perfeito pra quem joga de verdade e ainda quer a mesa organizada.',
+    texto: 'O teclado é um Logitech G PRO X TKL branco: formato compacto (sem o numérico), que deixa um espaço enorme pro mouse, e é sem fio. Perfeito pra quem joga de verdade e ainda quer a mesa organizada. Digitar nele é bão demais!',
     pecas: [P('Teclado Logitech G PRO X TKL Branco', 'teclado logitech g pro x tkl branco', 'TKL, sem fio')]
   },
   mouse: {
     titulo: 'Logitech G502X Superlight', emoji: '🖱️', cat: 'perifericos', raridade: 'epico',
     x: 60.5, y: 62.5, stand: { x: 62, y: 90 },
-    fala: 'Leve e preciso! 🎯',
+    fala: 'Leve, preciso e bão! 🎯',
     texto: 'Esse é o Logitech G502X Superlight com RGB. Leve como uma pena e preciso como um laser, ele é o parceiro de qualquer clutch e deixa a mesa com cara de nave espacial.',
     pecas: [P('Mouse Logitech G502X Superlight', 'mouse logitech g502x plus superlight', 'Leve, sensor preciso')]
   },
@@ -73,20 +73,20 @@ const SETUP_DATA = {
     titulo: 'Headset Astro A30', emoji: '🎧', cat: 'perifericos', raridade: 'epico',
     x: 67.4, y: 53.8, stand: { x: 70, y: 88 },
     fala: 'Som de cinema! 🎧',
-    texto: 'O Astro A30 é o ouvido da Soso: sem fio, confortável pra lives longas e com um som que deixa ouvir o passo do inimigo, a trilha do jogo e o chat sem brigar um com o outro.',
+    texto: 'O Astro A30 é o ouvido da Soso: sem fio, confortável pra lives longas e com um som que deixa ouvir o passo do inimigo, a trilha do jogo e o chat sem brigar um com o outro. Áudio bão é tudo, né?',
     pecas: [P('Headset Astro A30', 'headset astro a30', 'Sem fio, confortável')]
   },
   microfone: {
     titulo: 'Microfone FIFINE AM8', emoji: '🎙️', cat: 'perifericos', raridade: 'raro',
     x: 38.8, y: 54.2, stand: { x: 41, y: 88 },
-    fala: 'A voz da Soso! 🎙️',
+    fala: 'A voz da Soso, sempre bão! 🎙️',
     texto: 'Aqui nasce a voz que você ouve nas lives! O FIFINE AM8 branco é um microfone dinâmico que capta bem a voz e ignora boa parte do barulho do quarto. Ótimo pra risadas e também pros gritos de susto.',
     pecas: [P('Microfone FIFINE AM8 Branco', 'microfone fifine am8 branco', 'Dinâmico, USB e XLR')]
   },
   cadeira: {
     titulo: 'Cadeira XT Racer', emoji: '🪑', cat: 'conforto', raridade: 'raro',
     x: 62.3, y: 78.7, stand: { x: 74, y: 92 },
-    fala: 'O trono da Soso! 👑',
+    fala: 'O trono da Soso! Senta que é bão! 👑',
     texto: 'A base de tudo é a cadeira XT Racer. Confortável o bastante pra aguentar aquelas lives de várias horas sem reclamar das costas, e com visual de assento de piloto.',
     pecas: [P('Cadeira Gamer XT Racer', 'cadeira gamer xt racer', 'Conforto pra lives longas')]
   },
@@ -103,6 +103,19 @@ const SETUP_DATA = {
 const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinete', 'cadeira', 'microfone'];
 const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
+
+// Onde o Lukzin fica sentado (centro da cadeira, em % da imagem do quarto)
+const CADEIRA = { x: 62.3, y: 78.7 };
+const SENTADO_SPRITE = 'img/lukzin-sentado.png';   // OPCIONAL: se existir, é usado no lugar do corte em CSS
+const BAO_GREETING = 'Tudo bão? 💜 Clica em mim!';
+const BAO_FALAS = [
+  'Tudo bão? 💜',
+  'Fica bão demais, né? ✨',
+  'Tá bão ou quer mais? 😄',
+  'Ô sô, que setup bão! 🎮',
+  'Bão demais ter você aqui! 💜',
+  'Chega mais, tá bão? Clica nos pontinhos!'
+];
 
 /* ============================================================
    2. UTILS
@@ -138,7 +151,8 @@ const S = {
   tour: false, run: 0, itemAtual: null, walkId: 0,
   typeTimer: null, finish: null, wake: null,
   catClicks: 0, catReset: null, catLastStamp: -1,
-  gatoVisto: false
+  gatoVisto: false,
+  sentado: false, idleTimer: null, balaoTimer: null, cliquesLuk: 0, falaIdx: 0, saudou: false, sitSprite: false
 };
 try { S.gatoVisto = localStorage.getItem('setup_gato') === '1'; } catch (_) { /* ignore */ }
 
@@ -159,6 +173,7 @@ const esperar = (ms) => new Promise((res) => {
 function moverLuk(x, y) {
   const el = char();
   if (!el) return Promise.resolve();
+  clearTimeout(S.idleTimer);
   const id = ++S.walkId;
   const cx = parseFloat(el.dataset.x ?? 50);
   const cy = parseFloat(el.dataset.y ?? 88);
@@ -204,6 +219,113 @@ async function olharPara(it, dest) {
 }
 
 function setFalando(on) { char().classList.toggle('speaking', on); }
+
+/* ---------- Lukzin sentado na cadeira ---------- */
+// Se existir img/lukzin-sentado.png, usa esse sprite; senão corta as pernas via CSS (.sitting)
+const spriteSentadoTeste = new Image();
+spriteSentadoTeste.onload = () => { S.sitSprite = true; };
+spriteSentadoTeste.src = SENTADO_SPRITE;
+
+function aplicarSprite(sentado) {
+  const el = char();
+  const img = el && el.querySelector('.luk-sprite');
+  if (!img) return;
+  if (!img.dataset.stand) img.dataset.stand = img.getAttribute('src');
+  const usar = sentado && S.sitSprite;
+  img.setAttribute('src', usar ? SENTADO_SPRITE : img.dataset.stand);
+  el.classList.toggle('has-sit-sprite', usar);
+}
+
+function marcarSentado(on) {
+  const el = char();
+  S.sentado = on;
+  el.classList.toggle('sitting', on);
+  aplicarSprite(on);
+  // o hotspot da cadeira fica escondido enquanto o Lukzin está nela (ele mesmo é clicável)
+  if (hotspots.cadeira) hotspots.cadeira.classList.toggle('luk-ocupada', on);
+}
+
+async function sentar() {
+  const el = char();
+  if (!el || S.tour || S.sentado) return;
+  const run = S.run;
+  await moverLuk(CADEIRA.x, CADEIRA.y);
+  if (run !== S.run || S.tour) return;
+  marcarSentado(true);
+  snd('playPop');
+}
+
+async function levantar() {
+  if (!S.sentado) return;
+  marcarSentado(false);
+  snd('playPop');
+  await esperar(REDUCED ? 0 : 380);
+}
+
+function agendarVoltar(ms = 16000) {
+  clearTimeout(S.idleTimer);
+  S.idleTimer = setTimeout(() => { if (!S.tour && !S.sentado) sentar(); }, ms);
+}
+
+function falaTemporaria(texto, ms = 4200) {
+  const el = char();
+  mostrarBalao(texto, parseFloat(el.dataset.x ?? CADEIRA.x));
+  setFalando(true);
+  setTimeout(() => setFalando(false), 900);
+  clearTimeout(S.balaoTimer);
+  S.balaoTimer = setTimeout(esconderBalao, ms);
+}
+
+// Clique no Lukzin (ou no botão 💬): ele pula, solta um bordão e, de vez em quando, oferece a cadeira
+function interagir() {
+  const el = char();
+  if (!el || S.tour || el.classList.contains('walking')) return;
+  clearTimeout(S.idleTimer);
+  S.cliquesLuk += 1;
+  el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop');
+  setTimeout(() => el.classList.remove('hop'), 520);
+  snd('playPop');
+
+  if (S.cliquesLuk % 5 === 0) {
+    falaTemporaria('Quer ver a minha cadeira? Fica bão demais! 🪑', 1800);
+    const n = S.cliquesLuk;
+    setTimeout(() => { if (!S.tour && S.cliquesLuk === n) irParaItem('cadeira'); }, 1500);
+    return;
+  }
+  if (S.cliquesLuk % 3 === 0) sparks();
+  falaTemporaria(BAO_FALAS[S.falaIdx++ % BAO_FALAS.length]);
+  if (!S.sentado) agendarVoltar();
+}
+
+function ligarLuk() {
+  const flip = char().querySelector('.luk-flip');
+  flip.setAttribute('role', 'button');
+  flip.setAttribute('tabindex', '0');
+  flip.setAttribute('aria-label', 'Conversar com o Lukzin');
+  flip.addEventListener('click', (e) => { e.stopPropagation(); interagir(); });
+  flip.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); interagir(); }
+  });
+  const btn = $('btnLukFala');
+  if (btn) btn.addEventListener('click', interagir);
+
+  // posição inicial: sentadinho na cadeira
+  const el = char();
+  el.dataset.x = CADEIRA.x; el.dataset.y = CADEIRA.y;
+  el.style.left = `${CADEIRA.x}%`; el.style.top = `${CADEIRA.y}%`;
+  marcarSentado(true);
+
+  // cumprimenta uma vez, quando o mini-game aparece na tela
+  const cena = $('setupScene');
+  if (cena && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((es) => {
+      if (!es.some((x) => x.isIntersecting) || S.saudou) return;
+      S.saudou = true; io.disconnect();
+      setTimeout(() => { if (!S.tour && S.sentado && !S.itemAtual) falaTemporaria(BAO_GREETING, 5200); }, 800);
+    }, { threshold: 0.5 });
+    io.observe(cena);
+  }
+}
 
 function mostrarBalao(texto, x) {
   const b = $('lukBubble');
@@ -317,6 +439,10 @@ async function visitar(id, run) {
   const it = SETUP_DATA[id];
   const hs = hotspots[id];
   S.itemAtual = id;
+  if (S.sentado) {
+    await levantar();
+    if (run !== S.run) return false;
+  }
   if (hs) hs.classList.add('is-target');
   foco(null);
 
@@ -336,6 +462,7 @@ async function visitar(id, run) {
   await digitar($('dlgText'), it.texto);
   if (run !== S.run) return false;
   mostrarChips(it);
+  if (!S.tour) agendarVoltar(18000);   // fora do tour, depois de um tempo ele volta pra cadeira
   return true;
 }
 
@@ -377,6 +504,14 @@ async function iniciarTour() {
   setTourUI(true);
   setProgresso(0, ORDEM_TOUR.length);
 
+  if (S.sentado) {
+    falaTemporaria('Bora, que vai ficar bão demais! 🚀', 1600);
+    await esperar(REDUCED ? 0 : 500);
+    if (run !== S.run) return;
+    await levantar();
+    if (run !== S.run) return;
+  }
+
   for (let i = 0; i < ORDEM_TOUR.length; i++) {
     setProgresso(i + 1, ORDEM_TOUR.length);
     const ok = await visitar(ORDEM_TOUR[i], run);
@@ -394,7 +529,7 @@ function pararTour(voltar = true) {
   setTourUI(false);
   foco(null);
   Object.values(hotspots).forEach((b) => b.classList.remove('is-target'));
-  if (rodava && voltar) moverLuk(50, 88);
+  if (rodava && voltar) sentar();
 }
 
 /* ---------- Recap final ---------- */
@@ -405,11 +540,11 @@ async function recapFinal(run) {
 
   sparks();
   snd('playSuccess');
-  mostrarBalao('Setup completo! 💜', 50);
+  mostrarBalao('Setup completo, tá bão demais! 💜', 50);
   setProgresso(ORDEM_TOUR.length, ORDEM_TOUR.length, 'Concluído! ✅');
   prepararDialogo('Lukzin · Resumão do Setup');
   $('setupDialogue').classList.add('is-recap');
-  await digitar($('dlgText'), 'E aí, curtiu o tour? Anota aí tudo que a Soso usa:');
+  await digitar($('dlgText'), 'E aí, curtiu o tour? Ficou bão demais, né? Anota aí tudo que a Soso usa:');
   if (run !== S.run) return;
 
   const grupos = Object.entries(CATS).map(([key, cat], gi) => {
@@ -427,6 +562,7 @@ async function recapFinal(run) {
   S.tour = false;
   setTourUI(false);
   $('setupProgress').classList.add('on');
+  agendarVoltar(25000);
 }
 
 /* ============================================================
@@ -610,6 +746,7 @@ function init() {
   sec.dataset.ready = '1';
 
   criarHotspots();
+  ligarLuk();
   ligarGato();
   criarFiltros();
   renderCatalogo();
@@ -656,6 +793,20 @@ function init() {
 window.iniciarTour = iniciarTour;
 window.pararTour = pararTour;
 window.irParaItem = irParaItem;
+window.lukInteragir = interagir;
+// Ajuste fino no console: lukSentado({ drop: '45%' })  → quanto das pernas fica escondido
+//                          lukSentado({ x: 62.3, y: 78.7 }) → ponto da cadeira
+window.lukSentado = (cfg = {}) => {
+  const el = char();
+  if (cfg.drop) el.style.setProperty('--sit-drop', cfg.drop);
+  if (cfg.x != null) CADEIRA.x = cfg.x;
+  if (cfg.y != null) CADEIRA.y = cfg.y;
+  if (S.sentado) {
+    el.dataset.x = CADEIRA.x; el.dataset.y = CADEIRA.y;
+    el.style.left = `${CADEIRA.x}%`; el.style.top = `${CADEIRA.y}%`;
+  }
+  return { ...CADEIRA, drop: getComputedStyle(el).getPropertyValue('--sit-drop').trim() };
+};
 window.SETUP_DATA = SETUP_DATA;
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

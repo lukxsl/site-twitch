@@ -12,11 +12,25 @@ const CONFIG = {
 };
 
 const AVISO = { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
+/* ------------------------------------------------------------
+   EMOTES DO CANAL (asemtet0)
+   Carregados sozinhos da Twitch via /api/config?action=emotes (tamanho 3.0 = 112x112).
+   O array abaixo é só o PLANO B (aparece se a API falhar). Pra fixar à mão, troque
+   emoji por img: emoteUrl('ID_DO_EMOTE')  → ID fica em twitchemotes.com ou no
+   Creator Dashboard > Emotes.
+   ------------------------------------------------------------ */
 const EMOTES = [
-  { emoji: '💜', nome: 'amor' }, { emoji: '😭', nome: 'chora' },
-  { emoji: '😂', nome: 'risada' }, { emoji: '😡', nome: 'raiva' },
-  { emoji: '😱', nome: 'pog' }, { emoji: '🎮', nome: 'gg' }
+  { emoji: '🔥', nome: 'Hype' },   { emoji: '🥳', nome: 'YippeE' },
+  { emoji: '😏', nome: 'Gotcha' }, { emoji: '😆', nome: 'Hehe' },
+  { emoji: '🍿', nome: 'Flix' },   { emoji: '🫡', nome: 'F' }
 ];
+// Ordem de preferência dos 6 da vitrine da Home (nome sem o prefixo do canal).
+// Quer trocar a vitrine? É só mexer nesta lista.
+const EMOTES_DESTAQUE = ['Hype', 'YippeE', 'Gotcha', 'Hehe', 'Flix', 'F'];
+let EMOTES_TODOS = null;
+function emoteUrl(id, animado = false){
+  return `https://static-cdn.jtvnw.net/emoticons/v2/${id}/${animado ? 'animated' : 'default'}/dark/3.0`;
+}
 const MARCOS = [50,100,250,500,1000,2500,5000,10000,25000,50000];
 const HOST = window.location.hostname || 'localhost';
 const COMANDOS_LISTA = [
@@ -80,7 +94,7 @@ let _recentes = [];
 let _musicaPronta = false;
 
 let HALL_DADOS = null;
-let HALL_ABA = 'gift';
+let HALL_ABA = 'doadores';
 let HALL_TIMER = null;
 
 let sortMode = 'nota';
@@ -248,14 +262,42 @@ function renderAviso(){
   } else box.style.display = 'none';
 }
 
+// 'asemtetHype' -> 'Hype' (tira o prefixo minúsculo do canal)
+function emoteLabel(nome){
+  const n = String(nome || '');
+  return n.replace(/^[a-z0-9_]+(?=[A-Z])/, '') || n;
+}
+function escolherDestaques(lista, max = 6){
+  const out = [];
+  EMOTES_DESTAQUE.forEach(p => {
+    const m = lista.find(e => e.nome.toLowerCase() === p.toLowerCase() && !out.includes(e));
+    if(m) out.push(m);
+  });
+  lista.forEach(e => { if(out.length < max && !out.includes(e)) out.push(e); });
+  return out.slice(0, max);
+}
+function emoteTile(e, comNome){
+  const nome = esc(e.nome || '');
+  const legenda = comNome ? `<span class="emote-name">${nome}</span>` : '';
+  if(e.img) return `<div class="emote" title="${nome}"><img src="${esc(e.img)}" alt="${nome}" width="112" height="112" loading="lazy" decoding="async" onerror="this.replaceWith(document.createTextNode('💜'))">${legenda}</div>`;
+  return `<div class="emote" title="${nome}"><span class="emote-fallback">${e.emoji || '💜'}</span>${legenda}</div>`;
+}
 function renderEmotes(){
-  const html = EMOTES.map(e => {
-    if(e.img) return `<div class="emote" title="${esc(e.nome || '')}"><img src="${esc(e.img)}" alt="${esc(e.nome || '')}" loading="lazy" onerror="this.replaceWith(document.createTextNode('💜'))"></div>`;
-    return `<div class="emote" title="${esc(e.nome || '')}">${e.emoji || '💜'}</div>`;
-  }).join('');
-  const g1 = $('emotesGrid'); if(g1) g1.innerHTML = html;
-  const g2 = $('emotesGridComunidade'); if(g2) g2.innerHTML = html;
-  const g3 = $('emotesMiniGrid'); if(g3) g3.innerHTML = html;
+  const todos = EMOTES_TODOS || EMOTES;
+  const vitrine = EMOTES_TODOS ? escolherDestaques(EMOTES_TODOS) : EMOTES;
+  const g1 = $('emotesGrid'); if(g1) g1.innerHTML = vitrine.map(e => emoteTile(e, false)).join('');
+  const g2 = $('emotesGridComunidade'); if(g2) g2.innerHTML = todos.map(e => emoteTile(e, true)).join('');
+  const g3 = $('emotesMiniGrid'); if(g3) g3.innerHTML = vitrine.map(e => emoteTile(e, false)).join('');
+}
+async function carregarEmotes(){
+  try{
+    const r = await fetch('/api/config?action=emotes');
+    if(!r.ok) return;
+    const d = await r.json();
+    if(!Array.isArray(d.emotes) || !d.emotes.length) return;
+    EMOTES_TODOS = d.emotes.map(e => ({ img: e.url, nome: emoteLabel(e.nome), id: e.id }));
+    renderEmotes();
+  }catch(e){ console.warn('[emotes] usando plano B', e); }
 }
 
 function renderSiteUpdate(){
@@ -303,55 +345,94 @@ async function carregarHall(){
     const r = await fetch('/api/config?action=hall', { cache: 'no-store' });
     const d = await r.json();
     HALL_DADOS = d;
-    renderHall();
   } catch(e){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
+    if(!HALL_DADOS) HALL_DADOS = null;
   }
+  renderHall();
+}
+
+// Foto da Twitch; se falhar (ou não existir), vira uma bolinha colorida com a inicial
+function hallAvatar(p, cls){
+  const nome = String(p.nome || '?').replace(/^@/, '');
+  let hue = 0; for(const c of nome) hue = (hue * 31 + c.charCodeAt(0)) % 360;
+  const ini = esc((nome.charAt(0) || '?').toUpperCase());
+  if(p.avatar) return `<img class="hall-av ${cls}" src="${esc(p.avatar)}" alt="" loading="lazy" decoding="async" data-ini="${ini}" data-h="${hue}">`;
+  return `<div class="hall-av ${cls} ph" style="--h:${hue}">${ini}</div>`;
+}
+
+function hallValor(p){
+  if(HALL_ABA === 'gift') return `${p.total} gift${p.total === 1 ? '' : 's'}`;
+  if(HALL_ABA === 'fieis') return `${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
+  return fmtBRL(p.total);
+}
+
+function hallPodioHTML(itens){
+  // ordem visual: 2º · 1º · 3º
+  const ordem = [1, 0, 2];
+  const cls = ['pod-1', 'pod-2', 'pod-3'];
+  const medalha = ['🥇', '🥈', '🥉'];
+  return `<div class="podium">` + ordem.map(i => {
+    const p = itens[i];
+    if(!p) return `<div class="pod ${cls[i]} vazio" style="--d:${i * 90}ms"><div class="hall-av pod-av ph">?</div><span class="pod-name">Você?</span><span class="pod-val">vaga livre</span></div>`;
+    return `<div class="pod ${cls[i]}" style="--d:${i * 90}ms">
+      ${i === 0 ? '<span class="pod-crown" aria-hidden="true">👑</span>' : ''}
+      ${hallAvatar(p, 'pod-av')}
+      <span class="pod-medal" aria-hidden="true">${medalha[i]}</span>
+      <span class="pod-name" title="${esc(p.nome || '')}">${esc(p.nome || '—')}</span>
+      <span class="pod-val">${esc(hallValor(p))}</span>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function hallRestoHTML(itens){
+  return itens.map((p, k) => `
+    <div class="hall-row" style="--d:${(k + 3) * 80}ms">
+      <span class="hr-pos">${k + 4}º</span>
+      ${hallAvatar(p, 'hr-avatar')}
+      <span class="hr-name">${esc(p.nome || '—')}</span>
+      <span class="hr-meta">${esc(hallValor(p))}</span>
+    </div>`).join('');
 }
 
 function renderHall(){
   const lista = $('hallLista');
   const updated = $('hallUpdated');
+  const total = $('hallTotal');
   if(!lista) return;
   const d = HALL_DADOS;
 
-  if(!d || d.vazio){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
-    if(updated) updated.style.display = 'none';
-    return;
+  // foto quebrada -> inicial colorida (um único listener, delegado)
+  if(!lista.dataset.errBound){
+    lista.dataset.errBound = '1';
+    lista.addEventListener('error', ev => {
+      const img = ev.target;
+      if(!img || !img.matches || !img.matches('img.hall-av')) return;
+      const ph = document.createElement('div');
+      ph.className = img.className.replace('hall-av', 'hall-av ph');
+      ph.style.setProperty('--h', img.dataset.h || '270');
+      ph.textContent = img.dataset.ini || '?';
+      img.replaceWith(ph);
+    }, true);
   }
 
-  const itens = (HALL_ABA === 'gift' ? (d.gift || [])
-              : HALL_ABA === 'fieis' ? (d.fieis || [])
-              : (d.doadores || [])).slice(0, 3);
+  const bruto = !d || d.vazio ? [] :
+    (HALL_ABA === 'gift' ? (d.gift || []) : HALL_ABA === 'fieis' ? (d.fieis || []) : (d.doadores || []));
+  const itens = bruto.slice(0, 5);
 
-  if(!itens.length){
-    lista.innerHTML = `<div class="hall-empty"><span class="hall-empty-ic">🏆</span><small>O ranking ainda tá vazio.<br>Seja a primeira pessoa a aparecer aqui! 💜</small></div>`;
-  } else {
-    const medalhas = ['🥇','🥈','🥉'];
-    lista.innerHTML = itens.map((p, i) => {
-      const medalha = medalhas[i] || `${i+1}º`;
-      let meta = '';
-      if(HALL_ABA === 'gift') meta = `${p.total} gift${p.total === 1 ? '' : 's'}`;
-      else if(HALL_ABA === 'fieis') meta = `${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
-      else meta = fmtBRL(p.total);
+  let html = hallPodioHTML(itens);
+  if(itens.length > 3) html += `<div class="hall-resto">${hallRestoHTML(itens.slice(3))}</div>`;
+  if(!itens.length) html += `<p class="hall-cta-vazio">Ninguém no pódio ainda. <b>Seja a primeira pessoa a aparecer aqui!</b> 💜</p>`;
+  lista.innerHTML = html;
 
-      const avatarHTML = p.avatar
-        ? `<img class="hr-avatar" src="${esc(p.avatar)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'hr-avatar-ph',textContent:'👤'}))">`
-        : `<div class="hr-avatar-ph">👤</div>`;
-
-      return `
-        <div class="hall-row">
-          <span class="hr-pos">${medalha}</span>
-          ${avatarHTML}
-          <span class="hr-name">@${esc(p.nome || '—')}</span>
-          <span class="hr-meta">${esc(meta)}</span>
-        </div>
-      `;
-    }).join('');
+  if(total){
+    const linhas = [];
+    if(d && d.totalMes > 0) linhas.push(`💜 <b>${esc(fmtBRL(d.totalMes))}</b> doados neste mês`);
+    if(d && d.ultimo && d.ultimo.nome) linhas.push(`✨ Última doação: <b>${esc(d.ultimo.nome)}</b> · ${esc(fmtBRL(d.ultimo.valor))}`);
+    total.innerHTML = linhas.join('<br>');
+    total.hidden = !linhas.length;
   }
 
-  if(updated && d.updatedAt){
+  if(updated && d && d.updatedAt){
     atualizarTextoHallUpdated(d.updatedAt);
     updated.style.display = '';
   } else if(updated){
@@ -387,13 +468,15 @@ function setupHallTabs(){
 
 function iniciarHall(){
   setupHallTabs();
+  renderHall();            // mostra o pódio "vazio" bonito enquanto carrega
   carregarHall();
   if(HALL_TIMER) clearInterval(HALL_TIMER);
+  // a cada 60s busca de novo (a API só vai ao StreamElements a cada ~2 min) — "tempo real" sem WebSocket
   HALL_TIMER = setInterval(() => {
-    if(HALL_DADOS && HALL_DADOS.updatedAt){
-      atualizarTextoHallUpdated(HALL_DADOS.updatedAt);
-    }
+    if(document.hidden) return;
+    carregarHall();
   }, 60000);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) carregarHall(); });
 }
 
 /* ============================================================
@@ -1756,7 +1839,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   _ultimaAba = null;
   _executarMudarAba(abaInicial, false);
 
-  renderAviso(); renderEmotes(); renderSiteUpdate();
+  renderAviso(); renderEmotes(); carregarEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
   setupSubShortcuts();
