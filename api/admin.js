@@ -292,7 +292,8 @@ async function buscarSinopseSteam(appid){
       if(!dados) continue;
       const original = limparHtmlDescricao(dados.short_description || dados.about_the_game || dados.detailed_description || '');
       if(!original) continue;
-      const pt = await traduzir(original);
+      const jaPt = idioma === 'brazilian' || idioma === 'portuguese';
+      const pt = jaPt ? null : await traduzir(original);
       const generos = Array.isArray(dados.genres) ? dados.genres.map(g => g.description).filter(Boolean) : [];
       return { nome: dados.name || null, sinopse: pt || original, capa: dados.header_image || null, generos };
     } catch(e) { /* tenta o próximo idioma */ }
@@ -332,47 +333,82 @@ async function buscarDadosJogo(nome, appid = null){
   };
 }
 
-/* Merge atômico no Redis: não redefine tiers, notas, status ou comentários existentes. */
-const MERGE_STEAM_LUA = [
-  "local raw = redis.call('GET', KEYS[1])",
-  "local atuais = {}",
-  "if raw then local ok, parsed = pcall(cjson.decode, raw); if ok and type(parsed) == 'table' then atuais = parsed end end",
-  "local incoming = cjson.decode(ARGV[1])",
-  "local porApp = {}",
-  "local porNome = {}",
-  "for i, jogo in ipairs(atuais) do",
-  "  if jogo.appid then porApp[tostring(jogo.appid)] = i end",
-  "  if jogo.nome then porNome[string.lower(tostring(jogo.nome))] = i end",
+/* ------------------------------------------------------------------
+   Escrita segura da lista de jogos (compare-and-set)
+   ------------------------------------------------------------------
+   Por que não o Lua com cjson de antes: o cjson do Redis transforma arrays
+   VAZIOS em objetos ({}), então um jogo com `generos: []` voltava corrompido.
+   Agora o merge é feito em JS e o Redis só confirma "a lista ainda é a mesma
+   que eu li?" antes de gravar. Se alguém editou no meio, tenta de novo.
+   ------------------------------------------------------------------ */
+const CAS_LUA = [
+  "local cur = redis.call('GET', KEYS[1])",
+  "if (cur == false and ARGV[1] == '') or cur == ARGV[1] then",
+  "  redis.call('SET', KEYS[1], ARGV[2])",
+  "  return 1",
   "end",
-  "local adicionados = 0",
-  "local pulados = 0",
-  "for _, novo in ipairs(incoming) do",
-  "  local idx = nil",
-  "  if novo.appid then idx = porApp[tostring(novo.appid)] end",
-  "  if (not idx) and novo.nome then idx = porNome[string.lower(tostring(novo.nome))] end",
-  "  if idx then",
-  "    pulados = pulados + 1",
-  "    local atual = atuais[idx]",
-  "    if novo.appid and not atual.appid then atual.appid = novo.appid end",
-  "    if novo.horas and (not atual.horas or tonumber(novo.horas) > tonumber(atual.horas)) then atual.horas = novo.horas end",
-  "    if (not atual.capa or atual.capa == '') and novo.capa then atual.capa = novo.capa end",
-  "    local desc = atual.sinopse or atual.comentario",
-  "    local novaDesc = novo.sinopse or novo.comentario",
-  "    if (not desc or desc == '') and novaDesc and novaDesc ~= '' then atual.sinopse = novaDesc; atual.comentario = novaDesc end",
-  "    if (not atual.generos or #atual.generos == 0) and novo.generos and #novo.generos > 0 then atual.generos = novo.generos end",
-  "    if (not atual.conquistas or not atual.conquistas.total) and novo.conquistas then atual.conquistas = novo.conquistas end",
-  "    if (not atual.nota or tonumber(atual.nota) == 0) and novo.nota and tonumber(novo.nota) > 0 then atual.nota = novo.nota end",
-  "  else",
-  "    table.insert(atuais, novo)",
-  "    local pos = #atuais",
-  "    if novo.appid then porApp[tostring(novo.appid)] = pos end",
-  "    if novo.nome then porNome[string.lower(tostring(novo.nome))] = pos end",
-  "    adicionados = adicionados + 1",
-  "  end",
-  "end",
-  "redis.call('SET', KEYS[1], cjson.encode(atuais))",
-  "return cjson.encode({adicionados = adicionados, pulados = pulados, total = #atuais})"
+  "return 0"
 ].join('\n');
+
+async function atualizarListaCAS(key, aplicar, tentativas = 4){
+  for(let i = 0; i < tentativas; i++){
+    const [raw] = await redis([['GET', key]]);
+    let lista = [];
+    if(raw){
+      try { lista = JSON.parse(raw); }
+      catch(e){ throw new Error('A lista no Redis está ilegível. Abortei para não sobrescrever nada.'); }
+    }
+    if(!Array.isArray(lista)) throw new Error('A lista no Redis não é um array. Abortei para não sobrescrever nada.');
+    const { lista: nova, resultado } = aplicar(lista);
+    const [ok] = await redis([['EVAL', CAS_LUA, '1', key, raw || '', JSON.stringify(nova)]]);
+    if(Number(ok) === 1) return resultado;
+    await new Promise(r => setTimeout(r, 120 + Math.random() * 200));
+  }
+  throw new Error('A lista foi alterada ao mesmo tempo por outra ação. Tente de novo.');
+}
+
+const normalizarNomeJogo = nome => String(nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/* Não mexe em tier, nota, status nem comentário de quem já existe: só completa o que está vazio. */
+function mesclarJogosSteam(atuais, novos){
+  const lista = atuais.map(j => ({ ...j }));
+  const porApp = new Map(), porNome = new Map();
+  lista.forEach((j, i) => {
+    if(j.appid) porApp.set(String(j.appid), i);
+    if(j.nome) porNome.set(normalizarNomeJogo(j.nome), i);
+  });
+  let adicionados = 0, pulados = 0;
+  for(const novo of novos){
+    let idx = novo.appid ? porApp.get(String(novo.appid)) : undefined;
+    if(idx === undefined && novo.nome) idx = porNome.get(normalizarNomeJogo(novo.nome));
+    if(idx !== undefined){
+      pulados++;
+      const a = lista[idx];
+      if(novo.appid && !a.appid) a.appid = novo.appid;
+      if(novo.horas && (!a.horas || Number(novo.horas) > Number(a.horas))) a.horas = novo.horas;
+      if((!a.capa) && novo.capa) a.capa = novo.capa;
+      const desc = a.sinopse || a.comentario;
+      const novaDesc = novo.sinopse || novo.comentario;
+      if(!desc && novaDesc){ a.sinopse = novaDesc; a.comentario = novaDesc; }
+      if((!Array.isArray(a.generos) || !a.generos.length) && Array.isArray(novo.generos) && novo.generos.length) a.generos = novo.generos;
+      if((!a.conquistas || !a.conquistas.total) && novo.conquistas) a.conquistas = novo.conquistas;
+      if((!a.nota || Number(a.nota) === 0) && Number(novo.nota) > 0) a.nota = novo.nota;
+    } else {
+      lista.push(novo);
+      const pos = lista.length - 1;
+      if(novo.appid) porApp.set(String(novo.appid), pos);
+      if(novo.nome) porNome.set(normalizarNomeJogo(novo.nome), pos);
+      adicionados++;
+    }
+  }
+  return { lista, resultado: { adicionados, pulados, total: lista.length } };
+}
+
+/* Cada importação processa só um LOTE (sinopse + tradução + conquistas são chamadas externas lentas;
+   60 jogos de uma vez estouram o tempo da função serverless). Clique de novo pra continuar. */
+const IMPORT_LOTE_MAX = Number(process.env.IMPORT_LOTE_MAX) || 12;
+const IMPORT_CONCORRENCIA = 4;
+const IMPORT_ORCAMENTO_MS = Number(process.env.IMPORT_BUDGET_MS) || 7500;
 
 async function importarSteam(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
@@ -386,21 +422,23 @@ async function importarSteam(){
 
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
-  try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
+  try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){ return { error: 'A lista atual está ilegível no Redis. Importação cancelada para não apagar nada.' }; }
   if(!Array.isArray(atuais)) atuais = [];
-  const normalizarNome = nome => String(nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const idsExistentes = new Set(atuais.filter(j => j.appid).map(j => String(j.appid)));
-  const nomesExistentes = new Set(atuais.map(j => normalizarNome(j.nome)));
-  const candidatos = jogados.filter(g => !idsExistentes.has(String(g.appid)) && !nomesExistentes.has(normalizarNome(g.name)));
+  const nomesExistentes = new Set(atuais.map(j => normalizarNomeJogo(j.nome)));
+  const candidatos = jogados.filter(g => !idsExistentes.has(String(g.appid)) && !nomesExistentes.has(normalizarNomeJogo(g.name)));
   const puladosAntes = jogados.length - candidatos.length;
-  const novos = [];
 
-  for(const g of candidatos){
+  const t0 = Date.now();
+  const novos = [];
+  let processados = 0;
+
+  const montar = async (g) => {
     const extra = await buscarDadosJogo(g.name, g.appid);
     let conquistas = null;
     try { conquistas = await buscarConquistasSteam(g.appid); } catch(e){}
     const sinopse = extra.sinopse || '';
-    novos.push({
+    return {
       id: g.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
       appid: g.appid,
       nome: g.name,
@@ -414,71 +452,93 @@ async function importarSteam(){
       sinopse,
       generos: Array.isArray(extra.generos) ? extra.generos : [],
       adicionadoEm: new Date().toISOString()
-    });
+    };
+  };
+
+  for(let i = 0; i < candidatos.length && novos.length < IMPORT_LOTE_MAX; i += IMPORT_CONCORRENCIA){
+    if(Date.now() - t0 > IMPORT_ORCAMENTO_MS) break;
+    const fatia = candidatos.slice(i, i + Math.min(IMPORT_CONCORRENCIA, IMPORT_LOTE_MAX - novos.length));
+    const resp = await Promise.all(fatia.map(g => montar(g).catch(() => null)));
+    resp.forEach(x => { if(x) novos.push(x); });
+    processados += fatia.length;
   }
 
   let merge = { adicionados: 0, pulados: 0, total: atuais.length };
   if(novos.length){
-    const [resultado] = await redis([['EVAL', MERGE_STEAM_LUA, '1', 'tierlist:jogos', JSON.stringify(novos)]]);
-    try { merge = typeof resultado === 'string' ? JSON.parse(resultado) : resultado; }
-    catch(e){ throw new Error('O Redis salvou a importação, mas retornou uma confirmação inválida.'); }
+    merge = await atualizarListaCAS('tierlist:jogos', (listaAtual) => mesclarJogosSteam(listaAtual, novos));
   }
   return {
     ok: true,
-    adicionados: Number(merge && merge.adicionados) || 0,
-    pulados: puladosAntes + (Number(merge && merge.pulados) || 0),
+    adicionados: Number(merge.adicionados) || 0,
+    pulados: puladosAntes + (Number(merge.pulados) || 0),
     total: jogados.length,
-    totalSalvo: Number(merge && merge.total) || atuais.length
+    totalSalvo: Number(merge.total) || atuais.length,
+    restantes: Math.max(0, candidatos.length - processados)   // > 0 → clique em importar de novo
   };
 }
+
+const SYNC_CONQ_MAX = 20;   // conquistas buscadas por rodada (as demais ficam pra próxima)
 
 async function sincronizarHoras(){
   if(!STEAM_KEY) return { error: 'STEAM_API_KEY não configurada' };
   const url = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${STEAM_KEY}&steamid=${STEAM_ID}&include_appinfo=1&include_played_free_games=1&format=json`;
-  const r = await fetch(url);
+  const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
   if(!r.ok) return { error: `Steam HTTP ${r.status}` };
   const sd = await r.json();
-  const lista = sd?.response?.games || [];
   const mapa = {};
-  lista.forEach(g => { if(g.appid) mapa[g.appid] = g; });
+  (sd?.response?.games || []).forEach(g => { if(g.appid) mapa[g.appid] = g; });
 
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
-  try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){}
+  try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){ return { error: 'A lista atual está ilegível no Redis. Sincronização cancelada.' }; }
+  if(!Array.isArray(atuais)) atuais = [];
 
-  let atualizados = 0;
-  let conqAtualizadas = 0;
-
+  // 1) descobre o que mudou (sem gravar ainda)
+  const mudancas = new Map();       // appid -> campos novos
+  let conqBuscadas = 0, conqAtualizadas = 0;
+  const t0 = Date.now();
   for(const j of atuais){
     if(!j.appid) continue;
     const g = mapa[j.appid];
     if(!g) continue;
-
+    const m = {};
     const novasHoras = Math.round(g.playtime_forever / 6) / 10;
-    const mudouHoras = Number(j.horas) !== novasHoras;
+    if(Number(j.horas) !== novasHoras) m.horas = novasHoras;
 
     const conqAntiga = j.conquistasAtualizadoEm;
     const precisaConq = !j.conquistas || !conqAntiga || (Date.now() - new Date(conqAntiga).getTime() > 24 * 3600 * 1000);
-    let mudouConq = false;
-
-    if(precisaConq){
+    if(precisaConq && conqBuscadas < SYNC_CONQ_MAX && Date.now() - t0 < IMPORT_ORCAMENTO_MS){
+      conqBuscadas++;
       try {
         const c = await buscarConquistasSteam(j.appid);
         if(c){
-          const antes = j.conquistas?.obtidas || 0;
-          j.conquistas = c;
-          j.conquistasAtualizadoEm = new Date().toISOString();
-          if(antes !== c.obtidas) mudouConq = true;
+          if((j.conquistas?.obtidas || 0) !== c.obtidas) m.conqMudou = true;
+          m.conquistas = c;
+          m.conquistasAtualizadoEm = new Date().toISOString();
           conqAtualizadas++;
         }
       } catch(e){}
     }
-
-    if(mudouHoras) j.horas = novasHoras;
-    if(mudouHoras || mudouConq) atualizados++;
+    if(Object.keys(m).length) mudancas.set(String(j.appid), m);
   }
 
-  if(atualizados) await redis([['SET', 'tierlist:jogos', JSON.stringify(atuais)]]);
+  // 2) aplica sobre a lista MAIS RECENTE do Redis (não atropela edições feitas enquanto isso)
+  let atualizados = 0;
+  if(mudancas.size){
+    atualizados = await atualizarListaCAS('tierlist:jogos', (lista) => {
+      let n = 0;
+      const nova = lista.map(j => {
+        const m = j.appid ? mudancas.get(String(j.appid)) : null;
+        if(!m) return j;
+        const novo = { ...j };
+        if(m.horas !== undefined) novo.horas = m.horas;
+        if(m.conquistas){ novo.conquistas = m.conquistas; novo.conquistasAtualizadoEm = m.conquistasAtualizadoEm; }
+        if(m.horas !== undefined || m.conqMudou) n++;
+        return novo;
+      });
+      return { lista: nova, resultado: n };
+    });
+  }
   return { ok: true, atualizados, conqAtualizadas, total: atuais.length };
 }
 
@@ -929,7 +989,7 @@ export default async function handler(req, res){
       if(!(await temPermissao(sessao, 'importar_steam'))) return res.status(403).json({ error: 'Sem permissão' });
       const r = await importarSteam();
       if(r.error) return res.status(400).json(r);
-      await logAcao(quem, sessao.cargo, `Importou ${r.adicionados} jogos da Steam (${r.pulados} já existiam)`);
+      await logAcao(quem, sessao.cargo, `Importou ${r.adicionados} jogos da Steam (${r.pulados} já existiam)${r.restantes ? `, faltam ${r.restantes}` : ''}`);
       return res.status(200).json(r);
     }
 

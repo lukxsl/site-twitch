@@ -1284,6 +1284,11 @@ function marcarVotoVisto(id){
 }
 
 const RANKS = ['🥇','🥈','🥉'];
+const REDUZ_MOVIMENTO = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+let VOTO_PREV = {};          // id -> % da renderização anterior (as barras animam a partir daqui)
+let VOTO_ANIMOU = false;     // a entrada escalonada só roda na 1ª renderização
+let VOTO_ULTIMO = null;      // card que acabou de receber o voto
+let VOTANDO = false;
 
 function aplicarVotos(d){
   if(d && Array.isArray(d.opcoes)){
@@ -1380,12 +1385,18 @@ function renderVotacao(){
     else { statLider.parentElement.style.display = ''; statLider.textContent = 'líder com ' + pct(ord[0].votos) + '%'; }
   }
 
-  const btn = (it) => {
-    const meu = meuVoto === it.id;
-    if(fechada) return `<button class="btn ghost" disabled>Encerrada</button>`;
-    if(meu) return `<button class="btn ghost" disabled>Votado ✓</button>`;
-    return `<button class="btn pulse-vote" onclick="votar('${it.id}', event)">${meuVoto ? 'Trocar voto' : 'Votar'}</button>`;
+  const vBtn = (it) => {
+    if(fechada) return `<button type="button" class="btn ghost vbtn" disabled>🔒 Encerrada</button>`;
+    if(meuVoto === it.id) return `<button type="button" class="btn vbtn done" disabled>✓ Votado</button>`;
+    return `<button type="button" class="btn vbtn pulse-vote" data-votar="${esc(it.id)}">${meuVoto ? '🔄 Trocar voto' : '🗳️ Votar'}</button>`;
   };
+  const prev = id => (VOTO_PREV[id] != null ? VOTO_PREV[id] : 0);
+  const justId = VOTO_ULTIMO; VOTO_ULTIMO = null;
+  const estatico = VOTO_ANIMOU;               // entrada escalonada só na 1ª vez
+  destBox.classList.toggle('static', estatico);
+  listaBox.classList.toggle('static', estatico);
+  listaBox.classList.add('vgrid');
+  ligarVotos();
 
   if(total > 0){
     const l = ord[0], p = pct(l.votos);
@@ -1393,18 +1404,24 @@ function renderVotacao(){
     let vantagemTxt = '';
     if(segundo && segundo.votos > 0){
       const diff = l.votos - segundo.votos;
-      vantagemTxt = diff === 0 ? ' · Empatado com o 2º' : ` · ${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
-    } else if(l.votos > 1){ vantagemTxt = ' · Unanimidade'; }
+      vantagemTxt = diff === 0 ? 'Empatado com o 2º lugar 🔥' : `${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
+    } else if(l.votos > 1){ vantagemTxt = 'Unanimidade 💜'; }
 
+    const capaL = l.capa
+      ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">`
+      : '<div class="ph2">🎮</div>';
     destBox.innerHTML = `
-      <div class="destaque ${fechada ? 'fechada' : ''}">
-        ${l.capa ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">` : '<div class="ph2">🎮</div>'}
-        <div class="d-info">
-          <small>${fechada ? '🏆 Vencedora' : '👑 Líder da votação'}</small><b>${esc(l.nome)}</b>
-          <div class="d-bar"><i style="width:${p}%"></i></div>
-          <span class="d-meta"><b>${p}%</b> · ${l.votos}/${total} votos${vantagemTxt}</span>
+      <div class="vhero ${fechada ? 'fechada' : ''} ${meuVoto === l.id ? 'meu' : ''} ${justId === l.id ? 'just-voted' : ''}" data-id="${esc(l.id)}">
+        ${l.capa ? `<div class="vhero-bg" style="background-image:url('${esc(l.capa)}')"></div>` : ''}
+        <div class="vhero-poster">${capaL}<span class="vhero-crown" aria-hidden="true">${fechada ? '🏆' : '👑'}</span></div>
+        <div class="vhero-info">
+          <span class="vhero-kicker">${fechada ? 'Vencedora da votação' : 'Líder da votação'}</span>
+          <h4 class="vhero-nome">${esc(l.nome)}</h4>
+          <div class="vhero-pct"><b data-count="${p}" data-from="${prev(l.id)}">${p}</b><span>%</span><small>${l.votos}/${total} ${plural(total, 'voto', 'votos')}</small></div>
+          <div class="vbar" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><i style="--from:${prev(l.id)}%;--to:${p}%"></i></div>
+          ${vantagemTxt ? `<span class="vhero-meta">${vantagemTxt}</span>` : ''}
         </div>
-        ${btn(l)}
+        <div class="vhero-cta">${vBtn(l)}</div>
       </div>`;
     if(proxCover){
       if(l.capa){ proxCover.onerror = () => { proxCover.style.display = 'none'; }; proxCover.src = l.capa; proxCover.style.display = ''; }
@@ -1414,7 +1431,7 @@ function renderVotacao(){
     $('proxInfo').textContent = fechada ? `Encerrada com ${p}% dos votos` : `Liderando com ${p}% dos votos`;
     if(proxBarWrap && proxBarI){ proxBarWrap.style.visibility = 'visible'; proxBarI.style.width = p + '%'; }
   } else {
-    destBox.innerHTML = '';
+    destBox.innerHTML = fechada ? '' : `<div class="vhint"><span>🗳️</span><div><b>Ainda ninguém votou</b><small>Seja a primeira pessoa a escolher o próximo jogo!</small></div></div>`;
     if(proxCover) proxCover.style.display = 'none';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
     $('proxNome').textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
@@ -1425,8 +1442,8 @@ function renderVotacao(){
   const resto = total > 0 ? ord.slice(1) : ord;
   listaBox.innerHTML = resto.map((it, i) => {
     const p = pct(it.votos);
-    const posicao = i + 2;
-    const medalha = RANKS[i + 1] || `#${posicao}`;
+    const posicao = (total > 0 ? i + 2 : i + 1);
+    const medalha = total > 0 ? (RANKS[i + 1] || `#${posicao}`) : '';
     const meu = meuVoto === it.id;
     const votos = it.votos || 0;
     const novo = !vistos.includes(it.id);
@@ -1434,45 +1451,126 @@ function renderVotacao(){
     let statusTxt, statusCls;
     if (votos === 0) { statusTxt = 'Nenhum voto ainda'; statusCls = 'zero'; }
     else if (diff === 0) { statusTxt = 'Empatado com o 1º lugar 🔥'; statusCls = 'close'; }
-    else if (diff === 1) { statusTxt = 'Apenas 1 voto atrás do líder'; statusCls = 'close'; }
+    else if (diff === 1) { statusTxt = 'Só 1 voto atrás do líder'; statusCls = 'close'; }
     else { statusTxt = `${diff} votos atrás do líder`; statusCls = ''; }
+    const img = it.capa
+      ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'vc-ph',textContent:'🎮'}))">`
+      : '<div class="vc-ph">🎮</div>';
     return `
-      <div class="vt ${meu ? 'meu' : ''}" data-id="${esc(it.id)}">
-        ${novo ? '<span class="vt-novo">Novo</span>' : ''}
-        ${meu ? '<span class="vt-badge-meu">✓ Seu voto</span>' : ''}
-        <span class="vt-rank" title="${posicao}º lugar">${medalha}</span>
-        ${it.capa ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" class="vt-img" onerror="this.style.display='none'">` : '<div class="vt-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>'}
-        <div class="vt-info">
-          <div class="vt-top"><span>${esc(it.nome)}</span><b>${posicao}º · ${p}%</b></div>
-          <span class="vt-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
+      <article class="vc ${meu ? 'meu' : ''} ${justId === it.id ? 'just-voted' : ''}" data-id="${esc(it.id)}" style="--i:${i}">
+        <div class="vc-poster">
+          ${img}
+          ${medalha ? `<span class="vc-rank" title="${posicao}º lugar">${medalha}</span>` : ''}
+          ${meu ? '<span class="vc-tag meu">✓ Seu voto</span>' : (novo ? '<span class="vc-tag novo">Novo</span>' : '')}
+          <div class="vc-ov">
+            <b class="vc-nome">${esc(it.nome)}</b>
+            <span class="vc-pct"><b data-count="${p}" data-from="${prev(it.id)}">${p}</b>% · ${votos} ${plural(votos, 'voto', 'votos')}</span>
+          </div>
         </div>
-        <div class="vt-bar-wrap">
-          <div class="vt-bar"><i style="width:${votos > 0 ? Math.max(p, 8) : 0}%"></i></div>
+        <div class="vc-body">
+          <div class="vbar"><i style="--from:${prev(it.id)}%;--to:${p}%"></i></div>
+          <span class="vc-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
+          ${vBtn(it)}
         </div>
-        ${btn(it)}
-      </div>`;
+      </article>`;
   }).join('');
+
+  animarContadores(destBox);
+  animarContadores(listaBox);
+  VOTO_PREV = {}; VOTOS_DADOS.forEach(o => { VOTO_PREV[o.id] = pct(o.votos); });
+  VOTO_ANIMOU = true;
   setTimeout(() => resto.forEach(it => marcarVotoVisto(it.id)), 4000);
 }
 
+/* ---------- animações da votação ---------- */
+function animarContadores(root){
+  root.querySelectorAll('[data-count]').forEach(el => {
+    const to = Number(el.dataset.count) || 0;
+    const from = Number(el.dataset.from);
+    if(REDUZ_MOVIMENTO || !isFinite(from) || from === to){ el.textContent = to; return; }
+    el.textContent = from;
+    const t0 = performance.now(), dur = 750;
+    const tick = now => {
+      const k = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = Math.round(from + (to - from) * e);
+      if(k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+function votoBurst(rect){
+  if(REDUZ_MOVIMENTO || !rect) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'vburst';
+  wrap.style.transform = `translate(${rect.left + rect.width / 2}px, ${rect.top + rect.height / 2}px)`;
+  const em = ['💜', '✨', '💖', '⭐', '🎮'];
+  for(let i = 0; i < 16; i++){
+    const p = document.createElement('i');
+    const ang = Math.random() * Math.PI * 2, d = 50 + Math.random() * 90;
+    p.textContent = em[i % em.length];
+    p.style.setProperty('--dx', Math.cos(ang) * d + 'px');
+    p.style.setProperty('--dy', (Math.sin(ang) * d - 30) + 'px');
+    p.style.setProperty('--r', (Math.random() * 160 - 80) + 'deg');
+    p.style.setProperty('--s', (12 + Math.random() * 12) + 'px');
+    wrap.appendChild(p);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 1000);
+}
+
+function ligarVotos(){
+  ['destaqueBox', 'votoLista'].forEach(id => {
+    const el = $(id);
+    if(!el || el.dataset.bound) return;
+    el.dataset.bound = '1';
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-votar]');
+      if(b && !b.disabled) votar(b.dataset.votar, e);
+    });
+  });
+}
+
+function votoAssinatura(){ return JSON.stringify(VOTOS_DADOS.map(o => [o.id, o.votos])) + '|' + meuVoto; }
+
 async function votar(id, event){
-  if(!USUARIO) return;
-  const card = event?.target?.closest('.vt') || event?.target?.closest('.destaque');
-  if(card) card.classList.add('voting');
+  if(!USUARIO || VOTANDO || meuVoto === id) return;
+  VOTANDO = true;
+  const btn = event && event.target && event.target.closest ? event.target.closest('button') : null;
+  const rect = btn ? btn.getBoundingClientRect() : null;
+
+  // UI otimista: a barra e o número já mexem no clique; se o servidor recusar, volta tudo
+  const snap = { dados: VOTOS_DADOS.map(o => ({ ...o })), meu: meuVoto };
+  const reverter = () => { VOTOS_DADOS = snap.dados; meuVoto = snap.meu; VOTO_ULTIMO = null; renderVotacao(); };
+  VOTOS_DADOS.forEach(o => {
+    if(o.id === meuVoto) o.votos = Math.max(0, (o.votos || 0) - 1);
+    if(o.id === id) o.votos = (o.votos || 0) + 1;
+  });
+  meuVoto = id; VOTO_ULTIMO = id;
+  votoBurst(rect);
+  renderVotacao();
+  const otimista = votoAssinatura();
+
   try{
     const r = await fetch('/api/votos', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body:JSON.stringify({ id })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
     });
-    if(r.status === 401){ await checarLogin(); return; }
+    if(r.status === 401){ reverter(); await checarLogin(); renderVotacao(); return; }
     if(r.status === 403){
-      const d = await r.json();
-      toast(d.error || 'Você foi banido de votar', 'erro');
-      return;
+      let d = {}; try { d = await r.json(); } catch(e){}
+      reverter(); toast(d.error || 'Você foi banido de votar', 'erro'); return;
     }
-    if(r.ok){ aplicarVotos(await r.json()); toast('Voto registrado! 💜', 'ok'); }
-  }catch(e){}
-  renderVotacao();
+    if(!r.ok){ reverter(); toast('Não consegui registrar o voto. Tenta de novo!', 'erro'); return; }
+    aplicarVotos(await r.json());
+    toast('Voto registrado! 💜', 'ok');
+    if(votoAssinatura() !== otimista) renderVotacao();   // só redesenha se o servidor divergiu
+  }catch(e){
+    reverter(); toast('Sem conexão com o servidor.', 'erro');
+  }finally{
+    VOTANDO = false;
+  }
 }
 window.votar = votar;
 
@@ -1594,21 +1692,67 @@ function tipoInfoSug(tipo){
   if(t.includes('feedback')) return { ic: '💬', label: 'feedback' };
   return { ic: '💡', label: 'sugestao' };
 }
+const SIR_TIPOS = [
+  { id: 'all',      ic: '✨', label: 'Todas' },
+  { id: 'sugestao', ic: '💡', label: 'Sugestões' },
+  { id: 'jogo',     ic: '🎮', label: 'Jogos' },
+  { id: 'feedback', ic: '💬', label: 'Feedback' },
+  { id: 'bug',      ic: '🐛', label: 'Bugs' }
+];
+
+// Degradê nas pontas só aparece quando ainda tem chip escondido de um lado
+function atualizarFadeSir(wrap){
+  const max = wrap.scrollWidth - wrap.clientWidth;
+  wrap.style.setProperty('--fl', wrap.scrollLeft > 2 ? '28px' : '0px');
+  wrap.style.setProperty('--fr', max > 2 && wrap.scrollLeft < max - 2 ? '28px' : '0px');
+}
+
 function renderSirFiltros(itens){
   const wrap = $('sirFiltros'); if(!wrap) return;
-  const tipos = { 'all': true, 'sugestao': false, 'jogo': false, 'feedback': false, 'bug': false };
-  itens.forEach(i => {
-    const t = tipoInfoSug(i.tipo).label;
-    if(tipos[t] !== undefined) tipos[t] = true;
-  });
-  const opts = [
-    { id: 'all', label: 'Todas' },
-    { id: 'sugestao', label: '💡' },
-    { id: 'jogo', label: '🎮' },
-    { id: 'feedback', label: '💬' },
-    { id: 'bug', label: '🐛' }
-  ].filter(o => o.id === 'all' || tipos[o.id]);
-  wrap.innerHTML = opts.map(o => `<button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}">${o.label}</button>`).join('');
+  const cont = { all: itens.length, sugestao: 0, jogo: 0, feedback: 0, bug: 0 };
+  itens.forEach(i => { const t = tipoInfoSug(i.tipo).label; if(cont[t] !== undefined) cont[t]++; });
+  const opts = SIR_TIPOS.filter(o => o.id === 'all' || cont[o.id] > 0);
+  if(!opts.some(o => o.id === sirFiltro)) sirFiltro = 'all';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', 'Filtrar ideias por tipo');
+  wrap.innerHTML = opts.map(o => `
+    <button type="button" class="sir-chip ${sirFiltro === o.id ? 'on' : ''}" data-filtro="${o.id}" aria-pressed="${sirFiltro === o.id}">
+      <span class="sc-ic" aria-hidden="true">${o.ic}</span><span class="sc-lb">${o.label}</span><span class="sc-n">${cont[o.id]}</span>
+    </button>`).join('');
+  requestAnimationFrame(() => atualizarFadeSir(wrap));
+}
+
+function renderSirLista(){
+  const lista = $('sirLista'); if(!lista) return;
+  const itens = SIR_ITENS_CACHE;
+  if(!itens.length){
+    lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhuma ideia ainda. Seja a primeira 💜</small></div>`;
+    return;
+  }
+  const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
+  if(!filtrados.length){
+    lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada nesse filtro</small></div>`;
+    return;
+  }
+  lista.innerHTML = filtrados.slice(0, 20).map(i => {
+    const st = statusInfoSug(i);
+    const ti = tipoInfoSug(i.tipo);
+    const motivoHTML = (i.status === 'recusada' && i.motivo) ? `<div class="sir-motivo">${esc(i.motivo)}</div>` : '';
+    return `
+      <div class="sir-item" title="${esc(st.desc || '')}">
+        <span class="sir-ic">${ti.ic}</span>
+        <div class="sir-tx">
+          <div class="sir-tx-top">
+            <b>@${esc(i.nome || 'anônimo')}</b>
+            <span class="sir-status sir-status-${st.cor}">${st.label}</span>
+          </div>
+          <small>${esc((i.texto || '').slice(0, 90))}${(i.texto || '').length > 90 ? '…' : ''}</small>
+          <small class="sir-data">${i.data ? tempoAtras(i.data) : 'há um tempo'}</small>
+          ${motivoHTML}
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function carregarUltimasIdeias(){
@@ -1617,50 +1761,33 @@ async function carregarUltimasIdeias(){
     const r = await fetch('/api/sugestoes');
     if(!r.ok) throw new Error('falha');
     const d = await r.json();
-    const itens = Array.isArray(d.itens) ? d.itens : [];
-    SIR_ITENS_CACHE = itens;
-    renderSirFiltros(itens);
-    if(!itens.length){
-      lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhuma ideia ainda. Seja a primeira 💜</small></div>`;
-      return;
-    }
-    const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
-    if(!filtrados.length){
-      lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nada nesse filtro</small></div>`;
-      return;
-    }
-    lista.innerHTML = filtrados.slice(0, 20).map(i => {
-      const st = statusInfoSug(i);
-      const ti = tipoInfoSug(i.tipo);
-      const motivoHTML = (i.status === 'recusada' && i.motivo) ? `<div class="sir-motivo">${esc(i.motivo)}</div>` : '';
-      return `
-        <div class="sir-item" title="${esc(st.desc || '')}">
-          <span class="sir-ic">${ti.ic}</span>
-          <div class="sir-tx">
-            <div class="sir-tx-top">
-              <b>@${esc(i.nome || 'anônimo')}</b>
-              <span class="sir-status sir-status-${st.cor}">${st.label}</span>
-            </div>
-            <small>${esc((i.texto || '').slice(0, 90))}${(i.texto || '').length > 90 ? '…' : ''}</small>
-            <small class="sir-data">${i.data ? tempoAtras(i.data) : 'há um tempo'}</small>
-            ${motivoHTML}
-          </div>
-        </div>
-      `;
-    }).join('');
+    SIR_ITENS_CACHE = Array.isArray(d.itens) ? d.itens : [];
+    renderSirFiltros(SIR_ITENS_CACHE);
+    renderSirLista();
   }catch(e){
     lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Sugestões aparecem aqui após o primeiro envio 💜</small></div>`;
   }
 }
+
 function setupSirFiltros(){
   const wrap = $('sirFiltros'); if(!wrap || wrap.dataset.bound) return;
   wrap.dataset.bound = '1';
+  // filtrar usa o cache (sem refazer a requisição) e não recria os chips, então o scroll não pula
   wrap.addEventListener('click', e => {
     const b = e.target.closest('.sir-chip'); if(!b) return;
-    wrap.querySelectorAll('.sir-chip').forEach(c => c.classList.toggle('on', c === b));
+    wrap.querySelectorAll('.sir-chip').forEach(c => { const on = c === b; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
     sirFiltro = b.dataset.filtro || 'all';
-    carregarUltimasIdeias();
+    renderSirLista();
+    b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: REDUZ_MOVIMENTO ? 'auto' : 'smooth' });
   });
+  wrap.addEventListener('scroll', () => atualizarFadeSir(wrap), { passive: true });
+  // roda do mouse (vertical) rola os chips na horizontal, só quando realmente falta espaço
+  wrap.addEventListener('wheel', e => {
+    if(wrap.scrollWidth <= wrap.clientWidth || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    e.preventDefault();
+    wrap.scrollLeft += e.deltaY;
+  }, { passive: false });
+  window.addEventListener('resize', () => atualizarFadeSir(wrap));
 }
 
 /* ============================================================

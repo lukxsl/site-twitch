@@ -289,8 +289,8 @@ dialog .card{transform:none !important}
   flex-direction:column;
   gap:12px;
   padding:20px;
-  flex: 1 1 auto !important; 
-  height: 100%;
+  flex: 1 1 auto !important;
+  min-height: 0;
 }
 .apoie-head h3{font-size:1.1rem;color:var(--white);margin-bottom:4px}
 .apoie-head p{color:var(--mute);font-size:.82rem;line-height:1.45}
@@ -674,7 +674,6 @@ body.sou-admin .g[draggable="true"]{cursor:grab}
 @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 .sir-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .sir-kicker{font-size:.66rem;font-weight:800;letter-spacing:.12em;color:var(--purple-2);text-transform:uppercase}
-.sir-filtros{display:flex;gap:4px}
 .sir-chip{background:transparent;border:1px solid var(--line);color:var(--mute);padding:4px 10px;border-radius:99px;font-family:inherit;font-size:.7rem;font-weight:700;cursor:pointer;transition:.2s}
 .sir-chip:hover{color:var(--white);border-color:var(--purple);background:rgba(168,85,247,.08)}
 .sir-chip.on{background:linear-gradient(135deg,var(--purple-2),var(--purple-3));border-color:transparent;color:#fff}
@@ -1302,9 +1301,6 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 /* ============================================================
    🆕 LEGENDA DE STATUS — chips clicáveis
    ============================================================ */
-.sir-filtros{display:flex;flex-direction:column;gap:8px;width:100%}
-.sir-filtros-grupo{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.sir-filtros-status{padding-top:6px;border-top:1px dashed var(--line)}
 
 .sir-status-chip{
   display:inline-flex;align-items:center;gap:5px;
@@ -1548,4 +1544,157 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 }
 .apoie #donateLink {
   margin-top: auto;
+}
+
+
+/* ============================================================
+   ✨ FILTROS DE SUGESTÕES — chips em linha com scroll horizontal
+   (o bug: um .sir-filtros{flex-direction:column} antigo empilhava tudo)
+   ============================================================ */
+.sir-list-col .sir-head{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-bottom:12px}
+.sir-filtros{
+  --fl:0px;--fr:0px;
+  display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:8px;
+  width:100%;min-width:0;margin:0;padding:3px 2px 9px;
+  overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:var(--purple-3) transparent;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%);
+}
+.sir-filtros::-webkit-scrollbar{height:5px}
+.sir-filtros::-webkit-scrollbar-track{background:transparent}
+.sir-filtros::-webkit-scrollbar-thumb{background:linear-gradient(90deg,var(--purple-3),var(--purple-2));border-radius:99px}
+.sir-chip{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;scroll-snap-align:center;
+  padding:7px 8px 7px 12px;border-radius:99px;background:rgba(255,255,255,.03);border:1px solid var(--line);color:var(--mute);
+  font-family:inherit;font-size:.76rem;font-weight:700;cursor:pointer;transition:transform .2s,background .2s,border-color .2s,color .2s,box-shadow .2s;
+}
+.sir-chip:hover{color:var(--white);border-color:var(--purple);background:rgba(168,85,247,.1);transform:translateY(-1px)}
+.sir-chip:focus-visible{outline:2px solid var(--purple-2);outline-offset:2px}
+.sir-chip.on{background:linear-gradient(135deg,var(--purple-2),var(--purple-3));border-color:transparent;color:#fff;box-shadow:0 6px 16px -6px rgba(168,85,247,.7)}
+.sir-chip .sc-ic{font-size:.9rem;line-height:1}
+.sir-chip .sc-n{font:800 .62rem 'JetBrains Mono',monospace;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.08);color:inherit}
+.sir-chip.on .sc-n{background:rgba(0,0,0,.28)}
+@media (max-width:480px){ .sir-chip{padding:7px 7px 7px 10px;font-size:.72rem} }
+
+/* ============================================================
+   ✨ SINOPSE (modal de detalhes da Tier List)
+   ============================================================ */
+.detail-synopsis{margin-top:4px;padding:14px 16px;border-radius:var(--r);border:1px solid var(--line);border-left:3px solid var(--purple);
+  background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(255,255,255,.02))}
+.detail-synopsis h4{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:.68rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--purple-2)}
+.detail-synopsis h4::before{content:'📖';font-size:.9rem;letter-spacing:0}
+.detail-synopsis p{max-height:230px;overflow-y:auto;padding-right:6px;margin:0;color:#d8d0ea;font-size:.88rem;line-height:1.65;white-space:pre-line;text-wrap:pretty}
+.detail-synopsis p::-webkit-scrollbar{width:4px}
+.detail-synopsis p::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:99px}
+
+/* ============================================================
+   ✨ VOTAÇÃO v3 — herói do líder + grade de pôsteres
+   ============================================================ */
+@keyframes vcIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes vbarGrow{from{width:var(--from,0%)}to{width:var(--to,0%)}}
+@keyframes vbarShine{from{background-position:200% 0}to{background-position:-100% 0}}
+@keyframes votedPulse{0%{box-shadow:0 0 0 0 rgba(183,255,0,.75)}100%{box-shadow:0 0 0 24px rgba(183,255,0,0)}}
+@keyframes tagPop{0%{transform:scale(0) rotate(-12deg)}70%{transform:scale(1.2) rotate(4deg)}100%{transform:none}}
+@keyframes vburst{0%{opacity:1;transform:translate(0,0) scale(.4) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.25) rotate(var(--r))}}
+
+#destaqueBox:empty{display:none}
+.vhint{display:flex;align-items:center;gap:14px;padding:16px 18px;margin-bottom:16px;border-radius:var(--r);border:1px dashed var(--line-2);background:rgba(168,85,247,.07)}
+.vhint > span{font-size:1.8rem}
+.vhint b{display:block;color:var(--white);font-size:.95rem}
+.vhint small{color:var(--mute);font-size:.8rem}
+
+/* herói */
+.vhero{position:relative;isolation:isolate;display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;padding:22px 24px;margin-bottom:18px;
+  border-radius:var(--r-lg);border:1px solid rgba(168,85,247,.55);overflow:hidden;
+  background:linear-gradient(135deg,rgba(168,85,247,.22),rgba(18,10,31,.92));
+  box-shadow:0 26px 60px -30px rgba(168,85,247,.8),inset 0 1px 0 rgba(255,255,255,.08);
+  animation:vcIn .6s var(--ease) backwards}
+.vhero-bg{position:absolute;inset:-25%;z-index:-2;background-size:cover;background-position:center;filter:blur(40px) saturate(1.5);opacity:.4;transform:scale(1.1)}
+.vhero::after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(100deg,rgba(10,5,17,.88) 8%,rgba(10,5,17,.4))}
+.vhero.fechada{border-color:rgba(183,255,0,.55)}
+.vhero.meu{border-color:rgba(183,255,0,.55)}
+.vhero-poster{position:relative;width:132px;aspect-ratio:2/3;flex:none}
+.vhero-poster img,.vhero-poster .ph2{width:100%;height:100%;object-fit:cover;border-radius:12px;background:#1d1433;display:grid;place-items:center;font-size:2.2rem;
+  border:1px solid rgba(255,255,255,.2);box-shadow:0 20px 40px -12px rgba(0,0,0,.9),0 0 0 4px rgba(168,85,247,.22)}
+.vhero-crown{position:absolute;top:-18px;left:50%;font-size:1.7rem;transform:translateX(-50%);filter:drop-shadow(0 4px 12px rgba(255,209,102,.8));animation:crownFloat 2.4s ease-in-out infinite}
+.vhero-info{min-width:0;display:flex;flex-direction:column;gap:9px}
+.vhero-kicker{font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#ffd166}
+.vhero-nome{margin:0;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(1.35rem,2.8vw,2rem);line-height:1.1;color:#fff;overflow-wrap:anywhere}
+.vhero-pct{display:flex;align-items:baseline;gap:3px;line-height:1;font-family:'Bricolage Grotesque',sans-serif;font-weight:800}
+.vhero-pct b{font-size:clamp(2.4rem,5vw,3.4rem);font-variant-numeric:tabular-nums;background:linear-gradient(135deg,#fff,var(--purple-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.vhero-pct span{font-size:1.3rem;color:var(--purple-2)}
+.vhero-pct small{margin-left:12px;font:700 .74rem 'JetBrains Mono',monospace;color:var(--mute)}
+.vhero-meta{font-size:.78rem;font-weight:600;color:var(--mute)}
+.vhero-cta .btn{min-width:160px}
+
+/* barra */
+.vbar{position:relative;height:10px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.08);box-shadow:inset 0 1px 3px rgba(0,0,0,.55)}
+.vbar i{position:absolute;inset:0 auto 0 0;width:var(--to,0%);border-radius:inherit;overflow:hidden;
+  background:linear-gradient(90deg,var(--purple-3),var(--purple-2),var(--pink));box-shadow:0 0 14px rgba(168,85,247,.7);
+  animation:vbarGrow .95s cubic-bezier(.2,.8,.2,1) backwards}
+.vbar i::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%);background-size:220% 100%;animation:vbarShine 2.8s linear infinite}
+
+/* botão */
+.vbtn{white-space:nowrap}
+.vbtn.done{background:rgba(183,255,0,.1);border:1px solid rgba(183,255,0,.55);color:var(--green);box-shadow:none;opacity:1}
+.vbtn.done::before{display:none}
+
+/* grade de pôsteres */
+.voto-grid-lista.vgrid{grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:16px;margin-top:0}
+.vgrid .voto-bloqueado{grid-column:1/-1}
+.vc{position:relative;display:flex;flex-direction:column;overflow:hidden;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--line);
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1),border-color .25s,box-shadow .3s;
+  animation:vcIn .55s var(--ease) calc(var(--i,0) * 60ms) backwards}
+.vc:hover{transform:translateY(-6px);border-color:var(--purple);box-shadow:0 24px 46px -22px rgba(168,85,247,.75)}
+.vc.meu{border-color:rgba(183,255,0,.55);box-shadow:0 0 0 1px rgba(183,255,0,.15),0 20px 42px -24px rgba(183,255,0,.55)}
+.vc-poster{position:relative;aspect-ratio:2/3;overflow:hidden;background:#1d1433}
+.vc-poster img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .7s var(--ease)}
+.vc:hover .vc-poster img{transform:scale(1.08)}
+.vc-ph{display:grid;place-items:center;width:100%;height:100%;font-size:2.6rem}
+.vc-poster::after{content:'';position:absolute;inset:auto 0 0;height:64%;pointer-events:none;background:linear-gradient(transparent,rgba(10,5,17,.96))}
+.vc-ov{position:absolute;left:12px;right:12px;bottom:10px;z-index:2;display:flex;flex-direction:column;gap:3px}
+.vc-nome{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:.95rem;line-height:1.15;color:#fff}
+.vc-pct{font:700 .72rem 'JetBrains Mono',monospace;color:var(--purple-2)}
+.vc-pct b{font-size:.95rem;font-weight:800;color:#fff}
+.vc-rank{position:absolute;top:8px;left:8px;z-index:3;font-size:1.35rem;filter:drop-shadow(0 2px 6px rgba(0,0,0,.9))}
+.vc-tag{position:absolute;top:8px;right:8px;z-index:3;padding:3px 9px;border-radius:99px;font-size:.58rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.vc-tag.novo{background:linear-gradient(135deg,var(--pink),var(--purple-3));color:#fff}
+.vc-tag.meu{background:var(--green);color:#0a0511;box-shadow:0 4px 12px rgba(183,255,0,.5);animation:tagPop .55s cubic-bezier(.34,1.56,.64,1)}
+.vc-body{display:flex;flex-direction:column;gap:10px;padding:12px}
+.vc-stat{display:flex;align-items:center;gap:6px;font-size:.7rem;font-weight:600;line-height:1.25;color:var(--mute)}
+.vc-stat .pip{width:6px;height:6px;flex:none;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.vc-stat.close{color:#ffd08a}
+.vc .btn{width:100%;min-height:38px;padding:9px 10px;font-size:.78rem}
+
+/* entrada só na 1ª renderização; depois só animam barras e números */
+.vgrid.static .vc{animation:none}
+#destaqueBox.static .vhero{animation:none}
+.vgrid .vc.just-voted{animation:votedPulse .9s ease-out}
+#destaqueBox .vhero.just-voted{animation:votedPulse .9s ease-out}
+
+/* confete 💜 ao votar */
+.vburst{position:fixed;left:0;top:0;z-index:99999;pointer-events:none}
+.vburst i{position:absolute;left:0;top:0;font-style:normal;font-size:var(--s,16px);animation:vburst .95s cubic-bezier(.15,.8,.3,1) forwards}
+
+.voto-foot{padding:12px 14px;margin-top:18px;border:1px solid var(--line);border-top:1px solid var(--line);border-radius:var(--r);background:rgba(255,255,255,.025)}
+
+/* responsivo */
+@media (max-width:900px){
+  .vhero{grid-template-columns:auto 1fr;gap:18px}
+  .vhero-cta{grid-column:1/-1}
+  .vhero-cta .btn{width:100%}
+}
+@media (max-width:560px){
+  .vhero{padding:16px;gap:14px}
+  .vhero-poster{width:96px}
+  .vhero-pct small{display:block;margin:6px 0 0}
+  .vhero-pct{flex-wrap:wrap}
+  .voto-grid-lista.vgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .vc-body{padding:10px}
+  .vc-nome{font-size:.85rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .vhero,.vc,.vbar i,.vbar i::after,.vhero-crown,.vc-tag.meu{animation:none !important}
+  .vc,.vc-poster img{transition:none}
 }
