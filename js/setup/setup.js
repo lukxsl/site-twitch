@@ -294,15 +294,10 @@ function prepararDialogo(titulo) {
   void d.offsetWidth;
   d.classList.add('enter');
 
-  // 🆕 NOME DINÂMICO
-  let nick = 'Lukzin';
-  if (typeof USUARIO !== 'undefined' && USUARIO && USUARIO.username) {
-    nick = `@${USUARIO.username}`;
-  }
-  
+  // Nome fixo limpo: Lukzin + DEV
   const nameContainer = $('dlgNameContainer');
   if (nameContainer) {
-    nameContainer.innerHTML = `<span class="rpg-name-main">${nick}</span> <span class="rpg-name-sub">Lukzin</span> <span class="rpg-badge">DEV</span>`;
+    nameContainer.innerHTML = `<span class="rpg-name-main">Lukzin</span> <span class="rpg-badge">DEV</span>`;
   }
 
   $('dlgChips').replaceChildren();

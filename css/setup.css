@@ -217,7 +217,7 @@
 .luk-character {
   --walk-ms: 800ms;
   position: absolute;
-  width: clamp(22px, 4.5%, 56px);               /* 🆕 REDUZIDO */
+  width: clamp(22px, 4.5%, 56px);               /* Tamanho reduzido */
   transform: translate(-50%, -100%);
   transition: left var(--walk-ms) cubic-bezier(.45, .05, .25, 1), top var(--walk-ms) cubic-bezier(.45, .05, .25, 1);
   z-index: 20;
@@ -392,24 +392,33 @@
 }
 .rpg-close:hover { background: #ec4899; color: #fff; transform: rotate(90deg) scale(1.1); }
 
-/* 🆕 AVATAR — OPÇÃO B (L em pixel/terminal) */
+/* AVATAR — Cabeça do Lukzin */
 .rpg-avatar {
-  width: 56px; height: 56px; flex: none;
-  display: grid; place-items: center;
-  background: rgba(24, 16, 40, 0.95);
-  border: 2px solid var(--sg-a);
+  width: 56px; 
+  height: 56px; 
+  flex: none;
   border-radius: 12px;
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 0 10px var(--sg-a), 0 0 20px var(--sg-a);
+  border: 2px solid var(--sg-a);
+  background: rgba(24, 16, 40, 0.95); 
+  overflow: hidden; 
+  position: relative;
+  display: block;
   box-shadow: inset 0 0 15px rgba(168,85,247,0.3), 0 4px 10px rgba(0,0,0,.5);
+}
+
+.rpg-avatar-img {
+  width: 220%; 
+  height: auto;
+  position: absolute;
+  top: -5%; 
+  left: 50%;
+  transform: translateX(-50%);
+  image-rendering: pixelated; 
 }
 
 .rpg-content { flex: 1; min-width: 0; padding-right: 26px; }
 
-/* 🆕 NOME DINÂMICO */
+/* NOME LIMPO */
 .rpg-name {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   margin-bottom: 8px;
@@ -419,13 +428,6 @@
   font-size: 1.1rem; font-weight: 800;
   color: var(--sg-a);
   text-shadow: 1px 1px 0 #000;
-}
-.rpg-name-sub {
-  font-size: .8rem; font-weight: 700;
-  color: #c4b5fd;
-  background: rgba(168,85,247,.15);
-  padding: 2px 8px; border-radius: 6px;
-  border: 1px solid rgba(168,85,247,.3);
 }
 
 .rpg-badge { background: var(--purple, #7c3aed); color: #fff; font: .6rem 'DM Sans', sans-serif; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
