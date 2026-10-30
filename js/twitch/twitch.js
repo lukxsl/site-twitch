@@ -313,10 +313,9 @@ async function verificarStatusTwitch() {
         iframe.src = 'about:blank';
       }
       if(panel){
-        panel.classList.add('mature-mode');
         panel.style.display = 'flex';
         panel.innerHTML = `
-          <div style="font-size:2rem;line-height:1">🔞</div>
+          <div style="font-size:2.6rem;line-height:1">🔞</div>
           <h4>Conteúdo +18 agora</h4>
           <p>A Soso tá jogando algo com classificação adulta. O Twitch bloqueia o player embutido nesses casos — assista direto no site deles:</p>
           <div class="offline-actions">
@@ -332,7 +331,7 @@ async function verificarStatusTwitch() {
       }
     } else if (data.stream) {
       assistindoVod = false;
-      if(panel){ panel.classList.remove('mature-mode'); panel.style.display = 'none'; }
+      if(panel) panel.style.display = 'none';
       if(iframe){
         iframe.style.display = 'block';
         const novoSrc = `https://player.twitch.tv/?channel=asemtet0&parent=${HOST}`;
@@ -353,7 +352,6 @@ async function verificarStatusTwitch() {
           iframe.src = 'about:blank';
         }
         if(panel){
-          panel.classList.remove('mature-mode');
           panel.style.display = 'flex';
           panel.innerHTML = `
             <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">

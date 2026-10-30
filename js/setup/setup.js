@@ -103,7 +103,6 @@ const SETUP_DATA = {
 const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinete', 'cadeira', 'microfone'];
 const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
-const GATO_MIAU_COOLDOWN = 5000;
 
 // Âncora do assento (em % da cena). O sprite usa o fundo como ponto de apoio.
 const CADEIRA = { x: 62.3, y: 79.5 }; // <-- POSIÇÃO CORRIGIDA AQUI
@@ -151,7 +150,7 @@ function h(tag, props = {}, ...kids) {
 const S = {
   tour: false, run: 0, itemAtual: null, walkId: 0,
   typeTimer: null, finish: null, wake: null,
-  catClicks: 0, catReset: null, catLastStamp: -1, catMeowUntil: 0,
+  catClicks: 0, catReset: null, catLastStamp: -1,
   gatoVisto: false,
   sentado: false, idleTimer: null, balaoTimer: null, cliquesLuk: 0, falaIdx: 0, saudou: false, sitSprite: false
 };
@@ -172,18 +171,42 @@ const esperar = (ms) => new Promise((res) => {
 });
 
 function moverLuk(x, y) {
-  // O Lukzin agora é um elemento de cenário fixo; apenas vira para o hotspot.
   const el = char();
   if (!el) return Promise.resolve();
   clearTimeout(S.idleTimer);
-  const fixedX = 4;
-  el.dataset.x = String(fixedX);
-  el.dataset.y = '95';
-  el.classList.remove('walking', 'landing');
-  if (Number.isFinite(Number(x)) && Math.abs(Number(x) - fixedX) > 1) {
-    el.dataset.dir = Number(x) < fixedX ? 'left' : 'right';
+  const id = ++S.walkId;
+  const cx = parseFloat(el.dataset.x ?? 50);
+  const cy = parseFloat(el.dataset.y ?? 88);
+  const dist = Math.hypot((x - cx) * 1.6, y - cy);
+  const ms = REDUCED ? 0 : Math.round(Math.min(1700, Math.max(550, dist * 26)));
+
+  esconderBalao();
+  el.classList.remove('landing', 'looking', 'look-up', 'speaking');
+  if (Math.abs(x - cx) > 1) el.dataset.dir = x < cx ? 'left' : 'right';
+  el.style.setProperty('--walk-ms', `${ms}ms`);
+
+  let passos = null;
+  if (ms) {
+    el.classList.add('walking');
+    snd('playStep');
+    passos = setInterval(() => snd('playStep'), 250);
   }
-  return esperar(REDUCED ? 0 : 120);
+
+  el.dataset.x = x; el.dataset.y = y;
+  el.style.left = `${x}%`; el.style.top = `${y}%`;
+
+  return new Promise((res) => {
+    setTimeout(() => {
+      clearInterval(passos);
+      if (id === S.walkId) {
+        el.classList.remove('walking');
+        void el.offsetWidth;
+        el.classList.add('landing');
+        setTimeout(() => el.classList.remove('landing'), 560);
+      }
+      res();
+    }, ms);
+  });
 }
 
 async function olharPara(it, dest) {
@@ -197,23 +220,51 @@ async function olharPara(it, dest) {
 
 function setFalando(on) { char().classList.toggle('speaking', on); }
 
-/* ---------- Lukzin fixo no canto da cena ---------- */
-function aplicarSprite() {
+/* ---------- Lukzin sentado na cadeira ---------- */
+// Se existir img/lukzin-sentado.png, usa esse sprite; senão corta as pernas via CSS (.sitting)
+const spriteSentadoTeste = new Image();
+spriteSentadoTeste.onload = () => { S.sitSprite = true; };
+spriteSentadoTeste.src = SENTADO_SPRITE;
+
+function aplicarSprite(sentado) {
   const el = char();
-  if (el) el.classList.remove('sitting', 'has-sit-sprite');
+  const img = el && el.querySelector('.luk-sprite');
+  if (!img) return;
+  if (!img.dataset.stand) img.dataset.stand = img.getAttribute('src');
+  const usar = sentado && S.sitSprite;
+  img.setAttribute('src', usar ? SENTADO_SPRITE : img.dataset.stand);
+  el.classList.toggle('has-sit-sprite', usar);
 }
-function marcarSentado() {
-  S.sentado = false;
-  aplicarSprite();
-  if (hotspots.cadeira) hotspots.cadeira.classList.remove('luk-ocupada');
+
+function marcarSentado(on) {
+  const el = char();
+  S.sentado = on;
+  el.classList.toggle('sitting', on);
+  aplicarSprite(on);
+  // o hotspot da cadeira fica escondido enquanto o Lukzin está nela (ele mesmo é clicável)
+  if (hotspots.cadeira) hotspots.cadeira.classList.toggle('luk-ocupada', on);
 }
-async function sentar() { marcarSentado(false); }
-async function levantar() { marcarSentado(false); }
+
+async function sentar() {
+  const el = char();
+  if (!el || S.tour || S.sentado) return;
+  const run = S.run;
+  await moverLuk(CADEIRA.x, CADEIRA.y);
+  if (run !== S.run || S.tour) return;
+  marcarSentado(true);
+  snd('playPop');
+}
+
+async function levantar() {
+  if (!S.sentado) return;
+  marcarSentado(false);
+  snd('playPop');
+  await esperar(REDUCED ? 0 : 380);
+}
+
 function agendarVoltar(ms = 16000) {
   clearTimeout(S.idleTimer);
-  S.idleTimer = setTimeout(() => {
-    if (!S.tour) esconderBalao();
-  }, ms);
+  S.idleTimer = setTimeout(() => { if (!S.tour && !S.sentado) sentar(); }, ms);
 }
 
 function falaTemporaria(texto, ms = 4200) {
@@ -236,7 +287,9 @@ function interagir() {
   snd('playPop');
 
   if (S.cliquesLuk % 5 === 0) {
-    falaTemporaria('Aperta os pontinhos roxos pra conhecer meu setup! ✨', 2600);
+    falaTemporaria('Quer ver a minha cadeira? Fica bão demais! 🪑', 1800);
+    const n = S.cliquesLuk;
+    setTimeout(() => { if (!S.tour && S.cliquesLuk === n) irParaItem('cadeira'); }, 1500);
     return;
   }
   if (S.cliquesLuk % 3 === 0) sparks();
@@ -245,9 +298,7 @@ function interagir() {
 }
 
 function ligarLuk() {
-  const el = char();
-  if (!el) return;
-  const flip = el.querySelector('.luk-flip');
+  const flip = char().querySelector('.luk-flip');
   flip.setAttribute('role', 'button');
   flip.setAttribute('tabindex', '0');
   flip.setAttribute('aria-label', 'Conversar com o Lukzin');
@@ -258,18 +309,19 @@ function ligarLuk() {
   const btn = $('btnLukFala');
   if (btn) btn.addEventListener('click', interagir);
 
-  el.dataset.x = '4'; el.dataset.y = '95';
-  el.style.left = '4%'; el.style.right = 'auto';
-  el.style.bottom = '2%'; el.style.top = 'auto';
-  marcarSentado(false);
-  el.setAttribute('aria-label', 'Lukzin, personagem interativo do setup');
+  // posição inicial: sentadinho na cadeira
+  const el = char();
+  el.dataset.x = CADEIRA.x; el.dataset.y = CADEIRA.y;
+  el.style.left = `${CADEIRA.x}%`; el.style.top = `${CADEIRA.y}%`;
+  marcarSentado(true);
 
+  // cumprimenta uma vez, quando o mini-game aparece na tela
   const cena = $('setupScene');
   if (cena && 'IntersectionObserver' in window) {
     const io = new IntersectionObserver((es) => {
       if (!es.some((x) => x.isIntersecting) || S.saudou) return;
       S.saudou = true; io.disconnect();
-      setTimeout(() => { if (!S.tour && !S.itemAtual) falaTemporaria(BAO_GREETING, 5200); }, 800);
+      setTimeout(() => { if (!S.tour && S.sentado && !S.itemAtual) falaTemporaria(BAO_GREETING, 5200); }, 800);
     }, { threshold: 0.5 });
     io.observe(cena);
   }
@@ -386,13 +438,16 @@ function mostrarChips(it) {
 async function visitar(id, run) {
   const it = SETUP_DATA[id];
   const hs = hotspots[id];
-  const anterior = S.itemAtual;
-  if (anterior && anterior !== id && hotspots[anterior]) hotspots[anterior].classList.remove('is-target');
   S.itemAtual = id;
+  if (S.sentado) {
+    await levantar();
+    if (run !== S.run) return false;
+  }
   if (hs) hs.classList.add('is-target');
   foco(null);
 
-  await moverLuk(it.x, it.y);
+  await moverLuk(it.stand.x, it.stand.y);
+  if (hs) hs.classList.remove('is-target');
   if (run !== S.run) return false;
 
   if (hs) hs.classList.add('is-visited');
@@ -401,13 +456,13 @@ async function visitar(id, run) {
   await olharPara(it, it.stand);
   if (run !== S.run) return false;
 
-  if (id !== 'gato') snd('playPop');
-  mostrarBalao(it.fala, 4);
+  snd(id === 'gato' ? 'playMeow' : 'playPop');
+  mostrarBalao(it.fala, it.stand.x);
   prepararDialogo(it.titulo);
   await digitar($('dlgText'), it.texto);
   if (run !== S.run) return false;
   mostrarChips(it);
-  if (!S.tour) agendarVoltar(18000);
+  if (!S.tour) agendarVoltar(18000);   // fora do tour, depois de um tempo ele volta pra cadeira
   return true;
 }
 
@@ -522,17 +577,6 @@ function pop(texto) {
   setTimeout(() => p.remove(), 900);
 }
 
-
-function playMeow() {
-  const audio = window.GameAudio;
-  if (!audio || typeof audio.isMuted !== 'function' || audio.isMuted()) return false;
-  if (Date.now() < S.catMeowUntil) return false;
-  S.catMeowUntil = Date.now() + GATO_MIAU_COOLDOWN;
-  if (typeof audio.playMeow === 'function') audio.playMeow();
-  return true;
-}
-window.playMeow = playMeow;
-
 function ligarGato() {
   const hot = $('catHotspot');
   if (!hot || hot.dataset.bound) return;
@@ -559,8 +603,7 @@ function ligarGato() {
     clearTimeout(S.catReset);
     S.gatoVisto = true;
     try { localStorage.setItem('setup_gato', '1'); } catch (_) { /* ignore */ }
-    // O miau respeita o mute e possui cooldown para evitar spam.
-    playMeow();
+    // Gato continua sendo um item apenas do mini-game. Ao clicar 5 vezes, chama o diálogo.
     irParaItem('gato');
   });
 }
@@ -704,29 +747,6 @@ function init() {
 
   criarHotspots();
   ligarLuk();
-  const scene = $('setupScene');
-  if (scene) {
-    scene.setAttribute('tabindex', '0');
-    scene.setAttribute('aria-label', 'Cena interativa do setup. Use as setas para navegar pelos pontos e Enter para abrir.');
-    scene.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        if (S.tour) pararTour();
-        $('setupDialogue').classList.add('closed');
-        esconderBalao();
-        return;
-      }
-      if (!['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'].includes(event.key)) return;
-      const list = Object.values(hotspots);
-      if (!list.length) return;
-      const current = list.indexOf(document.activeElement);
-      const direction = (event.key === 'ArrowRight' || event.key === 'ArrowDown') ? 1 : -1;
-      const next = current < 0
-        ? (direction > 0 ? 0 : list.length - 1)
-        : (current + direction + list.length) % list.length;
-      event.preventDefault();
-      list[next].focus();
-    });
-  }
   ligarGato();
   criarFiltros();
   renderCatalogo();
@@ -776,7 +796,17 @@ window.irParaItem = irParaItem;
 window.lukInteragir = interagir;
 // Ajuste fino no console: lukSentado({ drop: '45%' })  → quanto das pernas fica escondido
 //                          lukSentado({ x: 62.3, y: 79.5 }) → ponto da cadeira
-window.lukSentado = () => ({ x: 4, y: 95, fixed: true });
+window.lukSentado = (cfg = {}) => {
+  const el = char();
+  if (cfg.drop) el.style.setProperty('--sit-drop', cfg.drop);
+  if (cfg.x != null) CADEIRA.x = cfg.x;
+  if (cfg.y != null) CADEIRA.y = cfg.y;
+  if (S.sentado) {
+    el.dataset.x = CADEIRA.x; el.dataset.y = CADEIRA.y;
+    el.style.left = `${CADEIRA.x}%`; el.style.top = `${CADEIRA.y}%`;
+  }
+  return { ...CADEIRA, drop: getComputedStyle(el).getPropertyValue('--sit-drop').trim() };
+};
 window.SETUP_DATA = SETUP_DATA;
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

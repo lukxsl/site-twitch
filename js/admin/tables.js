@@ -2,19 +2,15 @@
    ADMIN — TABLES (Tierlist, Admins, Banidos, Logs, Backup, Sugestões)
    ============================================================ */
 async function carregarAdminTierList(){
-  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea');
   if(!area) return;
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<p class="admin-vazio">Carregando…</p>`;
   try{
     const r = await fetch('/api/admin?action=tierlist-get');
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
     const d = await r.json();
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
-    ADMIN_TIER = { jogos: Array.isArray(d.jogos) ? d.jogos : [], filmes: Array.isArray(d.filmes) ? d.filmes : [] };
+    ADMIN_TIER = { jogos: d.jogos || [], filmes: d.filmes || [] };
   }catch(e){
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
     return;
   }
@@ -424,19 +420,15 @@ function _sugTipoInfo(tipo){
 }
 
 async function carregarAdminSugestoes(){
-  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<p class="admin-vazio">Carregando…</p>`;
   try{
     const r = await fetch('/api/admin?action=sugestoes-ver');
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     ADMIN_SHARED.sugestoes = d;
     renderAdminSugestoes();
   }catch(e){
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
   }
 }
@@ -721,16 +713,13 @@ window.limparSugestoes = limparSugestoes;
    ADMINS
    ============================================================ */
 async function renderAdminAdmins(){
-  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('👥 Admins') + `<p class="admin-vazio">Carregando…</p>`;
   let dados = { admins: [], meuCargo: null };
   try{
     const r = await fetch('/api/admin?action=admins-ver');
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     if(r.ok) dados = await r.json();
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
-  }catch(e){ if (ADMIN_PAGE !== paginaAtualNoInicio) return; }
+  }catch(e){}
   const meCargo = dados.meuCargo || (USUARIO && USUARIO.cargo) || 'moderador';
   const nivelMeu = NIVEIS[meCargo] || 0;
   const podeGerenciar = temPerm('editar_admins') && nivelMeu >= 3;
@@ -996,16 +985,13 @@ window.removerAdmin = removerAdmin;
    BANIDOS
    ============================================================ */
 async function renderAdminBanidos(){
-  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🚫 Banidos') + `<p class="admin-vazio">Carregando…</p>`;
   let banidos = [];
   try {
     const r = await fetch('/api/admin?action=banidos-ver');
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
-    if(r.ok){ const d = await r.json(); if (ADMIN_PAGE !== paginaAtualNoInicio) return; banidos = d.banidos || []; }
-  } catch(e){ if (ADMIN_PAGE !== paginaAtualNoInicio) return; }
-  if (ADMIN_PAGE !== paginaAtualNoInicio) return;
+    if(r.ok){ const d = await r.json(); banidos = d.banidos || []; }
+  } catch(e){}
   const podeGerenciar = temPerm('editar_banidos');
   area.innerHTML = adminVoltarHTML('🚫 Banidos') + `
     <div class="admin-card">
@@ -1133,19 +1119,15 @@ function agruparLogsPorDia(logs){
 }
 
 async function renderAdminLogs(){
-  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('📋 Logs') + `<p class="admin-vazio">Carregando…</p>`;
 
   let logs = [];
   try {
     const r = await fetch('/api/admin?action=logs-ver');
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     const d = await r.json();
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     logs = d.logs || [];
-  } catch(e){ if (ADMIN_PAGE !== paginaAtualNoInicio) return; }
-  if (ADMIN_PAGE !== paginaAtualNoInicio) return;
+  } catch(e){}
 
   if(!logs.length){
     area.innerHTML = adminVoltarHTML('📋 Logs') + `<div class="logs-empty"><b>Nenhuma ação registrada ainda</b>Quando alguém mexer no painel, aparece aqui.</div>`;
@@ -1235,16 +1217,13 @@ window.renderAdminLogs = renderAdminLogs;
    BACKUP
    ============================================================ */
 async function renderAdminBackup(){
-  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('💾 Backup') + `<p class="admin-vazio">Carregando…</p>`;
   let backups = [];
   try {
     const r = await fetch('/api/backup?action=list');
-    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
-    if(r.ok){ const d = await r.json(); if (ADMIN_PAGE !== paginaAtualNoInicio) return; backups = d.backups || []; }
-  } catch(e){ if (ADMIN_PAGE !== paginaAtualNoInicio) return; }
-  if (ADMIN_PAGE !== paginaAtualNoInicio) return;
+    if(r.ok){ const d = await r.json(); backups = d.backups || []; }
+  } catch(e){}
   const fmtTamanho = b => b < 1024 ? b + ' B' : b < 1024*1024 ? (b/1024).toFixed(1) + ' KB' : (b/1024/1024).toFixed(1) + ' MB';
   area.innerHTML = adminVoltarHTML('💾 Backup') + `
     <div class="admin-card">

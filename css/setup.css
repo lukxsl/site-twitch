@@ -662,18 +662,3 @@
 
 #btnLukFala { animation: lukCall 3.2s ease-in-out infinite; }
 @keyframes lukCall { 0%, 88%, 100% { transform: none; } 92% { transform: rotate(-12deg) scale(1.1); } 96% { transform: rotate(10deg) scale(1.1); } }
-
-/* Lukzin fixo e responsivo dentro da cena; hotspots continuam em coordenadas percentuais. */
-.setup-scene-wrap{aspect-ratio:2048 / 1144;container-type:size;isolation:isolate}
-.scene-world,#sceneHotspots{position:absolute;inset:0}
-.luk-character{left:4%!important;right:auto!important;bottom:2%!important;top:auto!important;width:clamp(44px,8cqw,104px)!important;max-width:none!important;transform:none!important;transition:none!important;clip-path:none!important;pointer-events:auto!important}
-.luk-character.sitting,.luk-character.sitting.has-sit-sprite{clip-path:none!important}
-.luk-character.sitting .luk-flip,.luk-character.sitting[data-dir="left"] .luk-flip{transform:none}
-.luk-character.sitting .luk-shadow{opacity:1}
-.luk-character .luk-flip{cursor:pointer;touch-action:manipulation}
-.luk-character .luk-sprite{display:block;width:100%;height:auto;object-fit:contain}
-.hotspot-invisible{appearance:none;-webkit-appearance:none;background:transparent;border:0;padding:0;outline-offset:3px}
-.rpg-avatar-img{object-fit:cover;object-position:50% 30%;transform:scale(1.15);transform-origin:50% 30%}
-.setup-scene-wrap:focus-visible{outline:2px solid #c084fc;outline-offset:4px}
-.hotspot{touch-action:manipulation}
-@media(prefers-reduced-motion:reduce){.hotspot .hs-pulse,.hotspot.is-target .hs-pulse{animation:none!important}}

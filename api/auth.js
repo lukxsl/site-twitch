@@ -98,11 +98,7 @@ async function buscarCargoSalvo(userId){
 async function salvarPerfil(userId, username, avatar){
   if(!URL_ || !TOKEN_R) return;
   try {
-    // Preserve os campos de personalização e o vínculo Twitch ao atualizar a sessão Discord.
-    const [raw] = await redis([['HGET', 'user_profiles', String(userId)]]);
-    let atual = {};
-    try { atual = raw ? JSON.parse(raw) || {} : {}; } catch(e) { atual = {}; }
-    const payload = JSON.stringify({ ...atual, username, avatar, ts: Date.now() });
+    const payload = JSON.stringify({ username, avatar, ts: Date.now() });
     await redis([['HSET', 'user_profiles', String(userId), payload]]);
   } catch(e){}
 }

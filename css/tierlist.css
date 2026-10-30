@@ -130,17 +130,17 @@ body.sou-admin .tl-hint { display: flex; }
 .tl-board { display: flex; flex-direction: column; gap: 16px; }
 
 .tl-tier {
-  display: grid; grid-template-columns: minmax(104px, 116px) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 20px; overflow: visible;
+  display: grid; grid-template-columns: 110px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 20px; overflow: hidden;
   background: var(--surface); position: relative; transition: .3s; box-shadow: 0 8px 24px -12px rgba(0,0,0,0.6);
 }
 .tl-tier::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--glow) 0%, transparent 15%); opacity: 0.15; pointer-events: none; }
 .tl-tier:hover { border-color: var(--tier); box-shadow: 0 12px 30px -10px var(--glow); }
 
 .tl-tab {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 20px 12px; min-width: 0; overflow: visible; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 20px 10px; text-align: center;
   background: linear-gradient(160deg, var(--tier), rgba(0,0,0,0.4)); color: var(--on); position: relative; z-index: 1;
 }
-.tl-letter { font: 800 clamp(2.7rem, 4vw, 3.8rem)/1 'Bricolage Grotesque', sans-serif; letter-spacing: -0.04em; text-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.tl-letter { font: 800 3.8rem/1 'Bricolage Grotesque', sans-serif; letter-spacing: -0.04em; text-shadow: 0 4px 12px rgba(0,0,0,0.3); }
 .tl-tab-meta { display: flex; flex-direction: column; gap: 2px; font-size: 0.72rem; font-weight: 800; line-height: 1.2; text-transform: uppercase; opacity: 0.85; }
 
 .tl-shelf { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 20px var(--gap); padding: 24px; min-height: 190px; background: rgba(0,0,0,0.1); }
@@ -264,11 +264,3 @@ body.sou-admin .tl-card[draggable="true"] { cursor: grab; }
   .tl-shelf { padding: 16px; gap: 16px 12px; min-height: 0; }
   .tl-tier.is-empty .tl-shelf { min-height: 90px; }
 }
-@media (max-width:600px){.tl-tier{grid-template-columns:84px minmax(0,1fr)}.tl-tab{padding:16px 6px}.tl-letter{font-size:2.6rem}.tl-shelf{padding:14px;gap:14px var(--gap)}}
-
-/* Evita corte do rótulo lateral (principalmente Tier S em telas estreitas). */
-.tl-tier{overflow:visible;grid-template-columns:minmax(88px,116px) minmax(0,1fr)}
-.tl-tab{min-width:0;overflow:visible;padding-inline:10px;white-space:normal}
-.tl-letter{font-size:clamp(2.45rem,4vw,3.8rem);line-height:1;letter-spacing:-.035em;max-width:100%;overflow:visible}
-.tl-tab-meta{max-width:100%;overflow-wrap:anywhere}
-@media(max-width:600px){.tl-tier{grid-template-columns:84px minmax(0,1fr)}.tl-tab{padding:14px 5px}.tl-letter{font-size:2.45rem}}
