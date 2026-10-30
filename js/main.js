@@ -661,7 +661,7 @@ function setLivePulse(isLive){
 let _ultimaAba = null;
 let _mudarAbaTimer = null;
 let _mudarAbaPendente = null;
-const ABAS_VALIDAS = ['inicio','tierlist','comunidade','setup','sugestoes','admin'];
+const ABAS_VALIDAS = ['inicio','tierlist','comunidade','setup','sugestoes','ranking','perfil','admin'];
 
 function _executarMudarAba(nome, salvar){
   if(!ABAS_VALIDAS.includes(nome)) nome = 'inicio';
@@ -692,6 +692,9 @@ function _executarMudarAba(nome, salvar){
   } catch(e){}
 
   window.scrollTo({ top:0, behavior:'smooth' });
+
+  if(nome === 'ranking' && typeof carregarRanking === 'function') carregarRanking();
+  if(nome === 'perfil' && typeof carregarMeuPerfil === 'function') carregarMeuPerfil();
 
   if(nome === 'admin'){
     garantirAdminCarregado()
@@ -765,28 +768,13 @@ function renderComandos(filtroTxt = ''){
    TIER LIST V2
    ============================================================ */
 const TIERS = ['S','A','B','C'];
-const JOGOS_FALLBACK = [
-  { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando', horas:50, nota:8,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
-    comentario:'Um dos mundos mais vivos e detalhados dos games.', generos:['Ação','Aventura'] },
-  { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Zerado', nota:9, horas:40,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario:'', generos:['Metroidvania'] },
-  { id:'stardew-valley', nome:'Stardew Valley', tier:'A', status:'Jogando', nota:8, horas:120,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario:'', generos:['Simulação'] }
-];
-const FILMES_FALLBACK = [
-  { id:'interestelar', nome:'Interestelar', tier:'S', status:'Assistido', nota:9, duracao:169, ano:2014,
-    capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario:'As reservas naturais da Terra estão chegando ao fim.', generos:['Ficção'] }
-];
-
 async function carregarBiblioteca(){
   try{
     const r = await fetch('/api/tierlist');
     const d = r.ok ? await r.json() : {};
-    JOGOS = (Array.isArray(d.jogos) && d.jogos.length) ? d.jogos : JOGOS_FALLBACK;
-    FILMES = (Array.isArray(d.filmes) && d.filmes.length) ? d.filmes : FILMES_FALLBACK;
-  }catch(e){ JOGOS = JOGOS_FALLBACK; FILMES = FILMES_FALLBACK; }
+    JOGOS = Array.isArray(d.jogos) ? d.jogos : [];
+    FILMES = Array.isArray(d.filmes) ? d.filmes : [];
+  }catch(e){ JOGOS = []; FILMES = []; }
   desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
 }
 window.carregarBiblioteca = carregarBiblioteca;
@@ -1294,6 +1282,7 @@ function aplicarVotos(d){
   if(d && Array.isArray(d.opcoes)){
     VOTOS_DADOS = d.opcoes;
     meuVoto = d.meuVoto || null;
+    if(meuVoto && !d.opcoes.some(o => String(o.id) === String(meuVoto))) meuVoto = null;
     if(d.usuario && !USUARIO) USUARIO = { ...d.usuario };
     if(d.fechamento) VOTOS_FECHAMENTO = d.fechamento;
   }
@@ -1301,7 +1290,6 @@ function aplicarVotos(d){
 
 async function carregarVotosApi(){
   await checarLogin();
-  if(!USUARIO){ votoStatus = 'sem-login'; renderVotacao(); return; }
   try{
     const r = await fetch('/api/votos');
     if(!r.ok) throw 0;
@@ -1312,171 +1300,172 @@ async function carregarVotosApi(){
 }
 window.carregarVotosApi = carregarVotosApi;
 
+function atualizarProxCard(){
+  const cover = $('proxCover'), icon = $('proxEmptyIcon');
+  const nome = $('proxNome'), info = $('proxInfo'), wrap = $('proxBarWrap'), bar = $('proxBarI');
+  const action = $('proxActionButton');
+  const half = cover && cover.closest('.jogo-half');
+  if(!nome || !info) return;
+  if(half) half.classList.remove('prox-empty','prox-single','prox-leader');
+  const opcoes = Array.isArray(VOTOS_DADOS) ? VOTOS_DADOS : [];
+  const total = opcoes.reduce((sum, item) => sum + (Number(item.votos) || 0), 0);
+  const ordenadas = [...opcoes].sort((a,b) => (Number(b.votos)||0) - (Number(a.votos)||0));
+  const mostrarCapa = item => {
+    if(!cover) return;
+    if(item && item.capa){
+      cover.onerror = () => { cover.style.display = 'none'; };
+      cover.src = item.capa; cover.alt = `Capa de ${item.nome || 'jogo'}`; cover.style.display = '';
+    } else cover.style.display = 'none';
+  };
+  if(!opcoes.length){
+    mostrarCapa(null);
+    if(icon) icon.style.display = '';
+    if(wrap) wrap.style.visibility = 'hidden';
+    if(bar) bar.style.width = '0%';
+    nome.textContent = 'Nenhuma votação ativa';
+    info.textContent = 'A comunidade ainda não tem opções para votar.';
+    if(action){ action.textContent = 'Sugerir um jogo →'; action.onclick = () => { mudarAba('sugestoes'); setTimeout(() => sugTabIrPara('sugerir'), 130); }; }
+    if(half) half.classList.add('prox-empty');
+    return;
+  }
+  if(icon) icon.style.display = 'none';
+  const lider = ordenadas[0];
+  mostrarCapa(lider);
+  if(opcoes.length === 1){
+    if(wrap) wrap.style.visibility = 'hidden';
+    if(bar) bar.style.width = '0%';
+    nome.textContent = lider.nome || 'Única opção';
+    info.textContent = 'Única opção, vote pra confirmar';
+    if(action){ action.textContent = 'Confirmar meu voto →'; action.onclick = abrirVotacao; }
+    if(half) half.classList.add('prox-single');
+    return;
+  }
+  const pct = total ? Math.round((Number(lider.votos)||0) / total * 100) : 0;
+  if(wrap) wrap.style.visibility = 'visible';
+  if(bar) bar.style.width = `${pct}%`;
+  nome.textContent = lider.nome || 'Líder da votação';
+  info.textContent = total ? `Liderando com ${pct}% · ${lider.votos || 0} ${plural(lider.votos || 0,'voto','votos')}` : 'Empate inicial — seja a primeira pessoa a votar!';
+  if(action){ action.textContent = 'Votar agora →'; action.onclick = abrirVotacao; }
+  if(half) half.classList.add('prox-leader');
+}
+window.atualizarProxCard = atualizarProxCard;
+
 function renderVotacao(){
   const destBox = $('destaqueBox'), listaBox = $('votoLista');
   if(!destBox || !listaBox) return;
-  const proxCover = $('proxCover');
-  const proxBarWrap = $('proxBarWrap');
-  const proxBarI = $('proxBarI');
-
   const infoTop = $('votoInfoTop');
   const statusEl = $('votoStatus');
   const countdownEl = $('votoCountdown');
-
   const countdown = tempoRestante(VOTOS_FECHAMENTO);
   const fechada = countdown && countdown.encerrado;
+  const opcoes = Array.isArray(VOTOS_DADOS) ? VOTOS_DADOS : [];
 
   if(statusEl){
-    if(fechada){
-      statusEl.className = 'vit-item vit-status fechada';
-      statusEl.innerHTML = '<span class="vit-dot"></span> Votação encerrada';
-    } else {
-      statusEl.className = 'vit-item vit-status';
-      statusEl.innerHTML = '<span class="vit-dot"></span> Votação aberta';
-    }
+    statusEl.className = 'vit-item vit-status' + (fechada ? ' fechada' : '');
+    statusEl.innerHTML = `<span class="vit-dot"></span> ${fechada ? 'Votação encerrada' : (opcoes.length ? 'Votação aberta' : 'Sem votação ativa')}`;
   }
-  if(countdownEl){
-    countdownEl.textContent = countdown
-      ? (fechada ? '🔒 Encerrada' : '⏰ ' + countdown.texto)
-      : '🔓 Sem data definida';
-  }
+  if(countdownEl) countdownEl.textContent = countdown ? (fechada ? '🔒 Encerrada' : '⏰ ' + countdown.texto) : '🔓 Sem data definida';
 
-  if(!USUARIO){
-    if(infoTop) infoTop.style.display = 'none';
-    destBox.innerHTML = '';
-    listaBox.innerHTML = `
-      <div class="voto-bloqueado">
-        <span class="loot">🔒</span>
-        <b>Só falta você escolher!</b>
-        <p>Entra rapidinho com o Discord pra votar e ajudar a decidir o próximo jogo da live 💜</p>
-        <a class="btn-entrar" href="/api/auth?action=login">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
-          Entrar com Discord
-        </a>
-      </div>`;
-    if(proxCover) proxCover.style.display = 'none';
-    if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
-    return;
-  }
-  if(!VOTOS_DADOS.length){
-    if(infoTop) infoTop.style.display = 'none';
-    destBox.innerHTML = '';
-    listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível' : 'Carregando votação…'}</b></div>`;
-    return;
-  }
-
-  if(infoTop) infoTop.style.display = '';
-
-  const total = VOTOS_DADOS.reduce((a, x) => a + (x.votos || 0), 0);
-  const ord = [...VOTOS_DADOS].sort((a, b) => (b.votos || 0) - (a.votos || 0));
-  const pct = v => total ? Math.round((v || 0) / total * 100) : 0;
-
-  const statOpcoes = $('votoStatOpcoes');
-  const statVotos = $('votoStatVotos');
-  const statLider = $('votoStatLider');
-  const lblOpcoes = $('votoLblOpcoes');
-  const lblVotos = $('votoLblVotos');
-  if(statOpcoes) statOpcoes.textContent = VOTOS_DADOS.length;
-  if(lblOpcoes) lblOpcoes.textContent = plural(VOTOS_DADOS.length, 'opção', 'opções');
+  const statOpcoes = $('votoStatOpcoes'), statVotos = $('votoStatVotos'), statLider = $('votoStatLider');
+  const lblOpcoes = $('votoLblOpcoes'), lblVotos = $('votoLblVotos');
+  const total = opcoes.reduce((a, x) => a + (Number(x.votos) || 0), 0);
+  const ord = [...opcoes].sort((a, b) => (Number(b.votos)||0) - (Number(a.votos)||0));
+  const pct = v => total ? Math.round((Number(v)||0) / total * 100) : 0;
+  if(statOpcoes) statOpcoes.textContent = opcoes.length;
+  if(lblOpcoes) lblOpcoes.textContent = plural(opcoes.length, 'opção', 'opções');
   if(statVotos) statVotos.textContent = total;
   if(lblVotos) lblVotos.textContent = plural(total, 'voto', 'votos');
   if(statLider){
-    if(total === 0){ statLider.textContent = '—'; statLider.parentElement.style.display = 'none'; }
-    else { statLider.parentElement.style.display = ''; statLider.textContent = 'líder com ' + pct(ord[0].votos) + '%'; }
+    const holder = statLider.parentElement;
+    if(!opcoes.length || !total){ statLider.textContent = '—'; if(holder) holder.style.display = 'none'; }
+    else { if(holder) holder.style.display = ''; statLider.textContent = 'líder com ' + pct(ord[0].votos) + '%'; }
   }
 
   const vBtn = (it) => {
+    if(!USUARIO) return `<a class="btn ghost vbtn" href="/api/auth?action=login">Entrar para votar</a>`;
     if(fechada) return `<button type="button" class="btn ghost vbtn" disabled>🔒 Encerrada</button>`;
     if(meuVoto === it.id) return `<button type="button" class="btn vbtn done" disabled>✓ Votado</button>`;
     return `<button type="button" class="btn vbtn pulse-vote" data-votar="${esc(it.id)}">${meuVoto ? '🔄 Trocar voto' : '🗳️ Votar'}</button>`;
   };
   const prev = id => (VOTO_PREV[id] != null ? VOTO_PREV[id] : 0);
   const justId = VOTO_ULTIMO; VOTO_ULTIMO = null;
-  const estatico = VOTO_ANIMOU;               // entrada escalonada só na 1ª vez
+  const estatico = VOTO_ANIMOU;
   destBox.classList.toggle('static', estatico);
   listaBox.classList.toggle('static', estatico);
   listaBox.classList.add('vgrid');
   ligarVotos();
 
-  if(total > 0){
-    const l = ord[0], p = pct(l.votos);
-    const segundo = ord[1];
-    let vantagemTxt = '';
-    if(segundo && segundo.votos > 0){
-      const diff = l.votos - segundo.votos;
-      vantagemTxt = diff === 0 ? 'Empatado com o 2º lugar 🔥' : `${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
-    } else if(l.votos > 1){ vantagemTxt = 'Unanimidade 💜'; }
+  if(!opcoes.length){
+    if(infoTop) infoTop.style.display = 'none';
+    destBox.innerHTML = `<div class="voto-empty-state"><span aria-hidden="true">🗳️</span><div><b>Nenhuma votação ativa no momento</b><p>Assim que a Soso abrir uma enquete, as opções aparecem aqui. Enquanto isso, você pode sugerir um jogo!</p><button type="button" class="btn ghost" onclick="mudarAba('sugestoes');setTimeout(()=>sugTabIrPara('sugerir'),130)">💡 Sugerir um jogo</button></div></div>`;
+    listaBox.innerHTML = '';
+    atualizarProxCard();
+    return;
+  }
+  if(infoTop) infoTop.style.display = '';
 
-    const capaL = l.capa
-      ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">`
+  if(opcoes.length === 1){
+    const item = ord[0];
+    const capa = item.capa
+      ? `<img src="${esc(item.capa)}" alt="${esc(item.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">`
       : '<div class="ph2">🎮</div>';
     destBox.innerHTML = `
-      <div class="vhero ${fechada ? 'fechada' : ''} ${meuVoto === l.id ? 'meu' : ''} ${justId === l.id ? 'just-voted' : ''}" data-id="${esc(l.id)}">
-        ${l.capa ? `<div class="vhero-bg" style="background-image:url('${esc(l.capa)}')"></div>` : ''}
-        <div class="vhero-poster">${capaL}<span class="vhero-crown" aria-hidden="true">${fechada ? '🏆' : '👑'}</span></div>
-        <div class="vhero-info">
-          <span class="vhero-kicker">${fechada ? 'Vencedora da votação' : 'Líder da votação'}</span>
-          <h4 class="vhero-nome">${esc(l.nome)}</h4>
-          <div class="vhero-pct"><b data-count="${p}" data-from="${prev(l.id)}">${p}</b><span>%</span><small>${l.votos}/${total} ${plural(total, 'voto', 'votos')}</small></div>
-          <div class="vbar" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><i style="--from:${prev(l.id)}%;--to:${p}%"></i></div>
-          ${vantagemTxt ? `<span class="vhero-meta">${vantagemTxt}</span>` : ''}
-        </div>
-        <div class="vhero-cta">${vBtn(l)}</div>
-      </div>`;
-    if(proxCover){
-      if(l.capa){ proxCover.onerror = () => { proxCover.style.display = 'none'; }; proxCover.src = l.capa; proxCover.style.display = ''; }
-      else proxCover.style.display = 'none';
-    }
-    $('proxNome').textContent = l.nome;
-    $('proxInfo').textContent = fechada ? `Encerrada com ${p}% dos votos` : `Liderando com ${p}% dos votos`;
-    if(proxBarWrap && proxBarI){ proxBarWrap.style.visibility = 'visible'; proxBarI.style.width = p + '%'; }
-  } else {
-    destBox.innerHTML = fechada ? '' : `<div class="vhint"><span>🗳️</span><div><b>Ainda ninguém votou</b><small>Seja a primeira pessoa a escolher o próximo jogo!</small></div></div>`;
-    if(proxCover) proxCover.style.display = 'none';
-    if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
-    $('proxNome').textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
-    $('proxInfo').textContent = fechada ? 'Aguardando nova votação 💜' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';
+      <article class="vhero vhero-single ${fechada ? 'fechada' : ''} ${meuVoto === item.id ? 'meu' : ''}" data-id="${esc(item.id)}">
+        <div class="vhero-poster">${capa}</div>
+        <div class="vhero-info"><span class="vhero-kicker">Única opção na votação</span><h4 class="vhero-nome">${esc(item.nome)}</h4><p class="vhero-single-note">Única opção, vote pra confirmar.</p></div>
+        <div class="vhero-cta">${vBtn(item)}</div>
+      </article>`;
+    listaBox.innerHTML = '';
+    atualizarProxCard();
+    VOTO_PREV = { [item.id]: 0 }; VOTO_ANIMOU = true;
+    return;
   }
 
+  const l = ord[0], p = pct(l.votos), segundo = ord[1];
+  let vantagemTxt = '';
+  if(segundo && (Number(segundo.votos)||0) > 0){
+    const diff = (Number(l.votos)||0) - (Number(segundo.votos)||0);
+    vantagemTxt = diff === 0 ? 'Empatado com o 2º lugar 🔥' : `${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
+  } else if((Number(l.votos)||0) > 1) vantagemTxt = 'Unanimidade 💜';
+  const capaL = l.capa
+    ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">`
+    : '<div class="ph2">🎮</div>';
+  destBox.innerHTML = `
+    <div class="vhero ${fechada ? 'fechada' : ''} ${meuVoto === l.id ? 'meu' : ''} ${justId === l.id ? 'just-voted' : ''}" data-id="${esc(l.id)}">
+      ${l.capa ? `<div class="vhero-bg" style="background-image:url('${esc(l.capa)}')"></div>` : ''}
+      <div class="vhero-poster">${capaL}<span class="vhero-crown" aria-hidden="true">${fechada ? '🏆' : '👑'}</span></div>
+      <div class="vhero-info"><span class="vhero-kicker">${fechada ? 'Vencedora da votação' : 'Líder da votação'}</span><h4 class="vhero-nome">${esc(l.nome)}</h4>
+        <div class="vhero-pct"><b data-count="${p}" data-from="${prev(l.id)}">${p}</b><span>%</span><small>${l.votos}/${total} ${plural(total, 'voto', 'votos')}</small></div>
+        <div class="vbar" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><i style="--from:${prev(l.id)}%;--to:${p}%"></i></div>
+        ${vantagemTxt ? `<span class="vhero-meta">${vantagemTxt}</span>` : ''}
+      </div><div class="vhero-cta">${vBtn(l)}</div>
+    </div>`;
+
   const vistos = getVotosVistos();
-  const resto = total > 0 ? ord.slice(1) : ord;
+  const resto = ord.slice(1);
   listaBox.innerHTML = resto.map((it, i) => {
-    const p = pct(it.votos);
-    const posicao = (total > 0 ? i + 2 : i + 1);
-    const medalha = total > 0 ? (RANKS[i + 1] || `#${posicao}`) : '';
-    const meu = meuVoto === it.id;
-    const votos = it.votos || 0;
-    const novo = !vistos.includes(it.id);
-    const diff = (ord[0] ? ord[0].votos : 0) - votos;
+    const pItem = pct(it.votos), posicao = i + 2, medalha = RANKS[i + 1] || `#${posicao}`;
+    const meu = meuVoto === it.id, votos = Number(it.votos)||0, novo = !vistos.includes(it.id);
+    const diff = (Number(ord[0].votos)||0) - votos;
     let statusTxt, statusCls;
-    if (votos === 0) { statusTxt = 'Nenhum voto ainda'; statusCls = 'zero'; }
-    else if (diff === 0) { statusTxt = 'Empatado com o 1º lugar 🔥'; statusCls = 'close'; }
-    else if (diff === 1) { statusTxt = 'Só 1 voto atrás do líder'; statusCls = 'close'; }
+    if(votos === 0){ statusTxt = 'Nenhum voto ainda'; statusCls = 'zero'; }
+    else if(diff === 0){ statusTxt = 'Empatado com o 1º lugar 🔥'; statusCls = 'close'; }
+    else if(diff === 1){ statusTxt = 'Só 1 voto atrás do líder'; statusCls = 'close'; }
     else { statusTxt = `${diff} votos atrás do líder`; statusCls = ''; }
     const img = it.capa
       ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'vc-ph',textContent:'🎮'}))">`
       : '<div class="vc-ph">🎮</div>';
-    return `
-      <article class="vc ${meu ? 'meu' : ''} ${justId === it.id ? 'just-voted' : ''}" data-id="${esc(it.id)}" style="--i:${i}">
-        <div class="vc-poster">
-          ${img}
-          ${medalha ? `<span class="vc-rank" title="${posicao}º lugar">${medalha}</span>` : ''}
-          ${meu ? '<span class="vc-tag meu">✓ Seu voto</span>' : (novo ? '<span class="vc-tag novo">Novo</span>' : '')}
-          <div class="vc-ov">
-            <b class="vc-nome">${esc(it.nome)}</b>
-            <span class="vc-pct"><b data-count="${p}" data-from="${prev(it.id)}">${p}</b>% · ${votos} ${plural(votos, 'voto', 'votos')}</span>
-          </div>
-        </div>
-        <div class="vc-body">
-          <div class="vbar"><i style="--from:${prev(it.id)}%;--to:${p}%"></i></div>
-          <span class="vc-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
-          ${vBtn(it)}
-        </div>
-      </article>`;
+    return `<article class="vc ${meu ? 'meu' : ''} ${justId === it.id ? 'just-voted' : ''}" data-id="${esc(it.id)}" style="--i:${i}">
+      <div class="vc-poster">${img}<span class="vc-rank" title="${posicao}º lugar">${medalha}</span>
+        ${meu ? '<span class="vc-tag meu">✓ Seu voto</span>' : (novo ? '<span class="vc-tag novo">Novo</span>' : '')}
+        <div class="vc-ov"><b class="vc-nome">${esc(it.nome)}</b><span class="vc-pct"><b data-count="${pItem}" data-from="${prev(it.id)}">${pItem}</b>% · ${votos} ${plural(votos, 'voto', 'votos')}</span></div>
+      </div><div class="vc-body"><div class="vbar"><i style="--from:${prev(it.id)}%;--to:${pItem}%"></i></div>
+        <span class="vc-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>${vBtn(it)}</div>
+    </article>`;
   }).join('');
 
-  animarContadores(destBox);
-  animarContadores(listaBox);
+  atualizarProxCard();
+  animarContadores(destBox); animarContadores(listaBox);
   VOTO_PREV = {}; VOTOS_DADOS.forEach(o => { VOTO_PREV[o.id] = pct(o.votos); });
   VOTO_ANIMOU = true;
   setTimeout(() => resto.forEach(it => marcarVotoVisto(it.id)), 4000);
@@ -1577,6 +1566,12 @@ window.votar = votar;
 /* ============================================================
    SUGESTÕES
    ============================================================ */
+function abrirVotacao(){
+  mudarAba('sugestoes');
+  setTimeout(() => sugTabIrPara('votar'), 130);
+}
+window.abrirVotacao = abrirVotacao;
+
 function sugTabIrPara(tab){
   try { localStorage.setItem('sug:tab', tab); } catch(e){}
   document.querySelectorAll('.sug-tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));

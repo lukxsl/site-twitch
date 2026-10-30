@@ -2,14 +2,18 @@
    ADMIN — FORMS (Votação, Opções, Prazo, Config)
    ============================================================ */
 async function carregarAdminVotacao(){
+  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea');
   if(!area) return;
   area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<p class="admin-vazio">Carregando dados…</p>`;
   try{
     const r = await fetch('/api/admin?action=votos');
+    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
     ADMIN_DADOS = await r.json();
+    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
   }catch(e){
+    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
     return;
   }
@@ -422,11 +426,14 @@ window.restaurarPadraoVotacao = restaurarPadraoVotacao;
    CONFIG (com abas)
    ============================================================ */
 async function renderAdminConfig(){
+  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<p class="admin-vazio">Carregando…</p>`;
   try {
     const r = await fetch('/api/admin?action=config-get', { cache:'no-store' });
+    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     const d = await r.json();
+    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     const av = d.aviso || { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
     const top3Txt = (d.top3 || []).map(p => `${p.nome}${p.valor ? ' | ' + p.valor : ''}`).join('\n');
     const hallTxt = (d.hall || []).map(p => `${p.nome}${p.meta ? ' | ' + p.meta : ''}`).join('\n');
@@ -535,6 +542,7 @@ async function renderAdminConfig(){
     });
     atualizarPreviewAviso();
   } catch(e){
+    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
   }
 }

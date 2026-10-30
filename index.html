@@ -60,6 +60,8 @@
         <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
         <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
         <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
+        <li><button onclick="mudarAba('ranking')" id="btn-ranking">Ranking</button></li>
+        <li><button onclick="mudarAba('perfil')" id="btn-perfil">Meu Perfil</button></li>
       </ul>
       <div class="nav-user" id="navUser"></div>
     </div>
@@ -219,7 +221,8 @@
           </div>
         </div>
         <div class="jogo-half">
-          <img class="foco-cover" id="proxCover" alt="" style="display:none">
+          <span class="prox-empty-icon" id="proxEmptyIcon" aria-hidden="true">🗳️</span>
+          <img class="foco-cover prox-cover" id="proxCover" alt="" style="display:none">
           <div class="foco-info">
             <span class="foco-label">🗳️ Próximo na votação</span>
             <h3 id="proxNome">Votação aberta</h3>
@@ -228,7 +231,7 @@
             </div>
             <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
             <div class="foco-btns">
-              <button class="btn" onclick="mudarAba('sugestoes')">Votar agora →</button>
+              <button class="btn" id="proxActionButton" onclick="abrirVotacao()">Votar agora →</button>
             </div>
           </div>
         </div>
@@ -525,10 +528,10 @@
           <div id="sceneHotspots"></div>
 
           <!-- Hotspot invisível do gato (Easter Egg: 5 cliques) -->
-          <div class="hotspot-invisible" id="catHotspot" style="left: 42.5%; top: 10.5%; width: 19%; height: 20%;" title="Miau?"></div>
+          <button type="button" class="hotspot-invisible" id="catHotspot" style="left: 42.5%; top: 10.5%; width: 19%; height: 20%;" title="Miau?" aria-label="Quadro do gatinho. Clique cinco vezes para revelar o segredo"></button>
 
           <!-- Lukzin (sprite em pixel art) -->
-          <div class="luk-character sitting" id="lukChar" data-dir="right" style="left: 62.3%; top: 78.7%;">
+          <div class="luk-character" id="lukChar" data-dir="right" style="left: 4%; bottom: 2%;">
             <div class="luk-bubble" id="lukBubble" role="status" aria-live="polite"></div>
             <div class="luk-flip">
               <div class="luk-squash">
@@ -680,6 +683,46 @@
   </div>
 </section>
 
+<!-- ==================== RANKING ==================== -->
+<section id="sec-ranking" class="page-section">
+  <header class="section-header reveal">
+    <span class="section-kicker">🏆 Comunidade</span>
+    <h2>Ranking do cantinho</h2>
+    <p>Quem acompanha as lives e participa do chat sobe no placar. Inscreva sua Twitch no perfil para receber o bônus de Sub.</p>
+  </header>
+  <div class="ranking-shell card reveal">
+    <div class="ranking-topline"><div><span class="ranking-kicker">TEMPORADA ATUAL</span><h3>Top da comunidade</h3></div><button class="btn ghost" type="button" onclick="carregarRanking(true)">↻ Atualizar</button></div>
+    <div id="rankingPodio" class="ranking-podio" aria-live="polite"><p class="ranking-empty">Carregando ranking…</p></div><small id="rankingUpdatedAt" class="ranking-updated"></small>
+    <div class="ranking-list-wrap"><h3>Classificação completa</h3><ol id="rankingLista" class="ranking-lista"><li class="ranking-empty">Carregando…</li></ol></div>
+    <p class="ranking-footnote">Presença no chat: até 10 pontos por hora. Inscritos vinculados recebem +50% nos pontos de presença.</p>
+  </div>
+</section>
+
+<!-- ==================== MEU PERFIL ==================== -->
+<section id="sec-perfil" class="page-section">
+  <header class="section-header reveal">
+    <span class="section-kicker">💜 Conta da comunidade</span>
+    <h2>Meu Perfil</h2>
+    <p>Personalize como seu nome aparece no ranking e conecte sua conta Twitch.</p>
+  </header>
+  <div class="perfil-layout">
+    <div class="perfil-preview card reveal">
+      <div class="perfil-banner" id="perfilBannerPreview"><span>Seu cantinho no ranking</span></div>
+      <div class="perfil-avatar-wrap"><img id="perfilAvatarPreview" src="img/avatar.png" alt="Seu avatar" onerror="this.src='img/avatar.png'"></div>
+      <div class="perfil-preview-info"><h3 id="perfilNomePreview">Visitante</h3><p id="perfilTwitchStatus">Conta Twitch ainda não vinculada</p><span id="perfilSubBadge" class="perfil-sub-badge" hidden>👑 SUB VINCULADO · BÔNUS +50%</span></div>
+    </div>
+    <form class="perfil-form card reveal" id="perfilForm">
+      <h3>✏️ Personalizar perfil</h3>
+      <label for="perfilNome">Nome público</label><input id="perfilNome" name="nome" type="text" maxlength="40" placeholder="Como quer aparecer no ranking">
+      <label for="perfilAvatar">URL do avatar</label><input id="perfilAvatar" name="avatar" type="url" maxlength="500" placeholder="https://...">
+      <label for="perfilBanner">URL do banner</label><input id="perfilBanner" name="banner" type="url" maxlength="500" placeholder="https://...">
+      <button class="btn block" type="submit">💾 Salvar perfil</button>
+      <div class="perfil-twitch-box"><div><b>🔗 Conta Twitch</b><p id="perfilTwitchDescricao">Vincule a Twitch para validar sua inscrição e receber o bônus de Sub.</p></div><button class="btn twitch-accent" id="btnVincularTwitch" type="button">Vincular Twitch</button></div>
+      <p class="perfil-feedback" id="perfilFeedback" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
 <!-- ==================== ADMIN ==================== -->
 <section id="sec-admin" class="page-section">
   <div class="admin-shell">
@@ -758,5 +801,6 @@
 <script src="js/twitch/twitch.js"></script>
 <script src="js/setup/setup.js"></script>
 <script src="js/main.js"></script>
+<script src="js/perfil-ranking.js"></script>
 </body>
 </html>

@@ -33,21 +33,6 @@ const LABEL_PERM = {
   ver_logs: 'Ver logs', ver_sugestoes: 'Ver sugestões'
 };
 
-const JOGOS_PADRAO = [
-  { id: 'red-dead-2', nome: 'Red Dead Redemption 2', appid: 1174180, tier: 'S', status: 'Jogando', nota: 8, horas: 50,
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
-    comentario: 'Um dos mundos mais vivos e detalhados dos games.', generos: ['Ação','Aventura'] },
-  { id: 'hollow-knight', nome: 'Hollow Knight', tier: 'S', status: 'Zerado', nota: 9, horas: 40,
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario: '', generos: ['Metroidvania','Plataforma'] },
-  { id: 'stardew-valley', nome: 'Stardew Valley', tier: 'A', status: 'Jogando', nota: 8, horas: 120,
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario: '', generos: ['Simulação','RPG'] }
-];
-const FILMES_PADRAO = [
-  { id: 'interestelar', nome: 'Interestelar', tier: 'S', status: 'Assistido', nota: 9, duracao: 169, ano: 2014,
-    capa: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario: 'As reservas naturais da Terra estão chegando ao fim.', generos: ['Ficção'] }
-];
-
 const STATUS_SUG_VALIDOS = ['nova','analise','aceita','recusada','concluido'];
 const ROTULO_CONCLUIDO = {
   'Sugestão / ideia':      'Aplicada',
@@ -892,28 +877,15 @@ export default async function handler(req, res){
 
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
       if(!(await temPermissao(sessao, 'ver_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
-      const [jogosRaw, filmesRaw, seedFeitoRaw] = await redis([
+      const [jogosRaw, filmesRaw] = await redis([
         ['GET','tierlist:jogos'],
-        ['GET','tierlist:filmes'],
-        ['GET','tierlist:seedFeito']
+        ['GET','tierlist:filmes']
       ]);
-      const seedFeito = seedFeitoRaw === '1';
       let jogos = [], filmes = [];
-      const cmdsSalvar = [];
-      if(jogosRaw === null || jogosRaw === undefined){
-        if(!seedFeito){ jogos = JOGOS_PADRAO; cmdsSalvar.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]); }
-        else jogos = [];
-      } else {
-        try { jogos = JSON.parse(jogosRaw); if(!Array.isArray(jogos)) jogos = []; } catch(e){ jogos = []; }
-      }
-      if(filmesRaw === null || filmesRaw === undefined){
-        if(!seedFeito){ filmes = FILMES_PADRAO; cmdsSalvar.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]); }
-        else filmes = [];
-      } else {
-        try { filmes = JSON.parse(filmesRaw); if(!Array.isArray(filmes)) filmes = []; } catch(e){ filmes = []; }
-      }
-      if(!seedFeito) cmdsSalvar.push(['SET', 'tierlist:seedFeito', '1']);
-      if(cmdsSalvar.length) await redis(cmdsSalvar);
+      try { jogos = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e) { jogos = []; }
+      try { filmes = filmesRaw ? JSON.parse(filmesRaw) : []; } catch(e) { filmes = []; }
+      if(!Array.isArray(jogos)) jogos = [];
+      if(!Array.isArray(filmes)) filmes = [];
       return res.status(200).json({ jogos, filmes });
     }
 

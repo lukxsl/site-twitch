@@ -139,49 +139,60 @@ body.sou-admin .nav-admin-btn{display:inline-flex}
 .section-kicker{display:inline-block;font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--purple-2);margin-bottom:10px;padding:4px 10px;border-radius:99px;background:rgba(168,85,247,.1);border:1px solid var(--line)}
 
 /* ============================================================
-   BENTO GRID — 3 colunas
+   BENTO GRID — três áreas com alturas alinhadas
    ============================================================ */
 .bento{
   --gap:14px;
   display:grid;
-  grid-template-columns:minmax(0,300px) minmax(0,1fr) minmax(0,340px);
+  grid-template-areas:
+    "perfil player vip"
+    "musica recado vip"
+    "musica jogos apoio";
+  grid-template-columns:minmax(245px,.9fr) minmax(390px,1.48fr) minmax(245px,.92fr);
+  grid-template-rows:minmax(250px,auto) minmax(150px,auto) minmax(230px,auto);
   gap:var(--gap);
   align-items:stretch;
-}
-.bento-col{
-  display:flex;
-  flex-direction:column;
-  gap:var(--gap);
   min-width:0;
-  height:100%;
 }
-.bento-col > .card:last-child{
-  flex:1 1 auto;
-  min-height:0;
-}
-.bento-col > *:last-child{flex:1 1 auto}
+.bento-col{display:contents}
+.bento > .bento-col > *{min-width:0;min-height:0;height:100%;align-self:stretch}
+.bento .profile-card{grid-area:perfil}
+.bento .music-box{grid-area:musica}
+.bento .twitch-player-box{grid-area:player}
+.bento .recado-card{grid-area:recado}
+.bento .jogos-card{grid-area:jogos}
+.bento .sub-hero-box{grid-area:vip}
+.bento .apoie{grid-area:apoio}
+.bento .twitch-player-box{display:flex;flex-direction:column}
+.bento .twitch-player{width:100%;aspect-ratio:16/9;max-height:min(56vh,520px);min-height:0;flex:0 1 auto}
+.bento .twitch-player iframe{position:absolute;inset:0;width:100%;height:100%}
+.bento .player-note{margin-top:auto}
+.bento .jogos-card{display:grid;grid-template-columns:1fr 1fr;align-items:stretch}
+.bento .jogo-half{min-width:0;height:100%}
+.bento .sub-hero-box,.bento .apoie{display:flex;flex-direction:column}
+.bento .apoie #donateLink{margin-top:auto}
 
-@media (min-width:1600px){
-  .bento{grid-template-columns:minmax(0,320px) minmax(0,1fr) minmax(0,360px)}
+@media (max-width:1120px){
+  .bento{
+    grid-template-areas:
+      "player"
+      "perfil"
+      "recado"
+      "jogos"
+      "musica"
+      "vip"
+      "apoio";
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:none;
+    gap:var(--gap);
+  }
+  .bento .twitch-player{max-height:min(56vh,520px)}
+  .bento .profile-card,.bento .music-box,.bento .twitch-player-box,
+  .bento .recado-card,.bento .jogos-card,.bento .sub-hero-box,.bento .apoie{height:auto;min-height:0}
 }
-
-@media (max-width:1280px){
-  .bento{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  .bento-center{grid-column:1 / -1;order:-1}
-  .bento-center .twitch-player{max-height:520px}
-}
-
-@media (max-width:960px){
-  .bento{grid-template-columns:1fr}
-  .bento-col{display:contents}
-  .bento-center{display:contents}
-  .bento .twitch-player-box{order:1}
-  .bento .profile-card{order:2}
-  .bento .music-box{order:3}
-  .bento .jogos-card{order:4}
-  .bento .sub-hero-box{order:5}
-  .bento .recado-card{order:6}
-  .bento .apoie{order:7}
+@media (max-width:620px){
+  .bento .jogos-card{grid-template-columns:1fr}
+  .bento .jogo-half + .jogo-half{border-left:0;border-top:1px solid var(--line)}
 }
 
 /* ============================================================
@@ -215,58 +226,4 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
   .logo-text{font-size:1.08rem}
   .twitch-logo-img{width:28px;height:28px}
   .logo-mark{width:34px;height:34px}
-}
-
-/* ============================================================
-   AJUSTES FINAIS DE ALINHAMENTO DA HOME
-   ============================================================ */
-@media (min-width:1281px) {
-  .bento { align-items: stretch; }
-  .bento-col {
-    align-self: stretch;
-    height: auto;
-    min-height: 0;
-  }
-  .bento-col > * { min-width: 0; }
-  .bento-col > *:last-child { flex: 1 1 0%; min-height: 0; }
-
-  /* Fix Home Layout: Center column */
-  .bento-center > .twitch-player-box { flex: 0 0 auto !important; }
-  .bento-center > .recado-card { flex: 0 0 auto !important; }
-  .bento-center > .jogos-card:last-child {
-    display: flex;
-    flex: 1 1 0%;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .bento-center > .jogos-card .jogo-half { min-width: 0; }
-  .bento-center > .jogos-card .foco-info { min-width: 0; }
-
-  .bento-center .twitch-player-box .twitch-player {
-    flex: 0 0 auto !important;
-    width: 100%;
-    height: auto;
-    min-height: 0 !important;
-    aspect-ratio: 16 / 9;
-  }
-
-  /* Fix Right Column: Apoie */
-  .bento-right > .apoie { 
-    flex: 1 1 0% !important; 
-    min-height: 0; 
-    display: flex;
-    flex-direction: column;
-  }
-  .bento-right > .apoie #donateLink { margin-top: auto; }
-}
-.twitch-player iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-@media (max-width:1280px) {
-  .bento-center > .twitch-player-box { flex: 0 0 auto; }
-  .bento-center .twitch-player { flex: 0 0 auto; min-height: 0; aspect-ratio: 16 / 9; }
 }

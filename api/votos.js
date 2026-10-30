@@ -6,15 +6,6 @@ const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TO
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const COOKIE_NAME = 'sessao_site';
 
-const OPCOES_PADRAO = [
-  { id: 'hollow-knight', nome: 'Hollow Knight', tipo: 'jogo',
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
-  { id: 'phasmophobia', nome: 'Phasmophobia', tipo: 'jogo',
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/739630/library_600x900.jpg' },
-  { id: 'stardew-valley', nome: 'Stardew Valley', tipo: 'jogo',
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg' }
-];
-
 async function redis(cmds){
   const r = await fetch(`${URL_}/pipeline`, {
     method: 'POST',
@@ -68,17 +59,17 @@ function safeUrl(v) {
 
 async function pegarOpcoes(){
   const [raw] = await redis([['GET','votos:config']]);
-  if(!raw) return OPCOES_PADRAO;
+  if(!raw) return [];
   try{
     const d = JSON.parse(raw);
-    if(!Array.isArray(d) || !d.length) return OPCOES_PADRAO;
+    if(!Array.isArray(d)) return [];
     return d.slice(0, 10).map(o => ({
       id: safeId(o.id) || safeId(o.nome),
       nome: safeStr(o.nome, 80),
       tipo: o.tipo === 'filme' ? 'filme' : 'jogo',
       capa: safeUrl(o.capa)
     })).filter(o => o.id && o.nome);
-  }catch(e){ return OPCOES_PADRAO; }
+  }catch(e){ return []; }
 }
 
 async function pegarCiclo(){
@@ -96,17 +87,21 @@ function lerVoto(raw){
 }
 
 export default async function handler(req, res){
-  if(!SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
+  if(req.method !== 'GET' && req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
   res.setHeader('Cache-Control', 'no-store');
 
   const sessao = lerSessao(req);
-  if(!sessao) return res.status(401).json({ error: 'Faça login com o Discord para votar' });
+  if(req.method === 'POST' && (!SESSION_SECRET || !sessao)) {
+    return res.status(401).json({ error: 'Faça login com o Discord para votar' });
+  }
 
-  try {
-    const [banido] = await redis([['HEXISTS', 'banidos', sessao.id]]);
-    if(banido === 1) return res.status(403).json({ error: 'Você foi banido de votar' });
-  } catch(e){}
+  if(sessao){
+    try {
+      const [banido] = await redis([['HEXISTS', 'banidos', sessao.id]]);
+      if(banido === 1) return res.status(403).json({ error: 'Você foi banido de votar' });
+    } catch(e){}
+  }
 
   const CICLO = await pegarCiclo();
   const OPCOES = await pegarOpcoes();
@@ -147,7 +142,7 @@ export default async function handler(req, res){
       return res.status(405).json({ error: 'Método não permitido' });
     }
 
-    const [flat, meuRaw] = await redis([['HGETALL', kCont], ['HGET', kTodos, sessao.id]]);
+    const [flat, meuRaw] = await redis([['HGETALL', kCont], ...(sessao ? [['HGET', kTodos, sessao.id]] : [['HGET', kTodos, '__guest__']])]);
     const cont = {};
     for(let i = 0; i < (flat||[]).length; i += 2) {
       const n = Number(flat[i+1]);
@@ -162,7 +157,7 @@ export default async function handler(req, res){
       })),
       meuVoto: meu ? meu.opcao : null,
       jaVotou,
-      usuario: { id: sessao.id, username: safeStr(sessao.username, 60), avatar: safeUrl(sessao.avatar) }
+      usuario: sessao ? { id: sessao.id, username: safeStr(sessao.username, 60), avatar: safeUrl(sessao.avatar) } : null
     });
   }catch(e){
     return res.status(500).json({ error: 'Erro ao consultar votos' });

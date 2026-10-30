@@ -2,6 +2,7 @@
    ADMIN — DASHBOARD & SETUP
    ============================================================ */
 async function renderAdminHome(){
+  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea');
   if(!area) return;
 
@@ -10,6 +11,7 @@ async function renderAdminHome(){
   area.innerHTML = crumbs + `<p class="admin-vazio">Carregando painel…</p>`;
 
   const shared = await carregarShared(true);
+  if (ADMIN_PAGE !== paginaAtualNoInicio) return;
   const podeVotos = temPerm('ver_votos');
   const podeTier = temPerm('ver_tierlist');
   const podeAdmins = temPerm('ver_admins');
@@ -214,15 +216,19 @@ window.verComoVisitante = verComoVisitante;
    SETUP ADMIN — Sonhos + Apoiadores
    ============================================================ */
 async function renderAdminSetup(){
+  const paginaAtualNoInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('🖥️ Setup dos sonhos') + `<p class="admin-vazio">Carregando…</p>`;
 
   try {
     const r = await fetch('/api/config?action=setup');
+    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     const d = await r.json();
+    if (ADMIN_PAGE !== paginaAtualNoInicio) return;
     window.SONHOS_DATA = d.sonhos || [];
     window.SETUP_DATA_ADMIN = d.setup || [];
-  } catch(e) { toast('Erro ao carregar setup', 'erro'); }
+  } catch(e) { if (ADMIN_PAGE !== paginaAtualNoInicio) return; toast('Erro ao carregar setup', 'erro'); }
+  if (ADMIN_PAGE !== paginaAtualNoInicio) return;
 
   const sonhos = window.SONHOS_DATA || [];
 

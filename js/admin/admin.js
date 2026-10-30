@@ -179,14 +179,18 @@ function _resolverPaginaInicial(){
 }
 
 async function carregarAdmin(){
+  const token = ++_carregarAdminToken;
+  const paginaInicio = ADMIN_PAGE;
   const area = document.getElementById('adminArea');
   if(!area) return;
 
   if(USUARIO === null){
     area.innerHTML = `<p class="admin-vazio">Verificando login…</p>`;
     await checarLogin();
+    if(token !== _carregarAdminToken || ADMIN_PAGE !== paginaInicio) return;
   }
 
+  if(token !== _carregarAdminToken || ADMIN_PAGE !== paginaInicio) return;
   if(!USUARIO || !USUARIO.admin){
     const shell = document.querySelector('.admin-shell');
     if(shell) shell.classList.add('admin-shell--locked');
@@ -225,8 +229,7 @@ async function carregarAdmin(){
     renderSidebar();
   }).catch(() => {});
 
-  const token = ++_carregarAdminToken;
-
+  if(token !== _carregarAdminToken) return;
   if(ADMIN_PAGE === 'home') await renderAdminHome();
   else if(ADMIN_PAGE === 'votacao') await carregarAdminVotacao();
   else if(ADMIN_PAGE === 'tierlist') await carregarAdminTierList();
@@ -238,7 +241,7 @@ async function carregarAdmin(){
   else if(ADMIN_PAGE === 'logs') await renderAdminLogs();
   else if(ADMIN_PAGE === 'backup') await renderAdminBackup();
 
-  if(token !== _carregarAdminToken) return;
+  if(token !== _carregarAdminToken || ADMIN_PAGE !== paginaInicio) return;
 }
 window.carregarAdmin = carregarAdmin;
 
