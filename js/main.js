@@ -294,7 +294,9 @@ async function carregarEmotes(){
 function renderSiteUpdate(){
   const el = $('siteUpdated'); if(!el) return;
   const iso = CONFIG_GERAL.updatedAt;
-  el.textContent = iso ? fmtDataHora(iso) : (CONFIG.siteUpdated || new Date().toLocaleDateString('pt-BR'));
+  let d = iso ? new Date(iso) : new Date();
+  if(isNaN(d.getTime())) d = new Date();
+  el.textContent = fmtDataHora(d.toISOString());
 }
 
 function renderHomeExtras(){
