@@ -688,13 +688,13 @@
     <header class="pf-head">
       <span class="section-kicker">✨ Seu cantinho</span>
       <h1>Meu Perfil</h1>
-      <p>Personalize seu banner, monte seu boneco 2D e cuide da sua conta.</p>
+      <p>Personalize seu banner, monte seu boneco pixel art e cuide da sua conta.</p>
     </header>
 
     <div class="pf-banner" id="pfBanner">
       <div class="pf-banner-content">
         <span class="pf-banner-kicker">BANNER DE PERFIL</span>
-        <h2>@convidado</h2>
+        <h2 id="pfBannerNome">@convidado</h2>
         <p>Seu espaço no cantinho da Soso.</p>
         <small class="pf-banner-status" id="pfBannerStatus"></small>
       </div>
@@ -703,64 +703,86 @@
     </div>
 
     <div class="pf-tabs" role="tablist" aria-label="Abas do perfil">
-      <button type="button" class="pf-tab on" data-pf-tab="boneco" role="tab" aria-selected="true">🧑‍🎨 Meu Boneco</button>
+      <button type="button" class="pf-tab on" data-pf-tab="boneco" role="tab" aria-selected="true">🕹️ Meu Boneco</button>
       <button type="button" class="pf-tab" data-pf-tab="seguranca" role="tab" aria-selected="false">🔒 Segurança</button>
     </div>
 
     <div class="pf-panel on" data-pf-panel="boneco">
       <div class="pf-creator">
-        <div class="pf-avatar-stage" id="pfAvatarStage" data-acc="oculos">
-          <div class="pf-avatar-glow"></div>
-          <div class="pf-pixel-wrap">
-            <img src="img/lukzin.png" alt="Lukzin em pixel art" class="pf-pixel-avatar" id="pfPixelAvatar" width="188" height="415" draggable="false">
-            <span class="pf-pixel-acc pf-pixel-oculos" aria-hidden="true"></span>
-            <span class="pf-pixel-acc pf-pixel-fone" aria-hidden="true"></span>
-          </div>
+
+        <!-- PALCO 8-BIT: boneco montado em camadas (pixel art em SVG, gerado pelo profile.js) -->
+        <div class="pf-avatar-stage" id="pfAvatarStage">
           <span class="pf-avatar-tag">Prévia ao vivo</span>
+          <div class="pf-ground" aria-hidden="true"></div>
+          <div class="pf-shade" aria-hidden="true"></div>
+          <div class="pf-avatar-wrap">
+            <div class="pf-avatar" id="pfAvatar" role="img" aria-label="Seu boneco em pixel art">
+              <div class="avatar-layer cabelo-tras" data-layer="cabelo-tras"></div>
+              <div class="avatar-layer corpo" data-layer="corpo"></div>
+              <div class="avatar-layer roupa" data-layer="roupa"></div>
+              <div class="avatar-layer olhos" data-layer="olhos"></div>
+              <div class="avatar-layer cabelo" data-layer="cabelo"></div>
+              <div class="avatar-layer acessorio" data-layer="acessorio"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="pf-options">
+        <div class="pf-options" id="pfOptions">
+          <div class="pf-options-top">
+            <span class="pf-access" id="pfAccess" data-nivel="0">🔒 Acesso básico</span>
+            <div class="pf-options-actions">
+              <button type="button" class="pf-btn" id="pfRandom">🎲 Surpreenda-me</button>
+              <button type="button" class="pf-btn pf-btn-reset" id="pfReset">↺ Restaurar padrão</button>
+            </div>
+          </div>
+          <p class="pf-lock-note" id="pfLockNote" role="status" aria-live="polite"></p>
+
           <div class="pf-option-group">
-            <div class="pf-option-head"><span>💇 Cabelo</span><small>Cor</small></div>
-            <div class="pf-swatches" data-pf-group="cabelo" role="group" aria-label="Cor do cabelo">
-              <button type="button" class="pf-swatch" data-value="#c084fc" style="--sw:#c084fc" aria-label="Lilás"></button>
-              <button type="button" class="pf-swatch" data-value="#ff6ec7" style="--sw:#ff6ec7" aria-label="Rosa"></button>
-              <button type="button" class="pf-swatch" data-value="#7dd3fc" style="--sw:#7dd3fc" aria-label="Azul"></button>
-              <button type="button" class="pf-swatch" data-value="#ffd166" style="--sw:#ffd166" aria-label="Dourado"></button>
-              <button type="button" class="pf-swatch" data-value="#f5f3ff" style="--sw:#f5f3ff" aria-label="Branco"></button>
-              <button type="button" class="pf-swatch" data-value="#2a183f" style="--sw:#2a183f" aria-label="Preto"></button>
+            <div class="pf-option-head"><span>🧑 Pele</span></div>
+            <div class="pf-field">
+              <span class="pf-field-label">Tom · <b data-pf-name="pele"></b></span>
+              <div class="pf-swatches" data-pf-field="pele" role="group" aria-label="Tom de pele"></div>
             </div>
           </div>
 
           <div class="pf-option-group">
-            <div class="pf-option-head"><span>👕 Roupa</span><small>Cor</small></div>
-            <div class="pf-swatches" data-pf-group="roupa" role="group" aria-label="Cor da roupa">
-              <button type="button" class="pf-swatch" data-value="#7c3aed" style="--sw:#7c3aed" aria-label="Roxo"></button>
-              <button type="button" class="pf-swatch" data-value="#ec4899" style="--sw:#ec4899" aria-label="Pink"></button>
-              <button type="button" class="pf-swatch" data-value="#06b6d4" style="--sw:#06b6d4" aria-label="Ciano"></button>
-              <button type="button" class="pf-swatch" data-value="#84cc16" style="--sw:#84cc16" aria-label="Verde"></button>
-              <button type="button" class="pf-swatch" data-value="#f97316" style="--sw:#f97316" aria-label="Laranja"></button>
-              <button type="button" class="pf-swatch" data-value="#f5f3ff" style="--sw:#f5f3ff" aria-label="Branco"></button>
+            <div class="pf-option-head"><span>💇 Cabelo</span></div>
+            <div class="pf-field">
+              <span class="pf-field-label">Estilo · <b data-pf-name="cabeloEstilo"></b></span>
+              <div class="pf-styles" data-pf-field="cabeloEstilo" role="group" aria-label="Estilo do cabelo"></div>
             </div>
+            <div class="pf-field">
+              <span class="pf-field-label">Cor · <b data-pf-name="cabeloCor"></b></span>
+              <div class="pf-swatches" data-pf-field="cabeloCor" role="group" aria-label="Cor do cabelo"></div>
+            </div>
+            <p class="pf-vip-hint" hidden>🔒 Peças com cadeado: 👑 Exclusivo Dev/Sub</p>
           </div>
 
           <div class="pf-option-group">
-            <div class="pf-option-head"><span>🕶️ Acessórios</span><small>Cor</small></div>
-            <div class="pf-swatches" data-pf-group="acessorio" role="group" aria-label="Cor do acessório">
-              <button type="button" class="pf-swatch" data-value="#ffd166" style="--sw:#ffd166" aria-label="Dourado"></button>
-              <button type="button" class="pf-swatch" data-value="#c084fc" style="--sw:#c084fc" aria-label="Lilás"></button>
-              <button type="button" class="pf-swatch" data-value="#7dd3fc" style="--sw:#7dd3fc" aria-label="Azul"></button>
-              <button type="button" class="pf-swatch" data-value="#ff6ec7" style="--sw:#ff6ec7" aria-label="Rosa"></button>
-              <button type="button" class="pf-swatch" data-value="#f5f3ff" style="--sw:#f5f3ff" aria-label="Branco"></button>
+            <div class="pf-option-head"><span>👕 Roupa</span></div>
+            <div class="pf-field">
+              <span class="pf-field-label">Estilo · <b data-pf-name="roupaEstilo"></b></span>
+              <div class="pf-styles" data-pf-field="roupaEstilo" role="group" aria-label="Estilo da roupa"></div>
             </div>
-            <div class="pf-styles" data-pf-style role="group" aria-label="Estilo do acessório">
-              <button type="button" class="pf-style on" data-style="oculos">Óculos</button>
-              <button type="button" class="pf-style" data-style="fone">Fone</button>
-              <button type="button" class="pf-style" data-style="none">Sem acessório</button>
+            <div class="pf-field">
+              <span class="pf-field-label">Cor · <b data-pf-name="roupaCor"></b></span>
+              <div class="pf-swatches" data-pf-field="roupaCor" role="group" aria-label="Cor da roupa"></div>
             </div>
+            <p class="pf-vip-hint" hidden>🔒 Peças com cadeado: 👑 Exclusivo Dev/Sub</p>
           </div>
 
-          <button type="button" class="pf-btn pf-btn-reset" id="pfReset">↺ Restaurar padrão</button>
+          <div class="pf-option-group">
+            <div class="pf-option-head"><span>🕶️ Acessórios</span></div>
+            <div class="pf-field">
+              <span class="pf-field-label">Peça · <b data-pf-name="acessorio"></b></span>
+              <div class="pf-styles" data-pf-field="acessorio" role="group" aria-label="Acessório"></div>
+            </div>
+            <div class="pf-field">
+              <span class="pf-field-label">Cor · <b data-pf-name="acessorioCor"></b></span>
+              <div class="pf-swatches" data-pf-field="acessorioCor" role="group" aria-label="Cor do acessório"></div>
+            </div>
+            <p class="pf-vip-hint" hidden>🔒 Peças com cadeado: 👑 Exclusivo Dev/Sub</p>
+          </div>
         </div>
       </div>
     </div>
