@@ -289,8 +289,7 @@ dialog .card{transform:none !important}
   flex-direction:column;
   gap:12px;
   padding:20px;
-  flex: 1 1 auto !important;
-  min-height: 0;
+  min-height:0;
 }
 .apoie-head h3{font-size:1.1rem;color:var(--white);margin-bottom:4px}
 .apoie-head p{color:var(--mute);font-size:.82rem;line-height:1.45}
@@ -299,23 +298,32 @@ dialog .card{transform:none !important}
 /* ============================================================
    HALL DA FAMA (Apenas Doadores)
    ============================================================ */
-/* Lista do Hall: Trava a altura para não esticar o card */
-#hallLista {
-  flex: 1 1 auto;
-  min-height: 150px;
-  max-height: 280px; /* Permite crescer um pouco mais, mas não estica infinito */
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* Alinha do topo, não no meio */
-  padding-right: 8px; /* Dá um respiro para a barra de rolagem */
-  padding-bottom: 8px; /* Garante que o último item não cole na borda */
-  margin-top: 12px;
+/* Lista do Hall: ocupa o espaço livre do card sem impor altura máxima. */
+#hallLista{
+  display:flex;
+  flex:1 1 0%;
+  flex-direction:column;
+  justify-content:flex-start;
+  min-height:0;
+  max-height:none;
+  margin:0;
+  padding:0 4px 0 0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(168,85,247,.22) transparent;
 }
 
-#hallLista::-webkit-scrollbar { width: 5px; }
-#hallLista::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 99px; }
-#hallLista::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
+#hallLista::-webkit-scrollbar{width:3px}
+#hallLista::-webkit-scrollbar-track{background:transparent}
+#hallLista::-webkit-scrollbar-thumb{
+  background:rgba(168,85,247,.2);
+  border-radius:99px;
+}
+#hallLista:hover::-webkit-scrollbar-thumb{
+  background:rgba(168,85,247,.42);
+}
 
 .hall-row{
   display:grid;
@@ -1019,8 +1027,8 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .player-note a{color:var(--purple-2);font-weight:700;text-decoration:underline}
 
 /* Apoie — o ranking vazio preenche o espaço que sobra no card */
-.apoie .hall-lista{flex:1 1 auto}
-.hall-lista .hall-empty{flex:1;min-height:120px}
+.apoie .hall-lista{flex:1 1 0%;min-height:0;max-height:none}
+.hall-lista .hall-empty{flex:1;min-height:0}
 .hall-empty-ic{opacity:.8}
 
 /* Reprise: botão de segurança dentro do player */
@@ -1389,7 +1397,16 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 .hall-live{display:inline-flex;align-items:center;gap:6px;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#86efac;padding:3px 9px;border-radius:99px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3)}
 .hall-live i{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:cmPing 1.8s infinite}
 
-#hallLista{max-height:none;overflow:visible;padding:0;margin:0;gap:10px;flex:1 1 auto;min-height:0}
+#hallLista{
+  max-height:none;
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding:0 4px 0 0;
+  margin:0;
+  gap:10px;
+  flex:1 1 0%;
+  min-height:0;
+}
 
 .podium{display:grid;grid-template-columns:1fr 1.18fr 1fr;gap:8px;align-items:end;padding-top:26px}
 .pod{--ring:#cbd5e1;position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;
@@ -1535,15 +1552,31 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 }
 
 /* ============================================================
-   ALINHAMENTO HOME — BOTÃO DE DOAÇÃO
+   ALINHAMENTO HOME — LISTA FLEXÍVEL E BOTÃO NO RODAPÉ
    ============================================================ */
-.apoie {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.apoie{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
 }
-.apoie #donateLink {
-  margin-top: auto;
+
+.apoie #hallLista{
+  flex:1 1 0%;
+  min-height:0;
+  max-height:none;
+  overflow-x:hidden;
+  overflow-y:auto;
+}
+
+.apoie #hallLista > .podium,
+.apoie #hallLista > .hall-resto,
+.apoie #hallLista > .hall-cta-vazio{
+  flex:0 0 auto;
+}
+
+.apoie #donateLink{
+  flex:0 0 auto;
+  margin-top:auto;
 }
 
 

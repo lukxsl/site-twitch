@@ -148,18 +148,24 @@ body.sou-admin .nav-admin-btn{display:inline-flex}
   gap:var(--gap);
   align-items:stretch;
 }
+
 .bento-col{
   display:flex;
   flex-direction:column;
   gap:var(--gap);
+  align-self:stretch;
   min-width:0;
-  height:100%;
-}
-.bento-col > .card:last-child{
-  flex:1 1 auto;
   min-height:0;
 }
-.bento-col > *:last-child{flex:1 1 auto}
+
+.bento-col > *{
+  min-width:0;
+}
+
+.bento-col > *:last-child{
+  flex:1 1 0%;
+  min-height:0;
+}
 
 @media (min-width:1600px){
   .bento{grid-template-columns:minmax(0,320px) minmax(0,1fr) minmax(0,360px)}
@@ -218,46 +224,80 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
 }
 
 /* ============================================================
-   AJUSTES FINAIS DE ALINHAMENTO DA HOME
+   ALINHAMENTO DA HOME — DESKTOP
+   As três colunas ocupam toda a altura da mesma linha do Grid.
+   O último card de cada coluna absorve o espaço livre.
    ============================================================ */
-@media (min-width:1281px) {
-  .bento { align-items: stretch; }
-  .bento-col {
-    align-self: stretch;
-    height: auto;
-    min-height: 0;
-  }
-  .bento-col > * { min-width: 0; }
-  .bento-col > *:last-child { flex: 1 1 0%; min-height: 0; }
-
-  /* Fix Home Layout: Center column */
-  .bento-center > .twitch-player-box { flex: 0 0 auto !important; }
-  .bento-center > .recado-card { flex: 0 0 auto !important; }
-  .bento-center > .jogos-card:last-child {
-    display: flex;
-    flex: 1 1 0%;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .bento-center > .jogos-card .jogo-half { min-width: 0; }
-  .bento-center > .jogos-card .foco-info { min-width: 0; }
-
-  .bento-center .twitch-player-box .twitch-player {
-    flex: 0 0 auto !important;
-    width: 100%;
-    height: auto;
-    min-height: 0 !important;
-    aspect-ratio: 16 / 9;
+@media (min-width:1281px){
+  .bento{
+    align-items:stretch;
   }
 
-  /* Fix Right Column: Apoie */
-  .bento-right > .apoie { 
-    flex: 1 1 0% !important; 
-    min-height: 0; 
-    display: flex;
-    flex-direction: column;
+  .bento-col{
+    align-self:stretch;
+    height:auto;
+    min-height:0;
   }
-  .bento-right > .apoie #donateLink { margin-top: auto; }
+
+  .bento-col > *{
+    min-width:0;
+  }
+
+  .bento-col > *:last-child{
+    flex:1 1 0%;
+    min-height:0;
+  }
+
+  /* Coluna central: player e recado mantêm sua altura natural;
+     o card de jogos ocupa o restante da coluna. */
+  .bento-center > .twitch-player-box{
+    flex:0 0 auto !important;
+  }
+
+  .bento-center > .recado-card{
+    flex:0 0 auto !important;
+  }
+
+  .bento-center > .jogos-card:last-child{
+    display:flex;
+    flex:1 1 0%;
+    flex-direction:column;
+    min-height:0;
+  }
+
+  .bento-center > .jogos-card .jogo-half,
+  .bento-center > .jogos-card .foco-info{
+    min-width:0;
+  }
+
+  .bento-center .twitch-player-box .twitch-player{
+    flex:0 0 auto !important;
+    width:100%;
+    height:auto;
+    min-height:0 !important;
+    aspect-ratio:16 / 9;
+  }
+
+  /* Coluna direita: a lista cresce, e o botão fica no rodapé do card. */
+  .bento-right > .apoie{
+    display:flex;
+    flex:1 1 0%;
+    flex-direction:column;
+    min-height:0;
+  }
+
+  .bento-right > .apoie #hallLista{
+    flex:1 1 0%;
+    min-height:0;
+    max-height:none;
+    overflow-x:hidden;
+    overflow-y:auto;
+  }
+
+  .bento-right > .apoie #donateLink{
+    flex:0 0 auto;
+    margin-top:auto;
+  }
 }
 .twitch-player iframe {
   position: absolute;

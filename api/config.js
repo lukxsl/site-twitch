@@ -13,6 +13,139 @@ const HALL_CACHE_TTL = 2 * 60;            // doadores: atualiza no máx. a cada 
 const EMOTES_CACHE_KEY = 'cache:emotes_v1';
 const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
 
+// ==========================================
+// CONFIGURAÇÕES DA STREAMELEMENTS (NOVAS)
+// ==========================================
+const SE_BASE_URL = 'https://api.streamelements.com/kappa/v2';
+const CHANNEL_CACHE_TTL = 15 * 60 * 1000; // 15 minutos
+const SUBSCRIBERS_PAGE_SIZE = 100;
+const SUBSCRIBERS_MAX_PAGES = 20; // Até 2.000 registros
+
+let channelCache = { id: null, expiresAt: 0 };
+let channelIdRequest = null;
+
+async function seFetch(endpoint) {
+  if (!STREAMELEMENTS_JWT) {
+    const error = new Error('A variável STREAMELEMENTS_JWT não está configurada.');
+    error.statusCode = 500;
+    throw error;
+  }
+  const path = String(endpoint || '');
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  
+  let response;
+  try {
+    response = await fetch(`${SE_BASE_URL}${normalizedPath}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' }
+    });
+  } catch (cause) {
+    const error = new Error('Não foi possível conectar à API do StreamElements.');
+    error.statusCode = 502;
+    throw error;
+  }
+
+  const responseText = await response.text();
+  let payload = null;
+
+  if (responseText) {
+    try { payload = JSON.parse(responseText); } catch (cause) {
+      if (response.ok) {
+        const error = new Error('A API do StreamElements retornou uma resposta inválida.');
+        error.statusCode = 502;
+        throw error;
+      }
+    }
+  }
+
+  if (!response.ok) {
+    const error = new Error(`Falha na API do StreamElements (HTTP ${response.status}).`);
+    error.statusCode = 502;
+    throw error;
+  }
+  return payload;
+}
+
+async function getChannelId() {
+  if (channelCache.id && Date.now() < channelCache.expiresAt) return channelCache.id;
+  if (channelIdRequest) return channelIdRequest;
+
+  channelIdRequest = (async () => {
+    const channel = await seFetch('/channels/me');
+    const id = channel?._id || channel?.id || channel?.channel?._id;
+    if (!id) {
+      const error = new Error('Não foi possível obter o ID do canal no StreamElements.');
+      error.statusCode = 502;
+      throw error;
+    }
+    channelCache = { id: String(id), expiresAt: Date.now() + CHANNEL_CACHE_TTL };
+    return channelCache.id;
+  })();
+
+  try { return await channelIdRequest; } finally { channelIdRequest = null; }
+}
+
+function normalizeUsername(value) {
+  return String(value || '').trim().replace(/^@/, '').toLowerCase();
+}
+
+function subscriberUsername(subscriber) {
+  if (!subscriber || typeof subscriber !== 'object') return '';
+  return (subscriber.username || subscriber.userName || subscriber.name || subscriber.displayName || subscriber.user?.username || subscriber.user?.userName || subscriber.user?.name || subscriber.user?.displayName || '');
+}
+
+function subscriberIsActive(subscriber) {
+  if (!subscriber || typeof subscriber !== 'object') return false;
+  if (subscriber.active === false || subscriber.isActive === false || subscriber.subscribed === false || subscriber.isSubscriber === false) return false;
+  const status = String(subscriber.status || subscriber.subscription?.status || subscriber.subscriptionStatus || '').toLowerCase();
+  const inactiveStatuses = new Set(['inactive', 'expired', 'ended', 'cancelled', 'canceled', 'revoked', 'unsubscribed']);
+  return !inactiveStatuses.has(status);
+}
+
+function extractRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== 'object') return [];
+  const nestedData = payload.data && typeof payload.data === 'object' ? payload.data : null;
+  const candidates = [payload.docs, payload.subscribers, payload.results, payload.items, payload.data, payload.users, nestedData?.docs, nestedData?.subscribers, nestedData?.results, nestedData?.items, nestedData?.users];
+  return candidates.find(Array.isArray) || [];
+}
+
+function extractTotal(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  const candidates = [payload.total, payload.totalDocs, payload.total_count, payload.count];
+  for (const value of candidates) {
+    const total = Number(value);
+    if (Number.isFinite(total) && total >= 0) return total;
+  }
+  return null;
+}
+
+async function checkSubscriber(channelId, requestedUsername) {
+  let offset = 0;
+  for (let page = 0; page < SUBSCRIBERS_MAX_PAGES; page += 1) {
+    const params = new URLSearchParams({ limit: String(SUBSCRIBERS_PAGE_SIZE), offset: String(offset) });
+    const payload = await seFetch(`/subscribers/${encodeURIComponent(channelId)}?${params.toString()}`);
+    const rows = extractRows(payload);
+
+    const match = rows.find((subscriber) => {
+      const username = normalizeUsername(subscriberUsername(subscriber));
+      return username === requestedUsername && subscriberIsActive(subscriber);
+    });
+
+    if (match) return { username: subscriberUsername(match), displayName: match.displayName || match.user?.displayName || null };
+
+    if (!rows.length || rows.length < SUBSCRIBERS_PAGE_SIZE) break;
+    offset += rows.length;
+    const total = extractTotal(payload);
+    if (total !== null && offset >= total) break;
+  }
+  return null;
+}
+
+// ==========================================
+// FIM DAS CONFIGURAÇÕES DA STREAMELEMENTS
+// ==========================================
+
 const DEFAULT_SETUP = [
   { id: 'pc', titulo: '💻 PC Gamer', accent: 'blue', tipo: 'real', itens: [
     { ic:'🧠', cat:'Processador',    nome:'Ryzen 9 5900X',               ano:2023, nota:10, comentario:'Monstro pra jogos e streaming.', benchmark:'Temp: 65°C | FPS: 144+ (Warzone)' },
@@ -318,7 +451,6 @@ export default async function handler(req, res) {
 
       if (cache && idade < HALL_CACHE_TTL) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
 
-      // Cache vencido (ou inexistente): busca de novo. Se falhar, serve o cache antigo.
       const dados = await hallStreamElements();
       if (dados) { await salvarHallCache(dados); return res.status(200).json({ ...dados, updatedAt: Date.now() }); }
       if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
@@ -335,6 +467,42 @@ export default async function handler(req, res) {
         return res.status(200).json({ online: Array.isArray(s?.data) && s.data.length > 0 });
       } catch(e) { return res.status(200).json({ online: false }); }
     }
+
+    // ==========================================
+    // NOVAS ROTAS DA STREAMELEMENTS (MERGED)
+    // ==========================================
+    const validActions = new Set(['issub', 'ranking-pontos', 'atividades', 'channel-info']);
+    if (validActions.has(action)) {
+      const requestedUsername = action === 'issub' ? normalizeUsername(req.query?.user) : '';
+      if (action === 'issub' && !requestedUsername) {
+        return res.status(400).json({ error: 'Informe o usuário na query: ?action=issub&user=NOME_DO_USUARIO.' });
+      }
+
+      const channelId = await getChannelId();
+
+      if (action === 'issub') {
+        const subscriber = await checkSubscriber(channelId, requestedUsername);
+        return res.status(200).json({ user: requestedUsername, isSub: Boolean(subscriber), active: Boolean(subscriber), subscriber });
+      }
+      if (action === 'ranking-pontos') {
+        const ranking = await seFetch(`/points/${encodeURIComponent(channelId)}/top?limit=10&offset=0`);
+        return res.status(200).json({ ranking });
+      }
+      if (action === 'atividades') {
+        const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || 25)));
+        const offset = Math.min(100000, Math.max(0, parseInt(req.query?.offset || 0)));
+        const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+        const activities = await seFetch(`/activities/${encodeURIComponent(channelId)}?${params.toString()}`);
+        return res.status(200).json({ atividades: activities });
+      }
+      if (action === 'channel-info') {
+        const channel = await seFetch(`/channels/${encodeURIComponent(channelId)}/details`);
+        return res.status(200).json({ channel });
+      }
+    }
+    // ==========================================
+    // FIM DAS NOVAS ROTAS
+    // ==========================================
 
     const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw, votosFechRaw] = await redis([
       ['GET', 'config:aviso'], ['GET', 'config:donate'], ['GET', 'config:manutencao'], ['GET', 'config:recado'],
@@ -354,6 +522,7 @@ export default async function handler(req, res) {
       hall: sanitizarLista(hall, ['nome', 'meta'], 5), votosFechamento: safeStr(votosFechRaw, 40) || null
     });
   } catch (e) {
-    return res.status(200).json({});
+    const statusCode = Number(e?.statusCode) || 502;
+    return res.status(statusCode).json({ error: e?.message || 'Erro inesperado no config.' });
   }
 }
