@@ -298,10 +298,10 @@ dialog .card{transform:none !important}
 /* ============================================================
    HALL DA FAMA (Apenas Doadores)
    ============================================================ */
-/* Lista do Hall: ocupa o espaço livre do card sem impor altura máxima. */
+/* Lista do Hall: altura natural do conteúdo. */
 #hallLista{
   display:flex;
-  flex:1 1 0%;
+  flex:0 0 auto;
   flex-direction:column;
   justify-content:flex-start;
   min-height:0;
@@ -1371,11 +1371,6 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 }
 .voto-vazio .btn{margin-top:6px}
 
-/* Deixa os dois lados do card de jogos/votação perfeitamente alinhados */
-.jogos-card { display: grid; grid-template-columns: 1fr 1fr; padding: 0; align-items: stretch; }
-.jogo-half { display: flex; flex-direction: row; align-items: stretch; padding: 16px 14px; }
-.foco-info { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
-.foco-btns { margin-top: auto; padding-top: 8px; }
 
 
 /* ============================================================
@@ -1404,7 +1399,7 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
   padding:0 4px 0 0;
   margin:0;
   gap:10px;
-  flex:1 1 0%;
+  flex:0 0 auto;
   min-height:0;
 }
 
@@ -1561,7 +1556,7 @@ a.rec-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple
 }
 
 .apoie #hallLista{
-  flex:1 1 0%;
+  flex:0 0 auto;
   min-height:0;
   max-height:none;
   overflow-x:hidden;
