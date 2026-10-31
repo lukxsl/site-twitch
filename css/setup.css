@@ -397,13 +397,13 @@
   width: 56px; 
   height: 56px; 
   flex: none;
-  border-radius: 12px;
-  border: 2px solid var(--sg-a);
-  background: rgba(24, 16, 40, 0.95); 
+  border-radius: 50%;
+  border: 0 !important;
+  background: transparent !important;
   overflow: hidden; 
   position: relative;
   display: block;
-  box-shadow: inset 0 0 15px rgba(168,85,247,0.3), 0 4px 10px rgba(0,0,0,.5);
+  box-shadow: none;
 }
 
 .rpg-avatar-img {
@@ -413,8 +413,9 @@
   height: 100%;
   object-fit: cover;
   object-position: top center;
-  background: transparent;
+  background: transparent !important;
   border: 0;
+  border-radius: 50%;
   transform: none;
   transform-origin: top center;
   image-rendering: pixelated;

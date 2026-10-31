@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="css/setup.css">
 <link rel="stylesheet" href="css/admin.css">
 <link rel="stylesheet" href="css/tierlist.css">
+<link rel="stylesheet" href="css/profile.css">
 </head>
 <body>
 
@@ -60,6 +61,7 @@
         <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
         <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
         <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
+        <li><button onclick="mudarAba('perfil')" id="btn-perfil">Perfil</button></li>
       </ul>
       <div class="nav-user" id="navUser"></div>
     </div>
@@ -528,7 +530,7 @@
           <div class="hotspot-invisible" id="catHotspot" style="left: 42.5%; top: 10.5%; width: 19%; height: 20%;" title="Miau?"></div>
 
           <!-- Lukzin (sprite em pixel art) -->
-          <div class="luk-character sitting" id="lukChar" data-dir="right" style="left: 62.3%; top: 78.7%;">
+          <div class="luk-character" id="lukChar" data-dir="right" style="left: 17%; top: 90%;">
             <div class="luk-bubble" id="lukBubble" role="status" aria-live="polite"></div>
             <div class="luk-flip">
               <div class="luk-squash">
@@ -680,6 +682,142 @@
   </div>
 </section>
 
+<!-- ==================== PERFIL ==================== -->
+<section id="sec-perfil" class="page-section">
+  <div class="pf-shell">
+    <header class="pf-head">
+      <span class="section-kicker">✨ Seu cantinho</span>
+      <h1>Meu Perfil</h1>
+      <p>Personalize seu banner, monte seu boneco 2D e cuide da sua conta.</p>
+    </header>
+
+    <div class="pf-banner" id="pfBanner">
+      <div class="pf-banner-content">
+        <span class="pf-banner-kicker">BANNER DE PERFIL</span>
+        <h2>@convidado</h2>
+        <p>Seu espaço no cantinho da Soso.</p>
+        <small class="pf-banner-status" id="pfBannerStatus"></small>
+      </div>
+      <label class="pf-btn pf-btn-banner" for="pfBannerInput">🖼️ Alterar Banner</label>
+      <input type="file" id="pfBannerInput" accept="image/*" hidden>
+    </div>
+
+    <div class="pf-tabs" role="tablist" aria-label="Abas do perfil">
+      <button type="button" class="pf-tab on" data-pf-tab="boneco" role="tab" aria-selected="true">🧑‍🎨 Meu Boneco</button>
+      <button type="button" class="pf-tab" data-pf-tab="seguranca" role="tab" aria-selected="false">🔒 Segurança</button>
+    </div>
+
+    <div class="pf-panel on" data-pf-panel="boneco">
+      <div class="pf-creator">
+        <div class="pf-avatar-stage" id="pfAvatarStage" data-acc="oculos">
+          <div class="pf-avatar-glow"></div>
+          <svg class="pf-avatar" viewBox="0 0 240 300" role="img" aria-label="Prévia do boneco personalizado">
+            <ellipse cx="120" cy="286" rx="72" ry="11" fill="rgba(0,0,0,.38)"/>
+            <path class="pf-outfit" d="M54 294 C58 226 82 204 120 204 C158 204 182 226 186 294 Z"/>
+            <path class="pf-outfit-shadow" d="M86 292 C90 250 100 226 120 214 C140 226 150 250 154 292 Z"/>
+            <rect x="106" y="184" width="28" height="34" rx="13" fill="#efc6a8"/>
+            <path class="pf-hair-back" d="M61 144 C48 76 82 40 120 40 C158 40 192 76 179 144 C171 112 154 96 120 96 C86 96 69 112 61 144 Z"/>
+            <circle cx="120" cy="134" r="57" fill="#f4cfb3"/>
+            <path class="pf-hair" d="M63 108 C68 59 172 48 181 112 C158 88 145 84 121 89 C96 94 82 98 63 108 Z"/>
+            <path class="pf-hair-tuft" d="M96 62 C110 44 128 46 139 58 C126 54 114 58 103 72 Z"/>
+            <circle cx="99" cy="137" r="6" fill="#2a183f"/>
+            <circle cx="141" cy="137" r="6" fill="#2a183f"/>
+            <circle cx="101" cy="135" r="2" fill="#fff"/>
+            <circle cx="143" cy="135" r="2" fill="#fff"/>
+            <path d="M107 162 Q120 172 133 162" fill="none" stroke="#b05c72" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="79" cy="155" r="8" fill="#f4b6c2" opacity=".55"/>
+            <circle cx="161" cy="155" r="8" fill="#f4b6c2" opacity=".55"/>
+            <g class="pf-accessory pf-acc-oculos">
+              <circle cx="99" cy="137" r="17" fill="none" stroke="var(--pf-acc)" stroke-width="4"/>
+              <circle cx="141" cy="137" r="17" fill="none" stroke="var(--pf-acc)" stroke-width="4"/>
+              <path d="M116 137 H124 M82 133 L68 127 M158 133 L172 127" fill="none" stroke="var(--pf-acc)" stroke-width="4" stroke-linecap="round"/>
+            </g>
+            <g class="pf-accessory pf-acc-fone">
+              <path d="M62 137 C62 72 178 72 178 137" fill="none" stroke="var(--pf-acc)" stroke-width="8" stroke-linecap="round"/>
+              <rect x="50" y="128" width="20" height="34" rx="9" fill="var(--pf-acc)"/>
+              <rect x="170" y="128" width="20" height="34" rx="9" fill="var(--pf-acc)"/>
+            </g>
+            <path class="pf-outfit-collar" d="M103 210 Q120 226 137 210 L143 228 Q120 242 97 228 Z"/>
+          </svg>
+          <span class="pf-avatar-tag">Prévia ao vivo</span>
+        </div>
+
+        <div class="pf-options">
+          <div class="pf-option-group">
+            <div class="pf-option-head"><span>💇 Cabelo</span><small>Cor</small></div>
+            <div class="pf-swatches" data-pf-group="cabelo" role="group" aria-label="Cor do cabelo">
+              <button type="button" class="pf-swatch" data-value="#c084fc" style="--sw:#c084fc" aria-label="Lilás"></button>
+              <button type="button" class="pf-swatch" data-value="#ff6ec7" style="--sw:#ff6ec7" aria-label="Rosa"></button>
+              <button type="button" class="pf-swatch" data-value="#7dd3fc" style="--sw:#7dd3fc" aria-label="Azul"></button>
+              <button type="button" class="pf-swatch" data-value="#ffd166" style="--sw:#ffd166" aria-label="Dourado"></button>
+              <button type="button" class="pf-swatch" data-value="#f5f3ff" style="--sw:#f5f3ff" aria-label="Branco"></button>
+              <button type="button" class="pf-swatch" data-value="#2a183f" style="--sw:#2a183f" aria-label="Preto"></button>
+            </div>
+          </div>
+
+          <div class="pf-option-group">
+            <div class="pf-option-head"><span>👕 Roupa</span><small>Cor</small></div>
+            <div class="pf-swatches" data-pf-group="roupa" role="group" aria-label="Cor da roupa">
+              <button type="button" class="pf-swatch" data-value="#7c3aed" style="--sw:#7c3aed" aria-label="Roxo"></button>
+              <button type="button" class="pf-swatch" data-value="#ec4899" style="--sw:#ec4899" aria-label="Pink"></button>
+              <button type="button" class="pf-swatch" data-value="#06b6d4" style="--sw:#06b6d4" aria-label="Ciano"></button>
+              <button type="button" class="pf-swatch" data-value="#84cc16" style="--sw:#84cc16" aria-label="Verde"></button>
+              <button type="button" class="pf-swatch" data-value="#f97316" style="--sw:#f97316" aria-label="Laranja"></button>
+              <button type="button" class="pf-swatch" data-value="#f5f3ff" style="--sw:#f5f3ff" aria-label="Branco"></button>
+            </div>
+          </div>
+
+          <div class="pf-option-group">
+            <div class="pf-option-head"><span>🕶️ Acessórios</span><small>Cor</small></div>
+            <div class="pf-swatches" data-pf-group="acessorio" role="group" aria-label="Cor do acessório">
+              <button type="button" class="pf-swatch" data-value="#ffd166" style="--sw:#ffd166" aria-label="Dourado"></button>
+              <button type="button" class="pf-swatch" data-value="#c084fc" style="--sw:#c084fc" aria-label="Lilás"></button>
+              <button type="button" class="pf-swatch" data-value="#7dd3fc" style="--sw:#7dd3fc" aria-label="Azul"></button>
+              <button type="button" class="pf-swatch" data-value="#ff6ec7" style="--sw:#ff6ec7" aria-label="Rosa"></button>
+              <button type="button" class="pf-swatch" data-value="#f5f3ff" style="--sw:#f5f3ff" aria-label="Branco"></button>
+            </div>
+            <div class="pf-styles" data-pf-style role="group" aria-label="Estilo do acessório">
+              <button type="button" class="pf-style on" data-style="oculos">Óculos</button>
+              <button type="button" class="pf-style" data-style="fone">Fone</button>
+              <button type="button" class="pf-style" data-style="none">Sem acessório</button>
+            </div>
+          </div>
+
+          <button type="button" class="pf-btn pf-btn-reset" id="pfReset">↺ Restaurar padrão</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="seguranca">
+      <div class="pf-security">
+        <div class="pf-security-info">
+          <span class="pf-security-ic">🛡️</span>
+          <h3>Segurança da conta</h3>
+          <p>Área demonstrativa para login próprio com usuário e senha. Nada é enviado ou armazenado.</p>
+          <ul>
+            <li>Use uma senha forte e exclusiva.</li>
+            <li>Nunca compartilhe suas credenciais.</li>
+            <li>O login Discord continua funcionando separadamente.</li>
+          </ul>
+        </div>
+        <form class="pf-form" id="pfSecurityForm">
+          <label>Usuário
+            <input type="text" id="pfUser" placeholder="seu_usuario" autocomplete="username">
+          </label>
+          <label>Senha
+            <input type="password" id="pfPass" placeholder="••••••••" autocomplete="current-password">
+          </label>
+          <label>Confirmar senha
+            <input type="password" id="pfPass2" placeholder="••••••••" autocomplete="new-password">
+          </label>
+          <button class="pf-btn pf-btn-primary" type="submit">Salvar credenciais (demo)</button>
+          <p class="pf-form-note" id="pfFormNote" role="status"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ==================== ADMIN ==================== -->
 <section id="sec-admin" class="page-section">
   <div class="admin-shell">
@@ -758,5 +896,6 @@
 <script src="js/twitch/twitch.js"></script>
 <script src="js/setup/setup.js"></script>
 <script src="js/main.js"></script>
+<script src="js/profile.js"></script>
 </body>
 </html>

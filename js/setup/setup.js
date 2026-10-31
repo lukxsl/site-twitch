@@ -149,7 +149,7 @@ const S = {
   typeTimer: null, finish: null, wake: null,
   catClicks: 0, catReset: null, catLastStamp: -1,
   gatoVisto: false,
-  balaoTimer: null, cliquesLuk: 0, falaIdx: 0, saudou: false
+  balaoTimer: null, saudou: false
 };
 try { S.gatoVisto = localStorage.getItem('setup_gato') === '1'; } catch (_) { /* ignore */ }
 
@@ -225,23 +225,16 @@ function falaTemporaria(texto, ms = 4200) {
   S.balaoTimer = setTimeout(esconderBalao, ms);
 }
 
-// Clique no Lukzin (ou no botão 💬): ele pula, solta um bordão e, de vez em quando, oferece a cadeira
+// Clique no Lukzin (ou no botão 💬): ele pula e solta um bordão
 function interagir() {
   const el = char();
   if (!el || S.tour || el.classList.contains('walking')) return;
-  S.cliquesLuk += 1;
   el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop');
   setTimeout(() => el.classList.remove('hop'), 520);
   snd('playPop');
 
-  if (S.cliquesLuk % 5 === 0) {
-    falaTemporaria('Quer ver a minha cadeira? Fica bão demais! 🪑', 1800);
-    const n = S.cliquesLuk;
-    setTimeout(() => { if (!S.tour && S.cliquesLuk === n) irParaItem('cadeira'); }, 1500);
-    return;
-  }
-  if (S.cliquesLuk % 3 === 0) sparks();
-  falaTemporaria(BAO_FALAS[S.falaIdx++ % BAO_FALAS.length]);
+  const fala = BAO_FALAS[Math.floor(Math.random() * BAO_FALAS.length)];
+  falaTemporaria(fala);
 }
 
 function ligarLuk() {

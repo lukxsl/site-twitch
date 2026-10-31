@@ -154,6 +154,7 @@ body.sou-admin .nav-admin-btn{display:inline-flex}
   flex-direction:column;
   gap:var(--gap);
   align-self:start !important;
+  height:auto;
   min-width:0;
   min-height:0;
 }
@@ -224,8 +225,7 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
 
 /* ============================================================
    ALINHAMENTO DA HOME — DESKTOP
-   As três colunas ocupam toda a altura da mesma linha do Grid.
-   O último card de cada coluna absorve o espaço livre.
+   As três colunas mantêm a altura natural do conteúdo.
    ============================================================ */
 @media (min-width:1281px){
   .bento{
@@ -309,4 +309,22 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
 @media (max-width:1280px) {
   .bento-center > .twitch-player-box { flex: 0 0 auto; }
   .bento-center .twitch-player { flex: 0 0 auto; min-height: 0; aspect-ratio: 16 / 9; }
+}
+
+/* ============================================================
+   HOME — ALTURA NATURAL DOS CARDS (SEM ESTICAMENTO)
+   ============================================================ */
+.bento-center > *,
+.bento-right > *{
+  flex:0 0 auto !important;
+  flex-grow:0 !important;
+  height:auto !important;
+}
+
+.bento-center .twitch-player-box,
+.bento-center .jogos-card,
+.bento-center .recado-card,
+.bento-right .apoie{
+  align-self:start;
+  min-height:0;
 }

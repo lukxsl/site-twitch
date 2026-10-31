@@ -293,8 +293,8 @@ async function carregarEmotes(){
 
 function renderSiteUpdate(){
   const el = $('siteUpdated'); if(!el) return;
-  const iso = CONFIG_GERAL.updatedAt;
-  let d = iso ? new Date(iso) : new Date();
+  const raw = CONFIG_GERAL && CONFIG_GERAL.updatedAt;
+  let d = raw ? new Date(raw) : new Date();
   if(isNaN(d.getTime())) d = new Date();
   el.textContent = fmtDataHora(d.toISOString());
 }
@@ -663,7 +663,7 @@ function setLivePulse(isLive){
 let _ultimaAba = null;
 let _mudarAbaTimer = null;
 let _mudarAbaPendente = null;
-const ABAS_VALIDAS = ['inicio','tierlist','comunidade','setup','sugestoes','admin'];
+const ABAS_VALIDAS = ['inicio','tierlist','comunidade','setup','sugestoes','perfil','admin'];
 
 function _executarMudarAba(nome, salvar){
   if(!ABAS_VALIDAS.includes(nome)) nome = 'inicio';
@@ -1246,6 +1246,7 @@ window.aplicarManutencao = aplicarManutencao;
 function renderLogin(){
   const area = $('navUser'); if(!area) return;
   if(USUARIO){
+    area.hidden = false;
     area.innerHTML = `
       <div class="nav-user-logado">
         <img src="${esc(USUARIO.avatar)}" alt="" onerror="this.style.display='none'">
@@ -1253,11 +1254,8 @@ function renderLogin(){
         <button class="nav-user-sair" onclick="sair()">Sair</button>
       </div>`;
   } else {
-    area.innerHTML = `
-      <a class="nav-user-deslogado" href="/api/auth?action=login" title="Entrar com Discord">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
-        Entrar
-      </a>`;
+    area.hidden = true;
+    area.innerHTML = '';
   }
 }
 
