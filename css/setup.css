@@ -407,17 +407,16 @@
 }
 
 .rpg-avatar-img {
-  /* O sprite é de corpo inteiro (188x415). cover + topo alinhado mostra só a parte de cima
-     (cabeça e ombros) e o zoom aproxima o rosto. Ajuste --av-zoom se quiser mais/menos perto. */
-  --av-zoom: 1.28;
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 0%;
-  transform: scale(var(--av-zoom));
-  transform-origin: 50% 0%;
+  object-position: top center;
+  background: transparent;
+  border: 0;
+  transform: none;
+  transform-origin: top center;
   image-rendering: pixelated;
 }
 
@@ -625,31 +624,20 @@
 
 
 /* ============================================================
-   10. LUKZIN SENTADO + INTERAÇÃO
+   10. LUKZIN + INTERAÇÃO
    ============================================================ */
 .luk-character {
-  --sit-drop: 48%;
   clip-path: inset(-600px -500px -80px -500px);
   transition:
     left var(--walk-ms) cubic-bezier(.45, .05, .25, 1),
     top var(--walk-ms) cubic-bezier(.45, .05, .25, 1),
     clip-path .4s var(--ease);
 }
-.luk-character.sitting { clip-path: inset(-600px -500px 0 -500px); }
 
 .luk-flip { pointer-events: auto; cursor: pointer; outline: none; }
 .luk-flip::after { content: ''; position: absolute; inset: -10px -8px 0; }
 .luk-flip:hover .luk-sprite,
 .luk-flip:focus-visible .luk-sprite { filter: drop-shadow(0 0 10px rgba(236,72,153,.85)) brightness(1.08); }
-
-.luk-character.sitting .luk-flip { transform: translateY(var(--sit-drop)) scaleX(1); }
-.luk-character.sitting[data-dir="left"] .luk-flip { transform: translateY(var(--sit-drop)) scaleX(-1); }
-.luk-character.sitting .luk-shadow { animation: none; opacity: 0; }
-
-.luk-character.sitting.has-sit-sprite { --sit-drop: 0%; clip-path: inset(-600px -500px -80px -500px); }
-.luk-character.sitting.has-sit-sprite .luk-shadow { opacity: .6; }
-
-.luk-character.sitting .luk-sprite { animation-duration: 3.6s; }
 
 .luk-character.hop .luk-squash { animation: lukHop .5s var(--spring, var(--ease)); }
 @keyframes lukHop {
@@ -657,8 +645,6 @@
   40%  { transform: translateY(-14px) scale(.95, 1.1); }
   100% { transform: translateY(0) scale(1, 1); }
 }
-
-.hotspot.luk-ocupada { opacity: 0; pointer-events: none; }
 
 #btnLukFala { animation: lukCall 3.2s ease-in-out infinite; }
 @keyframes lukCall { 0%, 88%, 100% { transform: none; } 92% { transform: rotate(-12deg) scale(1.1); } 96% { transform: rotate(10deg) scale(1.1); } }

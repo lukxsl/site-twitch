@@ -104,9 +104,6 @@ const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinet
 const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
 
-// Âncora do assento (em % da cena). O sprite usa o fundo como ponto de apoio.
-const CADEIRA = { x: 62.3, y: 79.5 }; // <-- POSIÇÃO CORRIGIDA AQUI
-const SENTADO_SPRITE = 'img/lukzin-sentado.png';   // OPCIONAL: se existir, é usado no lugar do corte em CSS
 const BAO_GREETING = 'Tudo bão? 💜 Clica em mim!';
 const BAO_FALAS = [
   'Tudo bão? 💜',
@@ -152,7 +149,7 @@ const S = {
   typeTimer: null, finish: null, wake: null,
   catClicks: 0, catReset: null, catLastStamp: -1,
   gatoVisto: false,
-  sentado: false, idleTimer: null, balaoTimer: null, cliquesLuk: 0, falaIdx: 0, saudou: false, sitSprite: false
+  balaoTimer: null, cliquesLuk: 0, falaIdx: 0, saudou: false
 };
 try { S.gatoVisto = localStorage.getItem('setup_gato') === '1'; } catch (_) { /* ignore */ }
 
@@ -173,7 +170,6 @@ const esperar = (ms) => new Promise((res) => {
 function moverLuk(x, y) {
   const el = char();
   if (!el) return Promise.resolve();
-  clearTimeout(S.idleTimer);
   const id = ++S.walkId;
   const cx = parseFloat(el.dataset.x ?? 50);
   const cy = parseFloat(el.dataset.y ?? 88);
@@ -220,56 +216,9 @@ async function olharPara(it, dest) {
 
 function setFalando(on) { char().classList.toggle('speaking', on); }
 
-/* ---------- Lukzin sentado na cadeira ---------- */
-// Se existir img/lukzin-sentado.png, usa esse sprite; senão corta as pernas via CSS (.sitting)
-const spriteSentadoTeste = new Image();
-spriteSentadoTeste.onload = () => { S.sitSprite = true; };
-spriteSentadoTeste.src = SENTADO_SPRITE;
-
-function aplicarSprite(sentado) {
-  const el = char();
-  const img = el && el.querySelector('.luk-sprite');
-  if (!img) return;
-  if (!img.dataset.stand) img.dataset.stand = img.getAttribute('src');
-  const usar = sentado && S.sitSprite;
-  img.setAttribute('src', usar ? SENTADO_SPRITE : img.dataset.stand);
-  el.classList.toggle('has-sit-sprite', usar);
-}
-
-function marcarSentado(on) {
-  const el = char();
-  S.sentado = on;
-  el.classList.toggle('sitting', on);
-  aplicarSprite(on);
-  // o hotspot da cadeira fica escondido enquanto o Lukzin está nela (ele mesmo é clicável)
-  if (hotspots.cadeira) hotspots.cadeira.classList.toggle('luk-ocupada', on);
-}
-
-async function sentar() {
-  const el = char();
-  if (!el || S.tour || S.sentado) return;
-  const run = S.run;
-  await moverLuk(CADEIRA.x, CADEIRA.y);
-  if (run !== S.run || S.tour) return;
-  marcarSentado(true);
-  snd('playPop');
-}
-
-async function levantar() {
-  if (!S.sentado) return;
-  marcarSentado(false);
-  snd('playPop');
-  await esperar(REDUCED ? 0 : 380);
-}
-
-function agendarVoltar(ms = 16000) {
-  clearTimeout(S.idleTimer);
-  S.idleTimer = setTimeout(() => { if (!S.tour && !S.sentado) sentar(); }, ms);
-}
-
 function falaTemporaria(texto, ms = 4200) {
   const el = char();
-  mostrarBalao(texto, parseFloat(el.dataset.x ?? CADEIRA.x));
+  mostrarBalao(texto, parseFloat(el.dataset.x ?? 50));
   setFalando(true);
   setTimeout(() => setFalando(false), 900);
   clearTimeout(S.balaoTimer);
@@ -280,7 +229,6 @@ function falaTemporaria(texto, ms = 4200) {
 function interagir() {
   const el = char();
   if (!el || S.tour || el.classList.contains('walking')) return;
-  clearTimeout(S.idleTimer);
   S.cliquesLuk += 1;
   el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop');
   setTimeout(() => el.classList.remove('hop'), 520);
@@ -294,7 +242,6 @@ function interagir() {
   }
   if (S.cliquesLuk % 3 === 0) sparks();
   falaTemporaria(BAO_FALAS[S.falaIdx++ % BAO_FALAS.length]);
-  if (!S.sentado) agendarVoltar();
 }
 
 function ligarLuk() {
@@ -309,11 +256,10 @@ function ligarLuk() {
   const btn = $('btnLukFala');
   if (btn) btn.addEventListener('click', interagir);
 
-  // posição inicial: sentadinho na cadeira
+  // posição inicial: em pé na estante
   const el = char();
-  el.dataset.x = CADEIRA.x; el.dataset.y = CADEIRA.y;
-  el.style.left = `${CADEIRA.x}%`; el.style.top = `${CADEIRA.y}%`;
-  marcarSentado(true);
+  el.dataset.x = 17; el.dataset.y = 90;
+  el.style.left = '17%'; el.style.top = '90%';
 
   // cumprimenta uma vez, quando o mini-game aparece na tela
   const cena = $('setupScene');
@@ -321,7 +267,7 @@ function ligarLuk() {
     const io = new IntersectionObserver((es) => {
       if (!es.some((x) => x.isIntersecting) || S.saudou) return;
       S.saudou = true; io.disconnect();
-      setTimeout(() => { if (!S.tour && S.sentado && !S.itemAtual) falaTemporaria(BAO_GREETING, 5200); }, 800);
+      setTimeout(() => { if (!S.tour && !S.itemAtual) falaTemporaria(BAO_GREETING, 5200); }, 800);
     }, { threshold: 0.5 });
     io.observe(cena);
   }
@@ -439,10 +385,6 @@ async function visitar(id, run) {
   const it = SETUP_DATA[id];
   const hs = hotspots[id];
   S.itemAtual = id;
-  if (S.sentado) {
-    await levantar();
-    if (run !== S.run) return false;
-  }
   if (hs) hs.classList.add('is-target');
   foco(null);
 
@@ -462,7 +404,6 @@ async function visitar(id, run) {
   await digitar($('dlgText'), it.texto);
   if (run !== S.run) return false;
   mostrarChips(it);
-  if (!S.tour) agendarVoltar(18000);   // fora do tour, depois de um tempo ele volta pra cadeira
   return true;
 }
 
@@ -504,14 +445,6 @@ async function iniciarTour() {
   setTourUI(true);
   setProgresso(0, ORDEM_TOUR.length);
 
-  if (S.sentado) {
-    falaTemporaria('Bora, que vai ficar bão demais! 🚀', 1600);
-    await esperar(REDUCED ? 0 : 500);
-    if (run !== S.run) return;
-    await levantar();
-    if (run !== S.run) return;
-  }
-
   for (let i = 0; i < ORDEM_TOUR.length; i++) {
     setProgresso(i + 1, ORDEM_TOUR.length);
     const ok = await visitar(ORDEM_TOUR[i], run);
@@ -523,13 +456,11 @@ async function iniciarTour() {
 }
 
 function pararTour(voltar = true) {
-  const rodava = S.tour;
   S.tour = false;
   cancelar();
   setTourUI(false);
   foco(null);
   Object.values(hotspots).forEach((b) => b.classList.remove('is-target'));
-  if (rodava && voltar) sentar();
 }
 
 /* ---------- Recap final ---------- */
@@ -562,7 +493,6 @@ async function recapFinal(run) {
   S.tour = false;
   setTourUI(false);
   $('setupProgress').classList.add('on');
-  agendarVoltar(25000);
 }
 
 /* ============================================================
@@ -794,19 +724,6 @@ window.iniciarTour = iniciarTour;
 window.pararTour = pararTour;
 window.irParaItem = irParaItem;
 window.lukInteragir = interagir;
-// Ajuste fino no console: lukSentado({ drop: '45%' })  → quanto das pernas fica escondido
-//                          lukSentado({ x: 62.3, y: 79.5 }) → ponto da cadeira
-window.lukSentado = (cfg = {}) => {
-  const el = char();
-  if (cfg.drop) el.style.setProperty('--sit-drop', cfg.drop);
-  if (cfg.x != null) CADEIRA.x = cfg.x;
-  if (cfg.y != null) CADEIRA.y = cfg.y;
-  if (S.sentado) {
-    el.dataset.x = CADEIRA.x; el.dataset.y = CADEIRA.y;
-    el.style.left = `${CADEIRA.x}%`; el.style.top = `${CADEIRA.y}%`;
-  }
-  return { ...CADEIRA, drop: getComputedStyle(el).getPropertyValue('--sit-drop').trim() };
-};
 window.SETUP_DATA = SETUP_DATA;
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
