@@ -1245,18 +1245,9 @@ window.aplicarManutencao = aplicarManutencao;
 
 function renderLogin(){
   const area = $('navUser'); if(!area) return;
-  if(USUARIO){
-    area.hidden = false;
-    area.innerHTML = `
-      <div class="nav-user-logado">
-        <img src="${esc(USUARIO.avatar)}" alt="" onerror="this.style.display='none'">
-        <span class="nick">@${esc(USUARIO.username)}</span>
-        <button class="nav-user-sair" onclick="sair()">Sair</button>
-      </div>`;
-  } else {
-    area.hidden = true;
-    area.innerHTML = '';
-  }
+  area.innerHTML = '';
+  area.hidden = true;
+  area.style.display = 'none';
 }
 
 async function sair(){

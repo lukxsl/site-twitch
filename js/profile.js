@@ -43,6 +43,28 @@
     return estado;
   }
 
+  function hexToHsl(hex){
+    let h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const d = max - min;
+    let hue = 0;
+    if (d) {
+      if (max === r) hue = ((g - b) / d) % 6;
+      else if (max === g) hue = (b - r) / d + 2;
+      else hue = (r - g) / d + 4;
+      hue *= 60;
+      if (hue < 0) hue += 360;
+    }
+    const l = (max + min) / 2;
+    const s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+    return { h: hue, s: s * 100, l: l * 100 };
+  }
+
   function init(){
     const stage = $('#pfAvatarStage');
     const banner = $('#pfBanner');
@@ -68,8 +90,16 @@
 
     function aplicarBoneco(){
       if (stage) {
-        stage.style.setProperty('--pf-hair', estado.cabelo);
-        stage.style.setProperty('--pf-outfit', estado.roupa);
+        const cabelo = hexToHsl(estado.cabelo);
+        const roupa = hexToHsl(estado.roupa);
+        const deltaCabelo = cabelo.h - 270;
+        const deltaRoupa = roupa.h - 262;
+        const hue = Math.round(deltaCabelo * 0.35 + deltaRoupa * 0.65);
+        const sat = Math.max(.6, Math.min(1.5, 1 + (roupa.s - 83) / 180));
+        const bright = Math.max(.75, Math.min(1.25, 1 + (roupa.l - 58) / 200 + (cabelo.l - 75) / 400));
+        stage.style.setProperty('--pf-hue', hue + 'deg');
+        stage.style.setProperty('--pf-sat', sat.toFixed(2));
+        stage.style.setProperty('--pf-bright', bright.toFixed(2));
         stage.style.setProperty('--pf-acc', estado.acessorio);
         stage.dataset.acc = estado.estilo;
       }

@@ -22,6 +22,7 @@
   flex-direction:column;
   gap:6px;
 }
+.pf-head .section-kicker{align-self:flex-start}
 .pf-head h1{
   font-size:clamp(1.8rem,3.5vw,2.6rem);
   font-weight:800;
@@ -196,8 +197,9 @@
 }
 
 .pf-avatar-stage{
-  --pf-hair:#c084fc;
-  --pf-outfit:#7c3aed;
+  --pf-hue:0deg;
+  --pf-sat:1;
+  --pf-bright:1;
   --pf-acc:#ffd166;
   position:relative;
   display:grid;
@@ -224,22 +226,76 @@
   filter:blur(24px);
   pointer-events:none;
 }
-.pf-avatar{
+.pf-pixel-wrap{
   position:relative;
   z-index:1;
-  width:min(100%,245px);
-  height:auto;
-  filter:drop-shadow(0 20px 30px rgba(0,0,0,.55));
+  display:inline-block;
+  line-height:0;
+  filter:drop-shadow(0 18px 24px rgba(0,0,0,.55));
   animation:pfFloat 5s ease-in-out infinite;
 }
 @keyframes pfFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-.pf-outfit{fill:var(--pf-outfit);transition:fill .25s}
-.pf-outfit-shadow{fill:var(--pf-outfit);filter:brightness(.76);transition:fill .25s}
-.pf-outfit-collar{fill:var(--pf-outfit);filter:brightness(1.22);transition:fill .25s}
-.pf-hair,.pf-hair-back,.pf-hair-tuft{fill:var(--pf-hair);transition:fill .25s}
-.pf-accessory{display:none}
-.pf-avatar-stage[data-acc="oculos"] .pf-acc-oculos{display:block}
-.pf-avatar-stage[data-acc="fone"] .pf-acc-fone{display:block}
+
+.pf-pixel-avatar{
+  display:block;
+  width:auto;
+  height:clamp(250px,32vw,330px);
+  max-width:100%;
+  object-fit:contain;
+  image-rendering:pixelated;
+  image-rendering:crisp-edges;
+  filter:hue-rotate(var(--pf-hue,0deg)) saturate(var(--pf-sat,1)) brightness(var(--pf-bright,1));
+  transition:filter .25s ease;
+}
+
+.pf-pixel-acc{
+  position:absolute;
+  display:none;
+  pointer-events:none;
+  image-rendering:pixelated;
+}
+.pf-avatar-stage[data-acc="oculos"] .pf-pixel-oculos{display:block}
+.pf-avatar-stage[data-acc="fone"] .pf-pixel-fone{display:block}
+
+/* Óculos em blocos de pixel */
+.pf-pixel-oculos{
+  top:16.5%;
+  left:50%;
+  width:50%;
+  height:8.5%;
+  transform:translateX(-50%);
+  background:
+    linear-gradient(var(--pf-acc),var(--pf-acc)) center center / 14% 18% no-repeat;
+}
+.pf-pixel-oculos::before,
+.pf-pixel-oculos::after{
+  content:'';
+  position:absolute;
+  top:0;
+  width:38%;
+  height:100%;
+  border:3px solid var(--pf-acc);
+  background:rgba(10,5,17,.14);
+  box-shadow:3px 3px 0 rgba(0,0,0,.35);
+}
+.pf-pixel-oculos::before{left:4%}
+.pf-pixel-oculos::after{right:4%}
+
+/* Fone em blocos de pixel */
+.pf-pixel-fone{
+  top:4%;
+  left:50%;
+  width:64%;
+  height:34%;
+  transform:translateX(-50%);
+  background:
+    linear-gradient(var(--pf-acc),var(--pf-acc)) 50% 0 / 68% 8px no-repeat,
+    linear-gradient(var(--pf-acc),var(--pf-acc)) 16% 0 / 8px 45% no-repeat,
+    linear-gradient(var(--pf-acc),var(--pf-acc)) 84% 0 / 8px 45% no-repeat,
+    linear-gradient(var(--pf-acc),var(--pf-acc)) 8% 40% / 18% 22% no-repeat,
+    linear-gradient(var(--pf-acc),var(--pf-acc)) 92% 40% / 18% 22% no-repeat;
+  box-shadow:0 3px 0 rgba(0,0,0,.28);
+}
 .pf-avatar-tag{
   position:absolute;
   left:14px;
@@ -446,19 +502,20 @@
 @media (max-width:900px){
   .pf-creator,
   .pf-security{grid-template-columns:1fr}
-  .pf-avatar-stage{min-height:320px}
+  .pf-avatar-stage{min-height:330px}
+  .pf-pixel-avatar{height:clamp(240px,52vw,320px)}
   .pf-banner{flex-direction:column;align-items:flex-start;justify-content:flex-end;min-height:250px}
   .pf-btn-banner{align-self:flex-start}
 }
 @media (max-width:520px){
   .pf-banner{padding:20px}
-  .pf-avatar-stage{min-height:280px}
-  .pf-avatar{width:min(100%,205px)}
+  .pf-avatar-stage{min-height:290px}
+  .pf-pixel-avatar{height:clamp(220px,58vw,280px)}
   .pf-option-group{padding:12px}
   .pf-swatch{width:34px;height:34px}
 }
 
 @media (prefers-reduced-motion:reduce){
-  .pf-avatar{animation:none}
+  .pf-pixel-wrap{animation:none}
   .pf-panel.on{animation:none}
 }
