@@ -187,7 +187,7 @@
     const avatar = criar('span', 'nav-mini-avatar');
     let svg = null;
     if (window.PixelAvatar && typeof window.PixelAvatar.render === 'function' && perfil && perfil.boneco) {
-      svg = window.PixelAvatar.render(perfil.boneco, { label: `Boneco de ${nick}` });
+      svg = window.PixelAvatar.render(perfil.boneco, { label: `Boneco de ${nick}`, mini: true, animar: false });
     }
     if (svg) avatar.appendChild(svg);
     else {
