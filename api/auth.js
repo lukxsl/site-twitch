@@ -219,9 +219,11 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
 
 /* ============================================================ */
 export default async function handler(req, res){
-  if(!ENV.SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   const action = (req.query && req.query.action) || '';
+  // Catálogo e ranking são públicos; encaminhe antes da validação da sessão.
+  // O gameHandler valida SESSION_SECRET apenas nas ações que realmente exigem login.
   if(ACOES_JOGO.includes(action)) return gameHandler(req, res);
+  if(!ENV.SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   res.setHeader('Cache-Control', 'no-store');
 
   try {

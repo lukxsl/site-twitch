@@ -75,6 +75,11 @@
         emitir('catalogo', res.data);
         return res.data;
       }
+      console.error('[GameState] Falha ao carregar catálogo:', {
+        status: res && res.status,
+        erro: res && res.data && res.data.error,
+        resposta: res && res.data
+      });
       emitir('erro', { tipo: 'catalogo', resposta: res });
       return estado.catalogo;
     })().finally(() => { catalogoEmVoo = null; });

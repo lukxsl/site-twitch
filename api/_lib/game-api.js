@@ -61,7 +61,6 @@ function conquistasPublicas(){
 }
 
 export default async function handler(req, res){
-  if(!ENV.SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   const action = (req.query && req.query.action) || '';
 
   try {
@@ -112,6 +111,10 @@ export default async function handler(req, res){
       });
       return res.status(200).json({ total: Number(total), lista });
     }
+
+    /* As rotas públicas acima não dependem de assinatura de sessão.
+       Só as rotas privadas exigem SESSION_SECRET. */
+    if(!ENV.SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
 
     /* ============ daqui pra baixo: precisa de login ============ */
     const sessao = await sessaoValida(req);
@@ -263,6 +266,9 @@ export default async function handler(req, res){
 
     return res.status(400).json({ error: 'Ação inválida.' });
   } catch(e){
-    return res.status(500).json({ error: 'Erro interno' });
+    // O detalhe fica nos logs da Vercel (nunca na resposta pública), permitindo
+    // diagnosticar falhas de catálogo/Redis/import sem expor dados internos.
+    console.error(`[game-api] Falha na ação "${action || 'nenhuma'}":`, e);
+    return res.status(500).json({ error: 'Erro interno', action: action || null });
   }
 }

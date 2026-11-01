@@ -931,7 +931,6 @@
     const boneco = normalizar(entrada);
     const mini = opcoes.mini === true;
     const animar = opcoes.animar !== false && !mini;
-    const escala = Math.max(0.25, Math.min(12, Number(opcoes.escala) || 1));
     const label = opcoes.label || 'Boneco pixel art';
 
     const classes = ['px-svg'];
@@ -939,7 +938,7 @@
     if (animar) classes.push('px-anim-' + boneco.animacao);
 
     return '<svg xmlns="http://www.w3.org/2000/svg" class="' + classes.join(' ') + '" ' +
-      'viewBox="0 0 ' + W + ' ' + H + '" width="' + Math.round(W * escala) + '" height="' + Math.round(H * escala) + '" ' +
+      'viewBox="0 0 ' + W + ' ' + H + '" ' +
       'role="img" aria-label="' + atributo(label) + '" shape-rendering="crispEdges" ' +
       'data-animacao="' + boneco.animacao + '" data-efeito="' + boneco.efeito + '" data-moldura="' + boneco.moldura + '">' +
       (mini ? '' : grupo('fx-fundo', boneco, ['efeito'], b => camadaEfeito(b).fundo, 'px-fx px-fx-fundo')) +

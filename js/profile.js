@@ -641,7 +641,8 @@
         }
 
         iniciarComPerfil(dadosPerfil, dadosCatalogo);
-      } catch (_) {
+      } catch (erro) {
+        console.error('[Meu Boneco] Falha ao carregar perfil ou catálogo:', erro);
         if (token === requisicao) mostrarErro('Não foi possível carregar o guarda-roupa. Verifique sua conexão e tente de novo.');
       } finally {
         if (token === requisicao) carregando = false;
