@@ -1201,9 +1201,8 @@ async function checarLogin(){
     return;
   }
   try{
-    const r = await fetch('/api/auth?action=me');
-    const d = await r.json();
-    USUARIO = d.logado ? d : null;
+    const res = await api(API_AUTH, 'me');
+    USUARIO = (res.ok && res.data && res.data.logado) ? res.data : null;
   }catch(e){ USUARIO = null; }
 
   if(USUARIO && USUARIO.admin){
@@ -1246,15 +1245,45 @@ window.aplicarManutencao = aplicarManutencao;
 function renderLogin(){
   const area = $('navUser'); if(!area) return;
   area.innerHTML = '';
-  area.hidden = true;
-  area.style.display = 'none';
+  area.hidden = false;
+  area.style.display = 'flex';
+
+  if(!USUARIO){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'nav-user-deslogado nav-auth-entrar';
+    btn.textContent = 'ENTRAR';
+    btn.setAttribute('aria-label', 'Entrar no Arcade');
+    btn.addEventListener('click', () => {
+      if(window.AuthUI) window.AuthUI.open('entrar');
+    });
+    area.appendChild(btn);
+    return;
+  }
+
+  const pill = document.createElement('div');
+  pill.className = 'nav-user-logado';
+
+  const nick = document.createElement('span');
+  nick.className = 'nick';
+  nick.textContent = USUARIO.nick || USUARIO.username || 'Jogador';
+
+  const sairBtn = document.createElement('button');
+  sairBtn.type = 'button';
+  sairBtn.className = 'nav-user-sair';
+  sairBtn.textContent = 'Sair';
+  sairBtn.addEventListener('click', sair);
+
+  pill.append(nick, sairBtn);
+  area.appendChild(pill);
 }
 
 async function sair(){
-  try{ await fetch('/api/auth?action=logout'); }catch(e){}
+  try{ await api(API_AUTH, 'logout', { method: 'POST' }); }catch(e){}
   USUARIO = null; meuVoto = null;
   document.body.classList.remove('sou-admin');
   const ov = document.getElementById('manutencaoOverlay'); if(ov) ov.remove();
+  window.dispatchEvent(new CustomEvent('soso:logout'));
   renderLogin(); renderVotacao(); desenhar();
   mudarAba('inicio', false);
   location.reload();
@@ -1339,11 +1368,10 @@ function renderVotacao(){
       <div class="voto-bloqueado">
         <span class="loot">🔒</span>
         <b>Só falta você escolher!</b>
-        <p>Entra rapidinho com o Discord pra votar e ajudar a decidir o próximo jogo da live 💜</p>
-        <a class="btn-entrar" href="/api/auth?action=login">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
-          Entrar com Discord
-        </a>
+        <p>Entra rapidinho no Arcade pra votar e ajudar a decidir o próximo jogo da live 💜</p>
+        <button type="button" class="btn-entrar" onclick="AuthUI.open('entrar')">
+          🕹️ Entrar no Arcade
+        </button>
       </div>`;
     if(proxCover) proxCover.style.display = 'none';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';

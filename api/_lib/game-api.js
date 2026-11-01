@@ -1,4 +1,4 @@
-// Vercel serverless: /api/game.js
+// api/_lib/game-api.js — rotas do jogo expostas por /api/game (rewrite) e /api/auth (delegação).
 // Leitura do estado do jogo + ações que o usuário pode pedir (todas validadas aqui).
 //
 //   GET  /api/game?action=catalogo          (público)  catálogo, raridades, conquistas, títulos, regras
@@ -14,13 +14,13 @@
 import { timingSafeEqual } from 'crypto';
 import {
   ENV, redis, paraObj, jparse, rateLimit, ipDe, origemOk, lerSessao, cargoDe, safeStr, hojeBR
-} from './_lib/core.js';
+} from './core.js';
 import {
   MOEDA, RARIDADES, CONQUISTAS, PLATINA, TITULOS, SLOTS, LIVE, BONECO_PADRAO, NIVEL_MAX,
   catalogoPublico, acharItem, precoDe, infoNivel, lerStats, contarItens, itemLiberado, titulosDe,
   validarBoneco, creditar, notificar, lerNotificacoes, avaliarConquistas, xpDoNivel, CATALOGO
-} from './_lib/game.js';
-import { cronPresenca } from './_lib/twitch.js';
+} from './game.js';
+import { cronPresenca } from './twitch.js';
 
 /* sessão válida (para contas próprias confere a versão → senha trocada derruba o resto) */
 async function sessaoValida(req){

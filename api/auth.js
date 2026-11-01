@@ -23,6 +23,11 @@ import {
 } from './_lib/core.js';
 import { evento, avaliarConquistas, lerStats, validarBoneco, BONECO_PADRAO } from './_lib/game.js';
 import { urlVinculo, identificarViewer, twitchConfigurada } from './_lib/twitch.js';
+import gameHandler from './_lib/game-api.js';
+
+/* Ações do jogo atendidas por api/_lib/game-api.js (delegadas aqui para
+   não criar uma nova função serverless na raiz de /api). */
+const ACOES_JOGO = ['catalogo', 'ranking', 'perfil', 'resgatar', 'comprar', 'titulo', 'notif-lidas', 'cron-presenca'];
 
 const DISCORD_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET;
@@ -72,6 +77,7 @@ const publico = (conta, cargo) => ({
 export default async function handler(req, res){
   if(!ENV.SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   const action = (req.query && req.query.action) || '';
+  if(ACOES_JOGO.includes(action)) return gameHandler(req, res);
   res.setHeader('Cache-Control', 'no-store');
 
   try {
