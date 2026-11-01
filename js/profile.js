@@ -556,8 +556,62 @@
     return toSVG(BUILDERS[nome](R));
   }
 
+  const CABELO_MINI = { rabo: 'longo', coques: 'curto', espetado: 'moicano' };
+  const ROUPA_MINI = { camiseta: 'moletom', vestido: 'social', jaqueta: 'armadura' };
+  const ACESSORIO_MINI = { orelhas: 'bone', halo: 'coroa' };
+  const CORES_MINI = {
+    pele: { alien: '#7be3a0' },
+    cabeloCor: { ruivo: '#c2531b', ciano: '#22d3ee' },
+    roupaCor: { vermelho: '#dc2626' }
+  };
+
+  function adaptarBonecoServidor(boneco){
+    const b = boneco || {};
+    return {
+      pele: b.pele || DEFAULTS.pele,
+      cabeloEstilo: CABELO_MINI[b.cabelo] || b.cabelo || DEFAULTS.cabeloEstilo,
+      cabeloCor: b.cabeloCor || DEFAULTS.cabeloCor,
+      roupaEstilo: ROUPA_MINI[b.roupa] || b.roupa || DEFAULTS.roupaEstilo,
+      roupaCor: b.roupaCor || DEFAULTS.roupaCor,
+      acessorio: ACESSORIO_MINI[b.acessorio] || b.acessorio || DEFAULTS.acessorio,
+      acessorioCor: b.acessorioCor || DEFAULTS.acessorioCor
+    };
+  }
+
+  function comporSVG(boneco){
+    const b = boneco || {};
+    const R = resolver(adaptarBonecoServidor(b));
+    if (CORES_MINI.pele[b.pele]) R.pele = CORES_MINI.pele[b.pele];
+    if (CORES_MINI.cabeloCor[b.cabeloCor]) R.cabeloCor = CORES_MINI.cabeloCor[b.cabeloCor];
+    if (CORES_MINI.roupaCor[b.roupaCor]) R.roupaCor = CORES_MINI.roupaCor[b.roupaCor];
+
+    const out = canvas();
+    CAMADAS.forEach((nome) => {
+      BUILDERS[nome](R).pixels().forEach((cor, k) => {
+        out.set(k % W, Math.floor(k / W), cor);
+      });
+    });
+    return toSVG(out);
+  }
+
+  function render(boneco, opcoes){
+    const opts = opcoes || {};
+    const escala = Number(opts.escala) > 0 ? Number(opts.escala) : 1;
+    const holder = document.createElement('div');
+    holder.innerHTML = comporSVG(boneco);
+    const svg = holder.firstElementChild;
+    if (!svg) return null;
+    svg.removeAttribute('aria-hidden');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', opts.label || 'Boneco em pixel art');
+    svg.setAttribute('width', Math.round(W * escala));
+    svg.setAttribute('height', Math.round(H * escala));
+    svg.style.imageRendering = 'pixelated';
+    return svg;
+  }
+
   /* API pública (útil para depurar no console) */
-  window.PixelAvatar = { OPCOES, DEFAULTS, CAMADAS, resolver, desenharCamada, builders: BUILDERS, W, H };
+  window.PixelAvatar = { OPCOES, DEFAULTS, CAMADAS, resolver, desenharCamada, render, renderSVG: comporSVG, builders: BUILDERS, W, H };
 
   /* ============================================================
      6) CARGOS / ACESSO

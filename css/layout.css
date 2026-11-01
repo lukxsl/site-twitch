@@ -204,7 +204,7 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
 .footer-updated{font-size:.72rem;opacity:.7;display:inline-flex;align-items:center;gap:6px}
 .footer-updated b{color:var(--purple-2);font-weight:700}
 
-@media (max-width:720px){
+@media (max-width:1180px){
   nav .wrapper{min-height:60px}
   .nav-burger{display:flex}
   .nav-right{position:fixed;top:60px;left:0;right:0;background:rgba(10,5,17,.98);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:16px;flex-direction:column;align-items:stretch;gap:14px;transform:translateY(-110%);transition:transform .35s var(--ease);z-index:99;max-height:calc(100vh - 60px);overflow-y:auto}
@@ -213,7 +213,9 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
   .nav-links button{width:100%;text-align:left;padding:12px 14px;font-size:.94rem}
   .nav-links button.on{background:rgba(168,85,247,.16)}
   .nav-user{border-left:0;padding-left:0;margin-top:8px;justify-content:center;padding-top:14px;border-top:1px solid var(--line)}
-  .nav-user-logado,.nav-user-deslogado{width:100%;justify-content:center}
+  .nav-user-logado,.nav-user-deslogado,.nav-arcade-user{width:100%;justify-content:center}
+}
+@media (max-width:720px){
   .footer-top{flex-direction:column;text-align:center}
   .footer-links{justify-content:center}
   .footer-bottom{flex-direction:column;text-align:center}

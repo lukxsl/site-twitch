@@ -59,6 +59,7 @@
       <ul class="nav-links">
         <li><button onclick="mudarAba('inicio')" id="btn-inicio" class="on">Início</button></li>
         <li><button onclick="mudarAba('tierlist')" id="btn-tierlist">Tier List</button></li>
+        <li><button onclick="mudarAba('ranking')" id="btn-ranking">Ranking</button></li>
         <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
         <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
         <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
@@ -346,6 +347,21 @@
     </div>
   </div>
 </dialog>
+
+<!-- ==================== RANKING ==================== -->
+<section id="sec-ranking" class="page-section">
+  <header class="section-header reveal">
+    <span class="section-kicker">🏆 Arcade</span>
+    <h2>Ranking de Jogadores</h2>
+    <p>Quem mais acompanha a Soso sobe no placar. XP, níveis e recompensas ficam salvos na sua conta.</p>
+  </header>
+  <div class="arcade-soon" id="rankingConteudo" role="status">
+    <span class="arcade-soon-ic" aria-hidden="true">🏁</span>
+    <h3>O placar está sendo montado</h3>
+    <p>O ranking completo com pódio, sua posição e os vizinhos chega na próxima atualização do Arcade.</p>
+    <span class="arcade-soon-badge">EM BREVE</span>
+  </div>
+</section>
 
 <!-- ==================== COMUNIDADE ==================== -->
 <section id="sec-comunidade" class="page-section">
@@ -705,6 +721,7 @@
 
     <div class="pf-tabs" role="tablist" aria-label="Abas do perfil">
       <button type="button" class="pf-tab on" data-pf-tab="boneco" role="tab" aria-selected="true">🕹️ Meu Boneco</button>
+      <button type="button" class="pf-tab" data-pf-tab="loja" role="tab" aria-selected="false">🛒 Loja</button>
       <button type="button" class="pf-tab" data-pf-tab="seguranca" role="tab" aria-selected="false">🔒 Segurança</button>
     </div>
 
@@ -785,6 +802,15 @@
             <p class="pf-vip-hint" hidden>🔒 Peças com cadeado: 👑 Exclusivo Dev/Sub</p>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="loja">
+      <div class="arcade-soon">
+        <span class="arcade-soon-ic" aria-hidden="true">🛒</span>
+        <h3>Loja do Arcade</h3>
+        <p>A vitrine de itens por SosoCoins e o Terminal de Códigos Secretos estão chegando. Por enquanto, continue acompanhando a live para juntar XP e moedas.</p>
+        <span class="arcade-soon-badge">EM BREVE</span>
       </div>
     </div>
 
@@ -894,7 +920,9 @@
 <script src="js/utils/audio.js"></script>
 <script src="js/api/client.js"></script>
 <script src="js/api/game-client.js"></script>
+<script src="js/game-state.js"></script>
 <script src="js/auth-ui.js"></script>
+<script src="js/navbar.js"></script>
 <script src="js/twitch/twitch.js"></script>
 <script src="js/setup/setup.js"></script>
 <script src="js/main.js"></script>

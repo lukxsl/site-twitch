@@ -663,7 +663,7 @@ function setLivePulse(isLive){
 let _ultimaAba = null;
 let _mudarAbaTimer = null;
 let _mudarAbaPendente = null;
-const ABAS_VALIDAS = ['inicio','tierlist','comunidade','setup','sugestoes','perfil','admin'];
+const ABAS_VALIDAS = ['inicio','tierlist','ranking','comunidade','setup','sugestoes','perfil','admin'];
 
 function _executarMudarAba(nome, salvar){
   if(!ABAS_VALIDAS.includes(nome)) nome = 'inicio';
@@ -688,6 +688,7 @@ function _executarMudarAba(nome, salvar){
     }
   }
   _ultimaAba = nome;
+  window.dispatchEvent(new CustomEvent('soso:aba', { detail: nome }));
 
   try {
     if(nome !== 'admin') history.replaceState(null, '', '#' + nome);
@@ -1218,6 +1219,7 @@ async function checarLogin(){
   renderLogin();
   document.body.classList.toggle('sou-admin', !!(USUARIO && USUARIO.admin));
   if(USUARIO && USUARIO.admin) desenhar();
+  window.dispatchEvent(new CustomEvent('soso:auth', { detail: USUARIO }));
   aplicarManutencao();
 }
 window.checarLogin = checarLogin;
@@ -1243,6 +1245,11 @@ function aplicarManutencao(){
 window.aplicarManutencao = aplicarManutencao;
 
 function renderLogin(){
+  if(window.Navbar && typeof window.Navbar.render === 'function'){
+    window.Navbar.render();
+    return;
+  }
+
   const area = $('navUser'); if(!area) return;
   area.innerHTML = '';
   area.hidden = false;
