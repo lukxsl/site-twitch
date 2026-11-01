@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="css/tierlist.css">
 <link rel="stylesheet" href="css/profile.css">
 <link rel="stylesheet" href="css/arcade.css">
+<link rel="stylesheet" href="css/profile-new.css">
 </head>
 <body>
 
@@ -720,12 +721,145 @@
     </div>
 
     <div class="pf-tabs" role="tablist" aria-label="Abas do perfil">
-      <button type="button" class="pf-tab on" data-pf-tab="boneco" role="tab" aria-selected="true">🕹️ Meu Boneco</button>
-      <button type="button" class="pf-tab" data-pf-tab="loja" role="tab" aria-selected="false">🛒 Loja</button>
-      <button type="button" class="pf-tab" data-pf-tab="seguranca" role="tab" aria-selected="false">🔒 Segurança</button>
+      <button type="button" class="pf-tab on" data-pf-tab="visao-geral" role="tab" aria-selected="true">👁️ Visão Geral</button>
+      <button type="button" class="pf-tab" data-pf-tab="boneco" role="tab" aria-selected="false">🕹️ Meu Boneco</button>
+      <button type="button" class="pf-tab" data-pf-tab="inventario" role="tab" aria-selected="false">🎒 Inventário</button>
+      <button type="button" class="pf-tab" data-pf-tab="conquistas" role="tab" aria-selected="false">🏆 Conquistas</button>
+      <button type="button" class="pf-tab" data-pf-tab="configuracoes" role="tab" aria-selected="false">⚙️ Configurações</button>
     </div>
 
-    <div class="pf-panel on" data-pf-panel="boneco">
+    <div class="pf-panel on" data-pf-panel="visao-geral">
+      <div class="pf-shell-grid">
+        <div class="pf-visual-section">
+          <div class="pf-avatar-stage-large" id="pfAvatarStageLarge">
+            <div class="pf-avatar-wrap-large">
+              <div class="pf-avatar-large" id="pfAvatarLarge" role="img" aria-label="Prévia do seu boneco em pixel art"></div>
+            </div>
+          </div>
+          <div class="pf-info-summary">
+            <h2 class="pf-nick-large" id="pfNickLarge">@convidado</h2>
+            <div class="pf-title-row">
+              <span class="pf-title-label">Título equipado:</span>
+              <div class="pf-title-selector">
+                <select id="pfTituloSelect">
+                  <option value="">Nenhum título</option>
+                </select>
+              </div>
+            </div>
+            <div class="pf-level-large">
+              <span class="pf-level-num" id="pfLevelLarge">0</span>
+              <span class="pf-level-label">Nível</span>
+            </div>
+            <div class="pf-xp-bar-container">
+              <div class="pf-xp-bar-track">
+                <div class="pf-xp-bar-fill" id="pfXpBarFill" style="width: 0%"></div>
+              </div>
+              <span class="pf-xp-text" id="pfXpText">0 / 100 XP</span>
+              <span class="pf-xp-faltam" id="pfXpFaltam">Faltam 100 XP</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="pf-status-cards">
+          <div class="pf-card-status">
+            <span class="pf-card-icon">🎮</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfLivesCount">0</span>
+              <span class="pf-card-label">Lives</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">🗳️</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfVotesCount">0</span>
+              <span class="pf-card-label">Votos</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">✅</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfSuggestionsCount">0</span>
+              <span class="pf-card-label">Sugestões aprovadas</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">⏱️</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfWatchHoursCount">0</span>
+              <span class="pf-card-label">Horas assistidas</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">🔥</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfStreakCurrent">0</span>
+              <span class="pf-card-label">Sequência atual</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">🏆</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfStreakBest">0</span>
+              <span class="pf-card-label">Melhor sequência</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="pf-xp-info">
+          <h3 class="pf-xp-info-title">Como ganhar XP</h3>
+          <div class="pf-xp-rules" id="pfXpRules">
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">🎮</span>
+              <span class="pf-rule-text">Jogue jogos: 10 XP por hora</span>
+            </div>
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">🗳️</span>
+              <span class="pf-rule-text">Vote no tier list: 5 XP por voto</span>
+            </div>
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">💡</span>
+              <span class="pf-rule-text">Sugira jogos: 20 XP por sugestão aprovada</span>
+            </div>
+          </div>
+          <div class="pf-streak-milestones" id="pfStreakMilestones">
+            <h4>Marcos de sequência</h4>
+            <div class="pf-milestone-list">
+            </div>
+          </div>
+        </div>
+        
+        <div class="pf-position-card">
+          <h3 class="pf-position-title">Posição no Ranking</h3>
+          <div class="pf-position-content">
+            <span class="pf-position-number" id="pfPositionNumber">#0</span>
+            <span class="pf-position-total">de 0 jogadores</span>
+          </div>
+          <div class="pf-ranking-card">
+            <div class="pf-ranking-avatar">
+              <div class="pf-ranking-avatar-placeholder" id="pfRankingAvatarPlaceholder">👤</div>
+            </div>
+            <div class="pf-ranking-info">
+              <span class="pf-ranking-nick" id="pfRankingNick">—</span>
+              <span class="pf-ranking-title" id="pfRankingTitle">—</span>
+            </div>
+            <div class="pf-ranking-stats">
+              <span class="pf-ranking-level">Nv <span id="pfRankingLevel">0</span></span>
+              <span class="pf-ranking-xp" id="pfRankingXp">0 XP</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="pf-coins-card">
+          <h3 class="pf-coins-title">SosoCoins</h3>
+          <div class="pf-coins-content">
+            <span class="pf-coins-icon">🪙</span>
+            <span class="pf-coins-value" id="pfCoinsValue">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="boneco">
       <div class="pf-creator">
 
         <div class="pf-avatar-stage" id="pfAvatarStage">
@@ -907,5 +1041,9 @@
 <script src="js/setup/setup.js"></script>
 <script src="js/main.js"></script>
 <script src="js/profile.js"></script>
+<script src="js/perfil-ui.js"></script>
+<script src="js/ranking-ui.js"></script>
+<script src="js/shop-ui.js"></script>
+<script src="js/secret-codes-ui.js"></script>
 </body>
 </html>
