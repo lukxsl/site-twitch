@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>asemtet0 | Streamer & Comunidade</title>
+<meta name="description" content="Oie! Eu sou a Soso (asemtet0). Games, caos, conversa e muita gameplay duvidosa. Vem pro cantinho! 💜">
+<meta property="og:title" content="asemtet0 — Streamer & Comunidade 💜">
+<meta property="og:description" content="Games, caos e gameplay duvidosa. Vem pro cantinho!">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://asemtet0.vercel.app/">
+<meta property="og:image" content="https://asemtet0.vercel.app/img/banner.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0a0511">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/setup.css">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/tierlist.css">
+<link rel="stylesheet" href="css/profile.css">
+<link rel="stylesheet" href="css/arcade.css">
+<link rel="stylesheet" href="css/profile-new.css">
+<link rel="stylesheet" href="css/arcade-dashboard.css">
+</head>
+<body>
+
+<div class="room" aria-hidden="true">
+  <div class="room-wall" data-depth="0.3"></div>
+  <div class="room-wallpaper"></div>
+  <div class="room-window" data-depth="0.9"><span class="rw-frame"></span><span class="rw-light"></span></div>
+  <div class="room-shelf" data-depth="0.7">
+    <span class="rs-book" style="--c:#a855f7;--h:88%"></span>
+    <span class="rs-book" style="--c:#ec4899;--h:72%"></span>
+    <span class="rs-book" style="--c:#7c3aed;--h:95%"></span>
+    <span class="rs-book" style="--c:#06b6d4;--h:65%"></span>
+    <span class="rs-book" style="--c:#f59e0b;--h:80%"></span>
+    <span class="rs-book" style="--c:#c084fc;--h:70%"></span>
+    <span class="rs-board"></span>
+  </div>
+  <div class="room-floor" data-depth="1.4"><div class="rf-glow"></div></div>
+  <div class="room-vignette"></div>
+  <div class="room-grain"></div>
+</div>
+
+<nav>
+  <div class="wrapper">
+    <button class="logo-container" onclick="mudarAba('inicio')" aria-label="Ir para início">
+      <span class="logo-mark">
+        <img src="img/twitch.png" alt="" class="twitch-logo-img">
+        <span class="logo-ring"></span>
+      </span>
+      <span class="logo-text">asemtet<span>0</span></span>
+    </button>
+
+    <div class="nav-right" id="navRight">
+      <ul class="nav-links">
+        <li><button onclick="mudarAba('inicio')" id="btn-inicio" class="on">Início</button></li>
+        <li><button onclick="mudarAba('tierlist')" id="btn-tierlist">Tier List</button></li>
+        <li><button onclick="mudarAba('ranking')" id="btn-ranking">Ranking</button></li>
+        <li><button onclick="mudarAba('comunidade')" id="btn-comunidade">Comunidade</button></li>
+        <li><button onclick="mudarAba('setup')" id="btn-setup">Setup</button></li>
+        <li><button onclick="mudarAba('sugestoes')" id="btn-sugestoes">Sugestões</button></li>
+        <li><button onclick="mudarAba('perfil')" id="btn-perfil">Perfil</button></li>
+      </ul>
+      <div class="nav-user" id="navUser"></div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="nav-admin-btn" onclick="mudarAba('admin')" id="btn-admin" type="button" title="Painel Admin" aria-label="Painel Admin">⚙️</button>
+      <button class="nav-burger" id="navBurger" aria-label="Abrir menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="wrapper">
+
+<!-- ==================== INÍCIO ==================== -->
+<section id="sec-inicio" class="page-section ativo">
+  <a class="hero-banner reveal" id="heroBanner" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" aria-label="Abrir canal na Twitch">
+    <img class="banner-bg" src="img/banner.png" alt="" aria-hidden="true">
+    <img id="bannerImg" src="img/banner.png" alt="Bem-vindo ao meu cantinho - asemtet0">
+    <div class="banner-live-badge" id="bannerLiveBadge">
+      <span class="live-indicator" id="bannerLiveDot"></span>
+      <span id="bannerLiveText">AO VIVO AGORA</span>
+    </div>
+    <div class="banner-overlay" id="bannerOverlay" style="display:none">
+      <span class="banner-kicker" id="bannerKicker">🎮 Jogando</span>
+      <h1 class="banner-title" id="bannerTitle">Assistindo agora com <em>0 viewers</em></h1>
+    </div>
+  </a>
+
+  <div class="stats-strip reveal" id="statsStrip">
+    <span class="strip-item"><span class="strip-ic">👥</span> <b id="stripSeg">—</b> seguidores</span>
+    <span class="strip-sep">·</span>
+    <span class="strip-item"><span class="strip-ic">⏱️</span> <b id="stripHoras">—</b>h esse mês</span>
+    <span class="strip-sep">·</span>
+    <span class="strip-item"><span class="strip-ic">🟢</span> <b id="stripDiscord">—</b> no Discord</span>
+    <span class="strip-sep" id="stripLiveSep" style="display:none">·</span>
+    <span class="strip-item strip-live" id="stripLive" style="display:none">
+      <span class="live-indicator live"></span> <b>AO VIVO</b> · <span id="stripViewers">0</span> assistindo
+    </span>
+  </div>
+
+  <div class="aviso reveal" id="avisoBox" style="display:none">
+    <span class="aviso-ic" id="avisoIcon">📢</span>
+    <div class="aviso-tx">
+      <b id="avisoTitulo">Aviso</b>
+      <span id="avisoTexto"></span>
+    </div>
+  </div>
+
+  <div class="bento">
+    <div class="bento-col bento-left">
+      <article class="card profile-card reveal">
+        <div class="profile-avatar-container">
+          <span class="av-ring"></span>
+          <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+          <span class="av-status" id="profileStatus" title="Carregando..."></span>
+        </div>
+        <h2>
+          asemtet0
+          <span class="h2-emoji">💜</span>
+          <span class="badge-verificada" title="Canal verificado no site">✓ Verificada</span>
+        </h2>
+        <div class="subloc" id="profileSubloc">📍 Maceió – AL · Streamer desde 2025</div>
+        <div class="profile-status-dinamica" id="profileStatusDinamica">Carregando status…</div>
+        <p class="profile-description">
+          Oie! Eu sou a Soso, também conhecida como Sophs ou Teto.
+          Esse site é o QG do canal: aqui você encontra tier list, setup, votação do próximo jogo e muito mais. 💜
+        </p>
+        <div class="profile-socials">
+          <a class="profile-social-btn" href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener" title="Instagram">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z"/><path d="M16 2H8a6 6 0 0 0-6 6v8a6 6 0 0 0 6 6h8a6 6 0 0 0 6-6V8a6 6 0 0 0-6-6Zm4.2 14a4.2 4.2 0 0 1-4.2 4.2H8A4.2 4.2 0 0 1 3.8 16V8A4.2 4.2 0 0 1 8 3.8h8A4.2 4.2 0 0 1 20.2 8v8Z"/></svg>
+            <span>Instagram</span>
+          </a>
+          <a class="profile-social-btn" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener" title="Discord">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.2 13.5.2 18a19.9 19.9 0 0 0 6 3l1.3-2.1a12.9 12.9 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.1 0l.5.4c-.6.4-1.3.7-2 1l1.3 2.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8.5 15.3c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Zm7 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.1 1.1 2.1 2.4-.9 2.4-2.1 2.4Z"/></svg>
+            <span>Discord</span>
+          </a>
+          <a class="profile-social-btn" href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener" title="TikTok">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.6 2h-3.3v13.2a2.9 2.9 0 1 1-2-2.8V9a6.2 6.2 0 1 0 5.3 6.2V8.6a7.5 7.5 0 0 0 4.4 1.4V6.7a4.4 4.4 0 0 1-4.4-4.7Z"/></svg>
+            <span>TikTok</span>
+          </a>
+        </div>
+      </article>
+
+      <article class="card music-box reveal" id="musicBox">
+        <div class="music-head">
+          <span class="music-ic" aria-hidden="true">
+            <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
+          </span>
+          <div class="music-info">
+            <h3>Spotify da Soso</h3>
+            <p>A trilha sonora que rola nas lives. 💜</p>
+          </div>
+        </div>
+        <div class="music-panel on" id="musicPainelOuvindo"></div>
+        <button type="button" class="music-link-playlist" onclick="irParaPlaylist()">
+          🎵 Ver playlist completa →
+        </button>
+      </article>
+    </div>
+
+    <div class="bento-col bento-center">
+      <article class="card twitch-player-box reveal">
+        <div class="twitch-player-header">
+          <div class="twitch-player-title">
+            <span class="live-indicator" id="headerLiveDot"></span>
+            CANAL DA SOSO
+          </div>
+          <div class="twitch-player-status" id="viewerCountStatus">@asemtet0</div>
+        </div>
+        <div class="twitch-player">
+          <div class="offline-panel" id="offlinePanel">
+            <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+            <h4>Estamos offline por agora 💜</h4>
+            <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
+            <div class="offline-info">
+              <span>📅 Lives toda semana</span>
+              <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
+            </div>
+            <div class="offline-actions">
+              <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
+              <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
+            </div>
+          </div>
+          <iframe id="twitchIframe" style="display:none" src="about:blank" allowfullscreen scrolling="no" title="Live da Soso na Twitch"></iframe>
+        </div>
+        <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
+      </article>
+
+      <article class="card recado-card reveal" id="recadoCard">
+        <div class="recado-av">
+          <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+          <span aria-hidden="true">💌</span>
+        </div>
+        <div class="recado-bubble">
+          <div class="recado-meta"><b>📌 Recado da Soso</b><small>Um oi rapidinho da Sophs 💜</small></div>
+          <p class="recado-texto" id="recadoTexto">Carregando...</p>
+        </div>
+      </article>
+
+      <article class="card jogos-card reveal">
+        <div class="jogo-half">
+          <img class="foco-cover skeleton" id="focoCover" alt="">
+          <div class="foco-info">
+            <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
+            <h3 id="focoNome">Carregando…</h3>
+            <div class="foco-meta" id="focoMeta"></div>
+            <div class="foco-bar" id="focoBar" style="display:none">
+              <small><span>Progresso</span><b id="focoPct"></b></small>
+              <div class="goal-bar"><i id="focoBarI" style="width:0%"></i></div>
+            </div>
+            <p class="foco-last" id="focoHoras"></p>
+            <div class="foco-btns">
+              <button class="btn" onclick="mudarAba('tierlist')">Ver na Tier List →</button>
+            </div>
+          </div>
+        </div>
+        <div class="jogo-half">
+          <img class="foco-cover" id="proxCover" alt="" style="display:none">
+          <div class="foco-info">
+            <span class="foco-label">🗳️ Próximo na votação</span>
+            <h3 id="proxNome">Votação aberta</h3>
+            <div class="prox-bar" id="proxBarWrap" style="visibility:hidden">
+              <div class="goal-bar"><i id="proxBarI" style="width:0%"></i></div>
+            </div>
+            <p id="proxInfo">Ainda sem votos. Seja a primeira pessoa a escolher!</p>
+            <div class="foco-btns">
+              <button class="btn" onclick="mudarAba('sugestoes')">Votar agora →</button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="bento-col bento-right">
+      <article class="card sub-hero-box reveal">
+        <div class="sub-hero-top">
+          <span class="sub-kicker">👑 Cantinho VIP</span>
+          <h3>Entre pro cantinho</h3>
+          <p>Vire Sub e apoie a Soso ganhando recompensas exclusivas. 💜</p>
+        </div>
+        <div class="sub-perks-grid">
+          <div class="sub-perk"><i>🎁</i><span>Emotes exclusivos</span></div>
+          <div class="sub-perk"><i>🚫</i><span>Lives sem anúncios</span></div>
+          <div class="sub-perk"><i>🏅</i><span>Badge exclusivo de Sub</span></div>
+          <div class="sub-perk"><i>💜</i><span>Apoio direto ao cantinho</span></div>
+        </div>
+        <div class="emotes-mini-grid" id="emotesMiniGrid"></div>
+        <a href="https://www.twitch.tv/subs/asemtet0" target="_blank" rel="noopener" class="btn big block sub-hero-cta">👑 Assinar na Twitch →</a>
+        <small class="sub-note">🎁 Gift e Prime também valem 💜</small>
+      </article>
+      <article class="card apoie reveal">
+        <div class="apoie-head">
+          <h3>💜 Apoie o cantinho</h3>
+          <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
+        </div>
+        <div class="hall-head">
+          <h3>🏆 Top Doadores</h3>
+          <span class="hall-live" title="Atualiza sozinho"><i></i> ao vivo</span>
+        </div>
+        <div class="hall-lista" id="hallLista" aria-live="polite"></div>
+        <div class="hall-total" id="hallTotal" hidden></div>
+        <p class="hall-updated" id="hallUpdated" style="display:none"></p>
+        <a class="btn big block" id="donateLink" href="#">💜 Fazer uma doação</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TIER LIST ==================== -->
+<section id="sec-tierlist" class="page-section tl">
+  <header class="tl-head">
+    <div class="tl-head-left">
+      <span class="section-kicker">🏆 Ranking</span>
+      <h1 id="tlTitulo">Tier List de Jogos</h1>
+      <p id="tlSub">Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior.</p>
+    </div>
+    <div class="tl-head-right">
+      <div class="tl-modo" id="modo" role="group" aria-label="Tipo de lista">
+        <button type="button" class="on" data-m="jogos" aria-pressed="true">🎮 Jogos</button>
+        <button type="button" data-m="filmes" aria-pressed="false">🎬 Filmes</button>
+      </div>
+    </div>
+  </header>
+  <div class="tl-overview" id="stats" aria-label="Resumo da lista"></div>
+  <div class="tl-toolbar">
+    <div class="tl-search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5Zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14Z"/></svg>
+      <input id="q" type="search" placeholder="Buscar jogo..." aria-label="Buscar na lista" autocomplete="off">
+    </div>
+    <label class="tl-select">
+      <span>Ordenar por</span>
+      <select id="sortSelect">
+        <option value="nota">Maior nota</option>
+        <option value="horas">Mais horas jogadas</option>
+        <option value="nome">Nome (A–Z)</option>
+        <option value="recentes">Adicionados recentemente</option>
+        <option value="favoritos">Favoritos primeiro</option>
+      </select>
+    </label>
+    <button class="tl-roll" id="btnRoleta" type="button" title="Sorteia um item dentro dos filtros atuais">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>
+      Sortear um
+    </button>
+    <span class="tl-count" id="tlContador" aria-live="polite"></span>
+  </div>
+  <div class="tl-filters">
+    <div class="tl-frow">
+      <span class="tl-flabel">Status</span>
+      <div class="tl-chips" id="chips" role="group" aria-label="Filtrar por status"></div>
+    </div>
+    <div class="tl-frow" id="generoRow">
+      <span class="tl-flabel">Gênero</span>
+      <div class="tl-chips" id="generoChips" role="group" aria-label="Filtrar por gênero"></div>
+    </div>
+  </div>
+  <p class="tl-hint">
+    <span>💡 <b>Modo Admin:</b></span>
+    <span>Arraste um card pra outra tier</span>
+    <span>Clique nele e aperte <kbd>S</kbd><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>N</kbd></span>
+    <span>Botão direito favorita</span>
+    <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz</span>
+  </p>
+  <div class="tl-board" id="tiers"></div>
+  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes fornecidos por: TMDB.</p>
+</section>
+
+<dialog id="roletaDlg" class="tl-roll-dlg" aria-labelledby="roletaDesc">
+  <div class="tl-roll-body">
+    <div class="tl-roll-slot" id="roletaSlot"></div>
+    <p class="tl-roll-state" id="roletaDesc">Sorteando…</p>
+    <div class="tl-roll-info" id="roletaInfo" hidden>
+      <b id="roletaNome">—</b>
+      <span id="roletaMeta"></span>
+    </div>
+    <div class="tl-roll-actions">
+      <button class="btn" id="roletaVer" type="button" hidden>Ver na lista</button>
+      <button class="btn ghost" id="roletaNovamente" type="button">Sortear outro</button>
+      <button class="btn ghost" id="roletaFechar" type="button">Fechar</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ==================== RANKING ==================== -->
+<section id="sec-ranking" class="page-section">
+  <header class="section-header reveal">
+    <span class="section-kicker">🏆 Arcade</span>
+    <h2>Ranking de Jogadores</h2>
+    <p>Quem mais acompanha a Soso sobe no placar. XP, níveis e recompensas ficam salvos na sua conta.</p>
+  </header>
+  <div class="ranking-shell" id="rankingContainer">
+    <div class="ranking-toolbar">
+      <div><span class="pf-eyebrow">PLACAR DA COMUNIDADE</span><h3>Quem faz parte do cantinho</h3><p>XP conquistado nas lives, votações, sugestões e desafios.</p></div>
+      <div class="ranking-toolbar-actions"><button class="pf-btn" type="button" id="rankingRefreshBtn">↻ Atualizar</button><button class="pf-btn pf-btn-primary" type="button" id="rankingLoginBtn">Entrar no ranking</button></div>
+    </div>
+    <div class="ranking-podium" id="rankingPodium" aria-label="Pódio dos três primeiros"></div>
+    <div class="ranking-layout">
+      <section class="ranking-board-card"><div class="ranking-section-head"><h3>🏆 Classificação</h3><span>TOP 100</span></div><div id="rankingList" class="ranking-list"><p class="pf-empty">Carregando placar…</p></div></section>
+      <aside class="ranking-side-card" id="rankingYourPosition"><div id="rankingYourContent"><p class="pf-empty">Entre para acompanhar sua posição.</p></div></aside>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== COMUNIDADE ==================== -->
+<section id="sec-comunidade" class="page-section">
+  <header class="section-header reveal">
+    <span class="section-kicker">💬 Comunidade</span>
+    <h2>Faz parte do cantinho</h2>
+    <p>Entre no Discord, veja os clipes, escute a playlist e conheça as regras.</p>
+  </header>
+  <div class="sub-tabs reveal" id="comunidadeTabs">
+    <button class="sub-tab on" data-tab="discord">💬 Discord</button>
+    <button class="sub-tab" data-tab="clipes">🎬 Clipes</button>
+    <button class="sub-tab" data-tab="playlist">🎵 Playlist</button>
+    <button class="sub-tab" data-tab="sub">👑 Seja Sub</button>
+    <button class="sub-tab" data-tab="info">📖 Info</button>
+  </div>
+  <div class="sub-panel on" data-panel="discord">
+    <div class="cm-hero reveal">
+      <span class="cm-orb o1" aria-hidden="true"></span>
+      <span class="cm-orb o2" aria-hidden="true"></span>
+      <div class="cm-hero-copy">
+        <span class="cm-pill"><i class="cm-dot"></i> Comunidade ativa</span>
+        <h3>Seu lugar na resenha 💜</h3>
+        <p id="dcMembros">Avisos de live, resenha e novidades do cantinho.</p>
+        <div class="cm-hero-actions">
+          <a class="btn big cm-btn-dc" href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">💬 Entrar no Discord →</a>
+          <a class="btn big ghost" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">📺 Ver a live</a>
+        </div>
+      </div>
+      <div class="cm-hero-art" aria-hidden="true">
+        <span class="cm-float f1">🎮</span>
+        <span class="cm-float f2">💬</span>
+        <span class="cm-float f3">📢</span>
+        <span class="cm-float f4">🎬</span>
+      </div>
+    </div>
+    <div class="cm-perks">
+      <div class="cm-perk reveal"><span class="cm-perk-ic">📢</span><b>Avisos em primeira mão</b><span>Sabe quando a live começa antes de todo mundo.</span></div>
+      <div class="cm-perk reveal"><span class="cm-perk-ic">🎮</span><b>Calls e jogos em grupo</b><span>Sessões abertas pra jogar junto com a galera.</span></div>
+      <div class="cm-perk reveal"><span class="cm-perk-ic">💬</span><b>Chat livre e memes</b><span>Resenha, risada e zero cerimônia.</span></div>
+      <div class="cm-perk reveal"><span class="cm-perk-ic">🎬</span><b>Indicações da galera</b><span>Jogos, filmes e séries que valem o seu tempo.</span></div>
+    </div>
+    <div class="metas-comunidade reveal">
+      <span class="ap-h">🎯 Metas da comunidade <small class="ap-sub">a gente chega lá junto</small></span>
+      <div class="goals3" style="grid-template-columns:1fr 1fr;margin:0">
+        <div class="goalc">
+          <div class="gc-top"><span>💜 Seguidores</span><b id="goalSegNum">…</b></div>
+          <div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div>
+          <small id="goalSegDesc">Carregando…</small>
+        </div>
+        <div class="goalc">
+          <div class="gc-top"><span>🎮 Discord</span><b id="goalDcNum">…</b></div>
+          <div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div>
+          <small id="goalDcDesc">Carregando…</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sub-panel" data-panel="clipes">
+    <div class="clips-box" id="clipsBox" style="display:none">
+      <h3>
+        <span id="clipsTitulo">🎬 Clipes em destaque</span>
+        <a href="https://www.twitch.tv/asemtet0/clips" target="_blank" rel="noopener">Ver todos →</a>
+      </h3>
+      <div class="clips-grid-4" id="clipsGrid"></div>
+    </div>
+    <p class="tm-h4" id="clipsVazio" style="padding:20px;text-align:center;display:none">Nenhum clipe disponível agora. Volta mais tarde! 💜</p>
+  </div>
+  <div class="sub-panel" data-panel="playlist">
+    <div class="card music-full reveal">
+      <div class="music-full-head">
+        <span class="music-ic" aria-hidden="true">
+          <svg viewBox="0 0 168 168" xmlns="http://www.w3.org/2000/svg"><path fill="#1ed760" d="M84 0C37.6 0 0 37.6 0 84s37.6 84 84 84 84-37.6 84-84S130.4 0 84 0zm38.5 121.2c-1.5 2.5-4.7 3.3-7.2 1.8-19.8-12.1-44.8-14.8-74.2-8.1-2.8.6-5.6-1.1-6.3-4-.6-2.8 1.1-5.6 4-6.3 32.1-7.3 59.8-4.2 82 9.3 2.5 1.5 3.3 4.7 1.7 7.3zm10.3-22.9c-1.9 3.1-6 4.1-9.1 2.2-22.6-13.9-57.1-17.9-83.9-9.8-3.5 1-7.2-.9-8.2-4.4s.9-7.2 4.4-8.2c30.6-9.3 68.6-4.8 94.6 11.1 3.1 1.9 4.1 6 2.2 9.1zm.9-23.9c-27.1-16.1-71.9-17.6-97.8-9.7-4.1 1.2-8.5-1.1-9.7-5.2-1.2-4.1 1.1-8.5 5.2-9.7 29.7-9 79.1-7.3 110.3 11.2 3.7 2.2 4.9 7 2.7 10.7-2.2 3.7-7 4.9-10.7 2.7z"/></svg>
+        </span>
+        <div>
+          <h3>Playlist da Soso</h3>
+          <p>A trilha sonora que embala o cantinho 💜</p>
+        </div>
+      </div>
+      <div class="music-embed" id="musicEmbedComunidade">
+        <p class="music-placeholder">🎧 Playlist em breve — a Soso está montando!</p>
+      </div>
+      <a class="btn big block" href="https://open.spotify.com/playlist/0OV32Qe5e7BJY33rL4tpXk" target="_blank" rel="noopener" style="margin-top:14px">
+        🎧 Abrir no Spotify →
+      </a>
+    </div>
+  </div>
+  <div class="sub-panel" data-panel="sub">
+    <div class="sub-beneficios reveal">
+      <h3>✨ Benefícios exclusivos</h3>
+      <div class="benefits-grid benefits-grid-2">
+        <div class="benefit"><b>🎁 Emotes personalizados pro chat</b><span>Use os emotes exclusivos dos subs em qualquer live.</span></div>
+        <div class="benefit"><b>🚫 Sem anúncios</b><span>Assista as lives tranquilamente, sem interrupção.</span></div>
+        <div class="benefit"><b>🏅 Badge exclusivo de Sub</b><span>Apareça com um badge especial no chat das lives.</span></div>
+        <div class="benefit"><b>💜 Apoio direto ao cantinho</b><span>Cada Sub ajuda a manter o canal ativo e melhorar o setup.</span></div>
+      </div>
+    </div>
+    <div class="sub-emotes reveal">
+      <h3>🎨 Preview dos emotes</h3>
+      <p>Um gostinho do que você desbloqueia virando Sub. 💜</p>
+      <div class="emotes-grid" id="emotesGridComunidade"></div>
+    </div>
+    <div class="sub-cta reveal">
+      <div>
+        <b>Pronto pra apoiar o cantinho?</b>
+        <span>Vira Sub na Twitch e vem fazer parte!</span>
+      </div>
+      <a href="https://www.twitch.tv/subs/asemtet0" target="_blank" rel="noopener" class="twitch-sub-btn">👑 Assinar na Twitch →</a>
+    </div>
+  </div>
+  <div class="sub-panel" data-panel="info">
+    <div class="info-grid">
+      <div class="cmds-wrap reveal">
+        <h3>🤖 Comandos do chat</h3>
+        <p style="color:var(--mute);font-size:.85rem">Busque rápido e copie com 1 clique.</p>
+        <input class="cmds-search" id="buscaCmd" type="search" placeholder="Buscar comando (ex: discord, uptime...)">
+        <table class="cmds-table" id="tabelaCmds">
+          <thead><tr><th>Comando</th><th>O que faz</th><th></th></tr></thead>
+          <tbody id="cmdsBody"></tbody>
+        </table>
+        <p class="cmds-empty" id="cmdsEmpty" style="display:none">Nenhum comando encontrado.</p>
+      </div>
+      <div class="rules-wrap reveal">
+        <h3>📜 Regras da comunidade</h3>
+        <div class="rules-grid">
+          <div class="rule-card"><i>01</i><span class="rc-ic">💜</span><div><strong>Respeito em primeiro lugar</strong><p>Nada de discurso de ódio, preconceito, racismo, homofobia ou assédio.</p></div></div>
+          <div class="rule-card"><i>02</i><span class="rc-ic">🚫</span><div><strong>Sem spoilers nem dicas</strong><p>Não dê dicas ou spoilers, a não ser que eu peça.</p></div></div>
+          <div class="rule-card"><i>03</i><span class="rc-ic">🕊️</span><div><strong>Cuide do clima do chat</strong><p>Evite discussões desnecessárias ou brigas.</p></div></div>
+          <div class="rule-card"><i>04</i><span class="rc-ic">💬</span><div><strong>Sem spam ou flood</strong><p>Não repita mensagens nem encha o chat de símbolos.</p></div></div>
+          <div class="rule-card"><i>05</i><span class="rc-ic">👑</span><div><strong>Respeite a moderação</strong><p>As decisões dos mods valem pra manter o cantinho organizado.</p></div></div>
+          <div class="rule-card"><i>06</i><span class="rc-ic">🎮</span><div><strong>Divirta-se!</strong><p>O objetivo é jogar, conversar e dar risada junto.</p></div></div>
+        </div>
+        <p class="rules-foot">Vale a mesma regra na Twitch e no Discord. 💜</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== SETUP ==================== -->
+<section id="sec-setup" class="page-section">
+  <header class="section-header reveal">
+    <span class="section-kicker">🖥️ Hardware</span>
+    <h2>Meu Setup</h2>
+    <p>Passeie pelo quarto com o Lukzin ou abra o catálogo com as fichas técnicas.</p>
+  </header>
+
+  <div class="setup-game-container reveal">
+
+    <!-- Alternador de visualização -->
+    <div class="setup-tabs" role="tablist" aria-label="Modo de visualização do setup" data-view="game">
+      <span class="setup-tabs-glider" aria-hidden="true"></span>
+      <button type="button" class="setup-tab on" role="tab" aria-selected="true"  data-view="game">🎮 Mini-game</button>
+      <button type="button" class="setup-tab"    role="tab" aria-selected="false" data-view="catalog">🗂️ Catálogo</button>
+    </div>
+
+    <!-- ============ VISÃO 1: MINI-GAME ============ -->
+    <div class="setup-view" id="viewGame">
+      <div class="setup-controls">
+        <button type="button" id="btnTourSetup" class="btn btn-tour" data-state="idle">
+          <span class="play-icon" aria-hidden="true">▶</span>
+          <span class="btn-tour-label">Iniciar Tour Guiado</span>
+        </button>
+
+        <button type="button" id="btnLukFala" class="btn-icon" title="Chamar o Lukzin" aria-label="Conversar com o Lukzin">💬</button>
+        <button type="button" id="btnMute" class="btn-icon" title="Ligar/Desligar som" aria-label="Ligar/Desligar som">🔊</button>
+
+        <div class="setup-progress" id="setupProgress" hidden>
+          <span id="setupProgressTxt">0 / 0</span>
+          <span class="setup-progress-bar"><i id="setupProgressBar"></i></span>
+        </div>
+      </div>
+
+      <div class="setup-scene-wrap" id="setupScene">
+        <div class="scene-world" id="sceneWorld">
+          <div class="scene-bg"></div>
+
+          <!-- Tela do Stardew encaixada no monitor da imagem -->
+          <div class="monitor-screen" id="stardewScreen" style="background-image: url('img/stardew-screen.png');"></div>
+
+          <!-- Hotspots visíveis são gerados pelo JS -->
+          <div id="sceneHotspots"></div>
+
+          <!-- Hotspot invisível do gato (Easter Egg: 5 cliques) -->
+          <div class="hotspot-invisible" id="catHotspot" style="left: 42.5%; top: 10.5%; width: 19%; height: 20%;" title="Miau?"></div>
+
+          <!-- Lukzin (sprite em pixel art) -->
+          <div class="luk-character" id="lukChar" data-dir="right" style="left: 17%; top: 90%;">
+            <div class="luk-bubble" id="lukBubble" role="status" aria-live="polite"></div>
+            <div class="luk-flip">
+              <div class="luk-squash">
+                <img src="img/lukzin.png" alt="Lukzin" class="luk-sprite" width="188" height="415" draggable="false" decoding="async">
+              </div>
+            </div>
+            <div class="luk-shadow"></div>
+          </div>
+        </div>
+
+        <div class="scene-overlay"></div>
+        <div class="scene-sparks" id="sceneSparks" aria-hidden="true"></div>
+      </div>
+
+      <!-- Caixa de diálogo RPG (Atualizada com cabeça do boneco) -->
+      <div class="rpg-dialogue enter" id="setupDialogue">
+        <button type="button" class="rpg-close" id="dlgClose" aria-label="Fechar diálogo">✕</button>
+        <div class="rpg-avatar">
+          <img src="img/lukzin.png" alt="Lukzin" class="rpg-avatar-img">
+        </div>
+        <div class="rpg-content">
+          <div class="rpg-name" id="dlgNameContainer">
+            <span class="rpg-name-main">Lukzin</span> 
+            <span class="rpg-badge">DEV</span>
+          </div>
+          <div class="rpg-text" id="dlgText">E aí, tudo bão? Clica nos pontinhos roxos pra ver as peças do setup da Soso, ou me chama no Tour ali em cima que fica bão demais! Ah, e pode clicar em mim também. 💜</div>
+          <div class="rpg-chips" id="dlgChips"></div>
+          <div class="rpg-recap" id="dlgRecap" hidden></div>
+          <div class="rpg-actions" id="dlgActions" hidden>
+            <button type="button" class="btn-mini" id="dlgFicha">📋 Ver ficha completa</button>
+          </div>
+        </div>
+        <div class="rpg-continue" aria-hidden="true">▼</div>
+      </div>
+    </div>
+
+    <!-- ============ VISÃO 2: CATÁLOGO ============ -->
+    <div class="setup-view" id="viewCatalog" hidden>
+      <div class="cat-toolbar">
+        <div class="cat-chips" id="catChips" role="group" aria-label="Filtrar por categoria"></div>
+        <label class="cat-search">
+          <span aria-hidden="true">🔎</span>
+          <input type="search" id="catSearch" placeholder="Buscar peça…" autocomplete="off">
+        </label>
+      </div>
+      <div class="cat-stats" id="catStats"></div>
+      <div class="cat-grid" id="catGrid"></div>
+      <p class="cat-note">Clique para ver as especificações técnicas e onde encontrar os componentes.</p>
+    </div>
+
+    <!-- Ficha do item (modal) -->
+    <dialog id="itemDialog" class="item-dialog" aria-labelledby="itemDlgTitle"></dialog>
+  </div>
+</section>
+
+<!-- ==================== SUGESTÕES ==================== -->
+<section id="sec-sugestoes" class="page-section">
+  <header class="section-header reveal">
+    <span class="section-kicker">💡 Sua voz conta</span>
+    <h2>Sugestões & Votação</h2>
+    <p>Vote no próximo jogo ou mande uma ideia.</p>
+    <div class="sug-tabs" id="sugTabs">
+      <button type="button" class="sug-tab on" data-tab="votar">🗳️ Votar</button>
+      <button type="button" class="sug-tab" data-tab="sugerir">💡 Sugerir</button>
+    </div>
+  </header>
+  <div class="sug-shell">
+    <div class="sug-panel on" data-panel="votar" id="sugPanelVotar">
+      <div class="voto-panel-head">
+        <h3>🗳️ Qual será o próximo jogo?</h3>
+        <div class="voto-tags" id="votoInfoTop">
+          <span class="vit-item vit-status" id="votoStatus"><span class="vit-dot"></span> Votação aberta</span>
+          <span class="vit-item" id="votoCountdown">— </span>
+        </div>
+      </div>
+      <div id="destaqueBox"></div>
+      <div class="voto-grid-lista" id="votoLista">
+        <div class="vazio-voto">Carregando votação…</div>
+      </div>
+      <div class="voto-foot">
+        <b id="votoStatOpcoes">0</b><span id="votoLblOpcoes">opções</span>
+        <span class="dot">·</span>
+        <b id="votoStatVotos">0</b><span id="votoLblVotos">votos</span>
+        <span class="dot">·</span>
+        <b id="votoStatLider">—</b>
+        <button type="button" class="voto-add-btn" id="sugBtnIrSugerir">➕ Sugerir novo jogo</button>
+      </div>
+    </div>
+    <div class="sug-panel" data-panel="sugerir" id="sugPanelSugerir">
+      <div class="sugerir-cols">
+        <div class="sug-form-col">
+          <h3>💡 Envie sua ideia</h3>
+          <div class="sug-form">
+            <div>
+              <label for="sugNome">Seu Nome / Apelido</label>
+              <input type="text" id="sugNome" placeholder="Deixe vazio para enviar anônimo" maxlength="40">
+            </div>
+            <div>
+              <label>Tipo</label>
+              <div class="sug-tipo-chips" id="sugTipoChips">
+                <button type="button" class="st-chip on" data-tipo="Sugestão / ideia">💡 Sugestão</button>
+                <button type="button" class="st-chip" data-tipo="Sugestão de jogo">🎮 Jogo</button>
+                <button type="button" class="st-chip" data-tipo="Feedback">💬 Feedback</button>
+                <button type="button" class="st-chip" data-tipo="Reportar bug do site">🐛 Bug</button>
+              </div>
+              <select id="sugTipo" hidden>
+                <option value="Sugestão / ideia">💡 Sugestão / ideia</option>
+                <option value="Sugestão de jogo">🎮 Sugestão de jogo</option>
+                <option value="Feedback">💬 Feedback</option>
+                <option value="Reportar bug do site">🐛 Reportar bug do site</option>
+              </select>
+            </div>
+            <div>
+              <label for="sugTexto">Mensagem</label>
+              <div class="sug-textarea-wrap">
+                <textarea id="sugTexto" rows="4" maxlength="200" placeholder="Escreva sua sugestão, ideia, feedback ou bug..."></textarea>
+                <span class="sug-counter" id="sugCounter">0 / 200</span>
+              </div>
+            </div>
+            <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+          </div>
+          <div class="sug-actions">
+            <button class="btn big" id="sugBtn" onclick="enviarSugestao()" disabled>🚀 Enviar Ideia</button>
+            <div class="sug-success" id="sugSuccess" hidden>
+              <span>✅</span>
+              <div>
+                <b>Ideia enviada!</b>
+                <small>A Soso vai analisar 💜</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sir-list-col">
+          <div class="sir-head">
+            <div class="sir-head-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;width:100%">
+              <span class="sir-kicker">💡 Últimas ideias</span>
+            </div>
+            <div class="sir-filtros" id="sirFiltros"></div>
+          </div>
+          <div class="sir-lista" id="sirLista">
+            <div class="sir-empty">
+              <span>✨</span>
+              <small>Nenhuma ideia ainda. Seja a primeira 💜</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== PERFIL ==================== -->
+<section id="sec-perfil" class="page-section">
+  <div class="pf-shell">
+    <header class="pf-head">
+      <span class="section-kicker">✦ IDENTIDADE DO ARCADE</span>
+      <h1>Meu Cantinho</h1>
+      <p>Seu personagem, suas conquistas, seu inventário e toda a sua jornada com a Soso.</p>
+    </header>
+
+    <div class="pf-banner" id="pfBanner">
+      <div class="pf-banner-content">
+        <span class="pf-banner-kicker">BANNER DE PERFIL</span>
+        <h2 id="pfBannerNome">@convidado</h2>
+        <p>Seu espaço no cantinho da Soso.</p>
+        <small class="pf-banner-status" id="pfBannerStatus"></small>
+      </div>
+      <span class="pf-banner-chip">SOSO ARCADE <i>● ONLINE</i></span>
+    </div>
+
+    <div class="pf-tabs" role="tablist" aria-label="Abas do perfil">
+      <button type="button" class="pf-tab on" data-pf-tab="visao-geral" role="tab" aria-selected="true">👁️ Visão Geral</button>
+      <button type="button" class="pf-tab" data-pf-tab="boneco" role="tab" aria-selected="false">🕹️ Meu Boneco</button>
+      <button type="button" class="pf-tab" data-pf-tab="inventario" role="tab" aria-selected="false">🎒 Inventário</button>
+      <button type="button" class="pf-tab" data-pf-tab="loja" role="tab" aria-selected="false">🛒 Loja</button>
+      <button type="button" class="pf-tab" data-pf-tab="conquistas" role="tab" aria-selected="false">🏆 Conquistas</button>
+      <button type="button" class="pf-tab" data-pf-tab="ranking" role="tab" aria-selected="false">📊 Ranking</button>
+      <button type="button" class="pf-tab" data-pf-tab="configuracoes" role="tab" aria-selected="false">⚙️ Configurações</button>
+    </div>
+
+    <div class="pf-panel on" data-pf-panel="visao-geral">
+      <div class="pf-shell-grid">
+        <div class="pf-visual-section">
+          <div class="pf-avatar-stage-large" id="pfAvatarStageLarge">
+            <div class="pf-avatar-wrap-large">
+              <div class="pf-avatar-large" id="pfAvatarLarge" role="img" aria-label="Prévia do seu boneco em pixel art"></div>
+            </div>
+          </div>
+          <div class="pf-info-summary">
+            <h2 class="pf-nick-large" id="pfNickLarge">@convidado</h2>
+            <div class="pf-title-row">
+              <span class="pf-title-label">Título equipado:</span>
+              <div class="pf-title-selector">
+                <select id="pfTituloSelect">
+                  <option value="">Nenhum título</option>
+                </select>
+              </div>
+            </div>
+            <div class="pf-level-large">
+              <span class="pf-level-num" id="pfLevelLarge">0</span>
+              <span class="pf-level-label">Nível</span>
+            </div>
+            <div class="pf-xp-bar-container">
+              <div class="pf-xp-bar-track">
+                <div class="pf-xp-bar-fill" id="pfXpBarFill" style="width: 0%"></div>
+              </div>
+              <span class="pf-xp-text" id="pfXpText">0 / 100 XP</span>
+              <span class="pf-xp-faltam" id="pfXpFaltam">Faltam 100 XP</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pf-overview-main">
+        <div class="pf-status-cards">
+          <div class="pf-card-status">
+            <span class="pf-card-icon">🎮</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfLivesCount">0</span>
+              <span class="pf-card-label">Lives</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">🗳️</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfVotesCount">0</span>
+              <span class="pf-card-label">Votos</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">✅</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfSuggestionsCount">0</span>
+              <span class="pf-card-label">Sugestões aprovadas</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">⏱️</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfWatchHoursCount">0</span>
+              <span class="pf-card-label">Horas assistidas</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">🔥</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfStreakCurrent">0</span>
+              <span class="pf-card-label">Sequência atual</span>
+            </div>
+          </div>
+          <div class="pf-card-status">
+            <span class="pf-card-icon">🏆</span>
+            <div class="pf-card-info">
+              <span class="pf-card-value" id="pfStreakBest">0</span>
+              <span class="pf-card-label">Melhor sequência</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="pf-xp-info">
+          <h3 class="pf-xp-info-title">Como ganhar XP</h3>
+          <div class="pf-xp-rules" id="pfXpRules">
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">🎮</span>
+              <span class="pf-rule-text">Jogue jogos: 10 XP por hora</span>
+            </div>
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">🗳️</span>
+              <span class="pf-rule-text">Vote no tier list: 5 XP por voto</span>
+            </div>
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">💡</span>
+              <span class="pf-rule-text">Sugira jogos: 20 XP por sugestão aprovada</span>
+            </div>
+          </div>
+          <div class="pf-streak-milestones" id="pfStreakMilestones">
+            <h4>Marcos de sequência</h4>
+            <div class="pf-milestone-list">
+            </div>
+          </div>
+        </div>
+        
+        <div class="pf-position-card">
+          <h3 class="pf-position-title">Posição no Ranking</h3>
+          <div class="pf-position-content">
+            <span class="pf-position-number" id="pfPositionNumber">#0</span>
+            <span class="pf-position-total" id="pfPositionTotal">de 0 jogadores</span>
+          </div>
+          <div class="pf-ranking-card">
+            <div class="pf-ranking-avatar">
+              <div class="pf-ranking-avatar-placeholder" id="pfRankingAvatarPlaceholder">👤</div>
+            </div>
+            <div class="pf-ranking-info">
+              <span class="pf-ranking-nick" id="pfRankingNick">—</span>
+              <span class="pf-ranking-title" id="pfRankingTitle">—</span>
+            </div>
+            <div class="pf-ranking-stats">
+              <span class="pf-ranking-level">Nv <span id="pfRankingLevel">0</span></span>
+              <span class="pf-ranking-xp" id="pfRankingXp">0 XP</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="pf-coins-card">
+          <h3 class="pf-coins-title">SosoCoins</h3>
+          <div class="pf-coins-content">
+            <img class="pf-coins-icon" src="img/sosocoin.png" alt="SosoCoin">
+            <span class="pf-coins-value" id="pfCoinsValue">0</span>
+          </div>
+        </div>
+        </div><!-- /.pf-overview-main -->
+      </div>
+      <div class="pf-overview-extras">
+        <section class="pf-extra-card"><div class="pf-extra-head"><div><span class="pf-eyebrow">SEUS MARCOS</span><h3>Conquistas recentes</h3></div><button type="button" class="pf-text-link" data-pf-go="conquistas">Ver todas ↗</button></div><div id="pfRecentAchievements" class="pf-recent-achievements"><p class="pf-empty">Suas primeiras conquistas aparecem aqui.</p></div></section>
+        <section class="pf-extra-card"><div class="pf-extra-head"><div><span class="pf-eyebrow">DO CHAT PARA O SITE</span><h3>Emotes da Soso</h3></div><span class="pf-live-tag">TWITCH</span></div><div id="pfEmotesPreview" class="pf-emotes-preview"><span class="pf-empty">Carregando emotes…</span></div></section>
+      </div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="boneco">
+      <div class="pf-creator">
+
+        <div class="pf-avatar-stage" id="pfAvatarStage">
+          <div class="pf-stage-top">
+            <span class="pf-avatar-tag">Prévia ao vivo</span>
+            <span class="pf-save-state" id="pfSaveState" data-estado="carregando" role="status" aria-live="polite">Carregando</span>
+          </div>
+          <div class="pf-ground" aria-hidden="true"></div>
+          <div class="pf-shade" aria-hidden="true"></div>
+          <div class="pf-avatar-wrap">
+            <div class="pf-avatar" id="pfAvatar" role="img" aria-label="Prévia do seu boneco em pixel art"></div>
+          </div>
+          <p class="pf-stage-caption" id="pfStageCaption">Seu visual aparece aqui.</p>
+        </div>
+
+        <div class="pf-options" id="pfOptions">
+          <div class="pf-options-top">
+            <div class="pf-options-intro">
+              <span class="pf-options-kicker">Guarda-roupa pixel</span>
+              <h2>Monte seu personagem</h2>
+              <p id="pfCatalogStatus" role="status">Conectando sua conta…</p>
+            </div>
+            <div class="pf-options-actions">
+              <button type="button" class="pf-btn" id="pfRandom" disabled>🎲 Surpreenda-me</button>
+              <button type="button" class="pf-btn pf-btn-reset" id="pfReset" disabled>↺ Padrão</button>
+              <button type="button" class="pf-btn pf-btn-primary" id="pfSave" disabled>💾 Salvar boneco</button>
+            </div>
+          </div>
+
+          <div class="pf-access-row">
+            <span class="pf-access" id="pfAccess">Visitante</span>
+            <span class="pf-save-msg" id="pfSaveMsg" role="status" aria-live="polite"></span>
+          </div>
+
+          <p class="pf-lock-note" id="pfLockNote" role="status" aria-live="polite"></p>
+
+          <div class="pf-wardrobe" id="pfWardrobe" hidden>
+            <div class="pf-wardrobe-tabs" id="pfWardrobeTabs" role="tablist" aria-label="Categorias do boneco"></div>
+            <div class="pf-wardrobe-panel" id="pfWardrobePanel" role="tabpanel"></div>
+          </div>
+
+          <div class="pf-creator-gate" id="pfCreatorGate" hidden>
+            <span class="pf-gate-ic" aria-hidden="true">🔒</span>
+            <h3>Entre para montar seu boneco</h3>
+            <p>Seu guarda-roupa, itens liberados e conquistas ficam salvos na sua conta do Arcade.</p>
+            <button type="button" class="pf-btn pf-btn-primary" id="pfCreatorLogin">Entrar no Arcade</button>
+          </div>
+
+          <div class="pf-creator-gate" id="pfCreatorError" hidden>
+            <span class="pf-gate-ic" aria-hidden="true">📡</span>
+            <h3>Não consegui carregar o guarda-roupa</h3>
+            <p id="pfErrorText">Verifique sua conexão e tente de novo.</p>
+            <button type="button" class="pf-btn pf-btn-primary" id="pfCreatorRetry">Tentar de novo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="inventario" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">COLEÇÃO PESSOAL</span><h2>Meu inventário</h2><p>Peças desbloqueadas para personalizar seu personagem.</p></div><span class="pf-count-pill" id="pfInventoryCount">0 itens</span></div>
+      <div id="pfInventoryGrid" class="pf-item-grid"><p class="pf-empty">Carregando inventário…</p></div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="loja" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">ARCADE MARKET</span><h2>Loja do Cantinho</h2><p>Use suas SosoCoins para desbloquear visuais, efeitos e acessórios.</p></div><div class="pf-shop-balance"><img src="img/sosocoin.png" alt=""><strong id="pfShopCoinBalance">0</strong><span>SosoCoins</span></div></div>
+      <div id="pfShopGrid" class="pf-item-grid"><p class="pf-empty">Carregando vitrine…</p></div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="conquistas" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">MISSÕES DA COMUNIDADE</span><h2>Conquistas</h2><p>Marcos da sua jornada nas lives e no Arcade.</p></div><span class="pf-count-pill" id="pfAchievementProgress">0 / 0</span></div>
+      <div id="pfAchievementsGrid" class="pf-achievement-grid"><p class="pf-empty">Carregando conquistas…</p></div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="ranking" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">PLACAR GLOBAL</span><h2>Sua jornada no ranking</h2><p>Veja quem está perto de você e suba de posição a cada atividade.</p></div></div>
+      <div class="pf-profile-ranking-me" id="pfProfileRankingMe"></div>
+      <div class="pf-profile-ranking-list" id="pfProfileRankingList"><p class="pf-empty">Carregando ranking…</p></div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="configuracoes" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">SUA CONTA</span><h2>Configurações</h2><p>Gerencie sua identidade e as conexões usadas pelo Arcade.</p></div></div>
+      <div class="pf-settings-grid">
+        <section class="pf-settings-card"><span class="pf-settings-icon">👤</span><h3>Identidade</h3><p>Seu nick aparece no ranking, nas conquistas e no seu cartão de jogador.</p><label for="pfSettingsNick">Nick do Arcade</label><input id="pfSettingsNick" maxlength="24" autocomplete="nickname" placeholder="Seu nick"><p class="pf-settings-note" id="pfSettingsNickNote">A primeira troca é livre; depois, há um intervalo de 7 dias.</p><button class="pf-btn pf-btn-primary" id="pfSaveNick" type="button">Salvar nick</button></section>
+        <section class="pf-settings-card"><span class="pf-settings-icon">🔐</span><h3>Conta e acesso</h3><p>Conta protegida pelo provedor de autenticação.</p><div class="pf-settings-data"><small>E-MAIL GOOGLE</small><strong id="pfSettingsEmail">—</strong><small>MÉTODO DE LOGIN</small><strong id="pfSettingsAccount">—</strong></div><a class="pf-btn pf-btn-secondary" id="pfGoogleLink" href="/api/auth?action=google-login" hidden>Vincular conta Google</a><button class="pf-btn pf-btn-danger" id="pfSettingsLogout" type="button">Sair da conta</button></section>
+        <section class="pf-settings-card pf-settings-twitch"><span class="pf-settings-icon">📺</span><h3>Conexão com a Twitch</h3><p>Vincule a conta que usa para acompanhar as lives. Só assim o sistema consegue contabilizar sua presença e sequência.</p><div class="pf-twitch-status" id="pfTwitchStatus">Twitch não vinculada</div><button class="pf-btn pf-btn-primary" id="pfTwitchLink" type="button">Vincular Twitch</button><button class="pf-btn pf-btn-danger" id="pfTwitchUnlink" type="button" hidden>Desvincular Twitch</button></section>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ADMIN ==================== -->
+<section id="sec-admin" class="page-section">
+  <div class="admin-shell">
+    <aside class="admin-sidebar" id="adminSidebar" aria-label="Navegação admin">
+      <div class="admin-sidebar-head">
+        <span class="admin-sidebar-kicker">⚙️ ADMIN</span>
+      </div>
+      <nav class="admin-sidebar-nav" id="adminSidebarNav" aria-label="Seções do admin"></nav>
+      <div class="admin-sidebar-foot" id="adminSidebarFoot"></div>
+    </aside>
+    <div class="admin-main">
+      <div id="adminArea"><p class="admin-vazio">Carregando…</p></div>
+    </div>
+  </div>
+</section>
+
+<button id="floatLiveBtn" class="float-live-btn" aria-label="Voltar para a live" type="button">
+  <span class="flb-dot"></span>
+  Voltar pra live
+</button>
+</main>
+
+<footer>
+  <div class="wrapper">
+    <div class="footer-top">
+      <button class="logo-container small" onclick="mudarAba('inicio')" aria-label="Início">
+        <span class="logo-mark"><img src="img/twitch.png" alt="" class="twitch-logo-img"></span>
+        <span class="logo-text">asemtet<span>0</span></span>
+      </button>
+      <div class="footer-links">
+        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Twitch</a>
+        <a href="https://www.instagram.com/asemtet0/" target="_blank" rel="noopener">Instagram</a>
+        <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">Discord</a>
+        <a href="https://www.tiktok.com/@sososemtet0" target="_blank" rel="noopener">TikTok</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-credit">© 2026 asemtet0 · Feito com 💜 por <b>lukxsl</b></p>
+      <div class="footer-updated">🔄 Atualizado em <b id="siteUpdated">—</b></div>
+    </div>
+  </div>
+</footer>
+
+<dialog id="pcModal" style="background: #1a102d; color: #fff; border: 1px solid #a855f7; border-radius: 16px; padding: 20px; max-width: 400px; width: 90%;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h3 id="pcModalTitle" style="font-size: 1.2rem; margin: 0; color: #c084fc;">Componente</h3>
+    <button onclick="document.getElementById('pcModal').close()" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+  </div>
+  <div id="pcModalBody"></div>
+</dialog>
+
+<dialog id="dlg" aria-labelledby="dTitle">
+  <div class="dh">
+    <h3 id="dTitle"></h3>
+    <button class="x" id="dClose" aria-label="Fechar">✕</button>
+  </div>
+  <div class="db" id="dBody"></div>
+</dialog>
+
+<dialog id="confirmDlg" class="confirm-dlg" aria-labelledby="confirmTitle">
+  <div class="confirm-body">
+    <div class="confirm-icon" id="confirmIcon">⚠️</div>
+    <h3 id="confirmTitle">Confirmar?</h3>
+    <p id="confirmText">Tem certeza?</p>
+    <div class="confirm-actions">
+      <button class="btn ghost" id="confirmCancel">Cancelar</button>
+      <button class="btn" id="confirmOk">Confirmar</button>
+    </div>
+  </div>
+</dialog>
+
+<script src="js/utils/dom.js"></script>
+<script src="js/utils/format.js"></script>
+<script src="js/utils/audio.js"></script>
+<script src="js/api/client.js"></script>
+<script src="js/api/game-client.js"></script>
+<script src="js/game-state.js"></script>
+<script src="js/pixel-engine.js"></script>
+<script src="js/auth-ui.js"></script>
+<script src="js/navbar.js"></script>
+<script src="js/twitch/twitch.js"></script>
+<script src="js/setup/setup.js"></script>
+<script src="js/main.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/perfil-ui.js"></script>
+<script src="js/ranking-ui.js"></script>
+<script src="js/shop-ui.js"></script>
+<script src="js/secret-codes-ui.js"></script>
+</body>
+</html>
