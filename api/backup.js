@@ -74,7 +74,8 @@ function lerSessao(req){
 async function ehAdmin(sessao){
   if(!sessao) return false;
   const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
-  if(ENV_ADMINS.includes(String(sessao.id))) return true;
+  const ENV_DEV_EMAILS = (process.env.GOOGLE_DEV_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if(ENV_ADMINS.includes(String(sessao.id)) || ENV_DEV_EMAILS.includes(String(sessao.email || '').trim().toLowerCase())) return true;
   try {
     const [raw] = await redis([['HGET', 'admins', String(sessao.id)]]);
     if(!raw) return false;

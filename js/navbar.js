@@ -172,7 +172,7 @@
     const perfil = perfilAtual();
     const nick = (perfil && perfil.nick) || usuario.nick || usuario.username || 'Jogador';
     const moedaNome = (perfil && perfil.moeda && perfil.moeda.nome) || 'SosoCoins';
-    const moedaIcone = (perfil && perfil.moeda && perfil.moeda.simbolo) || '🪙';
+    const moedaIcone = 'img/sosocoin.png';
     const notificacoes = perfil && Array.isArray(perfil.notificacoes) ? perfil.notificacoes : [];
     const novas = notificacoes.filter((n) => n.nova).length;
 
@@ -204,7 +204,13 @@
     nivel.title = perfil ? `Nível ${perfil.nivel}` : 'Carregando nível';
 
     const coins = criar('span', 'nav-coins');
-    const coinsIcone = criar('span', 'nav-coins-ic', moedaIcone);
+    const coinsIcone = criar('span', 'nav-coins-ic');
+    const coinsImg = criar('img');
+    coinsImg.src = moedaIcone;
+    coinsImg.alt = '';
+    coinsImg.width = 18;
+    coinsImg.height = 18;
+    coinsIcone.appendChild(coinsImg);
     coinsIcone.setAttribute('aria-hidden', 'true');
     const coinsValor = criar('b', '', perfil ? Number(perfil.coins || 0).toLocaleString('pt-BR') : '—');
     coins.append(coinsIcone, coinsValor);

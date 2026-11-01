@@ -40,10 +40,10 @@
     roupaCor: ['roxo', 'grafite', 'preto', 'vermelho', 'ciano', 'dourado'],
     calcado: ['tenis', 'chinelo', 'botas', 'tenis_neon', 'botas_cyber'],
     calcadoCor: ['branco', 'preto', 'vermelho', 'roxo', 'ciano'],
-    acessorio: ['nenhum', 'oculos', 'bone', 'headset', 'orelhas', 'halo', 'coroa'],
+    acessorio: ['nenhum', 'oculos', 'bone', 'headset', 'orelhas', 'laco', 'oculos_sol', 'microfone', 'gatinho', 'halo', 'coroa'],
     acessorioCor: ['dourado', 'lilas', 'azul', 'rosa', 'branco'],
     efeito: ['nenhum', 'brilho', 'faiscas', 'glitch', 'aura_roxa', 'aura_neon', 'chamas', 'estrelas', 'confete'],
-    animacao: ['respirar', 'acenar', 'pular', 'dancar', 'flutuar', 'meditar', 'comemorar'],
+    animacao: ['respirar', 'acenar', 'pular', 'dancar', 'flutuar', 'meditar', 'comemorar', 'hype'],
     moldura: ['nenhuma', 'simples', 'roxa', 'ciano', 'dourada', 'holo', 'evento1']
   };
 
@@ -679,6 +679,47 @@
         cv.rect(9, topo + 3, 6, 1, sombra);
         cv.set(11, topo + 1, '#ff4f8b');
         cv.set(12, topo + 1, '#4dd7ff');
+        break;
+      case 'laco': {
+        const y = Math.max(1, topoCabeca(boneco) + 1);
+        cv.rect(5, y, 3, 2, cor);
+        cv.rect(4, y + 1, 2, 2, brilho);
+        cv.rect(8, y, 3, 2, cor);
+        cv.rect(9, y + 1, 2, 2, sombra);
+        cv.rect(7, y + 1, 2, 2, brilho);
+        cv.set(7, y + 2, '#fff1fa');
+        break;
+      }
+      case 'oculos_sol':
+        cv.mrect(6, 10, 5, 4, sombra);
+        cv.mrect(13, 10, 5, 4, sombra);
+        cv.rect(7, 10, 3, 1, cor);
+        cv.rect(14, 10, 3, 1, cor);
+        cv.rect(11, 11, 2, 1, cor);
+        cv.set(8, 11, 'rgba(255,255,255,.65)');
+        cv.set(15, 11, 'rgba(255,255,255,.55)');
+        break;
+      case 'microfone':
+        cv.rect(19, 18, 2, 3, sombra);
+        cv.rect(19, 19, 2, 1, brilho);
+        cv.rect(20, 21, 1, 5, cor);
+        cv.rect(19, 26, 3, 1, sombra);
+        cv.rect(18, 27, 5, 1, cor);
+        cv.set(20, 18, '#fff');
+        break;
+      case 'gatinho':
+        cv.rect(4, 5, 1, 2, cor);
+        cv.rect(5, 3, 2, 4, cor);
+        cv.rect(7, 5, 1, 2, cor);
+        cv.rect(5, 5, 1, 1, '#ff9ecb');
+        cv.rect(19, 5, 1, 2, cor);
+        cv.rect(17, 3, 2, 4, cor);
+        cv.rect(16, 5, 1, 2, cor);
+        cv.rect(18, 5, 1, 1, '#ff9ecb');
+        cv.set(8, 16, '#ff9ecb');
+        cv.set(15, 16, '#ff9ecb');
+        cv.set(11, 15, cor);
+        cv.set(12, 15, cor);
         break;
     }
 

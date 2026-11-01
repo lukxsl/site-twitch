@@ -439,7 +439,7 @@
 .nav-level{padding:1px 5px;border:1px solid rgba(192,132,252,.35);border-radius:5px;background:rgba(168,85,247,.16);color:#e9d5ff}
 .nav-coins{color:#ffe7a3}
 .nav-coins b{font-size:.62rem;font-weight:800;color:#fff0c2}
-.nav-coins-ic{font-size:.58rem;filter:drop-shadow(0 0 4px rgba(255,209,102,.5))}
+.nav-coins-ic{display:inline-grid;place-items:center;width:18px;height:18px;filter:drop-shadow(0 0 4px rgba(255,209,102,.5))}.nav-coins-ic img{display:block;width:18px;height:18px;object-fit:contain;image-rendering:pixelated}
 .nav-arcade-user.is-loading .nav-mini-nick,
 .nav-arcade-user.is-loading .nav-mini-meta{opacity:.66}
 

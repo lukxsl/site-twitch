@@ -18,7 +18,7 @@ import {
 import {
   MOEDA, RARIDADES, CONQUISTAS, PLATINA, TITULOS, SLOTS, LIVE, BONECO_PADRAO, NIVEL_MAX,
   catalogoPublico, acharItem, precoDe, infoNivel, lerStats, contarItens, itemLiberado, titulosDe,
-  validarBoneco, creditar, notificar, lerNotificacoes, avaliarConquistas, xpDoNivel, CATALOGO
+  validarBoneco, creditar, notificar, lerNotificacoes, avaliarConquistas, xpDoNivel, CATALOGO, VERSAO_CONQUISTAS
 } from './game.js';
 import { cronPresenca } from './twitch.js';
 
@@ -118,10 +118,16 @@ export default async function handler(req, res){
     if(!sessao) return res.status(401).json({ error: 'Faça login' });
     res.setHeader('Cache-Control', 'no-store');
     const id = String(sessao.id);
-    const ehDev = (await cargoDe(id)) === 'dev';
+    const ehDev = (await cargoDe(id, sessao.email)) === 'dev';
 
     /* ============ PERFIL ============ */
     if(action === 'perfil'){
+      // Ao publicar novas conquistas, avalia uma vez o progresso acumulado dos jogadores antigos.
+      const [versaoConquistas] = await redis([['HGET', `g:${id}`, 'versaoConquistas']]);
+      if(String(versaoConquistas || '') !== VERSAO_CONQUISTAS){
+        await avaliarConquistas(id);
+        await redis([['HSET', `g:${id}`, 'versaoConquistas', VERSAO_CONQUISTAS]]);
+      }
       const S = await lerStats(id);
       S.itens = contarItens(S);
       const [pos, total] = await redis([['ZREVRANK', 'rank:xp', id], ['ZCARD', 'rank:xp']]);
@@ -145,7 +151,7 @@ export default async function handler(req, res){
       }
 
       return res.status(200).json({
-        id, nick: sessao.username, tipo: sessao.tipo || 'own', cargo: await cargoDe(id),
+        id, nick: sessao.username, tipo: sessao.tipo || 'own', cargo: await cargoDe(id, sessao.email),
         moeda: MOEDA,
         nivel: nv.nivel, xp: S.xp, xpNivel: { dentro: nv.dentro, falta: nv.falta, pct: nv.pct, base: nv.base, prox: nv.prox },
         proximosNiveis: [nv.nivel + 1, nv.nivel + 5].filter(n => n <= NIVEL_MAX).map(n => ({ nivel: n, xp: xpDoNivel(n) })),

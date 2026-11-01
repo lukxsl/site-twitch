@@ -38,7 +38,7 @@
           if (!res.ok || !res.data) return;
 
           const catalogo = res.data.catalogo || {};
-          const itensLoja = Object.values(catalogo).flat().filter(item => item.regra && item.regra.t === 'loja') || [];
+          const itensLoja = Object.entries(catalogo).flatMap(([slot, items]) => (items || []).filter(item => item.regra && item.regra.t === 'loja').map(item => ({ ...item, slot })));
 
           if (itensLoja.length === 0) {
             shopLoading.style.display = 'none';
@@ -56,9 +56,9 @@
         if (filtros.categoria !== 'all' && item.categoria !== filtros.categoria) return false;
         if (filtros.raridade !== 'all' && item.r !== filtros.raridade) return false;
         if (filtros.status === 'available') {
-          if (window.GameState?.perfil?.comprados && window.GameState.perfil.comprados.includes(item.id)) return false;
+          if (window.GameState?.perfil?.comprados && window.GameState.perfil.comprados.includes(`${item.slot}:${item.id}`)) return false;
         } else if (filtros.status === 'owned') {
-          if (!window.GameState?.perfil?.comprados || !window.GameState.perfil.comprados.includes(item.id)) return false;
+          if (!window.GameState?.perfil?.comprados || !window.GameState.perfil.comprados.includes(`${item.slot}:${item.id}`)) return false;
         }
         return true;
       });
@@ -87,7 +87,7 @@
     }
 
     function renderizarItemLoja(item) {
-      const comprado = window.GameState?.perfil?.comprados?.includes(item.id) || false;
+      const comprado = window.GameState?.perfil?.comprados?.includes(`${item.slot}:${item.id}`) || false;
       const disponivel = window.GameState?.perfil?.coins >= (item.preco || 0);
 
       const raridade = item.r || 'comum';
@@ -141,13 +141,13 @@
           
           <div class="shop-item-actions">
             ${!comprado ? `
-              <button class="shop-item-btn buy-btn" data-item-id="${item.id}" ${!disponivel ? 'disabled' : ''}>
+              <button class="shop-item-btn buy-btn" data-item-id="${item.id}" data-slot="${item.slot}" ${!disponivel ? 'disabled' : ''}>
                 <span class="btn-text">Comprar</span>
                 <span class="btn-load" aria-hidden="true"></span>
               </button>
             ` : `
-              <button class="shop-item-btn equip-btn" data-item-id="${item.id}">
-                <span class="btn-text">Equipar</span>
+              <button class="shop-item-btn equip-btn" data-item-id="${item.id}" data-slot="${item.slot}">
+                <span class="btn-text">Personalizar</span>
               </button>
             `}
           </div>
@@ -164,7 +164,7 @@
           const itemId = btn.dataset.itemId;
           if (btn.disabled) return;
 
-          confirmarCompra(itemId);
+          confirmarCompra(itemId, btn.dataset.slot);
         });
       });
 
@@ -215,7 +215,7 @@
       return emojis[raridade] || '⚪';
     }
 
-    function confirmarCompra(itemId) {
+    function confirmarCompra(itemId, slot) {
       window.confirmar(
         'Confirmar compra',
         'Esta ação não pode ser desfeita. Confirmar compra?',
@@ -231,7 +231,7 @@
 
         api(API_GAME, 'comprar', {
           method: 'POST',
-          body: { itemId }
+          body: { slot, id: itemId }
         }).then(res => {
           btn.classList.remove('is-loading');
 
@@ -260,30 +260,9 @@
     }
 
     function equiparItem(itemId) {
-      const btn = $$(`.shop-item-btn.equip-btn[data-item-id="${itemId}"]`)[0];
-      if (!btn) return;
-
-      btn.classList.add('is-loading');
-      btn.disabled = true;
-
-      api(API_GAME, 'equipar', {
-        method: 'POST',
-        body: { itemId }
-      }).then(res => {
-        btn.classList.remove('is-loading');
-
-        if (!res.ok) {
-          window.toast('Não foi possível equipar o item.', 'erro');
-          return;
-        }
-
-        window.toast('Item equipado com sucesso!', 'ok');
-        carregarShop();
-        atualizarNavbar();
-      }).catch(() => {
-        btn.classList.remove('is-loading');
-        window.toast('Erro ao equipar item.', 'erro');
-      });
+      if (typeof window.mudarAba === 'function') window.mudarAba('perfil');
+      setTimeout(() => document.querySelector('[data-pf-tab="boneco"]')?.click(), 120);
+      window.toast?.('Item disponível no seu guarda-roupa. Escolha-o no editor do boneco.', 'ok');
     }
 
     function atualizarNavbar() {
@@ -292,12 +271,11 @@
       }
     }
 
-    window.ShopUI = {
-      init: initShop,
-      carregar: carregarShop
-    };
+  }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      window.ShopUI.init();
-    });
+  window.ShopUI = { init: initShop };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    window.ShopUI.init();
+  });
 })();

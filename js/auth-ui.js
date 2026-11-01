@@ -1,442 +1,93 @@
 /* ============================================================
-   AUTH UI — modal de login/cadastro (terminal do Arcade)
-   Usa a API própria em /api/auth. Não guarda estado de jogo.
+   AUTH UI — Google como acesso principal; login local legado mantido
    ============================================================ */
 (function(){
   'use strict';
+  const $ = (s, r=document) => r.querySelector(s);
+  let dialog = null, welcome = null, lastFocus = null;
+  const focaveis = root => Array.from(root.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el => !el.hidden && el.offsetParent !== null);
 
-  const RE_USUARIO = /^[a-z0-9_]{3,20}$/;
-  const RE_NICK = /^[\p{L}\p{N}_. -]{3,24}$/u;
-  const SENHA_MIN = 8;
-  const SENHA_MAX = 72;
-
-  const el = {};
-  let construido = false;
-  let abaAtual = 'entrar';
-  let ultimoFoco = null;
-
-  const focoVisivel = node => {
-    if (!node || node.disabled || node.hidden) return false;
-    if (node.getAttribute('aria-hidden') === 'true') return false;
-    return !!(node.offsetWidth || node.offsetHeight || node.getClientRects().length);
-  };
-
-  function focaveis(dialog){
-    return Array.from(dialog.querySelectorAll(
-      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    )).filter(focoVisivel);
+  function trapFocus(e){
+    if(e.key !== 'Tab') return;
+    const list = focaveis(e.currentTarget); if(!list.length) return;
+    const first = list[0], last = list[list.length-1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
   }
-
-  function montarModal(){
-    if (construido) return;
-    construido = true;
-
-    const dlg = document.createElement('dialog');
-    dlg.id = 'authDlg';
-    dlg.className = 'auth-dlg';
-    dlg.setAttribute('aria-labelledby', 'authTitle');
-    dlg.setAttribute('aria-describedby', 'authDesc');
-    dlg.innerHTML = `
-      <div class="auth-cabinet">
-        <button type="button" class="auth-close" data-auth-close aria-label="Fechar">✕</button>
-        <div class="auth-marquee" aria-hidden="true">
-          <span class="auth-marquee-dot"></span>
-          <span>SOSO ARCADE</span>
-          <span class="auth-marquee-dot"></span>
-        </div>
-        <div class="auth-screen">
-          <header class="auth-head">
-            <p class="auth-kicker">&gt; ACESSO AO TERMINAL</p>
-            <h2 id="authTitle">Entre no Arcade</h2>
-            <p id="authDesc">Sua conta guarda XP, SosoCoins, conquistas e o seu boneco pixel art.</p>
-          </header>
-
-          <div class="auth-tabs" role="tablist" aria-label="Entrar ou criar conta">
-            <button type="button" class="auth-tab on" data-auth-tab="entrar" role="tab" aria-selected="true" aria-controls="authFormLogin" id="authTabEntrar">ENTRAR</button>
-            <button type="button" class="auth-tab" data-auth-tab="criar" role="tab" aria-selected="false" aria-controls="authFormRegister" id="authTabCriar">CRIAR CONTA</button>
-          </div>
-
-          <form class="auth-form on" id="authFormLogin" data-auth-form="login" novalidate aria-labelledby="authTabEntrar">
-            <div class="auth-field">
-              <label for="authLoginUsuario">Usuário</label>
-              <input id="authLoginUsuario" name="usuario" type="text" inputmode="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="seu_usuario">
-              <p class="auth-field-err" data-auth-err="login-usuario" role="alert"></p>
-            </div>
-            <div class="auth-field">
-              <label for="authLoginSenha">Senha</label>
-              <input id="authLoginSenha" name="senha" type="password" autocomplete="current-password" maxlength="72" placeholder="••••••••">
-              <p class="auth-field-err" data-auth-err="login-senha" role="alert"></p>
-            </div>
-            <p class="auth-alert" data-auth-alert="login" role="alert"></p>
-            <button type="submit" class="auth-submit">
-              <span class="auth-submit-label">ENTRAR NO ARCADE</span>
-              <span class="auth-submit-load" aria-hidden="true"></span>
-            </button>
-          </form>
-
-          <form class="auth-form" id="authFormRegister" data-auth-form="registrar" novalidate aria-labelledby="authTabCriar" hidden>
-            <div class="auth-field">
-              <label for="authRegUsuario">Usuário</label>
-              <input id="authRegUsuario" name="usuario" type="text" inputmode="text" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="soso_fa">
-              <p class="auth-hint">3 a 20 caracteres: letras minúsculas, números e _</p>
-              <p class="auth-field-err" data-auth-err="reg-usuario" role="alert"></p>
-            </div>
-            <div class="auth-field">
-              <label for="authRegNick">Nick no Arcade</label>
-              <input id="authRegNick" name="nick" type="text" autocomplete="nickname" maxlength="24" placeholder="Como quer ser chamado?">
-              <p class="auth-hint">3 a 24 caracteres. Pode usar espaço, _ . -</p>
-              <p class="auth-field-err" data-auth-err="reg-nick" role="alert"></p>
-            </div>
-            <div class="auth-field">
-              <label for="authRegSenha">Senha</label>
-              <input id="authRegSenha" name="senha" type="password" autocomplete="new-password" maxlength="72" placeholder="Mínimo de 8 caracteres">
-              <div class="auth-meter" data-auth-meter aria-hidden="true">
-                <i></i><i></i><i></i><i></i>
-              </div>
-              <p class="auth-meter-label" data-auth-meter-label>Força da senha</p>
-              <p class="auth-field-err" data-auth-err="reg-senha" role="alert"></p>
-            </div>
-            <div class="auth-field">
-              <label for="authRegSenha2">Confirmar senha</label>
-              <input id="authRegSenha2" name="senha2" type="password" autocomplete="new-password" maxlength="72" placeholder="Repita a senha">
-              <p class="auth-field-err" data-auth-err="reg-senha2" role="alert"></p>
-            </div>
-            <p class="auth-alert" data-auth-alert="register" role="alert"></p>
-            <button type="submit" class="auth-submit">
-              <span class="auth-submit-label">CRIAR MINHA CONTA</span>
-              <span class="auth-submit-load" aria-hidden="true"></span>
-            </button>
-          </form>
-
-          <div class="auth-divider"><span>ou</span></div>
-          <a class="auth-discord" id="authDiscord" href="${API_AUTH}?action=discord-login">
-            <span aria-hidden="true">💬</span>
-            Entrar com Discord
-          </a>
-          <p class="auth-foot">Login Discord é opcional. A conta própria é a recomendada para o Arcade.</p>
-        </div>
-        <div class="auth-scan" aria-hidden="true"></div>
-      </div>`;
-
-    document.body.appendChild(dlg);
-    el.dlg = dlg;
-    el.forms = {
-      login: dlg.querySelector('#authFormLogin'),
-      registrar: dlg.querySelector('#authFormRegister')
-    };
-    el.tabs = Array.from(dlg.querySelectorAll('[data-auth-tab]'));
-
-    dlg.querySelector('[data-auth-close]').addEventListener('click', fechar);
-    dlg.addEventListener('cancel', e => { e.preventDefault(); fechar(); });
-    dlg.addEventListener('click', e => { if (e.target === dlg) fechar(); });
-    dlg.addEventListener('keydown', trapFoco);
-
-    el.tabs.forEach(tab => tab.addEventListener('click', () => trocarAba(tab.dataset.authTab)));
-
-    el.forms.login.addEventListener('submit', e => enviar(e, 'login'));
-    el.forms.registrar.addEventListener('submit', e => enviar(e, 'register'));
-
-    ligarValidacao(el.forms.login);
-    ligarValidacao(el.forms.registrar);
-
-    const senha = dlg.querySelector('#authRegSenha');
-    if (senha) senha.addEventListener('input', () => atualizarForca(senha.value));
-
-    montarBoasVindas();
+  function mountWelcome(){
+    if(welcome) return;
+    welcome = document.createElement('dialog'); welcome.id='welcomeDlg'; welcome.className='auth-dlg auth-welcome-dlg';
+    welcome.innerHTML = `<div class="auth-cabinet"><button type="button" class="auth-close" data-close aria-label="Fechar">✕</button><div class="auth-marquee"><span class="auth-marquee-dot"></span><span>CONTA CRIADA</span><span class="auth-marquee-dot"></span></div><div class="auth-screen"><p class="auth-kicker">&gt; BOAS-VINDAS AO ARCADE</p><h2>Bem-vindo(a), <span data-nick>jogador</span>!</h2><p class="auth-welcome-intro">Seu perfil já está ativo. Agora monte seu personagem e comece a construir sua história no cantinho da Soso.</p><ul class="auth-welcome-list"><li><b>🕹️ Monte seu boneco</b><span>Escolha cabelo, roupa, acessórios, efeitos e animações.</span></li><li><b>📺 Vincule sua Twitch</b><span>Registre presença nas lives e aumente sua sequência.</span></li><li><b>💜 Colecione conquistas</b><span>Ganhe XP e SosoCoins participando da comunidade.</span></li></ul><button type="button" class="auth-submit" data-go>PERSONALIZAR MEU BONECO →</button><button type="button" class="auth-later" data-close>Agora não</button></div></div>`;
+    document.body.appendChild(welcome);
+    welcome.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>welcome.close()));
+    welcome.querySelector('[data-go]').addEventListener('click',goAvatar);
+    welcome.addEventListener('cancel',e=>{e.preventDefault();welcome.close();});
   }
-
-  function montarBoasVindas(){
-    const dlg = document.createElement('dialog');
-    dlg.id = 'welcomeDlg';
-    dlg.className = 'auth-dlg auth-welcome-dlg';
-    dlg.setAttribute('aria-labelledby', 'welcomeTitle');
-    dlg.innerHTML = `
-      <div class="auth-cabinet">
-        <button type="button" class="auth-close" data-welcome-close aria-label="Fechar">✕</button>
-        <div class="auth-marquee" aria-hidden="true">
-          <span class="auth-marquee-dot"></span>
-          <span>CONTA CRIADA</span>
-          <span class="auth-marquee-dot"></span>
-        </div>
-        <div class="auth-screen">
-          <p class="auth-kicker">&gt; BOAS-VINDAS AO ARCADE</p>
-          <h2 id="welcomeTitle">Bem-vindo(a), <span data-welcome-nick>jogador</span>!</h2>
-          <p class="auth-welcome-intro">Seu cadastro já rendeu XP e SosoCoins. Agora é só montar seu boneco e começar a jogar.</p>
-          <ul class="auth-welcome-list">
-            <li><b>🎮 Monte seu boneco</b><span>Escolha corpo, cabelo, roupa, efeitos e molduras. O servidor valida cada peça.</span></li>
-            <li><b>📺 Vincule sua Twitch</b><span>As horas assistidas são medidas pelo servidor e viram XP de verdade.</span></li>
-            <li><b>💎 Complete conquistas</b><span>Vote, sugira, resgate códigos secretos e busque a Platina do Arcade.</span></li>
-          </ul>
-          <button type="button" class="auth-submit" data-welcome-go>MONTAR MEU BONECO →</button>
-          <button type="button" class="auth-later" data-welcome-close>Agora não</button>
-        </div>
-      </div>`;
-    document.body.appendChild(dlg);
-    el.welcome = dlg;
-    dlg.querySelectorAll('[data-welcome-close]').forEach(b => b.addEventListener('click', () => dlg.close()));
-    dlg.addEventListener('cancel', e => { e.preventDefault(); dlg.close(); });
-    dlg.addEventListener('keydown', trapFoco);
-    dlg.querySelector('[data-welcome-go]').addEventListener('click', irParaCriador);
+  function goAvatar(){
+    if(welcome?.open) welcome.close();
+    if(typeof window.mudarAba==='function') window.mudarAba('perfil');
+    setTimeout(()=>{ document.querySelector('[data-pf-tab="boneco"]')?.click(); document.getElementById('pfOptions')?.scrollIntoView({behavior:'smooth',block:'start'}); },180);
   }
-
-  function irParaCriador(){
-    if (el.welcome && el.welcome.open) el.welcome.close();
-    if (typeof window.mudarAba === 'function') window.mudarAba('perfil');
-    setTimeout(() => {
-      const tab = document.querySelector('[data-pf-tab="boneco"]');
-      if (tab) tab.click();
-      const alvo = document.getElementById('pfOptions') || document.querySelector('#sec-perfil');
-      if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 180);
+  function showWelcome(data){
+    mountWelcome(); const nick=welcome.querySelector('[data-nick]');
+    if(nick) nick.textContent=(data && (data.nick||data.username))||'jogador';
+    welcome.showModal();
   }
-
-  function mostrarBoasVindas(dados){
-    if (!el.welcome) return;
-    const nick = el.welcome.querySelector('[data-welcome-nick]');
-    const nome = (dados && (dados.nick || dados.username)) || 'jogador';
-    if (nick) nick.textContent = nome;
-    el.welcome.showModal();
-    setTimeout(() => {
-      const b = el.welcome.querySelector('[data-welcome-go]');
-      if (b) b.focus();
-    }, 30);
+  function mount(){
+    if(dialog) return;
+    dialog=document.createElement('dialog'); dialog.id='authDlg'; dialog.className='auth-dlg';
+    dialog.setAttribute('aria-labelledby','authTitle');
+    dialog.innerHTML=`<div class="auth-cabinet"><button type="button" class="auth-close" data-close aria-label="Fechar">✕</button><div class="auth-marquee"><span class="auth-marquee-dot"></span><span>SOSO ARCADE</span><span class="auth-marquee-dot"></span></div><div class="auth-screen"><header class="auth-head"><p class="auth-kicker">&gt; PORTAL DO JOGADOR</p><h2 id="authTitle">Entre no cantinho</h2><p>Sua conta reúne personagem, XP, SosoCoins, conquistas e presença nas lives.</p></header><a class="auth-google" href="/api/auth?action=google-login"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.9 6.1-15z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.8l-6.6-5.1c-1.8 1.2-4.1 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.2A20 20 0 0 0 24 44z"/><path fill="#EA4335" d="M12.6 27.6a12 12 0 0 1 0-7.2v-5.2H5.8a20 20 0 0 0 0 17.6z"/><path fill="#4285F4" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 5.9 29.5 4 24 4A20 20 0 0 0 5.8 15.2l6.8 5.2C14.2 15.6 18.7 12 24 12z"/></svg><span><b>Continuar com Google</b><small>Cria sua conta automaticamente no primeiro acesso</small></span><span class="auth-google-arrow">→</span></a><div class="auth-divider"><span>ACESSO SEGURO</span></div><p class="auth-google-note">Sem senha nova para decorar. Usamos seu e-mail Google verificado para proteger seu progresso.</p><details class="auth-legacy"><summary>Já tenho uma conta antiga (usuário e senha)</summary><form id="authLegacyForm" class="auth-form" novalidate><div class="auth-field"><label for="authLegacyUser">Usuário</label><input id="authLegacyUser" name="usuario" autocomplete="username" autocapitalize="none" maxlength="20" placeholder="seu_usuario" required></div><div class="auth-field"><label for="authLegacyPass">Senha</label><input id="authLegacyPass" name="senha" type="password" autocomplete="current-password" maxlength="72" placeholder="Sua senha" required></div><p class="auth-alert" id="authLegacyAlert" role="alert"></p><button type="submit" class="auth-submit"><span class="auth-submit-label">ENTRAR COM CONTA ANTIGA</span><span class="auth-submit-load" aria-hidden="true"></span></button></form></details><p class="auth-foot">Ao continuar, você concorda em usar o Arcade com respeito à comunidade. Discord não é necessário para entrar.</p></div><div class="auth-scan" aria-hidden="true"></div></div>`;
+    document.body.appendChild(dialog);
+    dialog.querySelector('[data-close]').addEventListener('click',close);
+    dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+    dialog.addEventListener('click',e=>{if(e.target===dialog)close();});
+    dialog.addEventListener('keydown',trapFocus);
+    dialog.querySelector('#authLegacyForm').addEventListener('submit',loginLegacy);
+    mountWelcome();
   }
-
-  function trapFoco(e){
-    if (e.key !== 'Tab') return;
-    const dlg = e.currentTarget;
-    const lista = focaveis(dlg);
-    if (!lista.length) return;
-    const primeiro = lista[0];
-    const ultimo = lista[lista.length - 1];
-    if (e.shiftKey && document.activeElement === primeiro) {
-      e.preventDefault();
-      ultimo.focus();
-    } else if (!e.shiftKey && document.activeElement === ultimo) {
-      e.preventDefault();
-      primeiro.focus();
-    } else if (!dlg.contains(document.activeElement)) {
-      e.preventDefault();
-      primeiro.focus();
-    }
-  }
-
-  function trocarAba(nome){
-    abaAtual = nome === 'criar' ? 'criar' : 'entrar';
-    const qual = abaAtual === 'criar' ? 'registrar' : 'login';
-    el.tabs.forEach(t => {
-      const on = t.dataset.authTab === abaAtual;
-      t.classList.toggle('on', on);
-      t.setAttribute('aria-selected', on ? 'true' : 'false');
-      t.tabIndex = on ? 0 : -1;
-    });
-    Object.entries(el.forms).forEach(([chave, form]) => {
-      const on = chave === qual;
-      form.classList.toggle('on', on);
-      form.hidden = !on;
-      if (on) limparAlerta(form);
-    });
-    const alvo = el.forms[qual].querySelector('input');
-    if (alvo) setTimeout(() => alvo.focus(), 30);
-  }
-
-  function abrir(aba){
-    montarModal();
-    ultimoFoco = document.activeElement;
-    trocarAba(aba || 'entrar');
-    if (!el.dlg.open) el.dlg.showModal();
+  function open(){
+    mount(); lastFocus=document.activeElement;
+    if(!dialog.open) dialog.showModal();
     document.body.classList.add('auth-lock');
-    setTimeout(() => {
-      const form = el.forms[abaAtual === 'criar' ? 'registrar' : 'login'];
-      const input = form && form.querySelector('input');
-      if (input) input.focus();
-    }, 40);
   }
-
-  function fechar(){
-    if (!el.dlg || !el.dlg.open) return;
-    el.dlg.close();
+  function close(){ if(dialog?.open) dialog.close(); }
+  async function loginLegacy(e){
+    e.preventDefault(); const form=e.currentTarget, alert=$('#authLegacyAlert');
+    const usuario=String(form.usuario.value||'').trim().toLowerCase(), senha=String(form.senha.value||'');
+    if(!/^[a-z0-9_]{3,20}$/.test(usuario)){alert.textContent='Informe um usuário válido.';return;}
+    if(!senha){alert.textContent='Informe sua senha.';return;}
+    form.classList.add('is-loading'); const res=await api(API_AUTH,'login',{method:'POST',body:{usuario,senha}}); form.classList.remove('is-loading');
+    if(!res.ok){alert.textContent=res.data?.error||'Não foi possível entrar. Confira os dados.';return;}
+    alert.textContent=''; form.reset(); close();
+    try{await window.checarLogin?.();}catch(_){}
+    window.dispatchEvent(new CustomEvent('soso:login',{detail:res.data}));
+    window.toast?.(`Bem-vindo(a), ${res.data?.nick||'jogador'}! 💜`,'ok');
   }
-
-  function ligarValidacao(form){
-    form.querySelectorAll('input').forEach(input => {
-      input.addEventListener('input', () => {
-        const erro = form.querySelector(`[data-auth-err="${erroId(form, input)}"]`);
-        if (erro) erro.textContent = '';
-        input.removeAttribute('aria-invalid');
-        limparAlerta(form);
-      });
-      input.addEventListener('blur', () => validarCampo(form, input));
-    });
-  }
-
-  function erroId(form, input){
-    const tipo = form.dataset.authForm === 'login' ? 'login' : 'reg';
-    return `${tipo}-${input.name === 'senha2' ? 'senha2' : input.name}`;
-  }
-
-  function mostrarErro(form, input, msg){
-    const alvo = form.querySelector(`[data-auth-err="${erroId(form, input)}"]`);
-    if (alvo) alvo.textContent = msg;
-    if (msg) input.setAttribute('aria-invalid', 'true');
-    else input.removeAttribute('aria-invalid');
-    return !msg;
-  }
-
-  function validarCampo(form, input){
-    const tipo = form.dataset.authForm;
-    const valor = String(input.value || '');
-    let msg = '';
-
-    if (input.name === 'usuario') {
-      const u = valor.trim().toLowerCase();
-      if (!u) msg = 'Informe seu usuário.';
-      else if (tipo === 'registrar' && !RE_USUARIO.test(u)) msg = 'Use 3 a 20 caracteres: letras minúsculas, números e _.';
+  function handleReturn(){
+    const params=new URLSearchParams(location.search);
+    if(params.get('entrar')==='1') open();
+    if(params.get('login')==='ok'){
+      const novo=params.get('novo')==='1';
+      const vinculado=params.get('vinculado')==='1';
+      setTimeout(async()=>{
+        try{await window.checarLogin?.();}catch(_){}
+        if(novo){ const u=typeof USUARIO!=='undefined'?USUARIO:null; showWelcome(u); }
+        else if(vinculado) window.toast?.('Google vinculado à sua conta. Seu progresso foi preservado!','ok');
+        else window.toast?.('Login realizado com sucesso. 💜','ok');
+      },80);
+    } else if(params.get('login') && params.get('login')!=='ok'){
+      setTimeout(()=>window.toast?.('Não foi possível concluir o acesso Google. Tente novamente.','erro'),80);
     }
-
-    if (input.name === 'nick') {
-      const n = valor.trim();
-      if (!n) msg = 'Escolha um nick.';
-      else if (!RE_NICK.test(n)) msg = 'Use 3 a 24 caracteres (letras, números, espaço, _ . -).';
-    }
-
-    if (input.name === 'senha') {
-      if (!valor) msg = 'Informe sua senha.';
-      else if (tipo === 'registrar' && (valor.length < SENHA_MIN || valor.length > SENHA_MAX)) {
-        msg = `A senha precisa ter de ${SENHA_MIN} a ${SENHA_MAX} caracteres.`;
-      } else if (tipo === 'registrar') {
-        const usuario = String(form.querySelector('[name="usuario"]').value || '').trim().toLowerCase();
-        if (usuario && valor.toLowerCase().includes(usuario)) msg = 'A senha não pode conter o usuário.';
-      }
-    }
-
-    if (input.name === 'senha2') {
-      const senha = String(form.querySelector('[name="senha"]').value || '');
-      if (!valor) msg = 'Confirme a senha.';
-      else if (valor !== senha) msg = 'As senhas não conferem.';
-    }
-
-    return mostrarErro(form, input, msg);
-  }
-
-  function validarForm(form){
-    const inputs = Array.from(form.querySelectorAll('input'));
-    let primeiroRuim = null;
-    inputs.forEach(input => {
-      if (!validarCampo(form, input) && !primeiroRuim) primeiroRuim = input;
-    });
-    if (primeiroRuim) {
-      primeiroRuim.focus();
-      return false;
-    }
-    return true;
-  }
-
-  function limparAlerta(form){
-    const alerta = form.querySelector('[data-auth-alert]');
-    if (alerta) alerta.textContent = '';
-  }
-
-  function carregando(form, ativo){
-    form.classList.toggle('is-loading', !!ativo);
-    form.setAttribute('aria-busy', ativo ? 'true' : 'false');
-    const btn = form.querySelector('[type="submit"]');
-    if (btn) btn.disabled = !!ativo;
-    form.querySelectorAll('input').forEach(i => { i.readOnly = !!ativo; });
-  }
-
-  function atualizarForca(valor){
-    const bits = [
-      valor.length >= SENHA_MIN,
-      valor.length >= 12,
-      /[a-z]/.test(valor) && /[A-Z]/.test(valor),
-      /\d/.test(valor),
-      /[^A-Za-z0-9]/.test(valor)
-    ];
-    const score = Math.min(4, bits.filter(Boolean).length);
-    const rotulos = ['Muito fraca', 'Fraca', 'Boa', 'Forte', 'Excelente'];
-    const meter = el.dlg.querySelector('[data-auth-meter]');
-    const label = el.dlg.querySelector('[data-auth-meter-label]');
-    if (meter) meter.dataset.score = valor ? String(score) : '0';
-    if (label) label.textContent = valor ? `Força da senha: ${rotulos[score]}` : 'Força da senha';
-  }
-
-  async function enviar(e, acao){
-    e.preventDefault();
-    const form = e.currentTarget;
-    const alerta = form.querySelector('[data-auth-alert]');
-    if (alerta) alerta.textContent = '';
-    if (!validarForm(form)) return;
-
-    const dados = Object.fromEntries(new FormData(form).entries());
-    const corpo = acao === 'login'
-      ? { usuario: String(dados.usuario || '').trim().toLowerCase(), senha: String(dados.senha || '') }
-      : {
-          usuario: String(dados.usuario || '').trim().toLowerCase(),
-          nick: String(dados.nick || '').trim(),
-          senha: String(dados.senha || '')
-        };
-
-    carregando(form, true);
-    const res = await api(API_AUTH, acao, { method: 'POST', body: corpo });
-    carregando(form, false);
-
-    if (!res.ok) {
-      const msg = (res.data && res.data.error) || 'Não foi possível concluir. Tente novamente.';
-      if (alerta) {
-        alerta.textContent = msg;
-        alerta.classList.add('on');
-      }
-      const senha = form.querySelector('[name="senha"]');
-      if (senha && res.status === 401) senha.focus();
-      return;
-    }
-
-    const perfil = res.data || {};
-    if (alerta) alerta.classList.remove('on');
-    form.reset();
-    if (acao === 'register') atualizarForca('');
-
-    if (el.dlg.open) el.dlg.close();
-    if (typeof window.checarLogin === 'function') {
-      try { await window.checarLogin(); } catch (_) { /* checarLogin já trata */ }
-    }
-    window.dispatchEvent(new CustomEvent('soso:login', { detail: perfil }));
-
-    const nome = perfil.nick || perfil.username || '';
-    if (typeof window.toast === 'function') {
-      window.toast(nome ? `Bem-vindo(a), ${nome}! 💜` : 'Login realizado! 💜', 'ok');
-    }
-    if (perfil.novo) mostrarBoasVindas(perfil);
-  }
-
-  function iniciar(){
-    montarModal();
-    document.body.classList.remove('auth-lock');
-    el.dlg.addEventListener('close', () => {
-      document.body.classList.remove('auth-lock');
-      if (ultimoFoco && typeof ultimoFoco.focus === 'function') {
-        setTimeout(() => { try { ultimoFoco.focus(); } catch (_) {} }, 10);
-      }
-    });
-
-    let params = null;
-    try { params = new URLSearchParams(location.search); } catch (_) {}
-    if (params && params.get('entrar') === '1') {
-      abrir('entrar');
-      params.delete('entrar');
-      const busca = params.toString();
-      const nova = location.pathname + (busca ? '?' + busca : '') + (location.hash || '');
-      try { history.replaceState(null, '', nova); } catch (_) {}
+    if(['entrar','login','novo','vinculado'].some(k=>params.has(k))){
+      ['entrar','login','novo','vinculado'].forEach(k=>params.delete(k));
+      const q=params.toString(); history.replaceState(null,'',location.pathname+(q?'?'+q:'')+(location.hash||''));
     }
   }
-
-  window.AuthUI = { open: abrir, close: fechar, welcome: mostrarBoasVindas };
-
-  window.addEventListener('soso:unauthorized', () => {
-    if (!el.dlg || !el.dlg.open) abrir('entrar');
+  window.AuthUI={open,close,welcome:showWelcome};
+  window.addEventListener('soso:unauthorized',()=>open());
+  window.addEventListener('DOMContentLoaded',()=>{
+    mount(); dialog.addEventListener('close',()=>{document.body.classList.remove('auth-lock'); if(lastFocus?.focus) setTimeout(()=>lastFocus.focus(),10);});
+    handleReturn();
   });
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
-  else iniciar();
 })();

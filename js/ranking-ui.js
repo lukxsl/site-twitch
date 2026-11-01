@@ -1,192 +1,26 @@
 /* ============================================================
-   RANKING UI — seção de ranking com pódio e posição fixa
+   RANKING UI — ranking global compatível com { total, lista }
    ============================================================ */
-(function() {
+(function(){
   'use strict';
-
-  const $ = (seletor, raiz = document) => raiz.querySelector(seletor);
-  const $$ = (seletor, raiz = document) => [...raiz.querySelectorAll(seletor)];
-
-  function initRanking() {
-    const rankingContainer = $('#rankingContainer');
-    const rankingConteudo = $('#rankingConteudo');
-    const rankingYourPosition = $('#rankingYourPosition');
-    const rankingRefreshBtn = $('#rankingRefreshBtn');
-    const rankingLoginBtn = $('#rankingLoginBtn');
-    
-    if (!rankingContainer) return;
-
-    const usuario = window.GameState?.perfil?.id || null;
-    
-    if (usuario) {
-      rankingConteudo.style.display = 'none';
-      rankingYourPosition.style.display = 'block';
-      carregarRankingCompleto();
-    } else {
-      rankingConteudo.style.display = 'none';
-      rankingYourPosition.style.display = 'block';
-      rankingYourPosition.innerHTML = `
-        <div class="ranking-empty-state">
-          <p>Você não está no ranking ainda.</p>
-          <button class="ranking-login-btn" id="rankingLoginBtn">Entre para participar →</button>
-        </div>
-      `;
-    }
-
-    if (rankingRefreshBtn) {
-      rankingRefreshBtn.addEventListener('click', () => {
-        if (usuario) carregarRankingCompleto();
-      });
-    }
-
-    if (rankingLoginBtn) {
-      rankingLoginBtn.addEventListener('click', () => {
-        if (window.AuthUI) window.AuthUI.open('entrar');
-        else window.location.href = '/?entrar=1';
-      });
-    }
-
-    function carregarRankingCompleto() {
-      const container = $('#rankingYourContent');
-      if (!container) return;
-
-      container.innerHTML = `
-        <div class="ranking-skeleton">
-          <div class="ranking-skeleton-avatar"></div>
-          <div class="ranking-skeleton-info">
-            <div class="ranking-skeleton-line"></div>
-            <div class="ranking-skeleton-line"></div>
-            <div class="ranking-skeleton-line"></div>
-          </div>
-        </div>
-      `;
-
-      if (!window.GameState) return;
-
-      window.GameState.carregarPerfil({ forcar: true }).then(perfil => {
-        if (!perfil) return;
-
-        api(API_GAME, 'ranking', { action: 'listar' }).then(res => {
-          if (!res.ok || !res.data) return;
-
-          const ranking = res.data.ranking || [];
-          const meuRanking = res.data.minhasPosicoes || {};
-
-          renderizarPodium(ranking.slice(0, 3));
-          renderizarLista(ranking.slice(3));
-
-          if (meuRanking.posicao) {
-            const posicao = meuRanking.posicao;
-            const vizinhos = res.data.vizinhos || [];
-            
-            container.innerHTML = `
-              <div class="ranking-your-card">
-                <div class="ranking-your-header">
-                  <div class="ranking-your-avatar">
-                    <div class="ranking-avatar-placeholder">👤</div>
-                  </div>
-                  <div class="ranking-your-info">
-                    <div class="ranking-your-position">#${posicao.posicao} de ${posicao.total}</div>
-                    <div class="ranking-your-nick">${perfil.nick || perfil.username}</div>
-                    <div class="ranking-your-level">Nv ${perfil.nivel}</div>
-                  </div>
-                </div>
-                
-                <div class="ranking-your-stats">
-                  <div class="ranking-your-xp">${posicao.xp} XP</div>
-                  <div class="ranking-your-faltam">Faltam ${posicao.faltamParaProximo} XP para o próximo</div>
-                </div>
-                
-                <div class="ranking-neighbors">
-                  <h4>Próximos jogadores</h4>
-                  <div class="ranking-neighbors-list">
-                    ${vizinhos.map((vizinho, i) => `
-                      <div class="ranking-neighbor-item">
-                        <div class="ranking-neighbor-pos">#${vizinho.posicao}</div>
-                        <div class="ranking-neighbor-avatar">
-                          <div class="ranking-neighbor-placeholder">👤</div>
-                        </div>
-                        <div class="ranking-neighbor-info">
-                          <div class="ranking-neighbor-nick">${vizinho.nick}</div>
-                          <div class="ranking-neighbor-level">Nv ${vizinho.nivel}</div>
-                        </div>
-                        <div class="ranking-neighbor-xp">${vizinho.xp} XP</div>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-              </div>
-            `;
-
-            if (perfil && perfil.progresso && perfil.progresso.platina) {
-              container.classList.add('has-platina');
-            }
-          }
-        });
-      });
-    }
-
-    function renderizarPodium(ranking) {
-      const podium = $('#rankingPodium');
-      if (!podium) return;
-
-      const topo = [1, 0, 2];
-      podium.innerHTML = topo.map(i => {
-        const jogador = ranking[i];
-        if (!jogador) {
-          return `<div class="podium-item podium-${['2nd', '1st', '3rd'][i]}" style="--d:${i * 90}ms">
-            <div class="podium-avatar">
-              <div class="podium-avatar-placeholder">👤</div>
-            </div>
-            <div class="podium-info">
-              <div class="podium-crown">${['🥈', '👑', '🥉'][i]}</div>
-              <div class="podium-nick">—</div>
-              <div class="podium-title">—</div>
-              <div class="podium-level">Nv 0</div>
-              <div class="podium-xp">0 XP</div>
-            </div>
-          </div>`;
-        }
-
-        return `<div class="podium-item podium-${['2nd', '1st', '3rd'][i]}" style="--d:${i * 90}ms">
-          <div class="podium-avatar">
-            <div class="podium-avatar-placeholder">👤</div>
-          </div>
-          <div class="podium-info">
-            <div class="podium-crown">${['🥈', '👑', '🥉'][i]}</div>
-            <div class="podium-nick">${jogador.nick}</div>
-            <div class="podium-title">${jogador.titulo || '—'}</div>
-            <div class="podium-level">Nv ${jogador.nivel}</div>
-            <div class="podium-xp">${jogador.xp} XP</div>
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    function renderizarLista(ranking) {
-      const lista = $('#rankingList');
-      if (!lista) return;
-
-      lista.innerHTML = ranking.map((jogador, i) => {
-        const posicao = i + 4;
-        return `<div class="ranking-item">
-          <div class="ranking-pos">#${posicao}</div>
-          <div class="ranking-mini-avatar">
-            <div class="ranking-mini-placeholder">👤</div>
-          </div>
-          <div class="ranking-nick-tit">
-            <div class="ranking-nick">${jogador.nick}</div>
-            <div class="ranking-title">${jogador.titulo || '—'}</div>
-          </div>
-          <div class="ranking-mini-level">Nv ${jogador.nivel}</div>
-          <div class="ranking-mini-xp">${jogador.xp} XP</div>
-        </div>`;
-      }).join('');
-    }
+  const $=s=>document.querySelector(s);let busy=false,cache=null;
+  const node=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e;};
+  const fmt=n=>Number(n||0).toLocaleString('pt-BR');
+  function avatar(boneco,label){const wrap=node('span','ranking-avatar-art');if(window.PixelAvatar?.render){const svg=window.PixelAvatar.render(boneco||window.PixelAvatar.PADRAO,{label,mini:true,animar:false});if(svg)wrap.appendChild(svg);}return wrap;}
+  function row(j,me=false){const e=node('article','ranking-item'+(me?' is-me':''));e.append(node('strong','ranking-pos','#'+j.pos),avatar(j.boneco,'Boneco de '+j.nome));const info=node('div','ranking-nick-tit');info.append(node('b','ranking-nick',j.nome||'Jogador'),node('small','ranking-title',j.titulo||'Novato'));e.append(info,node('span','ranking-mini-level','Nv '+(j.nivel||1)),node('strong','ranking-mini-xp',fmt(j.xp)+' XP'));return e;}
+  function podiumItem(j,position){const e=node('article','podium-item podium-'+position);e.append(avatar(j?.boneco,j?.nome||'Lugar vazio'));const info=node('div','podium-info');info.append(node('span','podium-crown',position==='1st'?'👑':position==='2nd'?'🥈':'🥉'),node('b','podium-nick',j?.nome||'Aguardando jogador'),node('small','podium-title',j?.titulo||'—'),node('span','podium-level',j?'Nv '+j.nivel:'—'),node('strong','podium-xp',j?fmt(j.xp)+' XP':'—'));e.append(info);return e;}
+  function render(data){
+    const podium=$('#rankingPodium'),list=$('#rankingList'),your=$('#rankingYourContent'),button=$('#rankingLoginBtn');if(!podium||!list)return;
+    const players=data.lista||[];podium.replaceChildren(podiumItem(players[1],'2nd'),podiumItem(players[0],'1st'),podiumItem(players[2],'3rd'));
+    list.replaceChildren();players.slice(3).forEach(j=>list.appendChild(row(j,String(j.id)===String(window.GameState?.perfil?.id))));
+    if(players.length<=3)list.appendChild(node('p','pf-empty','Os próximos jogadores aparecerão aqui quando a comunidade acumular XP.'));
+    const user=window.GameState?.perfil;
+    if(your){your.replaceChildren();if(user){const pos=user.ranking?.pos;const card=node('div','ranking-your-card');const head=node('div','ranking-your-header');head.append(avatar(user.boneco,'Seu boneco'),node('div','ranking-your-info',`${user.nick||'Jogador'} · ${pos?'#'+pos:'Sem posição'}`));card.append(head,node('p','ranking-your-level',`Nível ${user.nivel||1} · ${fmt(user.xp)} XP`),node('p','ranking-your-faltam',`${fmt(user.coins)} SosoCoins no bolso`));your.appendChild(card);}else{your.append(node('p','pf-empty','Entre com Google para aparecer no ranking e acompanhar sua posição.'),node('button','pf-btn pf-btn-primary','Entrar no Arcade'));your.querySelector('button')?.addEventListener('click',()=>window.AuthUI?.open());}}
+    if(button)button.hidden=!!user;
+    const total=$('#rankingContainer .ranking-toolbar h3');if(total)total.textContent=`${fmt(data.total)} jogadores no placar`;
   }
-
-  window.RankingUI = { init: initRanking };
-  window.addEventListener('DOMContentLoaded', () => {
-    window.RankingUI.init();
-  });
+  async function load(force=false){if(busy)return;busy=true;const list=$('#rankingList');if(list&&!cache)list.replaceChildren(node('p','pf-empty','Carregando placar…'));
+    const r=await api(API_GAME,'ranking',{query:{limite:100}});busy=false;if(!r.ok){if(list)list.replaceChildren(node('p','pf-empty','Não foi possível carregar o ranking. Tente novamente.'));return;}cache=r.data;render(cache);}
+  function init(){if(!$('#rankingContainer'))return;$('#rankingRefreshBtn')?.addEventListener('click',()=>load(true));$('#rankingLoginBtn')?.addEventListener('click',()=>window.AuthUI?.open());load();window.addEventListener('soso:auth',()=>load(true));window.addEventListener('soso:aba',e=>{if(e.detail==='ranking')load(true);});window.GameState?.on('perfil',()=>{if(cache)render(cache);});}
+  window.RankingUI={init,refresh:()=>load(true)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

@@ -95,8 +95,16 @@ export const CONQUISTAS = [
   { id: 'nivel_10',    icone: '⭐', nome: 'Nível 10',              desc: 'Chegue ao nível 10.',                     r: 'incomum',  cond: S => S.nivel >= 10,              premio: { coins: 100 } },
   { id: 'nivel_25',    icone: '🌟', nome: 'Nível 25',              desc: 'Chegue ao nível 25.',                     r: 'raro',     cond: S => S.nivel >= 25,              premio: { coins: 300 } },
   { id: 'nivel_50',    icone: '👑', nome: 'Meio Século',           desc: 'Chegue ao nível 50.',                     r: 'lendario', cond: S => S.nivel >= 50,              premio: { coins: 1000 } },
-  { id: 'colecionador',icone: '🎒', nome: 'Colecionador',          desc: 'Desbloqueie 20 itens no inventário.',     r: 'raro',     cond: S => S.itens >= 20,              premio: { xp: 150, coins: 80 } }
+  { id: 'colecionador',icone: '🎒', nome: 'Colecionador',          desc: 'Desbloqueie 20 itens no inventário.',     r: 'raro',     cond: S => S.itens >= 20,              premio: { xp: 150, coins: 80 } },
+  { id: 'primeira_live', icone: '💜', nome: 'Primeiro Rolê', desc: 'Participe da sua primeira live válida da Soso.', r: 'comum', cond: S => S.lives >= 1, premio: { xp: 25, coins: 10 } },
+  { id: 'chat_ativo', icone: '📡', nome: 'Presença no Chat', desc: 'Marque presença em 10 lives válidas.', r: 'incomum', cond: S => S.lives >= 10, premio: { xp: 120, coins: 60 } },
+  { id: 'voto_100', icone: '📢', nome: 'Voz da Comunidade', desc: 'Registre 100 votos nas votações.', r: 'epico', cond: S => S.votos >= 100, premio: { xp: 350, coins: 180 } },
+  { id: 'sug_10', icone: '🧠', nome: 'Ideias em Órbita', desc: 'Tenha 10 sugestões aprovadas.', r: 'epico', cond: S => S.sugestoes >= 10, premio: { xp: 400, coins: 200 } },
+  { id: 'horas_500', icone: '🌌', nome: 'Habitante do Cantinho', desc: 'Acumule 500 horas assistidas.', r: 'lendario', cond: S => S.horas >= 500, premio: { xp: 1200, coins: 600 } },
+  { id: 'streak_30', icone: '🔥', nome: 'Chama Eterna', desc: 'Alcance uma sequência de 30 lives.', r: 'lendario', cond: S => S.melhorStreak >= 30, premio: { xp: 1500, coins: 800 } },
+  { id: 'codigo_5', icone: '🗝️', nome: 'Caçador Noturno', desc: 'Resgate 5 códigos secretos.', r: 'raro', cond: S => S.codigos >= 5, premio: { xp: 180, coins: 90 } }
 ];
+export const VERSAO_CONQUISTAS = '2'; // incrementar quando novas conquistas forem adicionadas
 export const ID_PLATINA = 'platina';
 export const PLATINA = {
   id: ID_PLATINA, icone: '💎', nome: 'Platina do Arcade', r: 'lendario',
@@ -117,7 +125,13 @@ export const TITULOS = [
   { id: 'guardiao',    nome: 'Guardião do Arcade',   r: 'epico',    regra: 'Assista 150 horas de live.',            cond: S => S.horas >= 150 },
   { id: 'imparavel',   nome: 'Imparável',            r: 'epico',    regra: 'Alcance uma sequência de 12 lives.',    cond: S => S.melhorStreak >= 12 },
   { id: 'lenda',       nome: 'Lenda do Chat',        r: 'lendario', regra: 'Assista 400 horas de live.',            cond: S => S.horas >= 400 },
-  { id: 'completista', nome: 'Completista',          r: 'lendario', regra: 'Conquiste a Platina do Arcade.',        cond: S => S.platina }
+  { id: 'completista', nome: 'Completista',          r: 'lendario', regra: 'Conquiste a Platina do Arcade.',        cond: S => S.platina },
+  { id: 'hype', nome: 'Hype do Chat', r: 'comum', regra: 'Participe de uma live válida.', cond: S => S.lives >= 1 },
+  { id: 'lurker', nome: 'Lurker Lendário', r: 'incomum', regra: 'Acumule 5 horas assistidas.', cond: S => S.horas >= 5 },
+  { id: 'cacador', nome: 'Caçador de Segredos', r: 'raro', regra: 'Resgate 5 códigos secretos.', cond: S => S.codigos >= 5 },
+  { id: 'votante_vip', nome: 'Votante VIP', r: 'epico', regra: 'Registre 100 votos.', cond: S => S.votos >= 100 },
+  { id: 'embaixador', nome: 'Embaixador do Cantinho', r: 'epico', regra: 'Tenha 10 sugestões aprovadas.', cond: S => S.sugestoes >= 10 },
+  { id: 'lenda_cantinho', nome: 'Lenda do Cantinho', r: 'lendario', regra: 'Alcance 30 lives consecutivas.', cond: S => S.melhorStreak >= 30 }
 ];
 
 /* ============================================================
@@ -214,6 +228,10 @@ export const CATALOGO = {
     I('bone',    'Boné',          'comum',   F),
     I('headset', 'Headset Gamer', 'incomum', C('twitch')),
     I('orelhas', 'Orelhas de Gato','raro',   L),
+    I('laco', 'Laço Pixel', 'incomum', N(6)),
+    I('oculos_sol', 'Óculos Neon', 'raro', L),
+    I('microfone', 'Microfone de Streamer', 'epico', C('twitch')),
+    I('gatinho', 'Mascote Gatinho', 'raro', C('primeira_live')),
     I('halo',    'Halo',          'epico',   C('horas_50')),
     I('coroa',   'Coroa',         'lendario',N(50))
   ],
@@ -244,7 +262,8 @@ export const CATALOGO = {
     I('dancar',   'Dançando',    'incomum', N(7)),
     I('flutuar',  'Flutuando',   'raro',    L),
     I('meditar',  'Meditando',   'raro',    C('horas_10')),
-    I('comemorar','Comemorando', 'epico',   C('sug_5'))
+    I('comemorar','Comemorando', 'epico',   C('sug_5')),
+    I('hype', 'Hype do Chat', 'raro', N(12))
   ],
   /* ---- Molduras ---- */
   moldura: [

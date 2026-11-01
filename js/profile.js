@@ -82,6 +82,20 @@
   const $ = (seletor, raiz = document) => raiz.querySelector(seletor);
   const $$ = (seletor, raiz = document) => [...raiz.querySelectorAll(seletor)];
 
+  function getUsuario(){
+    try { return typeof USUARIO !== 'undefined' ? USUARIO : null; } catch (_) { return null; }
+  }
+  function nickDoUsuario(){
+    const u = getUsuario();
+    return u && (u.nick || u.username || u.usuario) ? (u.nick || u.username || u.usuario) : 'Jogador';
+  }
+  window.__pfAtualizarNomeBanner = function(perfil){
+    const alvo = document.getElementById('pfBannerNome');
+    const u = getUsuario();
+    const nome = (perfil && perfil.nick) || (u && (u.nick || u.username)) || 'convidado';
+    if (alvo) alvo.textContent = '@' + String(nome).replace(/^@/, '');
+  };
+
   function initCriador(){
     const refs = {
       avatar: $('#pfAvatar'),
@@ -753,9 +767,8 @@
 
   function iniciar(){
     try { localStorage.removeItem(AVATAR_KEY_ANTIGA); } catch (_) {}
-    initBanner();
-    initTabs();
-    initSeguranca();
+    // As abas e configurações ficam sob responsabilidade de js/perfil-ui.js.
+    // Não chamar inicializadores antigos inexistentes: isso impedia o boneco de carregar.
     initCriador();
   }
 

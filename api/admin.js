@@ -11,6 +11,7 @@ const TMDB_KEY = process.env.TMDB_API_KEY;
 const STEAM_KEY = process.env.STEAM_API_KEY || process.env.STEAM;
 const STEAM_ID = '76561199823015081';
 const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
+const ENV_DEV_EMAILS = (process.env.GOOGLE_DEV_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const SUG_KEY = 'sugestoes:lista';
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
 const LOGS_MAX = 199;
@@ -694,7 +695,7 @@ export default async function handler(req, res){
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
 
   let cargoAtual = null;
-  if(ENV_ADMINS.includes(String(sessao.id))){
+  if(ENV_ADMINS.includes(String(sessao.id)) || ENV_DEV_EMAILS.includes(String(sessao.email || '').trim().toLowerCase())){
     cargoAtual = 'dev';
   } else {
     try {

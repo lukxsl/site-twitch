@@ -737,6 +737,8 @@
 .pf-avatar svg.px-anim-flutuar{animation:pxFlutuar 3.4s steps(3,end) infinite}
 .pf-avatar svg.px-anim-meditar{animation:pxMeditar 4.2s steps(2,end) infinite;transform-origin:50% 100%}
 .pf-avatar svg.px-anim-comemorar{animation:pxComemorar 1.3s steps(3,end) infinite;transform-origin:50% 100%}
+.pf-avatar svg.px-anim-hype{animation:pxHype 1.05s steps(3,end) infinite;transform-origin:50% 100%}
+.pf-avatar .px-acessorio{filter:drop-shadow(0 0 2px rgba(216,180,254,.22))}
 .pf-avatar svg[data-moldura="holo"] .px-moldura{animation:pxHolo 3.8s linear infinite}
 .pf-avatar svg.px-mini .px-olhos{animation:none}
 
@@ -777,6 +779,12 @@
   25%{transform:translateY(-6%) rotate(-1.5deg)}
   50%{transform:translateY(0) rotate(0)}
   75%{transform:translateY(-4%) rotate(1.5deg)}
+}
+@keyframes pxHype{
+  0%,100%{transform:translateY(0) rotate(0)}
+  25%{transform:translateY(-3%) rotate(-2deg)}
+  50%{transform:translateY(1%) rotate(2deg)}
+  75%{transform:translateY(-2%) rotate(-1deg)}
 }
 @keyframes pxCintilar{
   0%,100%{opacity:1}
@@ -968,5 +976,6 @@
   .pf-avatar svg.px-anim-flutuar,
   .pf-avatar svg.px-anim-meditar,
   .pf-avatar svg.px-anim-comemorar,
+  .pf-avatar svg.px-anim-hype,
   .pf-avatar svg[data-moldura="holo"] .px-moldura{animation:none !important}
 }

@@ -10,7 +10,8 @@ export const ENV = {
   URL: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
   TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN,
   SESSION_SECRET: process.env.SESSION_SECRET,
-  ADMIN_IDS: (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean)
+  ADMIN_IDS: (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean),
+  ADMIN_EMAILS: (process.env.GOOGLE_DEV_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
 };
 
 export const COOKIE_NAME = 'sessao_site';
@@ -142,8 +143,9 @@ export function nickValido(n){
 }
 
 /* ---------------- Cargo (dev vem do ENV; demais da hash "admins") ---------------- */
-export async function cargoDe(userId){
-  if(ENV.ADMIN_IDS.includes(String(userId))) return 'dev';
+export async function cargoDe(userId, email = ''){
+  const emailNormalizado = String(email || '').trim().toLowerCase();
+  if(ENV.ADMIN_IDS.includes(String(userId)) || (emailNormalizado && ENV.ADMIN_EMAILS.includes(emailNormalizado))) return 'dev';
   try {
     const [raw] = await redis([['HGET', 'admins', String(userId)]]);
     const d = jparse(raw);

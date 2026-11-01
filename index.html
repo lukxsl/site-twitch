@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="css/profile.css">
 <link rel="stylesheet" href="css/arcade.css">
 <link rel="stylesheet" href="css/profile-new.css">
+<link rel="stylesheet" href="css/arcade-dashboard.css">
 </head>
 <body>
 
@@ -356,11 +357,16 @@
     <h2>Ranking de Jogadores</h2>
     <p>Quem mais acompanha a Soso sobe no placar. XP, níveis e recompensas ficam salvos na sua conta.</p>
   </header>
-  <div class="arcade-soon" id="rankingConteudo" role="status">
-    <span class="arcade-soon-ic" aria-hidden="true">🏁</span>
-    <h3>O placar está sendo montado</h3>
-    <p>O ranking completo com pódio, sua posição e os vizinhos chega na próxima atualização do Arcade.</p>
-    <span class="arcade-soon-badge">EM BREVE</span>
+  <div class="ranking-shell" id="rankingContainer">
+    <div class="ranking-toolbar">
+      <div><span class="pf-eyebrow">PLACAR DA COMUNIDADE</span><h3>Quem faz parte do cantinho</h3><p>XP conquistado nas lives, votações, sugestões e desafios.</p></div>
+      <div class="ranking-toolbar-actions"><button class="pf-btn" type="button" id="rankingRefreshBtn">↻ Atualizar</button><button class="pf-btn pf-btn-primary" type="button" id="rankingLoginBtn">Entrar no ranking</button></div>
+    </div>
+    <div class="ranking-podium" id="rankingPodium" aria-label="Pódio dos três primeiros"></div>
+    <div class="ranking-layout">
+      <section class="ranking-board-card"><div class="ranking-section-head"><h3>🏆 Classificação</h3><span>TOP 100</span></div><div id="rankingList" class="ranking-list"><p class="pf-empty">Carregando placar…</p></div></section>
+      <aside class="ranking-side-card" id="rankingYourPosition"><div id="rankingYourContent"><p class="pf-empty">Entre para acompanhar sua posição.</p></div></aside>
+    </div>
   </div>
 </section>
 
@@ -704,9 +710,9 @@
 <section id="sec-perfil" class="page-section">
   <div class="pf-shell">
     <header class="pf-head">
-      <span class="section-kicker">✨ Seu cantinho</span>
-      <h1>Meu Perfil</h1>
-      <p>Personalize seu banner, monte seu boneco pixel art e cuide da sua conta.</p>
+      <span class="section-kicker">✦ IDENTIDADE DO ARCADE</span>
+      <h1>Meu Cantinho</h1>
+      <p>Seu personagem, suas conquistas, seu inventário e toda a sua jornada com a Soso.</p>
     </header>
 
     <div class="pf-banner" id="pfBanner">
@@ -716,15 +722,16 @@
         <p>Seu espaço no cantinho da Soso.</p>
         <small class="pf-banner-status" id="pfBannerStatus"></small>
       </div>
-      <label class="pf-btn pf-btn-banner" for="pfBannerInput">🖼️ Alterar Banner</label>
-      <input type="file" id="pfBannerInput" accept="image/*" hidden>
+      <span class="pf-banner-chip">SOSO ARCADE <i>● ONLINE</i></span>
     </div>
 
     <div class="pf-tabs" role="tablist" aria-label="Abas do perfil">
       <button type="button" class="pf-tab on" data-pf-tab="visao-geral" role="tab" aria-selected="true">👁️ Visão Geral</button>
       <button type="button" class="pf-tab" data-pf-tab="boneco" role="tab" aria-selected="false">🕹️ Meu Boneco</button>
       <button type="button" class="pf-tab" data-pf-tab="inventario" role="tab" aria-selected="false">🎒 Inventário</button>
+      <button type="button" class="pf-tab" data-pf-tab="loja" role="tab" aria-selected="false">🛒 Loja</button>
       <button type="button" class="pf-tab" data-pf-tab="conquistas" role="tab" aria-selected="false">🏆 Conquistas</button>
+      <button type="button" class="pf-tab" data-pf-tab="ranking" role="tab" aria-selected="false">📊 Ranking</button>
       <button type="button" class="pf-tab" data-pf-tab="configuracoes" role="tab" aria-selected="false">⚙️ Configurações</button>
     </div>
 
@@ -832,7 +839,7 @@
           <h3 class="pf-position-title">Posição no Ranking</h3>
           <div class="pf-position-content">
             <span class="pf-position-number" id="pfPositionNumber">#0</span>
-            <span class="pf-position-total">de 0 jogadores</span>
+            <span class="pf-position-total" id="pfPositionTotal">de 0 jogadores</span>
           </div>
           <div class="pf-ranking-card">
             <div class="pf-ranking-avatar">
@@ -852,10 +859,14 @@
         <div class="pf-coins-card">
           <h3 class="pf-coins-title">SosoCoins</h3>
           <div class="pf-coins-content">
-            <span class="pf-coins-icon">🪙</span>
+            <img class="pf-coins-icon" src="img/sosocoin.png" alt="SosoCoin">
             <span class="pf-coins-value" id="pfCoinsValue">0</span>
           </div>
         </div>
+      </div>
+      <div class="pf-overview-extras">
+        <section class="pf-extra-card"><div class="pf-extra-head"><div><span class="pf-eyebrow">SEUS MARCOS</span><h3>Conquistas recentes</h3></div><button type="button" class="pf-text-link" data-pf-go="conquistas">Ver todas ↗</button></div><div id="pfRecentAchievements" class="pf-recent-achievements"><p class="pf-empty">Suas primeiras conquistas aparecem aqui.</p></div></section>
+        <section class="pf-extra-card"><div class="pf-extra-head"><div><span class="pf-eyebrow">DO CHAT PARA O SITE</span><h3>Emotes da Soso</h3></div><span class="pf-live-tag">TWITCH</span></div><div id="pfEmotesPreview" class="pf-emotes-preview"><span class="pf-empty">Carregando emotes…</span></div></section>
       </div>
     </div>
 
@@ -918,40 +929,33 @@
       </div>
     </div>
 
-    <div class="pf-panel" data-pf-panel="loja">
-      <div class="arcade-soon">
-        <span class="arcade-soon-ic" aria-hidden="true">🛒</span>
-        <h3>Loja do Arcade</h3>
-        <p>A vitrine de itens por SosoCoins e o Terminal de Códigos Secretos estão chegando. Por enquanto, continue acompanhando a live para juntar XP e moedas.</p>
-        <span class="arcade-soon-badge">EM BREVE</span>
-      </div>
+    <div class="pf-panel" data-pf-panel="inventario" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">COLEÇÃO PESSOAL</span><h2>Meu inventário</h2><p>Peças desbloqueadas para personalizar seu personagem.</p></div><span class="pf-count-pill" id="pfInventoryCount">0 itens</span></div>
+      <div id="pfInventoryGrid" class="pf-item-grid"><p class="pf-empty">Carregando inventário…</p></div>
     </div>
 
-    <div class="pf-panel" data-pf-panel="seguranca">
-      <div class="pf-security">
-        <div class="pf-security-info">
-          <span class="pf-security-ic">🛡️</span>
-          <h3>Segurança da conta</h3>
-          <p>Área demonstrativa para login próprio com usuário e senha. Nada é enviado ou armazenado.</p>
-          <ul>
-            <li>Use uma senha forte e exclusiva.</li>
-            <li>Nunca compartilhe suas credenciais.</li>
-            <li>O login Discord continua funcionando separadamente.</li>
-          </ul>
-        </div>
-        <form class="pf-form" id="pfSecurityForm">
-          <label>Usuário
-            <input type="text" id="pfUser" placeholder="seu_usuario" autocomplete="username">
-          </label>
-          <label>Senha
-            <input type="password" id="pfPass" placeholder="••••••••" autocomplete="current-password">
-          </label>
-          <label>Confirmar senha
-            <input type="password" id="pfPass2" placeholder="••••••••" autocomplete="new-password">
-          </label>
-          <button class="pf-btn pf-btn-primary" type="submit">Salvar credenciais (demo)</button>
-          <p class="pf-form-note" id="pfFormNote" role="status"></p>
-        </form>
+    <div class="pf-panel" data-pf-panel="loja" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">ARCADE MARKET</span><h2>Loja do Cantinho</h2><p>Use suas SosoCoins para desbloquear visuais, efeitos e acessórios.</p></div><div class="pf-shop-balance"><img src="img/sosocoin.png" alt=""><strong id="pfShopCoinBalance">0</strong><span>SosoCoins</span></div></div>
+      <div id="pfShopGrid" class="pf-item-grid"><p class="pf-empty">Carregando vitrine…</p></div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="conquistas" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">MISSÕES DA COMUNIDADE</span><h2>Conquistas</h2><p>Marcos da sua jornada nas lives e no Arcade.</p></div><span class="pf-count-pill" id="pfAchievementProgress">0 / 0</span></div>
+      <div id="pfAchievementsGrid" class="pf-achievement-grid"><p class="pf-empty">Carregando conquistas…</p></div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="ranking" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">PLACAR GLOBAL</span><h2>Sua jornada no ranking</h2><p>Veja quem está perto de você e suba de posição a cada atividade.</p></div></div>
+      <div class="pf-profile-ranking-me" id="pfProfileRankingMe"></div>
+      <div class="pf-profile-ranking-list" id="pfProfileRankingList"><p class="pf-empty">Carregando ranking…</p></div>
+    </div>
+
+    <div class="pf-panel" data-pf-panel="configuracoes" hidden>
+      <div class="pf-panel-heading"><div><span class="pf-eyebrow">SUA CONTA</span><h2>Configurações</h2><p>Gerencie sua identidade e as conexões usadas pelo Arcade.</p></div></div>
+      <div class="pf-settings-grid">
+        <section class="pf-settings-card"><span class="pf-settings-icon">👤</span><h3>Identidade</h3><p>Seu nick aparece no ranking, nas conquistas e no seu cartão de jogador.</p><label for="pfSettingsNick">Nick do Arcade</label><input id="pfSettingsNick" maxlength="24" autocomplete="nickname" placeholder="Seu nick"><p class="pf-settings-note" id="pfSettingsNickNote">A primeira troca é livre; depois, há um intervalo de 7 dias.</p><button class="pf-btn pf-btn-primary" id="pfSaveNick" type="button">Salvar nick</button></section>
+        <section class="pf-settings-card"><span class="pf-settings-icon">🔐</span><h3>Conta e acesso</h3><p>Conta protegida pelo provedor de autenticação.</p><div class="pf-settings-data"><small>E-MAIL GOOGLE</small><strong id="pfSettingsEmail">—</strong><small>MÉTODO DE LOGIN</small><strong id="pfSettingsAccount">—</strong></div><a class="pf-btn pf-btn-secondary" id="pfGoogleLink" href="/api/auth?action=google-login" hidden>Vincular conta Google</a><button class="pf-btn pf-btn-danger" id="pfSettingsLogout" type="button">Sair da conta</button></section>
+        <section class="pf-settings-card pf-settings-twitch"><span class="pf-settings-icon">📺</span><h3>Conexão com a Twitch</h3><p>Vincule a conta que usa para acompanhar as lives. Só assim o sistema consegue contabilizar sua presença e sequência.</p><div class="pf-twitch-status" id="pfTwitchStatus">Twitch não vinculada</div><button class="pf-btn pf-btn-primary" id="pfTwitchLink" type="button">Vincular Twitch</button><button class="pf-btn pf-btn-danger" id="pfTwitchUnlink" type="button" hidden>Desvincular Twitch</button></section>
       </div>
     </div>
   </div>
