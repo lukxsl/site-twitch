@@ -18,9 +18,9 @@ import {
 import {
   MOEDA, RARIDADES, CONQUISTAS, PLATINA, TITULOS, SLOTS, LIVE, BONECO_PADRAO, NIVEL_MAX,
   catalogoPublico, acharItem, precoDe, infoNivel, lerStats, contarItens, itemLiberado, titulosDe,
-  validarBoneco, creditar, notificar, lerNotificacoes, avaliarConquistas, xpDoNivel, CATALOGO, VERSAO_CONQUISTAS
+  validarBoneco, notificar, lerNotificacoes, avaliarConquistas, xpDoNivel, nivelPorXP, CATALOGO, VERSAO_CONQUISTAS
 } from './game.js';
-import { cronPresenca } from './twitch.js';
+import { cronPresenca, diagnosticoTwitchPresenca } from './twitch.js';
 
 /* sessão válida (para contas próprias confere a versão → senha trocada derruba o resto) */
 async function sessaoValida(req){
@@ -33,6 +33,59 @@ async function sessaoValida(req){
   }
   return s;
 }
+
+const RESGATAR_CODIGO_LUA = `
+local function nivel(xp)
+  local n = math.floor((1 + math.sqrt(1 + math.max(0, xp) / 12.5)) / 2)
+  if n < 1 then return 1 end
+  if n > 100 then return 100 end
+  return n
+end
+if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 1 then return {0} end
+local maxUsos = math.max(0, tonumber(ARGV[2]) or 0)
+local usos = tonumber(redis.call('GET', KEYS[2]) or '0')
+if maxUsos > 0 and usos >= maxUsos then return {-1, usos} end
+redis.call('SADD', KEYS[1], ARGV[1])
+usos = redis.call('INCR', KEYS[2])
+redis.call('HINCRBY', KEYS[3], 'codigos', 1)
+local tipo = ARGV[3]
+local valor = math.max(0, math.floor(tonumber(ARGV[4]) or 0))
+local xpAntes = tonumber(redis.call('HGET', KEYS[3], 'xp') or '0')
+local xpDepois = xpAntes
+local nivelAntes = nivel(xpAntes)
+local nivelDepois = nivelAntes
+local moedas = 0
+if tipo == 'xp' and valor > 0 then
+  xpDepois = redis.call('HINCRBY', KEYS[3], 'xp', valor)
+  redis.call('ZADD', KEYS[5], xpDepois, ARGV[1])
+  nivelDepois = nivel(xpDepois)
+  moedas = math.max(0, nivelDepois - nivelAntes) * 20
+  if moedas > 0 then redis.call('HINCRBY', KEYS[3], 'coins', moedas) end
+elseif tipo == 'moedas' and valor > 0 then
+  moedas = valor
+  redis.call('HINCRBY', KEYS[3], 'coins', moedas)
+elseif tipo == 'item' and ARGV[5] ~= '' then
+  redis.call('SADD', KEYS[4], ARGV[5])
+else
+  redis.call('SREM', KEYS[1], ARGV[1])
+  redis.call('DECR', KEYS[2])
+  redis.call('HINCRBY', KEYS[3], 'codigos', -1)
+  return {-2, usos}
+end
+local saldo = tonumber(redis.call('HGET', KEYS[3], 'coins') or '0')
+return {1, usos, xpDepois, nivelAntes, nivelDepois, moedas, saldo}
+`;
+
+const COMPRAR_ITEM_LUA = `
+local chave = ARGV[1]
+local preco = math.max(0, math.floor(tonumber(ARGV[2]) or 0))
+if redis.call('SISMEMBER', KEYS[2], chave) == 1 then return {0} end
+local saldo = tonumber(redis.call('HGET', KEYS[1], 'coins') or '0')
+if saldo < preco then return {-1, saldo, preco} end
+saldo = redis.call('HINCRBY', KEYS[1], 'coins', -preco)
+redis.call('SADD', KEYS[2], chave)
+return {1, saldo}
+`;
 
 const REGRAS_PUBLICAS = {
   moeda: MOEDA, nivelMax: NIVEL_MAX,
@@ -295,15 +348,16 @@ async function streamElementsInsights(){
     errors:{watchtime:watchResult.status==='rejected'?String(watchResult.reason?.message||watchResult.reason):null,points:pointsResult.status==='rejected'?String(pointsResult.reason?.message||pointsResult.reason):null,subscribers:subsResult.status==='rejected'?String(subsResult.reason?.message||subsResult.reason):null,tips:tipsResult.status==='rejected'?String(tipsResult.reason?.message||tipsResult.reason):null}
   };
 }
-async function carregarDevInsights(){
-  if(seDevCache.data && Date.now()<seDevCache.expiresAt) return {...seDevCache.data,cached:true};
-  const [arcade,se,live]=await Promise.allSettled([arcadeCommunitySample(),streamElementsInsights(),twitchLiveStatus()]);
+async function carregarDevInsights(force = false){
+  if(!force && seDevCache.data && Date.now()<seDevCache.expiresAt) return {...seDevCache.data,cached:true};
+  const [arcade,se,live,twitchPresence]=await Promise.allSettled([arcadeCommunitySample(),streamElementsInsights(),twitchLiveStatus(),diagnosticoTwitchPresenca()]);
   const arcadeData=arcade.status==='fulfilled'?arcade.value:{error:String(arcade.reason?.message||arcade.reason)};
   const seData=se.status==='fulfilled'?se.value:{configured:!!SE_JWT,error:String(se.reason?.message||se.reason)};
   const liveData=live.status==='fulfilled'?live.value:{configured:false,online:null,error:String(live.reason?.message||live.reason)};
+  const presenceData=twitchPresence.status==='fulfilled'?twitchPresence.value:{ready:false,error:String(twitchPresence.reason?.message||twitchPresence.reason)};
   const h=seData.watchtime?.summary;
   const recommended=h?.p25!=null?{entry:Math.max(5,Math.round(h.p25/5)*5),regular:Math.max(25,Math.round((h.median||0)/5)*5),loyal:Math.max(50,Math.round((h.p75||0)/5)*5),legendary:Math.max(100,Math.round((h.p90||0)/5)*5)}:null;
-  const data={generatedAt:new Date().toISOString(),arcade:arcadeData,streamElements:seData,twitch:liveData,recommendation:{note:'Use como referência, não como alteração automática de metas.',hours:recommended}};
+  const data={generatedAt:new Date().toISOString(),arcade:arcadeData,streamElements:seData,twitch:liveData,twitchPresence:presenceData,recommendation:{note:'Use como referência, não como alteração automática de metas.',hours:recommended}};
   seDevCache={data,expiresAt:Date.now()+5*60*1000}; return data;
 }
 
@@ -375,7 +429,7 @@ export default async function handler(req, res){
       if(req.method !== 'GET') return res.status(405).json({error:'Método não permitido.'});
       if(!ehDev) return res.status(403).json({error:'Acesso restrito à equipe de desenvolvimento.'});
       res.setHeader('Cache-Control','no-store');
-      return res.status(200).json(await carregarDevInsights());
+      return res.status(200).json(await carregarDevInsights(req.query?.force === '1'));
     }
 
     /* ============ PERFIL ============ */
@@ -436,7 +490,6 @@ export default async function handler(req, res){
       if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
       if(sessao.tipo !== 'own' && sessao.tipo !== 'discord') return res.status(401).json({ error: 'Faça login' });
       if(!(await rateLimit(`rl:code:${id}`, 6, 60))) return res.status(429).json({ error: 'Devagar! Tente de novo em 1 minuto.' });
-      // tentativas erradas: 15 por hora → bloqueio (anti brute-force de códigos)
       const [bloq] = await redis([['GET', `codefail:${id}`]]);
       if(Number(bloq || 0) >= 15) return res.status(429).json({ error: 'Muitas tentativas inválidas. Volte mais tarde.' });
 
@@ -452,54 +505,68 @@ export default async function handler(req, res){
       const c = jparse(raw);
       if(!c || !c.ativo || (c.expiraEm && Date.now() > c.expiraEm)) return falhar('Código inválido ou expirado.');
 
-      // 1 vez por pessoa (SADD é atômico)
-      const [novoUso] = await redis([['SADD', `codes:used:${codigo}`, id]]);
-      if(Number(novoUso) !== 1) return res.status(409).json({ error: 'Você já resgatou este código.' });
-      // limite global de usos (INCR é atômico → sem corrida)
-      const [cnt] = await redis([['INCR', `codes:cnt:${codigo}`]]);
-      if(c.maxUsos && Number(cnt) > c.maxUsos){
-        await redis([['DECR', `codes:cnt:${codigo}`], ['SREM', `codes:used:${codigo}`, id]]);
-        return res.status(410).json({ error: 'Este código já atingiu o limite de usos.' });
-      }
-
+      let itemKey = '';
       let premio = '';
-      if(c.tipo === 'xp'){ await creditar(id, { xp: c.valor, silencioso: true }); premio = `+${c.valor} XP`; }
-      else if(c.tipo === 'moedas'){ await creditar(id, { coins: c.valor, silencioso: true }); premio = `+${c.valor} ${MOEDA.nome}`; }
-      else if(c.tipo === 'item'){
+      if(c.tipo === 'xp' || c.tipo === 'moedas'){
+        const valor = Math.floor(Number(c.valor));
+        const teto = c.tipo === 'xp' ? 5000 : 10000;
+        if(!(valor > 0 && valor <= teto)) return res.status(500).json({ error: 'Código com recompensa inválida. Avise a equipe.' });
+        premio = c.tipo === 'xp' ? `+${valor} XP` : `+${valor} ${MOEDA.nome}`;
+      } else if(c.tipo === 'item'){
         const [slot, itemId] = String(c.item || '').split(':');
         const it = acharItem(slot, itemId);
-        if(!it){ await redis([['DECR', `codes:cnt:${codigo}`], ['SREM', `codes:used:${codigo}`, id]]); return res.status(500).json({ error: 'Código com item inválido. Avise a Soso!' }); }
-        await redis([['SADD', `inv:${id}`, `${slot}:${itemId}`]]);
-        premio = `Item: ${it.nome} (${RARIDADES[it.r].nome})`;
+        if(!it) return res.status(500).json({ error: 'Código com item inválido. Avise a equipe.' });
+        itemKey = `${slot}:${itemId}`;
+        premio = `Item: ${it.nome} (${RARIDADES[it.r]?.nome || 'Especial'})`;
+      } else {
+        return res.status(500).json({ error: 'Tipo de código inválido. Avise a equipe.' });
       }
-      await redis([['HINCRBY', `g:${id}`, 'codigos', '1']]);
+
+      // Resgate, limite global e entrega da recompensa ocorrem em uma única operação Redis.
+      const [resultado] = await redis([[
+        'EVAL', RESGATAR_CODIGO_LUA, '5',
+        `codes:used:${codigo}`, `codes:cnt:${codigo}`, `g:${id}`, `inv:${id}`, 'rank:xp',
+        id, String(Math.max(0, Math.floor(Number(c.maxUsos) || 0))), c.tipo,
+        String(Math.max(0, Math.floor(Number(c.valor) || 0))), itemKey
+      ]]);
+      const dados = Array.isArray(resultado) ? resultado.map(Number) : [];
+      if(dados[0] === 0) return res.status(409).json({ error: 'Você já resgatou este código.' });
+      if(dados[0] === -1) return res.status(410).json({ error: 'Este código já atingiu o limite de usos.' });
+      if(dados[0] !== 1) return res.status(500).json({ error: 'Não foi possível entregar a recompensa. Avise a equipe.' });
+
+      const xpAntes = dados[2] - (c.tipo === 'xp' ? Number(c.valor) : 0);
+      const nivelAntes = dados[3] || nivelPorXP(xpAntes);
+      const nivelDepois = dados[4] || nivelAntes;
+      if(nivelDepois > nivelAntes){
+        await notificar(id, 'nivel', `Subiu para o nível ${nivelDepois}! +${(nivelDepois - nivelAntes) * 20} ${MOEDA.nome}`);
+      }
       await notificar(id, 'codigo', `Código resgatado: ${premio}`);
-      const novas = await avaliarConquistas(id);
+      let novas = [];
+      try { novas = await avaliarConquistas(id); }
+      catch(error){ console.error('[game-api] Falha ao avaliar conquistas após código:', error); }
       return res.status(200).json({ ok: true, premio, conquistas: novas });
     }
 
     /* ============ LOJA ============ */
     if(action === 'comprar' && req.method === 'POST'){
       if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
-      if(!(await rateLimit(`rl:buy:${id}`, 20, 60, false))) return res.status(429).json({ error: 'Devagar!' });
+      if(!(await rateLimit(`rl:buy:${id}`, 20, 60))) return res.status(429).json({ error: 'Devagar!' });
       const slot = safeStr(req.body?.slot, 20), itemId = safeStr(req.body?.id, 30);
       const it = acharItem(slot, itemId);
       if(!it || it.regra.t !== 'loja') return res.status(400).json({ error: 'Este item não está à venda.' });
       const preco = precoDe(it);
       const chave = `${slot}:${itemId}`;
-      const [ja] = await redis([['SISMEMBER', `inv:${id}`, chave]]);
-      if(Number(ja) === 1) return res.status(409).json({ error: 'Você já tem este item.' });
-
-      // débito atômico; se ficou negativo, estorna
-      const [saldo] = await redis([['HINCRBY', `g:${id}`, 'coins', String(-preco)]]);
-      if(Number(saldo) < 0){
-        await redis([['HINCRBY', `g:${id}`, 'coins', String(preco)]]);
-        return res.status(402).json({ error: `Faltam ${-Number(saldo)} ${MOEDA.nome}.` });
-      }
-      await redis([['SADD', `inv:${id}`, chave]]);
+      const [resultado] = await redis([[
+        'EVAL', COMPRAR_ITEM_LUA, '2', `g:${id}`, `inv:${id}`, chave, String(preco)
+      ]]);
+      const dados = Array.isArray(resultado) ? resultado.map(Number) : [];
+      if(dados[0] === 0) return res.status(409).json({ error: 'Você já tem este item.' });
+      if(dados[0] === -1) return res.status(402).json({ error: `Faltam ${Math.max(0, preco - Number(dados[1] || 0))} ${MOEDA.nome}.` });
+      if(dados[0] !== 1) throw new Error('Resposta inválida ao concluir compra.');
       await notificar(id, 'item', `Comprou: ${it.nome} (-${preco} ${MOEDA.nome})`);
-      await avaliarConquistas(id);
-      return res.status(200).json({ ok: true, coins: Number(saldo) });
+      try { await avaliarConquistas(id); }
+      catch(error){ console.error('[game-api] Falha ao avaliar conquistas após compra:', error); }
+      return res.status(200).json({ ok: true, coins: dados[1] });
     }
 
     /* ============ TÍTULO ============ */

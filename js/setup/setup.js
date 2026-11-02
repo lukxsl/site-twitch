@@ -589,7 +589,7 @@ function abrirFicha(id) {
 function renderCatalogo() {
   const grid = $('catGrid');
   const q = filtro.busca.trim().toLowerCase();
-  
+
   // itensVisiveis já filtra o gato (oculto), então ele não aparece aqui.
   const itens = itensVisiveis().filter(([, it]) => {
     if (filtro.cat !== 'todos' && it.cat !== filtro.cat) return false;

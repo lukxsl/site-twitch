@@ -394,13 +394,13 @@
 
 /* AVATAR — Cabeça do Lukzin */
 .rpg-avatar {
-  width: 56px; 
-  height: 56px; 
+  width: 56px;
+  height: 56px;
   flex: none;
   border-radius: 50%;
   border: 0 !important;
   background: transparent !important;
-  overflow: hidden; 
+  overflow: hidden;
   position: relative;
   display: block;
   box-shadow: none;

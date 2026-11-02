@@ -19,7 +19,7 @@
     const secretCodesErrorCooldown = $('#secretCodesErrorCooldown');
     const secretCodesCooldownSeconds = $('#secretCodesCooldownSeconds');
     const secretCodesHistoryList = $('#secretCodesHistoryList');
-    
+
     if (!secretCodesInput) return;
 
     let cooldownTimer = null;

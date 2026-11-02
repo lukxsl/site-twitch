@@ -249,14 +249,14 @@ body.sou-admin .tl-card[draggable="true"] { cursor: grab; }
   .tl-count { margin-left: 0; width: 100%; text-align: center; margin-top: 8px; }
   .tl-frow { flex-direction: column; align-items: flex-start; gap: 8px; }
   .tl-flabel { padding-top: 0; width: 100%; }
-  
+
   /* Scrollbar customizada para os chips no mobile */
   .tl-chips { flex-wrap: nowrap; overflow-x: auto; width: 100%; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
   .tl-chips::-webkit-scrollbar { height: 4px; display: block; }
   .tl-chips::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 99px; }
   .tl-chips::-webkit-scrollbar-track { background: transparent; }
   .tl-chip { flex: none; }
-  
+
   .tl-tier { grid-template-columns: 1fr; }
   .tl-tab { flex-direction: row; justify-content: flex-start; gap: 16px; padding: 12px 20px; border-radius: 20px 20px 0 0; }
   .tl-letter { font-size: 2.2rem; }

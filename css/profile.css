@@ -981,7 +981,7 @@
 }
 
 
-/* ===== profile-new.css incorporado ===== */
+/* ===== BLOCO DO PERFIL INTEGRADO (antigo profile-new.css) ===== */
 /* ============================================================
    NOVO PERFIL UI — estilos para as novas abas e componentes
    ============================================================ */
@@ -2868,3 +2868,134 @@
 .pf-title-chip.is-locked{border-style:dashed;color:#827591;background:rgba(255,255,255,.018)}
 @media(max-width:760px){.pf-avatar-stage-large{align-items:flex-end}}
 #pfStreakNext{font-size:.8rem;line-height:1.2;overflow-wrap:anywhere}
+
+
+/* ============================================================
+   ACABAMENTO FINAL — hierarquia, consistência e responsividade
+   ============================================================ */
+#sec-perfil .pf-shell{gap:18px}
+#sec-perfil .pf-panel{animation:pfPanelIn .24s ease both}
+@keyframes pfPanelIn{from{opacity:.0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+#sec-perfil .pf-panel-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:0 0 18px;padding:0 0 14px;border-bottom:1px solid rgba(168,85,247,.18)}
+#sec-perfil .pf-panel-heading h2{margin:4px 0 5px;color:#fff;font:800 clamp(1.25rem,2vw,1.65rem) 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em}
+#sec-perfil .pf-panel-heading p{max-width:700px;margin:0;color:#a99bbd;font-size:.8rem;line-height:1.55}
+#sec-perfil .pf-count-pill{flex:none;padding:7px 11px;border:1px solid rgba(192,132,252,.25);border-radius:999px;background:rgba(124,58,237,.12);color:#e9d5ff;font:700 .66rem 'JetBrains Mono',monospace}
+#sec-perfil .pf-tabs{position:relative;z-index:2;padding:5px;border:1px solid rgba(168,85,247,.18);border-radius:13px;background:rgba(13,8,24,.86);box-shadow:0 8px 24px rgba(0,0,0,.16)}
+#sec-perfil .pf-tab{min-height:40px;border:1px solid transparent;border-radius:9px;color:#a99bbd;transition:background .18s,border-color .18s,color .18s}
+#sec-perfil .pf-tab:hover{border-color:rgba(192,132,252,.2);background:rgba(168,85,247,.08);color:#eee5fa}
+#sec-perfil .pf-tab.on{border-color:rgba(192,132,252,.32);background:linear-gradient(135deg,rgba(124,58,237,.24),rgba(168,85,247,.1));color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+#sec-perfil .pf-overview-layout{grid-template-columns:minmax(270px,310px) minmax(0,1fr);gap:16px}
+#sec-perfil .pf-player-column,#sec-perfil .pf-overview-data{gap:12px}
+#sec-perfil .pf-visual-section{padding:9px;border-color:rgba(192,132,252,.22);background:linear-gradient(160deg,rgba(35,20,57,.96),rgba(13,8,24,.98));box-shadow:0 12px 30px rgba(0,0,0,.18)}
+#sec-perfil .pf-avatar-stage-large{height:340px;min-height:340px;max-height:340px;border-color:rgba(192,132,252,.28);background:radial-gradient(circle at 50% 34%,rgba(192,132,252,.2),transparent 48%),linear-gradient(180deg,#25133f 0%,#170c2a 70%,#10091d 100%)}
+#sec-perfil .pf-avatar-stage-large:before{opacity:.28}
+#sec-perfil .pf-avatar-stage-large:after{height:35px;border-top-width:1px}
+#sec-perfil .pf-info-summary{gap:11px;padding:16px}
+#sec-perfil .pf-overview-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+#sec-perfil .pf-stat-card{min-height:82px;padding:11px;border-color:rgba(168,85,247,.16);background:linear-gradient(145deg,rgba(29,18,46,.96),rgba(15,9,27,.98));box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+#sec-perfil .pf-stat-card strong{font-size:1.28rem}
+#sec-perfil .pf-position-card,#sec-perfil .pf-streak-card,#sec-perfil .pf-overview-extras>.pf-extra-card{border-color:rgba(168,85,247,.17);background:linear-gradient(145deg,rgba(27,16,44,.96),rgba(13,8,24,.98));box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+#sec-perfil .pf-position-card{padding:15px 17px}
+#sec-perfil .pf-position-number{font-size:1.9rem}
+#sec-perfil .pf-streak-card{padding:15px}
+#sec-perfil .pf-milestone{min-height:85px;align-content:center}
+#sec-perfil .pf-milestone-status{overflow-wrap:anywhere}
+#sec-perfil .pf-milestone.is-reached{background:rgba(34,197,94,.08);border-color:rgba(74,222,128,.28)}
+#sec-perfil .pf-overview-extras{gap:12px;margin-top:14px}
+#sec-perfil .pf-overview-extras>.pf-extra-card{padding:15px}
+#sec-perfil .pf-recent-ach{border-radius:9px}
+#sec-perfil .pf-xp-rules{gap:3px}
+#sec-perfil .pf-rule-item{padding:8px 0}
+#sec-perfil .pf-title-collection-list{max-height:104px;overflow:auto;padding:1px 2px 4px}
+#sec-perfil .pf-title-chip{line-height:1.3}
+#sec-perfil .pf-item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));align-items:stretch;gap:11px}
+#sec-perfil .pf-item-card{display:flex;min-width:0;min-height:205px;border-color:rgba(168,85,247,.17);border-radius:13px;background:linear-gradient(150deg,rgba(30,19,49,.95),rgba(14,9,25,.98));box-shadow:inset 0 1px 0 rgba(255,255,255,.025);transition:transform .18s,border-color .18s,background .18s}
+#sec-perfil .pf-item-card:hover{transform:translateY(-2px);border-color:rgba(192,132,252,.4);background:linear-gradient(150deg,rgba(42,25,68,.97),rgba(17,10,30,.99))}
+#sec-perfil .pf-item-card.is-equipped{border-color:rgba(74,222,128,.32);background:linear-gradient(150deg,rgba(20,43,39,.55),rgba(14,9,25,.98))}
+#sec-perfil .pf-item-preview{display:grid;place-items:center;min-height:76px;border:1px solid rgba(168,85,247,.12);border-radius:10px;background:radial-gradient(circle,rgba(168,85,247,.1),rgba(9,6,17,.48) 72%)}
+#sec-perfil .pf-item-swatch{width:44px;height:44px;border:4px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 7px 16px rgba(0,0,0,.22)}
+#sec-perfil .pf-item-glyph{display:grid;place-items:center;width:46px;height:46px;border:1px solid rgba(192,132,252,.2);border-radius:12px;background:rgba(168,85,247,.1);font-size:1.45rem}
+#sec-perfil .pf-item-actions{margin-top:auto}
+#sec-perfil .pf-achievement-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;border:1px solid rgba(168,85,247,.15);border-radius:12px;background:rgba(16,10,28,.7)}
+#sec-perfil .pf-achievement-toolbar>span{color:#988ba8;font-size:.7rem}
+#sec-perfil .pf-achievement-filters{display:flex;gap:5px;flex-wrap:wrap}
+#sec-perfil .pf-achievement-filters button{padding:8px 11px;border:1px solid transparent;border-radius:8px;background:transparent;color:#a99bbd;font:700 .7rem 'DM Sans',sans-serif;cursor:pointer}
+#sec-perfil .pf-achievement-filters button:hover{background:rgba(168,85,247,.08);color:#eee5fa}
+#sec-perfil .pf-achievement-filters button.is-active{border-color:rgba(192,132,252,.25);background:rgba(124,58,237,.16);color:#f3e8ff}
+#sec-perfil .pf-achievement-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+#sec-perfil .pf-achievement-card{position:relative;min-width:0;min-height:218px;padding:15px;border-color:rgba(168,85,247,.16);border-radius:13px;background:linear-gradient(150deg,rgba(29,18,47,.96),rgba(13,8,24,.98));box-shadow:inset 0 1px 0 rgba(255,255,255,.025);filter:none;opacity:1;transition:border-color .18s,transform .18s,background .18s}
+#sec-perfil .pf-achievement-card:hover{transform:translateY(-2px);border-color:rgba(192,132,252,.38)}
+#sec-perfil .pf-achievement-card.is-locked{opacity:.78;filter:saturate(.62)}
+#sec-perfil .pf-achievement-card.is-unlocked{border-color:rgba(250,204,21,.28);background:linear-gradient(150deg,rgba(44,34,24,.5),rgba(16,10,25,.98))}
+#sec-perfil .pf-achievement-icon{width:42px;height:42px;border:1px solid rgba(168,85,247,.15);border-radius:11px;background:rgba(168,85,247,.09);font-size:1.35rem}
+#sec-perfil .pf-achievement-name{font-size:.88rem;line-height:1.3}
+#sec-perfil .pf-achievement-desc{font-size:.72rem;line-height:1.45}
+#sec-perfil .pf-achievement-progress{width:100%;margin-top:3px}
+#sec-perfil .pf-achievement-progress-track{height:7px;border-radius:999px}
+#sec-perfil .pf-achievement-reward{margin:3px 0 0;color:#d6c4e8;font-size:.68rem;line-height:1.35}
+#sec-perfil .pf-achievement-status{font-size:.59rem;letter-spacing:.035em}
+#sec-perfil .pf-achievement-card.is-platinum{grid-column:1/-1;display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:7px 14px;min-height:unset;border-color:rgba(250,204,21,.42);background:linear-gradient(100deg,rgba(66,49,23,.34),rgba(18,12,26,.98))}
+#sec-perfil .pf-achievement-card.is-platinum .pf-platinum-label{grid-column:1/-1}
+#sec-perfil .pf-achievement-card.is-platinum .pf-platinum-trophy{grid-column:1;grid-row:2/5;width:54px;height:54px;margin:0}
+#sec-perfil .pf-achievement-card.is-platinum .pf-achievement-name,#sec-perfil .pf-achievement-card.is-platinum .pf-achievement-desc,#sec-perfil .pf-achievement-card.is-platinum .pf-achievement-reward,#sec-perfil .pf-achievement-card.is-platinum .pf-achievement-status{grid-column:2/-1}
+#sec-perfil .pf-settings-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#sec-perfil .pf-settings-card{min-width:0;padding:17px;border:1px solid rgba(168,85,247,.17);border-radius:14px;background:linear-gradient(150deg,rgba(29,18,47,.96),rgba(13,8,24,.98));box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+#sec-perfil .pf-settings-card input{min-height:42px}
+#sec-perfil .pf-settings-card .pf-btn{min-height:38px}
+#sec-perfil .pf-twitch-status{min-height:40px;display:flex;align-items:center;overflow-wrap:anywhere}
+#sec-perfil .pf-dev-insights{grid-column:1/-1}
+#sec-perfil .pf-dev-insights-content{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#sec-perfil .pf-dev-source{border-radius:12px;background:rgba(14,9,25,.8)}
+#sec-perfil .pf-dev-source>p{overflow-wrap:anywhere}
+#sec-perfil .pf-shop-coming-soon{max-width:650px;margin:22px auto;padding:clamp(22px,4vw,38px);border:1px solid rgba(192,132,252,.22);border-radius:18px;background:radial-gradient(ellipse at 50% 0,rgba(124,58,237,.2),transparent 65%),linear-gradient(150deg,rgba(29,18,47,.96),rgba(13,8,24,.98));text-align:center;box-shadow:0 18px 42px rgba(0,0,0,.18)}
+#sec-perfil .pf-shop-coming-soon>p{max-width:480px;margin:0 auto 18px;color:#a99bbd;font-size:.82rem;line-height:1.6}
+#sec-perfil .pf-shop-coming-icon{display:grid;place-items:center;width:66px;height:66px;margin:0 auto 12px;border:1px solid rgba(192,132,252,.2);border-radius:18px;background:rgba(168,85,247,.12);font-size:2rem}
+#sec-perfil button:focus-visible,#sec-perfil a:focus-visible,#sec-perfil input:focus-visible,#sec-perfil select:focus-visible{outline:2px solid #d8b4fe;outline-offset:3px}
+
+@media(max-width:1080px){
+  #sec-perfil .pf-overview-layout{grid-template-columns:minmax(250px,290px) minmax(0,1fr);gap:12px}
+  #sec-perfil .pf-overview-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #sec-perfil .pf-achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  #sec-perfil .pf-overview-layout{grid-template-columns:minmax(0,1fr)}
+  #sec-perfil .pf-player-column{grid-template-columns:minmax(240px,.82fr) minmax(0,1.18fr);align-items:stretch;max-width:none}
+  #sec-perfil .pf-visual-section{min-width:0}
+  #sec-perfil .pf-avatar-stage-large{height:100%;min-height:300px;max-height:360px}
+  #sec-perfil .pf-overview-data{grid-template-columns:minmax(0,1fr)}
+  #sec-perfil .pf-overview-extras{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #sec-perfil .pf-settings-grid{grid-template-columns:minmax(0,1fr)}
+  #sec-perfil .pf-settings-twitch,#sec-perfil .pf-dev-insights{grid-column:1}
+}
+@media(max-width:680px){
+  #sec-perfil .pf-player-column{grid-template-columns:minmax(0,1fr);max-width:520px;width:100%;margin:0 auto}
+  #sec-perfil .pf-avatar-stage-large{height:330px;min-height:330px;max-height:330px}
+  #sec-perfil .pf-overview-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #sec-perfil .pf-overview-extras{grid-template-columns:minmax(0,1fr)}
+  #sec-perfil .pf-achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #sec-perfil .pf-achievement-card.is-platinum{grid-template-columns:1fr;text-align:left}
+  #sec-perfil .pf-achievement-card.is-platinum .pf-platinum-trophy{grid-column:1;grid-row:auto}
+  #sec-perfil .pf-achievement-card.is-platinum .pf-achievement-name,#sec-perfil .pf-achievement-card.is-platinum .pf-achievement-desc,#sec-perfil .pf-achievement-card.is-platinum .pf-achievement-reward,#sec-perfil .pf-achievement-card.is-platinum .pf-achievement-status{grid-column:1}
+  #sec-perfil .pf-dev-insights-content{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:480px){
+  #sec-perfil .pf-panel-heading{align-items:flex-start;flex-direction:column;gap:9px}
+  #sec-perfil .pf-overview-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  #sec-perfil .pf-stat-card{min-height:76px;padding:9px;gap:8px}
+  #sec-perfil .pf-stat-icon,#sec-perfil .pf-stat-coins>img{width:31px;height:31px}
+  #sec-perfil .pf-stat-card strong{font-size:1.08rem}
+  #sec-perfil .pf-streak-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #sec-perfil .pf-milestone-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #sec-perfil .pf-achievement-grid{grid-template-columns:minmax(0,1fr)}
+  #sec-perfil .pf-item-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #sec-perfil .pf-item-card{min-height:200px;padding:10px}
+  #sec-perfil .pf-item-actions .pf-btn{width:100%;padding:8px 7px;font-size:.68rem}
+  #sec-perfil .pf-inventory-toolbar>span{margin-left:0}
+}
+@media(max-width:360px){
+  #sec-perfil .pf-overview-stats,#sec-perfil .pf-item-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){
+  #sec-perfil .pf-panel{animation:none}
+  #sec-perfil *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}

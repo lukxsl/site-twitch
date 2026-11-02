@@ -39,6 +39,7 @@
   let catalogo = null;
   let active = 'visao-geral';
   let loading = false;
+  let loadAllRequestId = 0;
   let inventoryFilter = 'todos';
   let achievementFilter = 'andamento';
   let devInsights = null;
@@ -95,7 +96,8 @@
   }
 
   async function loadAll(force = false) {
-    if (loading) return;
+    if (loading && !force) return;
+    const requestId = ++loadAllRequestId;
     loading = true;
     try {
       const state = window.GameState;
@@ -107,6 +109,7 @@
         ? state.carregarCatalogo({ forcar: force })
         : Promise.resolve(null);
       const [perfilResult, catalogoResult] = await Promise.allSettled([perfilPromise, catalogoPromise]);
+      if (requestId !== loadAllRequestId) return;
 
       perfil = perfilResult.status === 'fulfilled' ? perfilResult.value : null;
       catalogo = catalogoResult.status === 'fulfilled' ? catalogoResult.value : null;
@@ -117,17 +120,21 @@
         if (result.ok) perfil = result.data;
         else console.error('[PerfilUI] Falha ao carregar perfil:', result.status, result.data);
       }
+      if (requestId !== loadAllRequestId) return;
       if (!catalogo?.catalogo) {
         const result = await api(API_GAME, 'catalogo');
+        if (requestId !== loadAllRequestId) return;
         if (result.ok && result.data?.catalogo) catalogo = result.data;
         else console.error('[PerfilUI] Falha ao carregar catálogo:', result.status, result.data);
       }
+      if (requestId !== loadAllRequestId) return;
       updateAll();
     } catch (error) {
+      if (requestId !== loadAllRequestId) return;
       console.error('[PerfilUI] Falha ao atualizar interface:', error);
       notify('Não foi possível atualizar o perfil agora.', 'erro');
     } finally {
-      loading = false;
+      if (requestId === loadAllRequestId) loading = false;
     }
   }
 
@@ -466,10 +473,11 @@
     const unlockedCount = normal.filter(item => !!item.ts).length;
     setText('pfAchievementProgress', `${unlockedCount} / ${normal.length}`);
 
+    const platinumUnlocked = achievements.some(item => item.id === 'platina' && !!item.ts);
     const counts = {
       andamento: normal.length - unlockedCount,
-      desbloqueadas: unlockedCount,
-      todas: normal.length + (achievements.some(item => item.id === 'platina') ? 1 : 0)
+      desbloqueadas: unlockedCount + (platinumUnlocked ? 1 : 0),
+      todas: achievements.length
     };
     setText('pfAchievementHint', `${money(counts[achievementFilter] ?? counts.andamento)} conquista(s) nesta visualização.`);
     $$('[data-achievement-filter]').forEach(filterButton => {
@@ -731,6 +739,25 @@
     else if (twitch.online === null) twitchCard.appendChild(el('p', 'pf-dev-warning', twitch.error || 'A Twitch não retornou um status válido.'));
     root.appendChild(twitchCard);
 
+    // Configuração usada pelo cron que contabiliza a presença dos espectadores.
+    const presence = devInsights.twitchPresence || {};
+    const presenceCard = devSection('Contabilização de presença nas lives', presence.pronta
+      ? 'As variáveis básicas estão presentes. A validação final depende do escopo OAuth do token e de uma execução real do agendador.'
+      : 'A presença só é contabilizada quando todas as credenciais abaixo estão configuradas.');
+    const presenceGrid = el('div', 'pf-dev-stat-grid');
+    presenceGrid.append(
+      statTile('App Twitch', presence.clientCredentials ? 'Configurado' : 'Pendente', 'TWITCH_CLIENT_ID + TWITCH_CLIENT_SECRET'),
+      statTile('ID do canal', presence.broadcasterId ? 'Configurado' : 'Pendente', 'TWITCH_BROADCASTER_ID'),
+      statTile('Token do canal', presence.broadcasterRefreshToken ? 'Disponível' : 'Pendente', 'TWITCH_BROADCASTER_REFRESH ou token salvo no Redis'),
+      statTile('Token de acesso', presence.accessTokenEmCache ? 'Em cache' : 'Será renovado', 'Acesso temporário da Twitch')
+    );
+    presenceCard.appendChild(presenceGrid);
+    if (!presence.pronta) {
+      presenceCard.appendChild(el('p', 'pf-dev-warning', presence.error || 'Configure as variáveis pendentes na Vercel antes de testar a presença.'));
+    }
+    presenceCard.appendChild(el('p', 'pf-dev-footnote', `O token do canal precisa ter o escopo OAuth ${presence.scopeNecessario || 'moderator:read:chatters'}. O agendador também precisa chamar /api/game?action=cron-presenca a cada 5 minutos, enviando Authorization: Bearer CRON_SECRET. Veja CONFIGURACAO-VERCEL.md.`));
+    root.appendChild(presenceCard);
+
     const recommendation = devInsights.recommendation?.hours;
     if (recommendation) {
       const card = devSection('Referência de metas por percentil', 'Sugestão baseada na distribuição de watchtime do StreamElements. Revise a cobertura da amostra antes de alterar qualquer regra.');
@@ -754,7 +781,7 @@
     devInsightsError = '';
     renderDevInsights();
     try {
-      const result = await api(API_GAME, 'dev-insights');
+      const result = await api(API_GAME, 'dev-insights', { query: force ? { force: 1 } : null });
       if (!result.ok) {
         const message = result.data?.error || `A API respondeu HTTP ${result.status || 'desconhecido'}.`;
         throw new Error(message);

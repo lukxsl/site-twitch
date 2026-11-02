@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import { evento } from './_lib/game.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -13,6 +14,56 @@ const STEAM_ID = '76561199823015081';
 const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 const ENV_DEV_EMAILS = (process.env.GOOGLE_DEV_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const SUG_KEY = 'sugestoes:lista';
+const SUG_STATUS_LUA = `
+local itens = redis.call('LRANGE', KEYS[1], 0, 199)
+for indice, raw in ipairs(itens) do
+  local ok, item = pcall(cjson.decode, raw)
+  if ok and type(item) == 'table' and tostring(item.id or '') == ARGV[1] then
+    local anterior = item.status or 'nova'
+    item.status = ARGV[2]
+    item.motivo = ARGV[3] ~= '' and ARGV[3] or cjson.null
+    item.motivoTipo = ARGV[4] ~= '' and ARGV[4] or cjson.null
+    item.atualizadoEm = ARGV[5]
+    item.atualizadoPor = ARGV[6]
+    local atualizado = cjson.encode(item)
+    redis.call('LSET', KEYS[1], indice - 1, atualizado)
+    return {atualizado, anterior}
+  end
+end
+return {}
+`;
+const SUG_DELETE_LUA = `
+local itens = redis.call('LRANGE', KEYS[1], 0, 199)
+local mantidos = {}
+local removidos = 0
+for _, raw in ipairs(itens) do
+  local ok, item = pcall(cjson.decode, raw)
+  if ok and type(item) == 'table' and tostring(item.id or '') == ARGV[1] then
+    removidos = removidos + 1
+  else
+    table.insert(mantidos, raw)
+  end
+end
+if removidos == 0 then return 0 end
+redis.call('DEL', KEYS[1])
+for _, raw in ipairs(mantidos) do redis.call('RPUSH', KEYS[1], raw) end
+return removidos
+`;
+const SUG_CLEAN_LUA = `
+local itens = redis.call('LRANGE', KEYS[1], 0, 199)
+local mantidos = {}
+local removidos = 0
+local modo = ARGV[1]
+for _, raw in ipairs(itens) do
+  local ok, item = pcall(cjson.decode, raw)
+  local status = ok and type(item) == 'table' and (item.status or 'nova') or ''
+  local apagar = modo == 'tudo' or (modo == 'concluidas' and status == 'concluido') or (modo == 'recusadas' and status == 'recusada')
+  if apagar then removidos = removidos + 1 else table.insert(mantidos, raw) end
+end
+redis.call('DEL', KEYS[1])
+for _, raw in ipairs(mantidos) do redis.call('RPUSH', KEYS[1], raw) end
+return {removidos, #mantidos}
+`;
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL;
 const LOGS_MAX = 199;
 
@@ -1121,45 +1172,45 @@ export default async function handler(req, res){
       if(!STATUS_SUG_VALIDOS.includes(status)) return res.status(400).json({ error: 'Status inválido' });
       if(status === 'recusada' && !motivo) return res.status(400).json({ error: 'Motivo obrigatório' });
 
-      const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
-      const itens = (flat || []).map(x => { try { return JSON.parse(x); } catch { return null; } }).filter(Boolean);
-      const idx = itens.findIndex(i => i.id === id);
-      if(idx < 0) return res.status(404).json({ error: 'Sugestão não encontrada' });
+      const motivoSeguro = status === 'recusada' ? String(motivo).slice(0, 200) : '';
+      const motivoTipoSeguro = status === 'recusada' ? String(motivoTipo || '').slice(0, 60) : '';
+      const atualizadoEm = new Date().toISOString();
+      const [retorno] = await redis([[
+        'EVAL', SUG_STATUS_LUA, '1', SUG_KEY,
+        String(id), String(status), motivoSeguro, motivoTipoSeguro, atualizadoEm, String(quem)
+      ]]);
+      if(!Array.isArray(retorno) || !retorno[0]) return res.status(404).json({ error: 'Sugestão não encontrada' });
 
-      itens[idx].status = status;
-      itens[idx].motivo = status === 'recusada' ? String(motivo).slice(0, 200) : null;
-      itens[idx].motivoTipo = status === 'recusada' ? (motivoTipo || null) : null;
-      itens[idx].atualizadoEm = new Date().toISOString();
-      itens[idx].atualizadoPor = quem;
+      let item;
+      try { item = JSON.parse(retorno[0]); } catch { return res.status(500).json({ error: 'Não foi possível confirmar a atualização da sugestão' }); }
+      const statusAnterior = String(retorno[1] || 'nova');
 
-      const cmds = [['DEL', SUG_KEY]];
-      for(let i = itens.length - 1; i >= 0; i--){
-        cmds.push(['RPUSH', SUG_KEY, JSON.stringify(itens[i])]);
+      let recompensaPendente = false;
+      if(status === 'aceita' && item.userId){
+        try {
+          // A referência é o ID da sugestão: aprovar novamente não paga em dobro.
+          await evento(String(item.userId), 'sugestao_aprovada', String(item.id));
+        } catch(error) {
+          recompensaPendente = true;
+          console.error('[Admin] Sugestão aceita, mas a recompensa ficou pendente:', error?.message || error);
+        }
       }
-      await redis(cmds);
-      await notificarStatus(itens[idx], status, itens[idx].motivo, quem);
 
-      const label = status === 'recusada' ? `recusou (motivo: ${itens[idx].motivo})` : `mudou para ${status}`;
-      await logAcao(quem, sessao.cargo, `Sugestão de @${itens[idx].nome}: ${label}`);
-      return res.status(200).json({ ok: true, item: itens[idx] });
+      await notificarStatus(item, status, item.motivo, quem);
+      const label = status === 'recusada' ? `recusou (motivo: ${item.motivo})` : `mudou para ${status}`;
+      await logAcao(quem, sessao.cargo, `Sugestão de @${item.nome}: ${label}`);
+      return res.status(200).json({ ok: true, item, recompensaPendente, statusAnterior });
     }
 
     if(req.method === 'POST' && action === 'sugestoes-delete'){
       if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
       const { id } = req.body || {};
       if(!id) return res.status(400).json({ error: 'ID obrigatório' });
-      const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
-      const itens = (flat || []).map(x => { try { return JSON.parse(x); } catch { return null; } }).filter(Boolean);
-      const antes = itens.length;
-      const restantes = itens.filter(i => i.id !== id);
-      if(restantes.length === antes) return res.status(404).json({ error: 'Sugestão não encontrada' });
-      const cmds = [['DEL', SUG_KEY]];
-      for(let i = restantes.length - 1; i >= 0; i--){
-        cmds.push(['RPUSH', SUG_KEY, JSON.stringify(restantes[i])]);
-      }
-      await redis(cmds);
-      await logAcao(quem, sessao.cargo, `Excluiu uma sugestão (ID ${id.slice(0,8)})`);
-      return res.status(200).json({ ok: true, restantes: restantes.length });
+      const [removidos] = await redis([['EVAL', SUG_DELETE_LUA, '1', SUG_KEY, String(id)]]);
+      if(Number(removidos) < 1) return res.status(404).json({ error: 'Sugestão não encontrada' });
+      await logAcao(quem, sessao.cargo, `Excluiu uma sugestão (ID ${String(id).slice(0,8)})`);
+      const [total] = await redis([['LLEN', SUG_KEY]]);
+      return res.status(200).json({ ok: true, restantes: Number(total || 0) });
     }
 
     if(req.method === 'POST' && action === 'sugestoes-limpar'){
@@ -1168,21 +1219,11 @@ export default async function handler(req, res){
       if(!['concluidas','recusadas','tudo'].includes(modo)){
         return res.status(400).json({ error: 'Modo inválido' });
       }
-      const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
-      const itens = (flat || []).map(x => { try { return JSON.parse(x); } catch { return null; } }).filter(Boolean);
-      const antes = itens.length;
-      let restantes;
-      if(modo === 'tudo') restantes = [];
-      else if(modo === 'concluidas') restantes = itens.filter(i => i.status !== 'concluido');
-      else restantes = itens.filter(i => i.status !== 'recusada');
-      const apagados = antes - restantes.length;
-      const cmds = [['DEL', SUG_KEY]];
-      for(let i = restantes.length - 1; i >= 0; i--){
-        cmds.push(['RPUSH', SUG_KEY, JSON.stringify(restantes[i])]);
-      }
-      await redis(cmds);
+      const [resultado] = await redis([['EVAL', SUG_CLEAN_LUA, '1', SUG_KEY, String(modo)]]);
+      const apagados = Number(resultado?.[0] || 0);
+      const restantes = Number(resultado?.[1] || 0);
       await logAcao(quem, sessao.cargo, `Limpou ${apagados} sugestões (modo: ${modo})`);
-      return res.status(200).json({ ok: true, apagados, restantes: restantes.length });
+      return res.status(200).json({ ok: true, apagados, restantes });
     }
 
     return res.status(400).json({ error: 'Ação inválida: ' + action });

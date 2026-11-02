@@ -459,7 +459,7 @@ function setupHallTabs(){
 
 function iniciarHall(){
   setupHallTabs();
-  renderHall();            
+  renderHall();
   carregarHall();
   if(HALL_TIMER) clearInterval(HALL_TIMER);
   HALL_TIMER = setInterval(() => {
@@ -1986,7 +1986,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupSubShortcuts();
   iniciarHall();
   renderOuvindo();
-  
+
   setupSugForm();
   setupSirFiltros();
   setupSugTabs();

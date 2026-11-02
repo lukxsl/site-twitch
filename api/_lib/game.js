@@ -83,8 +83,8 @@ export const CONQUISTAS = [
   { id: 'twitch', icone: '🔗', nome: 'Linkou, Tá Linkado', desc: 'Conecte sua Twitch para o Arcade reconhecer sua presença nas lives.', r: 'comum', cond: S => S.twitch, progresso: { campo: 'twitch', meta: 1, unidade: 'conta vinculada' }, premio: { xp: 30, coins: 20 } },
 
   { id: 'voto_1', icone: '🗳️', nome: 'Primeiro Papo', desc: 'Deu seu primeiro voto. Democracia do chat em ação!', r: 'comum', cond: S => S.votos >= 1, progresso: { campo: 'votos', meta: 1, unidade: 'votos' }, premio: { xp: 15, coins: 5 } },
-  { id: 'voto_25', icone: '📣', nome: 'Chat Influencer', desc: 'Já mandou 5 votos. A Soso que lute com esse poder democrático.', r: 'incomum', cond: S => S.votos >= 5, progresso: { campo: 'votos', meta: 5, unidade: 'votos' }, premio: { xp: 50, coins: 25 } },
-  { id: 'voto_100', icone: '📢', nome: 'Voz da Comunidade', desc: '25 votos registrados. Seu dedo já tem cadeira cativa nas votações.', r: 'epico', cond: S => S.votos >= 25, progresso: { campo: 'votos', meta: 25, unidade: 'votos' }, premio: { xp: 180, coins: 90 } },
+  { id: 'voto_25', icone: '📣', nome: 'Chat Influencer', desc: 'Registre 25 votos. A Soso que lute com esse poder democrático.', r: 'incomum', cond: S => S.votos >= 25, progresso: { campo: 'votos', meta: 25, unidade: 'votos' }, premio: { xp: 50, coins: 25 } },
+  { id: 'voto_100', icone: '📢', nome: 'Voz da Comunidade', desc: '100 votos registrados. Seu dedo já tem cadeira cativa nas votações.', r: 'epico', cond: S => S.votos >= 100, progresso: { campo: 'votos', meta: 100, unidade: 'votos' }, premio: { xp: 180, coins: 90 } },
 
   { id: 'sug_1', icone: '💡', nome: 'Ideia no Chat', desc: 'Mandou a primeira sugestão. Agora é torcer para a Soso não fingir que não viu 👀', r: 'incomum', cond: S => S.sugestoesEnv >= 1, progresso: { campo: 'sugestoesEnv', meta: 1, unidade: 'sugestões enviadas' }, premio: { xp: 30, coins: 15 } },
   { id: 'sug_5', icone: '🧠', nome: 'Mente Brilhante', desc: 'Cinco ideias enviadas. O chat virou reunião de brainstorm.', r: 'raro', cond: S => S.sugestoesEnv >= 5, progresso: { campo: 'sugestoesEnv', meta: 5, unidade: 'sugestões enviadas' }, premio: { xp: 100, coins: 50 } },
@@ -92,8 +92,8 @@ export const CONQUISTAS = [
 
   { id: 'horas_10', icone: '📺', nome: 'Lurker de Carteirinha', desc: '10 horas de live. Já sabe até quando a Soso vai falar “só mais uma”.', r: 'incomum', cond: S => S.horas >= 10, progresso: { campo: 'horas', meta: 10, unidade: 'horas' }, premio: { xp: 100, coins: 50 } },
   { id: 'horas_50', icone: '🛋️', nome: 'Móvel do Chat', desc: '50 horas assistidas. Já pode pedir endereço fixo no cantinho.', r: 'raro', cond: S => S.horas >= 50, progresso: { campo: 'horas', meta: 50, unidade: 'horas' }, premio: { xp: 300, coins: 150 } },
-  { id: 'horas_200', icone: '🏛️', nome: 'Patrimônio do Chat', desc: '100 horas de companhia. Já é praticamente parte da decoração.', r: 'epico', cond: S => S.horas >= 100, progresso: { campo: 'horas', meta: 100, unidade: 'horas' }, premio: { xp: 650, coins: 320 } },
-  { id: 'horas_500', icone: '🌌', nome: 'Habitante do Cantinho', desc: '150 horas de live. O algoritmo já te considera morador.', r: 'lendario', cond: S => S.horas >= 150, progresso: { campo: 'horas', meta: 150, unidade: 'horas' }, premio: { xp: 900, coins: 500 } },
+  { id: 'horas_200', icone: '🏛️', nome: 'Patrimônio do Chat', desc: 'Complete 200 horas de companhia. Já é praticamente parte da decoração.', r: 'epico', cond: S => S.horas >= 200, progresso: { campo: 'horas', meta: 200, unidade: 'horas' }, premio: { xp: 650, coins: 320 } },
+  { id: 'horas_500', icone: '🌌', nome: 'Habitante do Cantinho', desc: 'Chegue a 500 horas de live. O algoritmo já te considera morador.', r: 'lendario', cond: S => S.horas >= 500, progresso: { campo: 'horas', meta: 500, unidade: 'horas' }, premio: { xp: 900, coins: 500 } },
 
   { id: 'streak_4', icone: '🔥', nome: 'Sequência de Fogo', desc: 'Quatro lives seguidas. Nem o despertador te segura.', r: 'incomum', cond: S => S.melhorStreak >= 4, progresso: { campo: 'melhorStreak', meta: 4, unidade: 'lives seguidas' }, premio: { xp: 120, coins: 60 } },
   { id: 'streak_12', icone: '⚡', nome: 'Imparável', desc: 'Doze lives em sequência. Isso já é compromisso sério.', r: 'epico', cond: S => S.melhorStreak >= 12, progresso: { campo: 'melhorStreak', meta: 12, unidade: 'lives seguidas' }, premio: { xp: 350, coins: 180 } },
@@ -105,13 +105,13 @@ export const CONQUISTAS = [
 
   { id: 'nivel_10', icone: '⭐', nome: 'Build em Andamento', desc: 'Chegue ao nível 10. Seu personagem já está ficando perigoso.', r: 'incomum', cond: S => S.nivel >= 10, progresso: { campo: 'nivel', meta: 10, unidade: 'níveis' }, premio: { xp: 0, coins: 100 } },
   { id: 'nivel_25', icone: '🌟', nome: 'Veterano do Fliperama', desc: 'Nível 25 alcançado. Já conhece os atalhos desse mapa.', r: 'raro', cond: S => S.nivel >= 25, progresso: { campo: 'nivel', meta: 25, unidade: 'níveis' }, premio: { xp: 0, coins: 250 } },
-  { id: 'nivel_50', icone: '👑', nome: 'Lenda em Construção', desc: 'Chegue ao nível 30. A build está quase quebrando o balanceamento.', r: 'lendario', cond: S => S.nivel >= 30, progresso: { campo: 'nivel', meta: 30, unidade: 'níveis' }, premio: { xp: 0, coins: 600 } },
+  { id: 'nivel_50', icone: '👑', nome: 'Lenda em Construção', desc: 'Chegue ao nível 50. A build está quase quebrando o balanceamento.', r: 'lendario', cond: S => S.nivel >= 50, progresso: { campo: 'nivel', meta: 50, unidade: 'níveis' }, premio: { xp: 0, coins: 600 } },
 
   { id: 'colecionador', icone: '🎒', nome: 'Inventário de Respeito', desc: 'Desbloqueie 20 peças. O guarda-roupa já está pedindo expansão.', r: 'raro', cond: S => S.itens >= 20, progresso: { campo: 'itens', meta: 20, unidade: 'itens' }, premio: { xp: 150, coins: 80 } },
   { id: 'primeira_live', icone: '💜', nome: 'Primeiro Rolê', desc: 'Marque presença na primeira live válida da Soso. Bem-vindo ao rolê!', r: 'comum', cond: S => S.lives >= 1, progresso: { campo: 'lives', meta: 1, unidade: 'lives' }, premio: { xp: 25, coins: 10 } },
   { id: 'chat_ativo', icone: '📡', nome: 'Presença Confirmada', desc: 'Dez lives válidas. O bot já te reconhece pelo nome.', r: 'incomum', cond: S => S.lives >= 10, progresso: { campo: 'lives', meta: 10, unidade: 'lives' }, premio: { xp: 120, coins: 60 } }
 ];
-export const VERSAO_CONQUISTAS = '4'; // metas revisadas; IDs legados preservados para não apagar desbloqueios
+export const VERSAO_CONQUISTAS = '6'; // metas alinhadas aos IDs; IDs legados preservados para manter desbloqueios existentes
 export const ID_PLATINA = 'platina';
 export const PLATINA = {
   id: ID_PLATINA, icone: '💎', nome: 'Platina do Arcade', r: 'lendario',
@@ -402,36 +402,62 @@ export async function lerNotificacoes(id){
 /* ============================================================
    8) CRÉDITO DE XP / MOEDAS  — único ponto que altera saldo
    ============================================================ */
-export async function creditar(id, { xp = 0, coins = 0, silencioso = false, motivo = '' } = {}){
-  xp = Math.max(0, Math.floor(xp)); coins = Math.max(0, Math.floor(coins));
-  if(!xp && !coins) return null;
-  const cmds = [];
-  if(xp) cmds.push(['HINCRBY', `g:${id}`, 'xp', String(xp)]);
-  if(coins) cmds.push(['HINCRBY', `g:${id}`, 'coins', String(coins)]);
-  const res = await redis(cmds);
-  let novoXP = null;
-  if(xp) novoXP = Number(res[0]);
+const CREDITAR_LUA = `
+local function nivel(xp)
+  local n = math.floor((1 + math.sqrt(1 + math.max(0, xp) / 12.5)) / 2)
+  if n < 1 then return 1 end
+  if n > 100 then return 100 end
+  return n
+end
+local xpGanho = math.max(0, math.floor(tonumber(ARGV[1]) or 0))
+local moedasGanhos = math.max(0, math.floor(tonumber(ARGV[2]) or 0))
+local userId = ARGV[3]
+local xpAntes = tonumber(redis.call('HGET', KEYS[1], 'xp') or '0')
+local nivelAntes = nivel(xpAntes)
+local xpDepois = xpAntes
+if xpGanho > 0 then
+  xpDepois = redis.call('HINCRBY', KEYS[1], 'xp', xpGanho)
+  redis.call('ZADD', KEYS[2], xpDepois, userId)
+end
+local nivelDepois = nivel(xpDepois)
+local subiu = math.max(0, nivelDepois - nivelAntes)
+local bonusNivel = subiu * 20
+local totalMoedas = moedasGanhos + bonusNivel
+if totalMoedas > 0 then redis.call('HINCRBY', KEYS[1], 'coins', totalMoedas) end
+local saldo = tonumber(redis.call('HGET', KEYS[1], 'coins') or '0')
+return {xpDepois, nivelAntes, nivelDepois, subiu, totalMoedas, saldo}
+`;
 
-  let subiu = 0;
-  if(novoXP != null){
-    const antes = nivelPorXP(novoXP - xp), depois = nivelPorXP(novoXP);
-    await redis([['ZADD', 'rank:xp', String(novoXP), String(id)]]);
-    if(depois > antes){
-      subiu = depois - antes;
-      await redis([['HINCRBY', `g:${id}`, 'coins', String(subiu * RECOMPENSA_NIVEL_COINS)]]);
-      await notificar(id, 'nivel', `Subiu para o nível ${depois}! +${subiu * RECOMPENSA_NIVEL_COINS} ${MOEDA.nome}`);
-      const novos = [];
-      SLOTS.forEach(s => CATALOGO[s].forEach(it => {
-        if(it.regra.t === 'nivel' && it.regra.n > antes && it.regra.n <= depois) novos.push(it.nome);
-      }));
-      if(novos.length) await notificar(id, 'item', `Liberado no inventário: ${novos.join(', ')}`);
-    }
+export async function creditar(id, { xp = 0, coins = 0, silencioso = false, motivo = '' } = {}){
+  xp = Math.max(0, Math.floor(Number(xp) || 0));
+  coins = Math.max(0, Math.floor(Number(coins) || 0));
+  if(!xp && !coins) return null;
+
+  const [resultado] = await redis([[
+    'EVAL', CREDITAR_LUA, '2', `g:${id}`, 'rank:xp',
+    String(xp), String(coins), String(id)
+  ]]);
+  const dados = Array.isArray(resultado) ? resultado.map(Number) : [];
+  if(dados.length < 6) throw new Error('Resposta inválida ao creditar XP/moedas.');
+
+  const novoXP = xp ? dados[0] : null;
+  const antes = dados[1] || 1;
+  const depois = dados[2] || antes;
+  const subiu = dados[3] || 0;
+
+  if(subiu > 0){
+    await notificar(id, 'nivel', `Subiu para o nível ${depois}! +${subiu * RECOMPENSA_NIVEL_COINS} ${MOEDA.nome}`);
+    const novos = [];
+    SLOTS.forEach(slot => CATALOGO[slot].forEach(item => {
+      if(item.regra.t === 'nivel' && item.regra.n > antes && item.regra.n <= depois) novos.push(item.nome);
+    }));
+    if(novos.length) await notificar(id, 'item', `Liberado no inventário: ${novos.join(', ')}`);
   }
   if(!silencioso && motivo){
     const partes = [xp ? `+${xp} XP` : '', coins ? `+${coins} ${MOEDA.nome}` : ''].filter(Boolean).join(' · ');
-    await notificar(id, 'ganho', `${motivo}: ${partes}`);
+    if(partes) await notificar(id, 'ganho', `${motivo}: ${partes}`);
   }
-  return { novoXP, subiu };
+  return { novoXP, subiu, saldo: dados[5] };
 }
 
 /* ============================================================
@@ -439,37 +465,168 @@ export async function creditar(id, { xp = 0, coins = 0, silencioso = false, moti
    Chame SEMPRE do backend (ex.: dentro de api/votos.js depois de gravar o voto).
    `ref` = id único da ação (ex.: `${ciclo}`, id da sugestão) → impede pagar 2x.
    ============================================================ */
+const EVENTO_LUA = `
+local function nivel(xp)
+  local n = math.floor((1 + math.sqrt(1 + math.max(0, xp) / 12.5)) / 2)
+  if n < 1 then return 1 end
+  if n > 100 then return 100 end
+  return n
+end
+if redis.call('EXISTS', KEYS[1]) == 1 then
+  return {0, 0, tonumber(redis.call('HGET', KEYS[3], 'xp') or '0'), 0, 0, 0}
+end
+local limite = tonumber(ARGV[2]) or 0
+local paga = 1
+if limite > 0 then
+  local n = redis.call('INCR', KEYS[2])
+  if n == 1 then redis.call('EXPIRE', KEYS[2], tonumber(ARGV[3]) or 172800) end
+  if n > limite then paga = 0 end
+end
+local stat = ARGV[7]
+if stat ~= '' then redis.call('HINCRBY', KEYS[3], stat, 1) end
+local extraCount = tonumber(ARGV[8]) or 0
+local argIndex = 9
+for i = 1, extraCount do
+  local field = ARGV[argIndex]
+  local value = tonumber(ARGV[argIndex + 1]) or 0
+  if field and field ~= '' and value ~= 0 then redis.call('HINCRBY', KEYS[3], field, value) end
+  argIndex = argIndex + 2
+end
+local xp = paga == 1 and (tonumber(ARGV[4]) or 0) or 0
+local coins = paga == 1 and (tonumber(ARGV[5]) or 0) or 0
+local oldXP = tonumber(redis.call('HGET', KEYS[3], 'xp') or '0')
+local newXP = oldXP
+local antes = nivel(oldXP)
+if xp > 0 then
+  newXP = redis.call('HINCRBY', KEYS[3], 'xp', xp)
+  redis.call('ZADD', KEYS[4], newXP, ARGV[6])
+end
+local depois = nivel(newXP)
+local subiu = math.max(0, depois - antes)
+local bonusNivel = subiu * 20
+local totalCoins = coins + bonusNivel
+if totalCoins > 0 then redis.call('HINCRBY', KEYS[3], 'coins', totalCoins) end
+redis.call('SET', KEYS[1], '1', 'EX', tonumber(ARGV[1]) or 7776000)
+return {1, paga, newXP, antes, depois, totalCoins}
+`;
+
 export async function evento(id, nome, ref, { statExtra = {} } = {}){
   const cfg = EVENTOS[nome];
   if(!cfg || !id) return { pago: false, motivo: 'evento desconhecido' };
   id = String(id); ref = String(ref || 'unico');
 
-  // 1) idempotência: a mesma ação nunca paga duas vezes
-  const [nx] = await redis([['SET', `xpev:${id}:${nome}:${ref}`, '1', 'NX', 'EX', String(90 * 86400)]]);
-  if(nx !== 'OK') return { pago: false, motivo: 'já contabilizado' };
+  const extra = Object.entries(statExtra || {}).filter(([campo, valor]) =>
+    /^[a-zA-Z0-9_:-]{1,64}$/.test(campo) && Number.isFinite(Number(valor)) && Number(valor) !== 0
+  );
+  const dia = hojeBR();
+  const keys = [
+    `xpev:${id}:${nome}:${ref}`,
+    `xpdia:${id}:${nome}:${dia}`,
+    `g:${id}`,
+    'rank:xp'
+  ];
+  const args = [
+    String(90 * 86400), String(cfg.limiteDia || 0), '172800',
+    String(cfg.xp || 0), String(cfg.coins || 0), id,
+    cfg.stat || '', String(extra.length)
+  ];
+  extra.forEach(([campo, valor]) => args.push(campo, String(Math.trunc(Number(valor)))));
 
-  // 2) estatística conta sempre (histórico real)
-  const cmds = [];
-  if(cfg.stat) cmds.push(['HINCRBY', `g:${id}`, cfg.stat, '1']);
-  Object.entries(statExtra).forEach(([k, v]) => cmds.push(['HINCRBY', `g:${id}`, k, String(v)]));
-  if(cmds.length) await redis(cmds);
+  // Um único script evita que falha entre SET NX, estatística e crédito
+  // deixe um evento marcado como pago sem entregar sua recompensa.
+  const [resultado] = await redis([['EVAL', EVENTO_LUA, String(keys.length), ...keys, ...args]]);
+  const dados = Array.isArray(resultado) ? resultado.map(Number) : [];
+  const executado = dados[0] === 1;
 
-  // 3) teto diário de ganho (a estatística acima continua contando)
-  let paga = true;
-  if(cfg.limiteDia){
-    const chave = `xpdia:${id}:${nome}:${hojeBR()}`;
-    const [n] = await redis([['INCR', chave]]);
-    if(Number(n) === 1) await redis([['EXPIRE', chave, '172800']]);
-    paga = Number(n) <= cfg.limiteDia;
+  // Mesmo em chamadas repetidas, reavalia conquistas: isso recupera uma
+  // avaliação que possa ter falhado depois de o evento já ter sido gravado.
+  if(executado){
+    const pago = dados[1] === 1;
+    const novoXP = Number(dados[2] || 0);
+    const antes = Number(dados[3] || 1);
+    const depois = Number(dados[4] || antes);
+    const totalCoins = Number(dados[5] || 0);
+    if(pago && (cfg.xp || cfg.coins)){
+      const partes = [cfg.xp ? `+${cfg.xp} XP` : '', cfg.coins ? `+${cfg.coins} ${MOEDA.nome}` : ''].filter(Boolean).join(' · ');
+      await notificar(id, 'ganho', `${cfg.rotulo}: ${partes}`);
+    }
+    if(depois > antes){
+      await notificar(id, 'nivel', `Subiu para o nível ${depois}! +${(depois - antes) * RECOMPENSA_NIVEL_COINS} ${MOEDA.nome}`);
+      const liberados = [];
+      SLOTS.forEach(slot => CATALOGO[slot].forEach(item => {
+        if(item.regra.t === 'nivel' && item.regra.n > antes && item.regra.n <= depois) liberados.push(item.nome);
+      }));
+      if(liberados.length) await notificar(id, 'item', `Liberado no inventário: ${liberados.join(', ')}`);
+    }
+    await avaliarConquistas(id);
+    return { pago, xp: pago ? cfg.xp : 0, coins: totalCoins, novoXP, subiu: Math.max(0, depois - antes) };
   }
-  if(paga) await creditar(id, { xp: cfg.xp, coins: cfg.coins, motivo: cfg.rotulo });
+
   await avaliarConquistas(id);
-  return { pago: paga };
+  return { pago: false, motivo: 'já contabilizado' };
 }
 
 /* ============================================================
    10) CONQUISTAS + PLATINA
+   O desbloqueio e o prêmio são gravados no mesmo script Redis. Assim,
+   uma falha entre marcar a conquista e entregar XP/moedas não perde prêmio.
    ============================================================ */
+const CONQUISTA_LUA = `
+local function nivel(xp)
+  local n = math.floor((1 + math.sqrt(1 + math.max(0, xp) / 12.5)) / 2)
+  if n < 1 then return 1 end
+  if n > 100 then return 100 end
+  return n
+end
+if redis.call('HSETNX', KEYS[1], ARGV[1], ARGV[2]) ~= 1 then
+  local xp = tonumber(redis.call('HGET', KEYS[2], 'xp') or '0')
+  local atual = nivel(xp)
+  return {0, xp, xp, atual, atual, 0}
+end
+local xpPremio = tonumber(ARGV[3]) or 0
+local moedasPremio = tonumber(ARGV[4]) or 0
+local userId = ARGV[5]
+local xpAntes = tonumber(redis.call('HGET', KEYS[2], 'xp') or '0')
+local nivelAntes = nivel(xpAntes)
+local xpDepois = xpAntes
+if xpPremio > 0 then
+  xpDepois = redis.call('HINCRBY', KEYS[2], 'xp', xpPremio)
+  redis.call('ZADD', KEYS[3], xpDepois, userId)
+end
+local nivelDepois = nivel(xpDepois)
+local bonusNivel = math.max(0, nivelDepois - nivelAntes) * 20
+local moedasTotais = moedasPremio + bonusNivel
+if moedasTotais > 0 then redis.call('HINCRBY', KEYS[2], 'coins', moedasTotais) end
+return {1, xpAntes, xpDepois, nivelAntes, nivelDepois, moedasTotais}
+`;
+
+async function concederConquista(id, conquista){
+  const xp = Number(conquista?.premio?.xp || 0);
+  const coins = Number(conquista?.premio?.coins || 0);
+  const [resultado] = await redis([[
+    'EVAL', CONQUISTA_LUA, '3', `ach:${id}`, `g:${id}`, 'rank:xp',
+    String(conquista.id), String(Date.now()), String(xp), String(coins), String(id)
+  ]]);
+  const dados = Array.isArray(resultado) ? resultado.map(Number) : [];
+  if(dados[0] !== 1) return false;
+
+  if(xp || coins){
+    const partes = [xp ? `+${xp} XP` : '', coins ? `+${coins} ${MOEDA.nome}` : ''].filter(Boolean).join(' · ');
+    await notificar(id, 'ganho', `Recompensa de ${conquista.nome}: ${partes}`);
+  }
+  const nivelAntes = Number(dados[3] || 1);
+  const nivelDepois = Number(dados[4] || nivelAntes);
+  if(nivelDepois > nivelAntes){
+    await notificar(id, 'nivel', `Subiu para o nível ${nivelDepois}! +${(nivelDepois - nivelAntes) * RECOMPENSA_NIVEL_COINS} ${MOEDA.nome}`);
+    const liberados = [];
+    SLOTS.forEach(slot => CATALOGO[slot].forEach(item => {
+      if(item.regra.t === 'nivel' && item.regra.n > nivelAntes && item.regra.n <= nivelDepois) liberados.push(item.nome);
+    }));
+    if(liberados.length) await notificar(id, 'item', `Liberado no inventário: ${liberados.join(', ')}`);
+  }
+  return true;
+}
+
 export async function avaliarConquistas(id){
   const novas = [];
   for(let passo = 0; passo < 3; passo++){
@@ -482,19 +639,15 @@ export async function avaliarConquistas(id){
       let ok = false;
       try { ok = !!c.cond(S); } catch {}
       if(!ok) continue;
-      const [novo] = await redis([['HSETNX', `ach:${id}`, c.id, String(Date.now())]]);
-      if(Number(novo) !== 1) continue;           // outra requisição já deu
+      if(!(await concederConquista(id, c))) continue;
       ganhouNestePasso = true; novas.push(c);
-      await creditar(id, { ...c.premio, silencioso: true });
       await notificar(id, 'conquista', `Conquista desbloqueada: ${c.nome}`, { icone: c.icone });
     }
     // Platina: todas as outras
     const tudo = CONQUISTAS.every(c => S.ach[c.id] || novas.includes(c));
     if(tudo && !S.ach[ID_PLATINA]){
-      const [novo] = await redis([['HSETNX', `ach:${id}`, ID_PLATINA, String(Date.now())]]);
-      if(Number(novo) === 1){
+      if(await concederConquista(id, PLATINA)){
         ganhouNestePasso = true; novas.push(PLATINA);
-        await creditar(id, { ...PLATINA.premio, silencioso: true });
         await notificar(id, 'platina', '💎 PLATINA DO ARCADE! Você completou 100% das conquistas!', { icone: PLATINA.icone });
       }
     }
@@ -535,23 +688,66 @@ export function titulosDe(S){
 /* ============================================================
    13) PRESENÇA EM LIVE (streak) — chamado pelo cron, 100% no servidor
    ============================================================ */
-export async function registrarPresenca(id, num){
-  // Retorna true se esta live passou a CONTAR para o usuário agora.
-  const [novo] = await redis([['HSETNX', `att:${num}`, String(id), String(Date.now())]]);
-  if(Number(novo) !== 1) return false;
-  await redis([['EXPIRE', `att:${num}`, String(400 * 86400)]]);
+const PRESENCA_LUA = `
+local function nivel(xp)
+  local n = math.floor((1 + math.sqrt(1 + math.max(0, xp) / 12.5)) / 2)
+  if n < 1 then return 1 end
+  if n > 100 then return 100 end
+  return n
+end
+if redis.call('HSETNX', KEYS[1], ARGV[1], ARGV[2]) ~= 1 then
+  return {0, 0, 0, 0, 0, 0, 0, 0}
+end
+redis.call('EXPIRE', KEYS[1], tonumber(ARGV[3]) or 34560000)
+local ultima = tonumber(redis.call('HGET', KEYS[2], 'ultimaLiveN') or '0')
+local atual = tonumber(redis.call('HGET', KEYS[2], 'streak') or '0')
+local melhor = tonumber(redis.call('HGET', KEYS[2], 'melhorStreak') or '0')
+local num = tonumber(ARGV[4])
+local streak = (ultima == num - 1) and (atual + 1) or 1
+local novoMelhor = math.max(melhor, streak)
+redis.call('HSET', KEYS[2], 'ultimaLiveN', tostring(num), 'streak', tostring(streak), 'melhorStreak', tostring(novoMelhor))
+redis.call('HINCRBY', KEYS[2], 'lives', 1)
+local xp = (tonumber(ARGV[5]) or 30) + math.min(streak, tonumber(ARGV[6]) or 10) * (tonumber(ARGV[7]) or 5)
+local marcos = cjson.decode(ARGV[8] or '{}')
+local coins = tonumber(marcos[tostring(streak)]) or 0
+local oldXP = tonumber(redis.call('HGET', KEYS[2], 'xp') or '0')
+local newXP = redis.call('HINCRBY', KEYS[2], 'xp', xp)
+redis.call('ZADD', KEYS[3], newXP, ARGV[1])
+local antes = nivel(oldXP)
+local depois = nivel(newXP)
+local levelCoins = math.max(0, depois - antes) * 20
+local totalCoins = coins + levelCoins
+if totalCoins > 0 then redis.call('HINCRBY', KEYS[2], 'coins', totalCoins) end
+return {1, streak, novoMelhor, xp, coins, antes, depois, newXP, totalCoins}
+`;
 
-  const [ultima, streakAtual, melhor] = (await redis([['HMGET', `g:${id}`, 'ultimaLiveN', 'streak', 'melhorStreak']]))[0].map(x => Number(x || 0));
-  // Sequência = lives VÁLIDAS consecutivas (nº da live no servidor). Faltou uma → zera.
-  const streak = ultima === num - 1 ? streakAtual + 1 : 1;
-  const novoMelhor = Math.max(melhor, streak);
-  await redis([
-    ['HSET', `g:${id}`, 'ultimaLiveN', String(num), 'streak', String(streak), 'melhorStreak', String(novoMelhor)],
-    ['HINCRBY', `g:${id}`, 'lives', '1']
-  ]);
-  const xp = LIVE.XP_PRESENCA + Math.min(streak, 10) * LIVE.XP_STREAK_POR_LIVE;
-  const coins = LIVE.MARCOS_STREAK[streak] || 0;
-  await creditar(id, { xp, coins, motivo: `Live contada (sequência ${streak}🔥)` });
+export async function registrarPresenca(id, num){
+  // HSETNX, streak, estatísticas, XP, moedas e ranking são atualizados juntos.
+  const [resultado] = await redis([[
+    'EVAL', PRESENCA_LUA, '3', `att:${num}`, `g:${id}`, 'rank:xp',
+    String(id), String(Date.now()), String(400 * 86400), String(num),
+    String(LIVE.XP_PRESENCA), '10', String(LIVE.XP_STREAK_POR_LIVE), JSON.stringify(LIVE.MARCOS_STREAK)
+  ]]);
+  const dados = Array.isArray(resultado) ? resultado.map(Number) : [];
+  if(dados[0] !== 1) return false;
+
+  const streak = Number(dados[1] || 1);
+  const melhor = Number(dados[2] || streak);
+  const xp = Number(dados[3] || 0);
+  const coins = Number(dados[4] || 0);
+  const antes = Number(dados[5] || 1);
+  const depois = Number(dados[6] || antes);
+  const totalCoins = Number(dados[8] || coins);
+
+  await notificar(id, 'ganho', `Live contada (sequência ${streak}🔥): +${xp} XP${totalCoins ? ` · +${totalCoins} ${MOEDA.nome}` : ''}`);
   if(coins) await notificar(id, 'streak', `🔥 Sequência de ${streak} lives! Bônus de ${coins} ${MOEDA.nome}`);
+  if(depois > antes){
+    await notificar(id, 'nivel', `Subiu para o nível ${depois}! +${(depois - antes) * RECOMPENSA_NIVEL_COINS} ${MOEDA.nome}`);
+    const liberados = [];
+    SLOTS.forEach(slot => CATALOGO[slot].forEach(item => {
+      if(item.regra.t === 'nivel' && item.regra.n > antes && item.regra.n <= depois) liberados.push(item.nome);
+    }));
+    if(liberados.length) await notificar(id, 'item', `Liberado no inventário: ${liberados.join(', ')}`);
+  }
   return true;
 }

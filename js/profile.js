@@ -641,9 +641,14 @@
         mostrarErro('O estado do Arcade não foi inicializado. Recarregue a página e tente novamente.');
         return null;
       }
-      // Cliques repetidos em "Tentar novamente" compartilham a requisição atual,
-      // em vez de deixar a interface em um estado de carregamento concorrente.
-      if (carregamentoAtual) return carregamentoAtual;
+      // Cliques comuns compartilham a consulta; uma tentativa forçada invalida a anterior.
+      const forcar = forcarPerfil || forcarCatalogo;
+      if (carregamentoAtual && !forcar) return carregamentoAtual;
+      if (forcar) {
+        requisicao++;
+        carregamentoAtual = null;
+        carregando = false;
+      }
 
       const token = ++requisicao;
       carregando = true;

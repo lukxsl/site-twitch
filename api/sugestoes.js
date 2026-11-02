@@ -1,242 +1,222 @@
 // Vercel serverless: /api/sugestoes.js
-import { createHash, randomUUID, createHmac, timingSafeEqual } from 'crypto';
+// O Redis é a fonte oficial das sugestões. O Discord é apenas uma notificação:
+// uma falha no webhook não pode apagar uma sugestão já salva.
+import { createHash, randomUUID } from 'crypto';
+import { redis, lerSessao, rateLimit, origemOk, ipDe, safeStr } from './_lib/core.js';
+import { evento } from './_lib/game.js';
 
-const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-const SESSION_SECRET = process.env.SESSION_SECRET;
-const COOKIE_NAME = 'sessao_site';
 const LIST_KEY = 'sugestoes:lista';
 const MAX_ITENS = 200;
 const MAX_TEXTO = 200;
 const MIN_TEXTO = 10;
 const AUTO_TRANSICAO_MS = 90 * 1000;
+const AUTO_TRANSICAO_LUA = `
+local raw = redis.call('LINDEX', KEYS[1], ARGV[1])
+if not raw then return 0 end
+local ok, item = pcall(cjson.decode, raw)
+if not ok or type(item) ~= 'table' then return 0 end
+if tostring(item.id or '') ~= ARGV[2] then return 0 end
+if (item.status or 'nova') ~= 'nova' or tostring(item.data or '') ~= ARGV[3] then return 0 end
+item.status = 'analise'
+item.atualizadoEm = ARGV[4]
+item.atualizadoPor = 'auto'
+redis.call('LSET', KEYS[1], ARGV[1], cjson.encode(item))
+return 1
+`;
 
-async function redis(cmds){
-  const r = await fetch(`${URL_}/pipeline`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(cmds)
-  });
-  return (await r.json()).map(x => x.result);
+function safeUrl(value) {
+  const url = safeStr(value, 500);
+  return /^https?:\/\//i.test(url) ? url : null;
 }
 
-async function rateLimitOk(chave, limite, janelaSeg){
-  try {
-    const [n] = await redis([['INCR', chave]]);
-    if(Number(n) === 1) await redis([['EXPIRE', chave, String(janelaSeg)]]);
-    return Number(n) <= limite;
-  } catch(e){ return true; }
+function tipoConfig(categoria) {
+  const tipo = String(categoria || '').toLowerCase();
+  if (tipo.includes('bug')) return { cor: 0xef4444, icone: '🐛', titulo: 'Novo bug reportado', label: 'Bug' };
+  if (tipo.includes('jogo')) return { cor: 0x3b82f6, icone: '🎮', titulo: 'Nova sugestão de jogo', label: 'Jogo' };
+  if (tipo.includes('feedback')) return { cor: 0x10b981, icone: '💬', titulo: 'Novo feedback', label: 'Feedback' };
+  return { cor: 0xa855f7, icone: '💡', titulo: 'Nova ideia', label: 'Sugestão' };
 }
 
-function safeStr(v, max = 1000){
-  return String(v == null ? '' : v).trim().slice(0, max);
-}
+function validarTexto(msg) {
+  const texto = String(msg || '').trim();
+  if (texto.length < MIN_TEXTO) return `Escreva pelo menos ${MIN_TEXTO} caracteres`;
+  if (/(.)\1{7,}/.test(texto)) return 'Evite repetir o mesmo caractere várias vezes';
 
-function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
-function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
-function assinarValido(p, sig){
-  const esperado = assinar(p);
-  try {
-    const a = Buffer.from(esperado);
-    const b = Buffer.from(String(sig));
-    if(a.length !== b.length) return false;
-    return timingSafeEqual(a, b);
-  } catch { return false; }
-}
-function lerSessao(req){
-  if(!SESSION_SECRET) return null;
-  const c = req.headers.cookie || '';
-  const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
-  if(!m) return null;
-  const [payload, sig] = m[1].split('.');
-  if(!payload || !sig || !assinarValido(payload, sig)) return null;
-  try {
-    const d = JSON.parse(b64urlDecode(payload));
-    if(d.exp && Date.now() > d.exp) return null;
-    return d;
-  } catch { return null; }
-}
-
-function tipoConfig(categoria){
-  const t = String(categoria || '').toLowerCase();
-  if(t.includes('bug'))      return { key:'bug',      cor: 0xef4444, icone: '🐛', titulo: 'Novo bug reportado',    label: 'Bug' };
-  if(t.includes('jogo'))     return { key:'jogo',     cor: 0x3b82f6, icone: '🎮', titulo: 'Nova sugestão de jogo', label: 'Jogo' };
-  if(t.includes('feedback')) return { key:'feedback', cor: 0x10b981, icone: '💬', titulo: 'Novo feedback',         label: 'Feedback' };
-  return { key:'sugestao', cor: 0xa855f7, icone: '💡', titulo: 'Nova ideia', label: 'Sugestão' };
-}
-
-/* 🆕 Validação anti-flood */
-function validarTexto(msg){
-  const t = String(msg || '').trim();
-
-  if(t.length < MIN_TEXTO) return `Escreva pelo menos ${MIN_TEXTO} caracteres`;
-
-  // 1) Caractere repetido 8+ vezes seguidas (ex: "AAAAAAAA", "!!!!!!!")
-  if(/(.)\1{7,}/.test(t)) return 'Evite repetir o mesmo caractere várias vezes';
-
-  const semEspaco = t.replace(/\s+/g, '');
+  const semEspaco = texto.replace(/\s+/g, '');
   const unicos = new Set(semEspaco).size;
+  if (semEspaco.length > 15 && unicos < 6) return 'Texto muito repetitivo, escreva uma ideia de verdade 💜';
 
-  // 2) Variedade de caracteres
-  if(semEspaco.length > 15 && unicos < 6) return 'Texto muito repetitivo, escreve uma ideia de verdade 💜';
-
-  // 3) Variedade de palavras
-  const palavras = t.toLowerCase().split(/\s+/).filter(Boolean);
-  if(palavras.length > 5){
-    const unicas = new Set(palavras).size;
-    if(unicas / palavras.length < 0.3) return 'Texto muito repetitivo, escreve uma ideia de verdade 💜';
+  const palavras = texto.toLowerCase().split(/\s+/).filter(Boolean);
+  if (palavras.length > 5 && new Set(palavras).size / palavras.length < 0.3) {
+    return 'Texto muito repetitivo, escreva uma ideia de verdade 💜';
   }
-
-  // 4) Sequência monótona (ex: "abcdefgh", "12345678")
-  if(/^(.)\1*$/.test(semEspaco)) return 'Texto muito repetitivo';
-  if(/^(0123456789|abcdefghij|abcdefghijklmnopqrstuvwxyz)+$/i.test(semEspaco)) return 'Texto muito repetitivo';
-
+  if (/^(.)\1*$/.test(semEspaco) || /^(0123456789|abcdefghij|abcdefghijklmnopqrstuvwxyz)+$/i.test(semEspaco)) {
+    return 'Texto muito repetitivo';
+  }
   return null;
 }
 
-/* Aplica auto-transição: nova -> analise após 90s */
-async function aplicarAutoTransicao(itens){
+async function aplicarAutoTransicao(itens) {
   const agora = Date.now();
+  const pendentes = [];
+  const comandos = [];
+  for (let index = 0; index < itens.length; index++) {
+    const item = itens[index];
+    if ((item.status || 'nova') !== 'nova' || !item.data) continue;
+    const data = Date.parse(item.data);
+    if (!Number.isFinite(data) || agora - data < AUTO_TRANSICAO_MS) continue;
+    pendentes.push({ item, agoraIso: new Date(agora).toISOString() });
+    comandos.push(['EVAL', AUTO_TRANSICAO_LUA, '1', LIST_KEY, String(index), String(item.id), String(item.data), new Date(agora).toISOString()]);
+  }
+
+  if (!comandos.length) return false;
+  const resultados = await redis(comandos);
   let mudou = false;
-  for(const i of itens){
-    if((i.status || 'nova') === 'nova' && i.data){
-      const idade = agora - new Date(i.data).getTime();
-      if(idade >= AUTO_TRANSICAO_MS){
-        i.status = 'analise';
-        i.atualizadoEm = new Date().toISOString();
-        i.atualizadoPor = 'auto';
-        mudou = true;
-      }
-    }
-  }
-  if(mudou && URL_ && TOKEN){
-    const cmds = [['DEL', LIST_KEY]];
-    for(let k = itens.length - 1; k >= 0; k--){
-      cmds.push(['RPUSH', LIST_KEY, JSON.stringify(itens[k])]);
-    }
-    try { await redis(cmds); } catch(e){}
-  }
+  resultados.forEach((resultado, index) => {
+    if (Number(resultado) !== 1) return;
+    const { item, agoraIso } = pendentes[index];
+    item.status = 'analise';
+    item.atualizadoEm = agoraIso;
+    item.atualizadoPor = 'auto';
+    mudou = true;
+  });
   return mudou;
 }
 
-export default async function handler(req, res){
+export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'GET') {
-    if (!URL_ || !TOKEN) return res.status(200).json({ itens: [] });
     try {
       const [flat] = await redis([['LRANGE', LIST_KEY, '0', String(MAX_ITENS - 1)]]);
       const itens = (flat || [])
-        .map(x => { try { return JSON.parse(x); } catch { return null; } })
+        .map(raw => { try { return JSON.parse(raw); } catch { return null; } })
         .filter(Boolean);
-
       await aplicarAutoTransicao(itens);
-
-      res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=30');
       return res.status(200).json({ itens });
-    } catch (e) {
-      return res.status(200).json({ itens: [] });
+    } catch (error) {
+      console.error('[Sugestões] Falha ao consultar lista:', error?.message || error);
+      return res.status(503).json({ error: 'Não foi possível carregar as sugestões. Verifique a conexão com o banco e tente novamente.' });
     }
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
-
-  const hook = process.env.DISCORD_WEBHOOK_URL;
-  if (!hook) return res.status(500).json({ error: 'Webhook não configurado' });
+  if (!origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
 
   const { nome, texto, site, tipo } = req.body || {};
-  if (site) return res.status(200).json({ ok: true });
+  if (site) return res.status(200).json({ ok: true }); // honeypot anti-bot
 
-  const categoria = safeStr(tipo, 40) || 'Sugestão / ideia';
   const msg = safeStr(texto, MAX_TEXTO);
-  const autor = safeStr(nome, 40) || 'Anônimo';
-
   if (!msg) return res.status(400).json({ error: 'Escreva uma sugestão' });
-  if (msg.length > MAX_TEXTO) return res.status(400).json({ error: `Mensagem muito longa (máx ${MAX_TEXTO})` });
-
-  /* 🆕 Validação anti-flood */
+  if (msg.length < MIN_TEXTO) return res.status(400).json({ error: `Escreva pelo menos ${MIN_TEXTO} caracteres` });
   const erroValidacao = validarTexto(msg);
-  if(erroValidacao) return res.status(400).json({ error: erroValidacao });
+  if (erroValidacao) return res.status(400).json({ error: erroValidacao });
 
-  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'x';
-
-  // Rate-limit por IP via Redis: 1 sugestão a cada 30s
-  if(!(await rateLimitOk(`ratelimit:sug:${ip}`, 1, 30))) {
-    return res.status(429).json({ error: 'Aguarde um pouco antes de enviar de novo' });
-  }
-
-  // Anti-duplicata via Redis: mesmo IP + mesma mensagem em 2min
-  const hash = createHash('sha256').update(ip + '|' + msg.toLowerCase()).digest('hex').slice(0, 24);
-  if(!(await rateLimitOk(`ratelimit:sugdup:${hash}`, 1, 120))) {
-    return res.status(429).json({ error: 'Você já enviou essa mensagem. Aguarde.' });
-  }
-
-  const sessao = lerSessao(req);
-  const userId = sessao?.id || null;
-  const usernameLogado = sessao?.username || null;
-  const avatarLogado = sessao?.avatar || null;
-
-  const item = {
-    id: randomUUID(),
-    nome: autor,
-    userId,
-    username: usernameLogado,
-    avatar: avatarLogado,
-    tipo: categoria,
-    texto: msg,
-    data: new Date().toISOString(),
-    status: 'nova',
-    motivo: null,
-    atualizadoEm: null
-  };
-
+  const ip = ipDe(req);
   try {
-    if (URL_ && TOKEN) {
-      await redis([
-        ['LPUSH', LIST_KEY, JSON.stringify(item)],
-        ['LTRIM', LIST_KEY, '0', String(MAX_ITENS - 1)]
-      ]);
+    // O limite é fechado: se Redis estiver indisponível, não aceita uma operação
+    // que depende dele para impedir spam e persistir a sugestão.
+    if (!(await rateLimit(`ratelimit:sug:${ip}`, 1, 30))) {
+      return res.status(429).json({ error: 'Aguarde um pouco antes de enviar de novo' });
     }
-  } catch (e) {}
 
-  try {
-    if (URL_ && TOKEN) {
-      const logItem = JSON.stringify({
+    const hash = createHash('sha256').update(`${ip}|${msg.toLowerCase()}`).digest('hex').slice(0, 24);
+    if (!(await rateLimit(`ratelimit:sugdup:${hash}`, 1, 120))) {
+      return res.status(429).json({ error: 'Você já enviou essa mensagem. Aguarde.' });
+    }
+
+    const sessao = lerSessao(req);
+    const userId = sessao?.id ? String(sessao.id) : null;
+    const usernameLogado = sessao?.username ? safeStr(sessao.username, 60) : null;
+    const avatarLogado = safeUrl(sessao?.avatar);
+    const autor = userId ? (safeStr(usernameLogado, 40) || 'Membro') : (safeStr(nome, 40) || 'Anônimo');
+    const categoria = safeStr(tipo, 40) || 'Sugestão / ideia';
+
+    const item = {
+      id: randomUUID(),
+      nome: autor,
+      userId,
+      username: usernameLogado,
+      avatar: avatarLogado,
+      tipo: categoria,
+      texto: msg,
+      data: new Date().toISOString(),
+      status: 'nova',
+      motivo: null,
+      atualizadoEm: null
+    };
+
+    // Persistência obrigatória. Só confirmamos o envio depois que Redis aceitar.
+    await redis([
+      ['LPUSH', LIST_KEY, JSON.stringify(item)],
+      ['LTRIM', LIST_KEY, '0', String(MAX_ITENS - 1)]
+    ]);
+
+    // Logs e integrações externas são complementares, nunca bloqueiam o salvamento.
+    try {
+      const log = JSON.stringify({
         quem: autor,
         cargo: null,
         acao: `Nova sugestão (${categoria}): "${msg.slice(0, 60)}${msg.length > 60 ? '…' : ''}"`,
         ts: Date.now()
       });
-      await redis([['LPUSH', 'admin:logs', logItem], ['LTRIM', 'admin:logs', '0', '199']]);
+      await redis([['LPUSH', 'admin:logs', log], ['LTRIM', 'admin:logs', '0', '199']]);
+    } catch (error) {
+      console.warn('[Sugestões] Não foi possível registrar log administrativo:', error?.message || error);
     }
-  } catch (e) {}
 
-  const conf = tipoConfig(categoria);
+    let recompensaPendente = false;
+    if (userId) {
+      try {
+        await evento(userId, 'sugestao_enviada', item.id);
+      } catch (error) {
+        recompensaPendente = true;
+        console.error('[Sugestões] Sugestão salva, mas a recompensa ficou pendente:', error?.message || error);
+      }
+    }
 
-  const embed = {
-    author: {
-      name: `@${autor}${userId ? '' : ' (anônimo)'}`,
-      ...(avatarLogado ? { icon_url: avatarLogado } : {})
-    },
-    title: `${conf.icone} ${conf.titulo}`,
-    description: msg,
-    color: conf.cor,
-    fields: [
-      { name: '🏷️ Tipo',    value: `${conf.icone} ${conf.label}`,       inline: true },
-      { name: '📊 Status',  value: '🟡 Nova',                           inline: true },
-      { name: '👤 Canal',   value: userId ? '🔒 Logado' : '👤 Anônimo', inline: true }
-    ],
-    footer: { text: `ID: ${item.id.slice(0, 8)}` },
-    timestamp: new Date().toISOString()
-  };
+    let discordNotificado = false;
+    const hook = process.env.DISCORD_WEBHOOK_URL;
+    if (hook) {
+      const config = tipoConfig(categoria);
+      const embed = {
+        author: {
+          name: `@${autor}${userId ? '' : ' (anônimo)'}`,
+          ...(avatarLogado ? { icon_url: avatarLogado } : {})
+        },
+        title: `${config.icone} ${config.titulo}`,
+        description: msg,
+        color: config.cor,
+        fields: [
+          { name: '🏷️ Tipo', value: `${config.icone} ${config.label}`, inline: true },
+          { name: '📊 Status', value: '🟡 Nova', inline: true },
+          { name: '👤 Canal', value: userId ? '🔒 Logado' : '👤 Anônimo', inline: true }
+        ],
+        footer: { text: `ID: ${item.id.slice(0, 8)}` },
+        timestamp: new Date().toISOString()
+      };
+      try {
+        const response = await fetch(hook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ allowed_mentions: { parse: [] }, embeds: [embed] })
+        });
+        discordNotificado = response.ok;
+        if (!response.ok) console.warn('[Sugestões] Discord respondeu HTTP', response.status);
+      } catch (error) {
+        console.warn('[Sugestões] Notificação Discord indisponível:', error?.message || error);
+      }
+    }
 
-  const r = await fetch(hook, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ allowed_mentions: { parse: [] }, embeds: [embed] })
-  });
-
-  return r.ok
-    ? res.status(200).json({ ok: true, id: item.id })
-    : res.status(502).json({ error: 'Falha ao enviar' });
+    return res.status(201).json({
+      ok: true,
+      id: item.id,
+      discordNotificado,
+      recompensaPendente,
+      aviso: !discordNotificado ? 'A sugestão foi salva no site. A notificação do Discord não foi enviada.' : null
+    });
+  } catch (error) {
+    console.error('[Sugestões] Falha ao salvar sugestão:', error?.message || error);
+    return res.status(503).json({ error: 'Não foi possível salvar sua sugestão agora. Nenhum envio foi confirmado; tente novamente mais tarde.' });
+  }
 }

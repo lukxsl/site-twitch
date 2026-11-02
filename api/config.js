@@ -32,7 +32,7 @@ async function seFetch(endpoint) {
   }
   const path = String(endpoint || '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  
+
   let response;
   try {
     response = await fetch(`${SE_BASE_URL}${normalizedPath}`, {
@@ -427,18 +427,18 @@ export default async function handler(req, res) {
       let metas = null, sonhos = [];
       try { metas = metasRaw ? JSON.parse(metasRaw) : null; } catch(e) {}
       try { sonhos = sonhosRaw ? JSON.parse(sonhosRaw) : []; } catch(e) {}
-      
+
       if (!metas) metas = { seguidores: { ativo: false, meta: 0 }, subs: { ativo: false, meta: 0 }, doacoes: { ativo: false, meta: 0 }, bits: { ativo: false, meta: 0 } };
-      
+
       const out = { ...metas, valores: {} };
       if (metas.seguidores?.ativo) out.valores.seguidores = await twitchSeguidores();
-      
+
       let se = null;
       if (metas.subs?.plataforma === 'streamelements' || metas.doacoes?.plataforma === 'streamelements') se = await streamElementsBuscar();
-      
+
       if (metas.subs?.ativo) out.valores.subs = (metas.subs.plataforma === 'streamelements' && se) ? se.totalSubs : (Number(metas.subs.atualManual) || 0);
       if (metas.doacoes?.ativo) out.valores.doacoes = (metas.doacoes.plataforma === 'streamelements' && se) ? se.totalDoacoes : (Number(metas.doacoes.atualManual) || 0);
-      
+
       return res.status(200).json(out);
     }
 

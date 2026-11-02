@@ -16,6 +16,7 @@
   let perfilEmVoo = null;
   let catalogoEmVoo = null;
   let versaoPerfil = 0;
+  let versaoCatalogo = 0;
   const ouvintes = new Map();
 
   function on(evento, fn){
@@ -34,7 +35,12 @@
 
   async function carregarPerfil({ forcar = false } = {}){
     if (!forcar && estado.perfil) return estado.perfil;
-    if (perfilEmVoo) return perfilEmVoo;
+    if (!forcar && perfilEmVoo) return perfilEmVoo;
+    if (forcar) {
+      // Uma recuperação forçada não pode reutilizar uma requisição antiga que falhou.
+      versaoPerfil++;
+      perfilEmVoo = null;
+    }
 
     const versao = versaoPerfil;
     const promessa = (async () => {
@@ -54,7 +60,7 @@
         return null;
       }
       emitir('erro', { tipo: 'perfil', resposta: res });
-      return estado.perfil;
+      return forcar ? null : estado.perfil;
     })().finally(() => {
       if (perfilEmVoo === promessa) perfilEmVoo = null;
     });
@@ -65,10 +71,17 @@
 
   async function carregarCatalogo({ forcar = false } = {}){
     if (!forcar && estado.catalogo) return estado.catalogo;
-    if (catalogoEmVoo) return catalogoEmVoo;
+    if (!forcar && catalogoEmVoo) return catalogoEmVoo;
+    if (forcar) {
+      // Invalida a consulta anterior para que o botão de tentar novamente busque de fato.
+      versaoCatalogo++;
+      catalogoEmVoo = null;
+    }
 
-    catalogoEmVoo = (async () => {
+    const versao = versaoCatalogo;
+    const promessa = (async () => {
       const res = await api(API_GAME, 'catalogo');
+      if (versao !== versaoCatalogo) return null;
       if (res.ok && res.data) {
         estado.catalogo = res.data;
         estado.catalogoTs = Date.now();
@@ -81,15 +94,20 @@
         resposta: res && res.data
       });
       emitir('erro', { tipo: 'catalogo', resposta: res });
-      return estado.catalogo;
-    })().finally(() => { catalogoEmVoo = null; });
+      return forcar ? null : estado.catalogo;
+    })().finally(() => {
+      if (catalogoEmVoo === promessa) catalogoEmVoo = null;
+    });
 
-    return catalogoEmVoo;
+    catalogoEmVoo = promessa;
+    return promessa;
   }
 
   function limpar(){
     versaoPerfil++;
+    versaoCatalogo++;
     perfilEmVoo = null;
+    catalogoEmVoo = null;
     estado.perfil = null;
     estado.perfilTs = 0;
     emitir('perfil', null);
