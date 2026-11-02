@@ -322,7 +322,19 @@
       const cadeado = criar('i', 'pf-lock', '🔒');
       cadeado.setAttribute('aria-hidden', 'true');
       topo.append(cadeado);
-      botao.append(topo);
+      const miniatura = criar('span', 'pf-style-preview');
+      if (window.PixelAvatar && typeof window.PixelAvatar.render === 'function') {
+        const previewBoneco = { ...window.PixelAvatar.PADRAO, ...(boneco || {}), [slot]: item.id };
+        const miniSvg = window.PixelAvatar.render(previewBoneco, {
+          mini: true, animar: false, label: 'Prévia de ' + item.nome
+        });
+        if (miniSvg) miniatura.appendChild(miniSvg);
+      }
+      if (!miniatura.childNodes.length) {
+        miniatura.textContent = item.cor ? '●' : (item.icone || '✦');
+        if (item.cor) miniatura.style.color = item.cor;
+      }
+      botao.append(topo, miniatura);
       botao.append(criar('small', 'pf-item-rule', raridade.nome + ' · ' + complemento));
       return botao;
     }
@@ -624,26 +636,43 @@
       statusCatalogo('Carregando seu guarda-roupa…');
 
       try {
-        const [dadosPerfil, dadosCatalogo] = await Promise.all([
+        const resultados = await Promise.allSettled([
           window.GameState.carregarPerfil({ forcar: forcarPerfil }),
           window.GameState.carregarCatalogo({ forcar: forcarCatalogo })
         ]);
         if (token !== requisicao) return;
 
+        let dadosPerfil = resultados[0].status === 'fulfilled' ? resultados[0].value : null;
+        let dadosCatalogo = resultados[1].status === 'fulfilled' ? resultados[1].value : null;
+
+        // Recupera cada recurso de forma independente: uma falha no catálogo
+        // não impede a obtenção do perfil, nem o inverso.
+        if (!dadosPerfil && getUsuario()) {
+          const respostaPerfil = await api(window.API_GAME || '/api/game', 'perfil');
+          if (respostaPerfil.ok) dadosPerfil = respostaPerfil.data;
+          else console.error('[Meu Boneco] Perfil indisponível:', respostaPerfil.status, respostaPerfil.data);
+        }
+        if (!dadosCatalogo || !dadosCatalogo.catalogo) {
+          const respostaCatalogo = await api(window.API_GAME || '/api/game', 'catalogo');
+          if (respostaCatalogo.ok && respostaCatalogo.data?.catalogo) dadosCatalogo = respostaCatalogo.data;
+          else console.error('[Meu Boneco] Catálogo indisponível:', respostaCatalogo.status, respostaCatalogo.data);
+        }
+        if (token !== requisicao) return;
+
         if (!dadosPerfil) {
-          if (getUsuario()) mostrarErro('Sua conta não respondeu. Saia e entre de novo, ou tente mais tarde.');
+          if (getUsuario()) mostrarErro('Não consegui carregar seu perfil. Atualize a página ou entre novamente.');
           else mostrarVisitante();
           return;
         }
         if (!dadosCatalogo || !dadosCatalogo.catalogo) {
-          mostrarErro('O catálogo do guarda-roupa não respondeu. Tente de novo em instantes.');
+          mostrarErro('O guarda-roupa não respondeu. Seu perfil foi carregado, mas o catálogo falhou. Tente novamente.');
           return;
         }
 
         iniciarComPerfil(dadosPerfil, dadosCatalogo);
       } catch (erro) {
         console.error('[Meu Boneco] Falha ao carregar perfil ou catálogo:', erro);
-        if (token === requisicao) mostrarErro('Não foi possível carregar o guarda-roupa. Verifique sua conexão e tente de novo.');
+        if (token === requisicao) mostrarErro('Não foi possível carregar o guarda-roupa. Consulte o console e tente novamente.');
       } finally {
         if (token === requisicao) carregando = false;
       }

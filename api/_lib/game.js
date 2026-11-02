@@ -78,33 +78,40 @@ export const RARIDADES = {
    S = estatísticas do jogador (ver `lerStats`).  `plat` = a 100% (calculada à parte).
    ============================================================ */
 export const CONQUISTAS = [
-  { id: 'bem_vindo',   icone: '🕹️', nome: 'Bem-vindo ao Arcade',   desc: 'Crie sua conta.',                         r: 'comum',    cond: S => true,                       premio: { xp: 10 } },
-  { id: 'estilo',      icone: '🎨', nome: 'Estilo Próprio',        desc: 'Salve seu boneco pela primeira vez.',     r: 'comum',    cond: S => S.bonecoSalvo,              premio: { xp: 15 } },
-  { id: 'twitch',      icone: '🔗', nome: 'Conectado na Matrix',   desc: 'Vincule sua conta da Twitch.',            r: 'comum',    cond: S => S.twitch,                   premio: { xp: 30, coins: 20 } },
-  { id: 'voto_1',      icone: '🗳️', nome: 'Primeiro Voto',         desc: 'Vote em uma votação da live.',            r: 'comum',    cond: S => S.votos >= 1,               premio: { xp: 15 } },
-  { id: 'voto_25',     icone: '📣', nome: 'Voz do Povo',           desc: 'Acumule 25 votos.',                       r: 'incomum',  cond: S => S.votos >= 25,              premio: { xp: 80, coins: 40 } },
-  { id: 'sug_1',       icone: '💡', nome: '1ª Sugestão Aprovada',  desc: 'Tenha uma sugestão aprovada pela Soso.',  r: 'incomum',  cond: S => S.sugestoes >= 1,           premio: { xp: 60, coins: 30 } },
-  { id: 'sug_5',       icone: '🧠', nome: 'Mente Brilhante',       desc: 'Tenha 5 sugestões aprovadas.',            r: 'raro',     cond: S => S.sugestoes >= 5,           premio: { xp: 200, coins: 120 } },
-  { id: 'horas_10',    icone: '📺', nome: 'Fiel da Twitch',        desc: 'Assista 10 horas de live (Twitch vinculada).', r: 'incomum', cond: S => S.horas >= 10,         premio: { xp: 100, coins: 50 } },
-  { id: 'horas_50',    icone: '🛋️', nome: 'Maratonista',           desc: 'Assista 50 horas de live.',               r: 'raro',     cond: S => S.horas >= 50,              premio: { xp: 300, coins: 150 } },
-  { id: 'horas_200',   icone: '🏛️', nome: 'Patrimônio do Chat',    desc: 'Assista 200 horas de live.',              r: 'epico',    cond: S => S.horas >= 200,             premio: { xp: 800, coins: 400 } },
-  { id: 'streak_4',    icone: '🔥', nome: 'Sequência de Fogo',     desc: 'Assista 4 lives seguidas.',               r: 'incomum',  cond: S => S.melhorStreak >= 4,        premio: { xp: 120, coins: 60 } },
-  { id: 'streak_12',   icone: '⚡', nome: 'Imparável',             desc: 'Assista 12 lives seguidas.',              r: 'epico',    cond: S => S.melhorStreak >= 12,       premio: { xp: 500, coins: 250 } },
-  { id: 'codigo_1',    icone: '🔑', nome: 'Decifrador',            desc: 'Resgate seu primeiro código secreto.',    r: 'comum',    cond: S => S.codigos >= 1,             premio: { xp: 20 } },
-  { id: 'codigo_10',   icone: '🗝️', nome: 'Caçador de Códigos',    desc: 'Resgate 10 códigos secretos.',            r: 'raro',     cond: S => S.codigos >= 10,            premio: { xp: 250, coins: 100 } },
-  { id: 'nivel_10',    icone: '⭐', nome: 'Nível 10',              desc: 'Chegue ao nível 10.',                     r: 'incomum',  cond: S => S.nivel >= 10,              premio: { coins: 100 } },
-  { id: 'nivel_25',    icone: '🌟', nome: 'Nível 25',              desc: 'Chegue ao nível 25.',                     r: 'raro',     cond: S => S.nivel >= 25,              premio: { coins: 300 } },
-  { id: 'nivel_50',    icone: '👑', nome: 'Meio Século',           desc: 'Chegue ao nível 50.',                     r: 'lendario', cond: S => S.nivel >= 50,              premio: { coins: 1000 } },
-  { id: 'colecionador',icone: '🎒', nome: 'Colecionador',          desc: 'Desbloqueie 20 itens no inventário.',     r: 'raro',     cond: S => S.itens >= 20,              premio: { xp: 150, coins: 80 } },
-  { id: 'primeira_live', icone: '💜', nome: 'Primeiro Rolê', desc: 'Participe da sua primeira live válida da Soso.', r: 'comum', cond: S => S.lives >= 1, premio: { xp: 25, coins: 10 } },
-  { id: 'chat_ativo', icone: '📡', nome: 'Presença no Chat', desc: 'Marque presença em 10 lives válidas.', r: 'incomum', cond: S => S.lives >= 10, premio: { xp: 120, coins: 60 } },
-  { id: 'voto_100', icone: '📢', nome: 'Voz da Comunidade', desc: 'Registre 100 votos nas votações.', r: 'epico', cond: S => S.votos >= 100, premio: { xp: 350, coins: 180 } },
-  { id: 'sug_10', icone: '🧠', nome: 'Ideias em Órbita', desc: 'Tenha 10 sugestões aprovadas.', r: 'epico', cond: S => S.sugestoes >= 10, premio: { xp: 400, coins: 200 } },
-  { id: 'horas_500', icone: '🌌', nome: 'Habitante do Cantinho', desc: 'Acumule 500 horas assistidas.', r: 'lendario', cond: S => S.horas >= 500, premio: { xp: 1200, coins: 600 } },
-  { id: 'streak_30', icone: '🔥', nome: 'Chama Eterna', desc: 'Alcance uma sequência de 30 lives.', r: 'lendario', cond: S => S.melhorStreak >= 30, premio: { xp: 1500, coins: 800 } },
-  { id: 'codigo_5', icone: '🗝️', nome: 'Caçador Noturno', desc: 'Resgate 5 códigos secretos.', r: 'raro', cond: S => S.codigos >= 5, premio: { xp: 180, coins: 90 } }
+  { id: 'bem_vindo', icone: '🕹️', nome: 'Spawnou no Cantinho', desc: 'Criou a conta. O tutorial é opcional, o caos do chat não.', r: 'comum', cond: S => true, progresso: { campo: 'sempre', meta: 1, unidade: 'cadastro' }, premio: { xp: 10, coins: 5 } },
+  { id: 'estilo', icone: '🎨', nome: 'Skin de Respeito', desc: 'Salve seu boneco. O drip do chat merece ser registrado.', r: 'comum', cond: S => S.bonecoSalvo, progresso: { campo: 'bonecoSalvo', meta: 1, unidade: 'visual salvo' }, premio: { xp: 25, coins: 10 } },
+  { id: 'twitch', icone: '🔗', nome: 'Linkou, Tá Linkado', desc: 'Conecte sua Twitch para o Arcade reconhecer sua presença nas lives.', r: 'comum', cond: S => S.twitch, progresso: { campo: 'twitch', meta: 1, unidade: 'conta vinculada' }, premio: { xp: 30, coins: 20 } },
+
+  { id: 'voto_1', icone: '🗳️', nome: 'Primeiro Papo', desc: 'Deu seu primeiro voto. Democracia do chat em ação!', r: 'comum', cond: S => S.votos >= 1, progresso: { campo: 'votos', meta: 1, unidade: 'votos' }, premio: { xp: 15, coins: 5 } },
+  { id: 'voto_25', icone: '📣', nome: 'Chat Influencer', desc: 'Já mandou 5 votos. A Soso que lute com esse poder democrático.', r: 'incomum', cond: S => S.votos >= 5, progresso: { campo: 'votos', meta: 5, unidade: 'votos' }, premio: { xp: 50, coins: 25 } },
+  { id: 'voto_100', icone: '📢', nome: 'Voz da Comunidade', desc: '25 votos registrados. Seu dedo já tem cadeira cativa nas votações.', r: 'epico', cond: S => S.votos >= 25, progresso: { campo: 'votos', meta: 25, unidade: 'votos' }, premio: { xp: 180, coins: 90 } },
+
+  { id: 'sug_1', icone: '💡', nome: 'Ideia no Chat', desc: 'Mandou a primeira sugestão. Agora é torcer para a Soso não fingir que não viu 👀', r: 'incomum', cond: S => S.sugestoesEnv >= 1, progresso: { campo: 'sugestoesEnv', meta: 1, unidade: 'sugestões enviadas' }, premio: { xp: 30, coins: 15 } },
+  { id: 'sug_5', icone: '🧠', nome: 'Mente Brilhante', desc: 'Cinco ideias enviadas. O chat virou reunião de brainstorm.', r: 'raro', cond: S => S.sugestoesEnv >= 5, progresso: { campo: 'sugestoesEnv', meta: 5, unidade: 'sugestões enviadas' }, premio: { xp: 100, coins: 50 } },
+  { id: 'sug_10', icone: '🪐', nome: 'Ideias em Órbita', desc: 'Dez sugestões no sistema. Uma hora dessas sai até um jogo delas.', r: 'epico', cond: S => S.sugestoesEnv >= 10, progresso: { campo: 'sugestoesEnv', meta: 10, unidade: 'sugestões enviadas' }, premio: { xp: 220, coins: 110 } },
+
+  { id: 'horas_10', icone: '📺', nome: 'Lurker de Carteirinha', desc: '10 horas de live. Já sabe até quando a Soso vai falar “só mais uma”.', r: 'incomum', cond: S => S.horas >= 10, progresso: { campo: 'horas', meta: 10, unidade: 'horas' }, premio: { xp: 100, coins: 50 } },
+  { id: 'horas_50', icone: '🛋️', nome: 'Móvel do Chat', desc: '50 horas assistidas. Já pode pedir endereço fixo no cantinho.', r: 'raro', cond: S => S.horas >= 50, progresso: { campo: 'horas', meta: 50, unidade: 'horas' }, premio: { xp: 300, coins: 150 } },
+  { id: 'horas_200', icone: '🏛️', nome: 'Patrimônio do Chat', desc: '100 horas de companhia. Já é praticamente parte da decoração.', r: 'epico', cond: S => S.horas >= 100, progresso: { campo: 'horas', meta: 100, unidade: 'horas' }, premio: { xp: 650, coins: 320 } },
+  { id: 'horas_500', icone: '🌌', nome: 'Habitante do Cantinho', desc: '150 horas de live. O algoritmo já te considera morador.', r: 'lendario', cond: S => S.horas >= 150, progresso: { campo: 'horas', meta: 150, unidade: 'horas' }, premio: { xp: 900, coins: 500 } },
+
+  { id: 'streak_4', icone: '🔥', nome: 'Sequência de Fogo', desc: 'Quatro lives seguidas. Nem o despertador te segura.', r: 'incomum', cond: S => S.melhorStreak >= 4, progresso: { campo: 'melhorStreak', meta: 4, unidade: 'lives seguidas' }, premio: { xp: 120, coins: 60 } },
+  { id: 'streak_12', icone: '⚡', nome: 'Imparável', desc: 'Doze lives em sequência. Isso já é compromisso sério.', r: 'epico', cond: S => S.melhorStreak >= 12, progresso: { campo: 'melhorStreak', meta: 12, unidade: 'lives seguidas' }, premio: { xp: 350, coins: 180 } },
+  { id: 'streak_30', icone: '🔥', nome: 'Chama Eterna', desc: 'Trinta lives seguidas. O chat devia te dar um vale-descanso.', r: 'lendario', cond: S => S.melhorStreak >= 30, progresso: { campo: 'melhorStreak', meta: 30, unidade: 'lives seguidas' }, premio: { xp: 800, coins: 450 } },
+
+  { id: 'codigo_1', icone: '🔑', nome: 'Senha do Fliperama', desc: 'Resgatou seu primeiro código secreto. Konami ficaria orgulhosa.', r: 'comum', cond: S => S.codigos >= 1, progresso: { campo: 'codigos', meta: 1, unidade: 'códigos' }, premio: { xp: 20, coins: 10 } },
+  { id: 'codigo_5', icone: '🗝️', nome: 'Caçador Noturno', desc: 'Cinco códigos resgatados. Está ouvindo até os sussurros do chat.', r: 'raro', cond: S => S.codigos >= 5, progresso: { campo: 'codigos', meta: 5, unidade: 'códigos' }, premio: { xp: 100, coins: 50 } },
+  { id: 'codigo_10', icone: '🧩', nome: 'Criptógrafo da Soso', desc: 'Dez códigos resgatados. Você não assiste à live, você investiga.', r: 'epico', cond: S => S.codigos >= 10, progresso: { campo: 'codigos', meta: 10, unidade: 'códigos' }, premio: { xp: 220, coins: 110 } },
+
+  { id: 'nivel_10', icone: '⭐', nome: 'Build em Andamento', desc: 'Chegue ao nível 10. Seu personagem já está ficando perigoso.', r: 'incomum', cond: S => S.nivel >= 10, progresso: { campo: 'nivel', meta: 10, unidade: 'níveis' }, premio: { xp: 0, coins: 100 } },
+  { id: 'nivel_25', icone: '🌟', nome: 'Veterano do Fliperama', desc: 'Nível 25 alcançado. Já conhece os atalhos desse mapa.', r: 'raro', cond: S => S.nivel >= 25, progresso: { campo: 'nivel', meta: 25, unidade: 'níveis' }, premio: { xp: 0, coins: 250 } },
+  { id: 'nivel_50', icone: '👑', nome: 'Lenda em Construção', desc: 'Chegue ao nível 30. A build está quase quebrando o balanceamento.', r: 'lendario', cond: S => S.nivel >= 30, progresso: { campo: 'nivel', meta: 30, unidade: 'níveis' }, premio: { xp: 0, coins: 600 } },
+
+  { id: 'colecionador', icone: '🎒', nome: 'Inventário de Respeito', desc: 'Desbloqueie 20 peças. O guarda-roupa já está pedindo expansão.', r: 'raro', cond: S => S.itens >= 20, progresso: { campo: 'itens', meta: 20, unidade: 'itens' }, premio: { xp: 150, coins: 80 } },
+  { id: 'primeira_live', icone: '💜', nome: 'Primeiro Rolê', desc: 'Marque presença na primeira live válida da Soso. Bem-vindo ao rolê!', r: 'comum', cond: S => S.lives >= 1, progresso: { campo: 'lives', meta: 1, unidade: 'lives' }, premio: { xp: 25, coins: 10 } },
+  { id: 'chat_ativo', icone: '📡', nome: 'Presença Confirmada', desc: 'Dez lives válidas. O bot já te reconhece pelo nome.', r: 'incomum', cond: S => S.lives >= 10, progresso: { campo: 'lives', meta: 10, unidade: 'lives' }, premio: { xp: 120, coins: 60 } }
 ];
-export const VERSAO_CONQUISTAS = '2'; // incrementar quando novas conquistas forem adicionadas
+export const VERSAO_CONQUISTAS = '4'; // metas revisadas; IDs legados preservados para não apagar desbloqueios
 export const ID_PLATINA = 'platina';
 export const PLATINA = {
   id: ID_PLATINA, icone: '💎', nome: 'Platina do Arcade', r: 'lendario',
@@ -121,16 +128,16 @@ export const TITULOS = [
   { id: 'fiel',        nome: 'Fiel do Chat',         r: 'incomum',  regra: 'Assista 10 horas de live.',             cond: S => S.horas >= 10 },
   { id: 'voz',         nome: 'Voz do Povo',          r: 'incomum',  regra: 'Acumule 25 votos.',                     cond: S => S.votos >= 25 },
   { id: 'veterano',    nome: 'Veterano das Lives',   r: 'raro',     regra: 'Assista 50 horas de live.',             cond: S => S.horas >= 50 },
-  { id: 'mente',       nome: 'Mente Brilhante',      r: 'raro',     regra: 'Tenha 5 sugestões aprovadas.',          cond: S => S.sugestoes >= 5 },
+  { id: 'mente',       nome: 'Conselheiro do Cantinho', r: 'raro', regra: 'Tenha 5 sugestões aprovadas pela Soso.', cond: S => S.sugestoes >= 5 },
   { id: 'guardiao',    nome: 'Guardião do Arcade',   r: 'epico',    regra: 'Assista 150 horas de live.',            cond: S => S.horas >= 150 },
   { id: 'imparavel',   nome: 'Imparável',            r: 'epico',    regra: 'Alcance uma sequência de 12 lives.',    cond: S => S.melhorStreak >= 12 },
-  { id: 'lenda',       nome: 'Lenda do Chat',        r: 'lendario', regra: 'Assista 400 horas de live.',            cond: S => S.horas >= 400 },
+  { id: 'lenda',       nome: 'Lenda do Chat',        r: 'lendario', regra: 'Assista 150 horas de live.',            cond: S => S.horas >= 150 },
   { id: 'completista', nome: 'Completista',          r: 'lendario', regra: 'Conquiste a Platina do Arcade.',        cond: S => S.platina },
   { id: 'hype', nome: 'Hype do Chat', r: 'comum', regra: 'Participe de uma live válida.', cond: S => S.lives >= 1 },
   { id: 'lurker', nome: 'Lurker Lendário', r: 'incomum', regra: 'Acumule 5 horas assistidas.', cond: S => S.horas >= 5 },
   { id: 'cacador', nome: 'Caçador de Segredos', r: 'raro', regra: 'Resgate 5 códigos secretos.', cond: S => S.codigos >= 5 },
-  { id: 'votante_vip', nome: 'Votante VIP', r: 'epico', regra: 'Registre 100 votos.', cond: S => S.votos >= 100 },
-  { id: 'embaixador', nome: 'Embaixador do Cantinho', r: 'epico', regra: 'Tenha 10 sugestões aprovadas.', cond: S => S.sugestoes >= 10 },
+  { id: 'votante_vip', nome: 'Votante VIP', r: 'epico', regra: 'Registre 50 votos no chat.', cond: S => S.votos >= 50 },
+  { id: 'embaixador', nome: 'Embaixador do Cantinho', r: 'epico', regra: 'Envie 25 sugestões para a comunidade.', cond: S => S.sugestoesEnv >= 25 },
   { id: 'lenda_cantinho', nome: 'Lenda do Cantinho', r: 'lendario', regra: 'Alcance 30 lives consecutivas.', cond: S => S.melhorStreak >= 30 }
 ];
 

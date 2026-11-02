@@ -27,7 +27,7 @@ import gameHandler from './_lib/game-api.js';
 
 /* Ações do jogo atendidas por api/_lib/game-api.js (delegadas aqui para
    não criar uma nova função serverless na raiz de /api). */
-const ACOES_JOGO = ['catalogo', 'ranking', 'perfil', 'resgatar', 'comprar', 'titulo', 'notif-lidas', 'cron-presenca'];
+const ACOES_JOGO = ['catalogo', 'ranking', 'perfil', 'resgatar', 'comprar', 'titulo', 'notif-lidas', 'cron-presenca', 'dev-insights'];
 
 const DISCORD_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET;

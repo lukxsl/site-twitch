@@ -729,7 +729,6 @@
       <button type="button" class="pf-tab on" data-pf-tab="visao-geral" role="tab" aria-selected="true">👁️ Visão Geral</button>
       <button type="button" class="pf-tab" data-pf-tab="boneco" role="tab" aria-selected="false">🕹️ Meu Boneco</button>
       <button type="button" class="pf-tab" data-pf-tab="inventario" role="tab" aria-selected="false">🎒 Inventário</button>
-      <button type="button" class="pf-tab" data-pf-tab="loja" role="tab" aria-selected="false">🛒 Loja</button>
       <button type="button" class="pf-tab" data-pf-tab="conquistas" role="tab" aria-selected="false">🏆 Conquistas</button>
       <button type="button" class="pf-tab" data-pf-tab="ranking" role="tab" aria-selected="false">📊 Ranking</button>
       <button type="button" class="pf-tab" data-pf-tab="configuracoes" role="tab" aria-selected="false">⚙️ Configurações</button>
@@ -768,74 +767,12 @@
         </div>
 
         <div class="pf-overview-main">
-        <div class="pf-status-cards">
-          <div class="pf-card-status">
-            <span class="pf-card-icon">🎮</span>
-            <div class="pf-card-info">
-              <span class="pf-card-value" id="pfLivesCount">0</span>
-              <span class="pf-card-label">Lives</span>
-            </div>
-          </div>
-          <div class="pf-card-status">
-            <span class="pf-card-icon">🗳️</span>
-            <div class="pf-card-info">
-              <span class="pf-card-value" id="pfVotesCount">0</span>
-              <span class="pf-card-label">Votos</span>
-            </div>
-          </div>
-          <div class="pf-card-status">
-            <span class="pf-card-icon">✅</span>
-            <div class="pf-card-info">
-              <span class="pf-card-value" id="pfSuggestionsCount">0</span>
-              <span class="pf-card-label">Sugestões aprovadas</span>
-            </div>
-          </div>
-          <div class="pf-card-status">
-            <span class="pf-card-icon">⏱️</span>
-            <div class="pf-card-info">
-              <span class="pf-card-value" id="pfWatchHoursCount">0</span>
-              <span class="pf-card-label">Horas assistidas</span>
-            </div>
-          </div>
-          <div class="pf-card-status">
-            <span class="pf-card-icon">🔥</span>
-            <div class="pf-card-info">
-              <span class="pf-card-value" id="pfStreakCurrent">0</span>
-              <span class="pf-card-label">Sequência atual</span>
-            </div>
-          </div>
-          <div class="pf-card-status">
-            <span class="pf-card-icon">🏆</span>
-            <div class="pf-card-info">
-              <span class="pf-card-value" id="pfStreakBest">0</span>
-              <span class="pf-card-label">Melhor sequência</span>
-            </div>
-          </div>
+        <div class="pf-status-cards pf-player-stats">
+          <div class="pf-card-status"><span class="pf-card-icon">🎮</span><div class="pf-card-info"><span class="pf-card-value" id="pfLivesCount">0</span><span class="pf-card-label">Lives</span></div></div>
+          <div class="pf-card-status"><span class="pf-card-icon">🗳️</span><div class="pf-card-info"><span class="pf-card-value" id="pfVotesCount">0</span><span class="pf-card-label">Votos no chat</span></div></div>
+          <div class="pf-card-status"><span class="pf-card-icon">⏱️</span><div class="pf-card-info"><span class="pf-card-value" id="pfWatchHoursCount">0</span><span class="pf-card-label">Horas assistidas</span></div></div>
         </div>
-        
-        <div class="pf-xp-info">
-          <h3 class="pf-xp-info-title">Como ganhar XP</h3>
-          <div class="pf-xp-rules" id="pfXpRules">
-            <div class="pf-rule-item">
-              <span class="pf-rule-icon">🎮</span>
-              <span class="pf-rule-text">Jogue jogos: 10 XP por hora</span>
-            </div>
-            <div class="pf-rule-item">
-              <span class="pf-rule-icon">🗳️</span>
-              <span class="pf-rule-text">Vote no tier list: 5 XP por voto</span>
-            </div>
-            <div class="pf-rule-item">
-              <span class="pf-rule-icon">💡</span>
-              <span class="pf-rule-text">Sugira jogos: 20 XP por sugestão aprovada</span>
-            </div>
-          </div>
-          <div class="pf-streak-milestones" id="pfStreakMilestones">
-            <h4>Marcos de sequência</h4>
-            <div class="pf-milestone-list">
-            </div>
-          </div>
-        </div>
-        
+
         <div class="pf-position-card">
           <h3 class="pf-position-title">Posição no Ranking</h3>
           <div class="pf-position-content">
@@ -868,7 +805,31 @@
       </div>
       <div class="pf-overview-extras">
         <section class="pf-extra-card"><div class="pf-extra-head"><div><span class="pf-eyebrow">SEUS MARCOS</span><h3>Conquistas recentes</h3></div><button type="button" class="pf-text-link" data-pf-go="conquistas">Ver todas ↗</button></div><div id="pfRecentAchievements" class="pf-recent-achievements"><p class="pf-empty">Suas primeiras conquistas aparecem aqui.</p></div></section>
-        <section class="pf-extra-card"><div class="pf-extra-head"><div><span class="pf-eyebrow">DO CHAT PARA O SITE</span><h3>Emotes da Soso</h3></div><span class="pf-live-tag">TWITCH</span></div><div id="pfEmotesPreview" class="pf-emotes-preview"><span class="pf-empty">Carregando emotes…</span></div></section>
+        <section class="pf-extra-card pf-xp-rules-card"><div class="pf-extra-head"><div><span class="pf-eyebrow">PROGRESSÃO</span><h3>Como ganhar XP</h3></div></div>
+        <div class="pf-xp-info">
+          <h3 class="pf-xp-info-title">Como ganhar XP</h3>
+          <div class="pf-xp-rules" id="pfXpRules">
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">🎮</span>
+              <span class="pf-rule-text">Jogue jogos: 10 XP por hora</span>
+            </div>
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">🗳️</span>
+              <span class="pf-rule-text">Vote no tier list: 5 XP por voto</span>
+            </div>
+            <div class="pf-rule-item">
+              <span class="pf-rule-icon">💡</span>
+              <span class="pf-rule-text">Sugira jogos: 20 XP por sugestão aprovada</span>
+            </div>
+          </div>
+          <div class="pf-streak-milestones" id="pfStreakMilestones">
+            <h4>Marcos de sequência</h4>
+            <div class="pf-milestone-list">
+            </div>
+          </div>
+        </div>
+        
+        </section>
       </div>
     </div>
 
@@ -937,8 +898,7 @@
     </div>
 
     <div class="pf-panel" data-pf-panel="loja" hidden>
-      <div class="pf-panel-heading"><div><span class="pf-eyebrow">ARCADE MARKET</span><h2>Loja do Cantinho</h2><p>Use suas SosoCoins para desbloquear visuais, efeitos e acessórios.</p></div><div class="pf-shop-balance"><img src="img/sosocoin.png" alt=""><strong id="pfShopCoinBalance">0</strong><span>SosoCoins</span></div></div>
-      <div id="pfShopGrid" class="pf-item-grid"><p class="pf-empty">Carregando vitrine…</p></div>
+      <div class="pf-shop-coming-soon"><span class="pf-shop-coming-icon">🛍️</span><span class="pf-eyebrow">ARCADE MARKET</span><h2>Loja em breve</h2><p>Estamos preparando drops, acessórios e itens especiais da comunidade. Suas SosoCoins permanecem seguras no seu perfil.</p></div>
     </div>
 
     <div class="pf-panel" data-pf-panel="conquistas" hidden>
@@ -958,6 +918,7 @@
         <section class="pf-settings-card"><span class="pf-settings-icon">👤</span><h3>Identidade</h3><p>Seu nick aparece no ranking, nas conquistas e no seu cartão de jogador.</p><label for="pfSettingsNick">Nick do Arcade</label><input id="pfSettingsNick" maxlength="24" autocomplete="nickname" placeholder="Seu nick"><p class="pf-settings-note" id="pfSettingsNickNote">A primeira troca é livre; depois, há um intervalo de 7 dias.</p><button class="pf-btn pf-btn-primary" id="pfSaveNick" type="button">Salvar nick</button></section>
         <section class="pf-settings-card"><span class="pf-settings-icon">🔐</span><h3>Conta e acesso</h3><p>Conta protegida pelo provedor de autenticação.</p><div class="pf-settings-data"><small>E-MAIL GOOGLE</small><strong id="pfSettingsEmail">—</strong><small>MÉTODO DE LOGIN</small><strong id="pfSettingsAccount">—</strong></div><a class="pf-btn pf-btn-secondary" id="pfGoogleLink" href="/api/auth?action=google-login" hidden>Vincular conta Google</a><button class="pf-btn pf-btn-danger" id="pfSettingsLogout" type="button">Sair da conta</button></section>
         <section class="pf-settings-card pf-settings-twitch"><span class="pf-settings-icon">📺</span><h3>Conexão com a Twitch</h3><p>Vincule a conta que usa para acompanhar as lives. Só assim o sistema consegue contabilizar sua presença e sequência.</p><div class="pf-twitch-status" id="pfTwitchStatus">Twitch não vinculada</div><button class="pf-btn pf-btn-primary" id="pfTwitchLink" type="button">Vincular Twitch</button><button class="pf-btn pf-btn-danger" id="pfTwitchUnlink" type="button" hidden>Desvincular Twitch</button></section>
+        <section class="pf-settings-card pf-dev-insights" id="pfDevInsights" hidden><div class="pf-dev-heading"><div><span class="pf-settings-icon">🧪</span><h3>Diagnóstico da comunidade · DEV</h3><p>Estatísticas do Arcade, watchtime do StreamElements e status da live para calibrar metas com dados reais.</p></div><button type="button" class="pf-btn pf-btn-secondary" id="pfDevRefresh">Atualizar dados</button></div><p class="pf-settings-note" id="pfDevInsightsStatus">Carregando diagnóstico…</p><div id="pfDevInsightsContent" class="pf-dev-insights-content"></div></section>
       </div>
     </div>
   </div>
