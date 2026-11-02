@@ -123,22 +123,26 @@ export const PLATINA = {
    4) TÍTULOS (viewer da asemtet0).  Equipa 1 por vez.
    ============================================================ */
 export const TITULOS = [
-  { id: 'novato',      nome: 'Novato',               r: 'comum',    regra: 'Todo mundo começa aqui.',               cond: S => true },
-  { id: 'visitante',   nome: 'Visitante Assíduo',    r: 'comum',    regra: 'Assista 2 horas de live.',              cond: S => S.horas >= 2 },
-  { id: 'fiel',        nome: 'Fiel do Chat',         r: 'incomum',  regra: 'Assista 10 horas de live.',             cond: S => S.horas >= 10 },
-  { id: 'voz',         nome: 'Voz do Povo',          r: 'incomum',  regra: 'Acumule 25 votos.',                     cond: S => S.votos >= 25 },
-  { id: 'veterano',    nome: 'Veterano das Lives',   r: 'raro',     regra: 'Assista 50 horas de live.',             cond: S => S.horas >= 50 },
-  { id: 'mente',       nome: 'Conselheiro do Cantinho', r: 'raro', regra: 'Tenha 5 sugestões aprovadas pela Soso.', cond: S => S.sugestoes >= 5 },
-  { id: 'guardiao',    nome: 'Guardião do Arcade',   r: 'epico',    regra: 'Assista 150 horas de live.',            cond: S => S.horas >= 150 },
-  { id: 'imparavel',   nome: 'Imparável',            r: 'epico',    regra: 'Alcance uma sequência de 12 lives.',    cond: S => S.melhorStreak >= 12 },
-  { id: 'lenda',       nome: 'Lenda do Chat',        r: 'lendario', regra: 'Assista 150 horas de live.',            cond: S => S.horas >= 150 },
-  { id: 'completista', nome: 'Completista',          r: 'lendario', regra: 'Conquiste a Platina do Arcade.',        cond: S => S.platina },
-  { id: 'hype', nome: 'Hype do Chat', r: 'comum', regra: 'Participe de uma live válida.', cond: S => S.lives >= 1 },
-  { id: 'lurker', nome: 'Lurker Lendário', r: 'incomum', regra: 'Acumule 5 horas assistidas.', cond: S => S.horas >= 5 },
-  { id: 'cacador', nome: 'Caçador de Segredos', r: 'raro', regra: 'Resgate 5 códigos secretos.', cond: S => S.codigos >= 5 },
-  { id: 'votante_vip', nome: 'Votante VIP', r: 'epico', regra: 'Registre 50 votos no chat.', cond: S => S.votos >= 50 },
-  { id: 'embaixador', nome: 'Embaixador do Cantinho', r: 'epico', regra: 'Envie 25 sugestões para a comunidade.', cond: S => S.sugestoesEnv >= 25 },
-  { id: 'lenda_cantinho', nome: 'Lenda do Cantinho', r: 'lendario', regra: 'Alcance 30 lives consecutivas.', cond: S => S.melhorStreak >= 30 }
+  { id: 'novato',          nome: 'Novato',                 r: 'comum',    regra: 'Todo mundo começa aqui.',                    cond: S => true },
+  { id: 'hype',            nome: 'Hype do Chat',            r: 'comum',    regra: 'Participe de uma live válida.',               cond: S => S.lives >= 1 },
+  { id: 'visitante',       nome: 'Visitante Assíduo',      r: 'comum',    regra: 'Assista 2 horas de live.',                     cond: S => S.horas >= 2 },
+  { id: 'lurker',          nome: 'Presença Constante',      r: 'incomum',  regra: 'Acumule 5 horas assistidas.',                 cond: S => S.horas >= 5 },
+  { id: 'fiel',            nome: 'Fiel do Chat',            r: 'incomum',  regra: 'Assista 10 horas de live.',                    cond: S => S.horas >= 10 },
+  { id: 'voz',             nome: 'Voz do Povo',             r: 'incomum',  regra: 'Acumule 25 votos.',                            cond: S => S.votos >= 25 },
+  { id: 'veterano',        nome: 'Veterano das Lives',      r: 'raro',     regra: 'Assista 50 horas de live.',                    cond: S => S.horas >= 50 },
+  { id: 'mente',           nome: 'Conselheiro do Cantinho', r: 'raro',     regra: 'Tenha 5 sugestões aprovadas pela Soso.',       cond: S => S.sugestoes >= 5 },
+  { id: 'cacador',         nome: 'Caçador de Segredos',     r: 'raro',     regra: 'Resgate 5 códigos secretos.',                 cond: S => S.codigos >= 5 },
+  { id: 'votante_vip',     nome: 'Votante VIP',             r: 'epico',    regra: 'Registre 50 votos no chat.',                  cond: S => S.votos >= 50 },
+  { id: 'guardiao',        nome: 'Guardião do Arcade',      r: 'epico',    regra: 'Assista 100 horas de live.',                   cond: S => S.horas >= 100 },
+  { id: 'imparavel',       nome: 'Imparável',               r: 'epico',    regra: 'Alcance uma sequência de 12 lives.',           cond: S => S.melhorStreak >= 12 },
+  { id: 'embaixador',      nome: 'Embaixador do Cantinho',  r: 'epico',    regra: 'Envie 25 sugestões para a comunidade.',        cond: S => S.sugestoesEnv >= 25 },
+  { id: 'lenda',           nome: 'Lenda do Chat',           r: 'lendario', regra: 'Assista 200 horas de live.',                   cond: S => S.horas >= 200 },
+  { id: 'lenda_cantinho',  nome: 'Lenda do Cantinho',       r: 'lendario', regra: 'Alcance 30 lives consecutivas.',              cond: S => S.melhorStreak >= 30 },
+  { id: 'completista',     nome: 'Completista',             r: 'lendario', regra: 'Conquiste a Platina do Arcade.',              cond: S => S.platina },
+  { id: 'estilista',       nome: 'Estilista do Arcade',     r: 'incomum',  regra: 'Salve seu primeiro visual no guarda-roupa.',  cond: S => S.bonecoSalvo },
+  { id: 'colecionador',    nome: 'Colecionador de Pixel',   r: 'raro',     regra: 'Desbloqueie 20 peças do guarda-roupa.',        cond: S => S.itens >= 20 },
+  { id: 'veterano_chat',   nome: 'Figura Carimbada',        r: 'raro',     regra: 'Marque presença em 25 lives válidas.',        cond: S => S.lives >= 25 },
+  { id: 'mestre_ideias',   nome: 'Mestre das Ideias',       r: 'epico',    regra: 'Tenha 10 sugestões aprovadas pela Soso.',     cond: S => S.sugestoes >= 10 }
 ];
 
 /* ============================================================
@@ -351,6 +355,9 @@ export async function lerStats(id){
   S.inv = new Set(inv || []);          // chaves "slot:id" (loja/evento)
   S.boneco = jparse(g.boneco, null);
   S.conta = acc;
+  // Também calcula a coleção aqui, pois titulosDe() é usado tanto na leitura
+  // do perfil quanto na validação de títulos equipados.
+  S.itens = contarItens(S);
   return S;
 }
 

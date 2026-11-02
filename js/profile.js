@@ -135,6 +135,7 @@
     let liberados = {};
     let carregado = false;
     let carregando = false;
+    let carregamentoAtual = null;
     let salvando = false;
     let requisicao = 0;
     let avisoTimer = null;
@@ -218,14 +219,25 @@
     }
 
     function renderPreview(){
-      const svg = window.PixelAvatar.render(boneco, {
-        label: 'Prévia do boneco de ' + ((perfil && perfil.nick) || nickDoUsuario() || 'visitante'),
-        animar: true
-      });
-      refs.avatar.replaceChildren(svg);
+      if (!refs.avatar) return;
+      try {
+        const svg = window.PixelAvatar.render(boneco, {
+          label: 'Prévia do boneco de ' + ((perfil && perfil.nick) || nickDoUsuario() || 'visitante'),
+          animar: true
+        });
+        if (!svg || svg.nodeType !== 1) throw new Error('O motor não retornou um SVG válido.');
+        refs.avatar.replaceChildren(svg);
+        refs.avatar.dataset.render = 'ok';
+      } catch (erro) {
+        console.error('[Meu Boneco] Erro ao desenhar a prévia:', erro);
+        refs.avatar.replaceChildren();
+        refs.avatar.textContent = '🕹️';
+        refs.avatar.dataset.render = 'erro';
+        if (refs.stageCaption) refs.stageCaption.textContent = 'Não foi possível desenhar o personagem.';
+      }
       refs.avatar.setAttribute('aria-label', 'Boneco com ' + nomeItem('cabelo') + ', ' + nomeItem('roupa') + ' e ' + nomeItem('acessorio') + '.');
 
-      if (refs.stageCaption) {
+      if (refs.stageCaption && refs.avatar.dataset.render !== 'erro') {
         if (!catalogo) {
           refs.stageCaption.textContent = perfil ? 'Carregando seu visual…' : 'Prévia do visual padrão.';
         } else {
@@ -560,6 +572,7 @@
     function mostrarVisitante(){
       requisicao++;
       carregando = false;
+      carregamentoAtual = null;
       carregado = false;
       perfil = null;
       catalogo = catalogo || null;
@@ -624,8 +637,13 @@
     }
 
     async function carregarTudo({ forcarPerfil = false, forcarCatalogo = false } = {}){
-      if (!window.GameState) return;
-      if (carregando) return;
+      if (!window.GameState) {
+        mostrarErro('O estado do Arcade não foi inicializado. Recarregue a página e tente novamente.');
+        return null;
+      }
+      // Cliques repetidos em "Tentar novamente" compartilham a requisição atual,
+      // em vez de deixar a interface em um estado de carregamento concorrente.
+      if (carregamentoAtual) return carregamentoAtual;
 
       const token = ++requisicao;
       carregando = true;
@@ -635,47 +653,80 @@
       setPalco('carregando', 'Carregando…');
       statusCatalogo('Carregando seu guarda-roupa…');
 
-      try {
-        const resultados = await Promise.allSettled([
-          window.GameState.carregarPerfil({ forcar: forcarPerfil }),
-          window.GameState.carregarCatalogo({ forcar: forcarCatalogo })
-        ]);
-        if (token !== requisicao) return;
+      carregamentoAtual = (async () => {
+        try {
+          const resultados = await Promise.allSettled([
+            window.GameState.carregarPerfil({ forcar: forcarPerfil }),
+            window.GameState.carregarCatalogo({ forcar: forcarCatalogo })
+          ]);
+          if (token !== requisicao) return null;
 
-        let dadosPerfil = resultados[0].status === 'fulfilled' ? resultados[0].value : null;
-        let dadosCatalogo = resultados[1].status === 'fulfilled' ? resultados[1].value : null;
+          let dadosPerfil = resultados[0].status === 'fulfilled' ? resultados[0].value : null;
+          let dadosCatalogo = resultados[1].status === 'fulfilled' ? resultados[1].value : null;
 
-        // Recupera cada recurso de forma independente: uma falha no catálogo
-        // não impede a obtenção do perfil, nem o inverso.
-        if (!dadosPerfil && getUsuario()) {
-          const respostaPerfil = await api(window.API_GAME || '/api/game', 'perfil');
-          if (respostaPerfil.ok) dadosPerfil = respostaPerfil.data;
-          else console.error('[Meu Boneco] Perfil indisponível:', respostaPerfil.status, respostaPerfil.data);
-        }
-        if (!dadosCatalogo || !dadosCatalogo.catalogo) {
-          const respostaCatalogo = await api(window.API_GAME || '/api/game', 'catalogo');
-          if (respostaCatalogo.ok && respostaCatalogo.data?.catalogo) dadosCatalogo = respostaCatalogo.data;
-          else console.error('[Meu Boneco] Catálogo indisponível:', respostaCatalogo.status, respostaCatalogo.data);
-        }
-        if (token !== requisicao) return;
+          // Recupera o perfil e o catálogo separadamente. Uma fonte com falha
+          // não deve esconder a mensagem útil da outra.
+          if (!dadosPerfil && getUsuario()) {
+            const respostaPerfil = await api(window.API_GAME || '/api/game', 'perfil');
+            if (respostaPerfil.ok) dadosPerfil = respostaPerfil.data;
+            else console.error('[Meu Boneco] Perfil indisponível:', respostaPerfil.status, respostaPerfil.data);
+          }
+          if (!dadosCatalogo || !dadosCatalogo.catalogo) {
+            const respostaCatalogo = await api(window.API_GAME || '/api/game', 'catalogo');
+            if (respostaCatalogo.ok && respostaCatalogo.data?.catalogo) dadosCatalogo = respostaCatalogo.data;
+            else console.error('[Meu Boneco] Catálogo indisponível:', respostaCatalogo.status, respostaCatalogo.data);
+          }
+          if (token !== requisicao) return null;
 
-        if (!dadosPerfil) {
-          if (getUsuario()) mostrarErro('Não consegui carregar seu perfil. Atualize a página ou entre novamente.');
-          else mostrarVisitante();
-          return;
-        }
-        if (!dadosCatalogo || !dadosCatalogo.catalogo) {
-          mostrarErro('O guarda-roupa não respondeu. Seu perfil foi carregado, mas o catálogo falhou. Tente novamente.');
-          return;
-        }
+          if (!dadosPerfil) {
+            if (getUsuario()) mostrarErro('Não consegui carregar seu perfil. Sua sessão pode ter expirado; tente novamente ou entre outra vez.');
+            else mostrarVisitante();
+            return null;
+          }
+          if (!dadosCatalogo || !dadosCatalogo.catalogo) {
+            mostrarErro('Seu perfil respondeu, mas o catálogo de itens falhou. Verifique a conexão e tente novamente.');
+            return null;
+          }
 
-        iniciarComPerfil(dadosPerfil, dadosCatalogo);
-      } catch (erro) {
-        console.error('[Meu Boneco] Falha ao carregar perfil ou catálogo:', erro);
-        if (token === requisicao) mostrarErro('Não foi possível carregar o guarda-roupa. Consulte o console e tente novamente.');
-      } finally {
-        if (token === requisicao) carregando = false;
+          iniciarComPerfil(dadosPerfil, dadosCatalogo);
+          return dadosPerfil;
+        } catch (erro) {
+          console.error('[Meu Boneco] Falha ao carregar perfil ou catálogo:', erro);
+          if (token === requisicao) mostrarErro('Não foi possível carregar o guarda-roupa. Verifique a conexão e tente novamente.');
+          return null;
+        } finally {
+          if (token === requisicao) {
+            carregando = false;
+            carregamentoAtual = null;
+          }
+        }
+      })();
+      return carregamentoAtual;
+    }
+
+    async function experimentarItem(slot, id){
+      if (!carregado) {
+        await carregarTudo({ forcarPerfil: true, forcarCatalogo: true });
       }
+      if (!carregado) {
+        mensagem('Não foi possível abrir a prévia porque o guarda-roupa ainda não carregou.', 'erro');
+        return false;
+      }
+      if (!window.PixelAvatar.SLOTS.includes(slot)) return false;
+      const item = itemDe(slot, id);
+      if (!item || !podeUsar(slot, id)) {
+        avisar('Essa peça não está liberada na sua conta. Atualize o inventário para conferir seu acesso.');
+        return false;
+      }
+
+      const categoria = CATEGORIAS.find(grupo => grupo.secoes.some(secao => secao.slot === slot));
+      if (categoria) categoriaAtiva = categoria.id;
+      boneco = { ...boneco, [slot]: id };
+      renderCategorias();
+      renderPreview();
+      atualizarEstadoSalvar();
+      mensagem('Prévia de “' + item.nome + '” aplicada. Salve quando gostar do resultado.', 'ok');
+      return true;
     }
 
     function receberPerfil(dadosPerfil){
@@ -722,9 +773,16 @@
     }
 
     if (refs.retry) {
-      refs.retry.addEventListener('click', () => {
-        if (getUsuario() || window.GameState.perfil) carregarTudo({ forcarPerfil: true, forcarCatalogo: true });
-        else mostrarVisitante();
+      refs.retry.addEventListener('click', async () => {
+        refs.retry.disabled = true;
+        refs.retry.textContent = 'Tentando novamente…';
+        try {
+          await window.checarLogin?.();
+          await carregarTudo({ forcarPerfil: true, forcarCatalogo: true });
+        } finally {
+          refs.retry.disabled = false;
+          refs.retry.textContent = 'Tentar novamente';
+        }
       });
     }
 
@@ -757,6 +815,22 @@
       });
     }
 
+    window.addEventListener('soso:experimentar-item', evento => {
+      const detalhe = evento.detail || {};
+      experimentarItem(detalhe.slot, detalhe.id).then(sucesso => {
+        if (sucesso && refs.stage) refs.stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }).catch(erro => {
+        console.error('[Meu Boneco] Não foi possível abrir a prévia do item:', erro);
+        mensagem('Não foi possível experimentar essa peça. Tente novamente.', 'erro');
+      });
+    });
+
+    window.addEventListener('soso:boneco-open', () => {
+      if (!carregado && !carregando && (getUsuario() || window.GameState?.perfil)) {
+        carregarTudo({ forcarPerfil: true, forcarCatalogo: true });
+      }
+    });
+
     if (window.GameState) {
       window.GameState.on('perfil', receberPerfil);
     }
@@ -764,7 +838,7 @@
     window.addEventListener('soso:auth', evento => {
       clearTimeout(visitanteTimer);
       if (evento.detail) {
-        carregarTudo();
+        carregarTudo({ forcarPerfil: true, forcarCatalogo: true });
         return;
       }
       mostrarVisitante();
@@ -777,7 +851,7 @@
 
     window.addEventListener('soso:aba', evento => {
       if (evento.detail !== 'perfil' || carregado || carregando) return;
-      if (getUsuario() || window.GameState.perfil) carregarTudo();
+      if (getUsuario() || window.GameState?.perfil) carregarTudo();
     });
 
     renderPreview();

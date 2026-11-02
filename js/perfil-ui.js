@@ -1,289 +1,952 @@
 /* ============================================================
-   PERFIL UI — visão geral, inventário, loja, conquistas, ranking e ajustes
+   PERFIL UI — visão geral, inventário, conquistas e configurações
+   O estado do jogador continua vindo exclusivamente do servidor.
    ============================================================ */
-(function(){
+(function () {
   'use strict';
-  const $=(s,r=document)=>r.querySelector(s);
-  const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-  const SLOT_NAMES={base:'Corpo',pele:'Pele',rosto:'Expressão',cabelo:'Cabelo',cabeloCor:'Cor do cabelo',roupa:'Roupa',roupaCor:'Cor da roupa',calcado:'Calçado',calcadoCor:'Cor do calçado',acessorio:'Acessório',acessorioCor:'Cor do acessório',efeito:'Efeito',animacao:'Animação',moldura:'Moldura'};
-  const RARITY_NAMES={comum:'Comum',incomum:'Incomum',raro:'Raro',epico:'Épico',lendario:'Lendário',limitado:'Limitado'};
-  const rarityName=id=>RARITY_NAMES[id]||'Item';
-  let perfil=null, catalogo=null, ranking=null, active='visao-geral', loading=false, devInsights=null, devInsightsLoading=false;
-  const money=n=>Number(n||0).toLocaleString('pt-BR');
-  const el=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n;};
-  const button=(txt,cls,fn)=>{const b=el('button',cls,txt);b.type='button';b.addEventListener('click',fn);return b;};
-  const empty=(txt)=>el('p','pf-empty',txt);
-  function setText(id,value){const n=document.getElementById(id);if(n)n.textContent=value==null?'—':String(value);}
-  function setHtml(id,node){const n=document.getElementById(id);if(n)n.replaceChildren(node);}
-  function renderBoneco(target,boneco,label,mini=false){
-    if(!target)return;
-    target.replaceChildren();
-    if(window.PixelAvatar?.render){
-      const svg=window.PixelAvatar.render(boneco||window.PixelAvatar.PADRAO,{label:label||'Personagem do jogador',mini,animar:!mini});
-      if(svg)target.appendChild(svg);
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+  const SLOT_NAMES = {
+    base: 'Corpo', pele: 'Tom de pele', rosto: 'Rosto', cabelo: 'Cabelo',
+    cabeloCor: 'Cor do cabelo', roupa: 'Roupa', roupaCor: 'Cor da roupa',
+    calcado: 'Calçado', calcadoCor: 'Cor do calçado', acessorio: 'Acessório',
+    acessorioCor: 'Cor do acessório', efeito: 'Efeito', animacao: 'Animação', moldura: 'Moldura'
+  };
+  const SLOT_ICONS = {
+    base: '🧍', pele: '🎨', rosto: '😊', cabelo: '💇', cabeloCor: '🎨',
+    roupa: '👕', roupaCor: '🎨', calcado: '👟', calcadoCor: '🎨',
+    acessorio: '🕶️', acessorioCor: '🎨', efeito: '✨', animacao: '🎮', moldura: '🖼️'
+  };
+  const SLOT_FILTER = {
+    base: 'base', pele: 'base', rosto: 'rosto', cabelo: 'cabelo', cabeloCor: 'cabelo',
+    roupa: 'roupa', roupaCor: 'roupa', calcado: 'calcado', calcadoCor: 'calcado',
+    acessorio: 'acessorio', acessorioCor: 'acessorio', efeito: 'efeito', animacao: 'animacao', moldura: 'moldura'
+  };
+  const RARITY_NAMES = {
+    comum: 'Comum', incomum: 'Incomum', raro: 'Raro', epico: 'Épico',
+    lendario: 'Lendário', limitado: 'Limitado'
+  };
+  const RARITY_ORDER = { comum: 0, incomum: 1, raro: 2, epico: 3, lendario: 4, limitado: 5 };
+  const MILESTONE_ICONS = ['🔥', '⚡', '💜', '👑'];
+  const money = value => Number(value || 0).toLocaleString('pt-BR');
+  const fmtHours = value => value == null || !Number.isFinite(Number(value))
+    ? '—'
+    : `${Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h`;
+
+  let perfil = null;
+  let catalogo = null;
+  let active = 'visao-geral';
+  let loading = false;
+  let inventoryFilter = 'todos';
+  let achievementFilter = 'andamento';
+  let devInsights = null;
+  let devInsightsError = '';
+  let devInsightsLoading = false;
+
+  const el = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  };
+  const button = (text, className, onClick) => {
+    const node = el('button', className, text);
+    node.type = 'button';
+    node.addEventListener('click', onClick);
+    return node;
+  };
+  const empty = text => el('p', 'pf-empty', text);
+  const setText = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = value == null ? '—' : String(value);
+  };
+
+  function notify(message, type = 'ok') {
+    if (typeof window.toast === 'function') window.toast(message, type);
+  }
+
+  function usuarioAtual() {
+    try {
+      return typeof USUARIO !== 'undefined' && USUARIO ? USUARIO : null;
+    } catch (_) {
+      return null;
     }
   }
-  function notify(msg,tipo='ok'){if(typeof window.toast==='function')window.toast(msg,tipo);}
-  function usuarioAtual(){try{return typeof USUARIO!=='undefined' && USUARIO ? USUARIO : null;}catch(_){return null;}}
-  async function loadAll(force=false){
-    if(loading)return; loading=true;
-    try{
-      const state=window.GameState;
-      const autenticado=!!(usuarioAtual() || state?.perfil);
-      let perfilPromise=autenticado && state ? state.carregarPerfil({forcar:force}) : Promise.resolve(null);
-      let catalogoPromise=state ? state.carregarCatalogo({forcar:force}) : Promise.resolve(null);
-      const [pResult,cResult]=await Promise.allSettled([perfilPromise,catalogoPromise]);
-      perfil=pResult.status==='fulfilled'?pResult.value:null;
-      catalogo=cResult.status==='fulfilled'?cResult.value:null;
-      if(autenticado && !perfil){const r=await api(API_GAME,'perfil');if(r.ok)perfil=r.data;else console.error('[PerfilUI] Perfil:',r.status,r.data);}
-      if(!catalogo?.catalogo){const r=await api(API_GAME,'catalogo');if(r.ok&&r.data?.catalogo)catalogo=r.data;else console.error('[PerfilUI] Catálogo:',r.status,r.data);}
-      updateAll();
-    }catch(e){console.error('[PerfilUI] Falha ao atualizar interface:',e);}
-    finally{loading=false;}
+
+  function renderBoneco(target, boneco, label, mini = false) {
+    if (!target) return;
+    target.replaceChildren();
+    if (!window.PixelAvatar || typeof window.PixelAvatar.render !== 'function') {
+      target.textContent = '🕹️';
+      return;
+    }
+    try {
+      const svg = window.PixelAvatar.render(boneco || window.PixelAvatar.PADRAO, {
+        label: label || 'Personagem do jogador', mini, animar: !mini
+      });
+      if (svg) target.appendChild(svg);
+      else target.textContent = '🕹️';
+    } catch (error) {
+      console.warn('[PerfilUI] Não foi possível desenhar o boneco:', error);
+      target.textContent = '🕹️';
+    }
   }
-  function updateAll(){
-    if(!perfil){renderGuest();return;}
-    if(window.__pfAtualizarNomeBanner)window.__pfAtualizarNomeBanner(perfil);
-    if(active==='visao-geral')renderOverview();
-    if(active==='inventario')renderInventory();
-    if(active==='loja')renderShop();
-    if(active==='conquistas')renderAchievements();
-    if(active==='ranking')renderProfileRanking();
-    if(active==='configuracoes')renderSettings();
+
+  async function loadAll(force = false) {
+    if (loading) return;
+    loading = true;
+    try {
+      const state = window.GameState;
+      const autenticado = !!(usuarioAtual() || state?.perfil);
+      const perfilPromise = autenticado && state
+        ? state.carregarPerfil({ forcar: force })
+        : Promise.resolve(null);
+      const catalogoPromise = state
+        ? state.carregarCatalogo({ forcar: force })
+        : Promise.resolve(null);
+      const [perfilResult, catalogoResult] = await Promise.allSettled([perfilPromise, catalogoPromise]);
+
+      perfil = perfilResult.status === 'fulfilled' ? perfilResult.value : null;
+      catalogo = catalogoResult.status === 'fulfilled' ? catalogoResult.value : null;
+
+      // Fallbacks independentes: uma falha de perfil não invalida o catálogo e vice-versa.
+      if (autenticado && !perfil) {
+        const result = await api(API_GAME, 'perfil');
+        if (result.ok) perfil = result.data;
+        else console.error('[PerfilUI] Falha ao carregar perfil:', result.status, result.data);
+      }
+      if (!catalogo?.catalogo) {
+        const result = await api(API_GAME, 'catalogo');
+        if (result.ok && result.data?.catalogo) catalogo = result.data;
+        else console.error('[PerfilUI] Falha ao carregar catálogo:', result.status, result.data);
+      }
+      updateAll();
+    } catch (error) {
+      console.error('[PerfilUI] Falha ao atualizar interface:', error);
+      notify('Não foi possível atualizar o perfil agora.', 'erro');
+    } finally {
+      loading = false;
+    }
+  }
+
+  function updateAll() {
+    if (!perfil) {
+      renderGuest();
+      return;
+    }
+    if (window.__pfAtualizarNomeBanner) window.__pfAtualizarNomeBanner(perfil);
+    if (active === 'visao-geral') renderOverview();
+    if (active === 'inventario') renderInventory();
+    if (active === 'loja') renderShop();
+    if (active === 'conquistas') renderAchievements();
+    if (active === 'configuracoes') renderSettings();
     renderAvatarPlaces();
   }
-  function renderGuest(){
-    setText('pfBannerNome','@convidado');
-    setText('pfNickLarge','Entre para criar seu personagem');
-    renderBoneco($('#pfAvatarLarge'),window.PixelAvatar?.PADRAO,'Prévia do Arcade');
-    ['pfLivesCount','pfVotesCount','pfSuggestionsCount','pfWatchHoursCount','pfStreakCurrent','pfStreakBest','pfCoinsValue'].forEach(id=>setText(id,'0'));
-    const inv=$('#pfInventoryGrid');if(inv)inv.replaceChildren(empty('Entre com Google para desbloquear e guardar itens no seu inventário.'));
-    const ach=$('#pfAchievementsGrid');if(ach)ach.replaceChildren(empty('Crie sua conta para começar a desbloquear conquistas.'));
-    const shop=$('#pfShopGrid');if(shop)shop.replaceChildren(empty('Entre para comprar itens com SosoCoins.'));
-    const recent=$('#pfRecentAchievements');if(recent)recent.replaceChildren(empty('Suas primeiras conquistas aparecem aqui.'));
+
+  function renderGuest() {
+    setText('pfBannerNome', '@convidado');
+    setText('pfNickLarge', 'Entre para criar seu personagem');
+    setText('pfCurrentTitle', 'Visitante');
+    setText('pfLevelLarge', '1');
+    setText('pfXpText', '0 / 100 XP');
+    setText('pfXpTotal', 'Total acumulado: 0 XP');
+    setText('pfXpFaltam', 'Entre para começar sua jornada');
+    setText('pfXpPercent', '0%');
+    setText('pfTitlesProgress', '1 disponível');
+    setText('pfPositionNumber', '—');
+    setText('pfPositionTotal', 'Entre no Arcade para aparecer no placar.');
+    setText('pfStreakCurrent', '0');
+    setText('pfStreakBest', '0');
+    setText('pfStreakNext', '—');
+    ['pfLivesCount', 'pfVotesCount', 'pfSuggestionsCount', 'pfApprovedSuggestionsCount', 'pfCodesCount', 'pfWatchHoursCount', 'pfCoinsValue'].forEach(id => setText(id, '0'));
+    const fill = $('#pfXpBarFill');
+    if (fill) fill.style.width = '0%';
+    const track = $('#pfXpBarTrack');
+    if (track) track.setAttribute('aria-valuenow', '0');
+    renderBoneco($('#pfAvatarLarge'), window.PixelAvatar?.PADRAO, 'Prévia do Arcade');
+
+    const titleSelect = $('#pfTituloSelect');
+    if (titleSelect) {
+      titleSelect.replaceChildren(new Option('Novato', 'novato'));
+      titleSelect.value = 'novato';
+      titleSelect.disabled = true;
+    }
+    const titleCatalog = $('#pfTitleCatalog');
+    if (titleCatalog) titleCatalog.replaceChildren(el('span', 'pf-title-chip is-current', 'Novato'));
+    const rules = $('#pfXpRules');
+    if (rules) rules.replaceChildren(empty('Entre no Arcade para acompanhar as atividades que dão XP.'));
+    const milestones = $('#pfStreakMilestones .pf-milestone-list');
+    if (milestones) milestones.replaceChildren(empty('Vincule sua Twitch para registrar presença.'));
+    const recent = $('#pfRecentAchievements');
+    if (recent) recent.replaceChildren(empty('Crie sua conta e participe das lives para desbloquear conquistas.'));
+
+    const inventory = $('#pfInventoryGrid');
+    if (inventory) inventory.replaceChildren(empty('Entre no Arcade para desbloquear e guardar peças.'));
+    setText('pfInventoryCount', '0 itens');
+    const achievements = $('#pfAchievementsGrid');
+    if (achievements) achievements.replaceChildren(empty('Entre no Arcade para começar a desbloquear conquistas.'));
+    setText('pfAchievementProgress', '0 / 0');
+    const shopBalance = $('#pfShopBalance');
+    if (shopBalance) shopBalance.textContent = '0';
     renderSettings();
   }
-  function renderAvatarPlaces(){
-    if(!perfil)return;
-    renderBoneco($('#pfAvatarLarge'),perfil.boneco,'Boneco de '+(perfil.nick||'jogador'));
-    renderBoneco($('#pfRankingAvatarPlaceholder'),perfil.boneco,'Seu boneco',true);
-    const navAvatar=$('.nav-mini-avatar');
-    if(navAvatar){renderBoneco(navAvatar,perfil.boneco,'Seu boneco',true);navAvatar.classList.remove('is-empty');}
-  }
-  function renderOverview(){
-    const p=perfil, st=p.stats||{}, xp=p.xpNivel||{};
-    setText('pfNickLarge','@'+(p.nick||'Jogador'));setText('pfLevelLarge',p.nivel||1);
-    const fill=$('#pfXpBarFill');if(fill)fill.style.width=Math.max(0,Math.min(100,Number(xp.pct)||0))+'%';
-    setText('pfXpText',`${money(xp.dentro||0)} / ${money((xp.prox||0)-(xp.base||0))} XP`);
-    setText('pfXpFaltam',xp.falta>0?`Faltam ${money(xp.falta)} XP para o próximo nível`:'Nível máximo alcançado!');
-    setText('pfLivesCount',money(st.lives));setText('pfVotesCount',money(st.votos));setText('pfSuggestionsCount',money(st.sugestoes));setText('pfWatchHoursCount',money(st.horas));setText('pfStreakCurrent',money(st.streak));setText('pfStreakBest',money(st.melhorStreak));setText('pfCoinsValue',money(p.coins));
-    const pos=p.ranking||{};setText('pfPositionNumber',pos.pos?'#'+pos.pos:'—');setText('pfPositionTotal',`de ${money(pos.total)} jogadores`);
-    setText('pfRankingNick',p.nick||'Jogador');setText('pfRankingTitle',titleName(p.titulo));setText('pfRankingLevel',p.nivel||1);setText('pfRankingXp',money(p.xp)+' XP');
-    renderBoneco($('#pfAvatarLarge'),p.boneco,'Boneco de '+(p.nick||'jogador'));
-    renderBoneco($('#pfRankingAvatarPlaceholder'),p.boneco,'Seu boneco',true);
-    const sel=$('#pfTituloSelect');if(sel){const opts=(p.titulos||[]).filter(t=>t.liberado);sel.replaceChildren();opts.forEach(t=>{const o=document.createElement('option');o.value=t.id;o.textContent=t.nome;sel.appendChild(o);});if(!opts.length){const o=document.createElement('option');o.textContent='Nenhum título liberado';o.value='';sel.appendChild(o);}sel.value=p.titulo||'novato';}
-    const rules=$('#pfXpRules');if(rules&&p.regras?.xp){rules.replaceChildren();p.regras.xp.forEach((rule,i)=>{const row=el('div','pf-rule-item');row.append(el('span','pf-rule-icon',['🎮','🗳️','💡','📺','🔥','🔐','⭐'][i]||'✦'),el('span','pf-rule-text',rule));rules.appendChild(row);});}
-    const milestones=$('#pfStreakMilestones .pf-milestone-list');if(milestones){milestones.replaceChildren();Object.entries(p.regras?.streak?.marcos||{}).forEach(([n,coins])=>milestones.appendChild(el('span','pf-milestone',`${n} lives · +${coins} SC`)));}
-    renderRecentAchievements();
-  }
-  function titleName(id){const t=(perfil?.titulos||[]).find(x=>x.id===id);return t?.nome||'Novato';}
-  function renderRecentAchievements(){
-    const box=$('#pfRecentAchievements');if(!box)return;box.replaceChildren();
-    const won=(perfil?.conquistas||[]).filter(c=>c.ts).sort((a,b)=>Number(b.ts)-Number(a.ts)).slice(0,3);
-    if(!won.length){box.appendChild(empty('Ainda sem conquistas. Sua primeira missão é criar seu boneco!'));return;}
-    won.forEach(c=>{const card=el('div','pf-recent-ach');card.append(el('span','pf-ach-icon',c.icone||'🏆'),el('span','pf-ach-name',c.nome));box.appendChild(card);});
-  }
-  function itemOwned(slot,item){return (perfil?.liberados?.[slot]||[]).includes(item.id)||(perfil?.comprados||[]).includes(`${slot}:${item.id}`);}
-  function itemEquipped(slot,item){return perfil?.boneco?.[slot]===item.id;}
-  function miniaturaItem(slot,item){
-    const preview=el('div','pf-item-preview');
-    if(window.PixelAvatar?.render){
-      const boneco={...window.PixelAvatar.PADRAO,...(perfil?.boneco||{}),[slot]:item.id};
-      const svg=window.PixelAvatar.render(boneco,{mini:true,animar:false,label:'Prévia de '+item.nome});
-      if(svg){preview.appendChild(svg);return preview;}
+
+  function renderAvatarPlaces() {
+    if (!perfil) return;
+    renderBoneco($('#pfAvatarLarge'), perfil.boneco, `Boneco de ${perfil.nick || 'jogador'}`);
+    const navAvatar = $('.nav-mini-avatar');
+    if (navAvatar) {
+      renderBoneco(navAvatar, perfil.boneco, 'Seu boneco', true);
+      navAvatar.classList.remove('is-empty');
     }
-    if(item.cor){const swatch=el('span','pf-item-swatch');swatch.style.background=item.cor;preview.appendChild(swatch);}
-    else preview.textContent=item.icone||'✦';
+  }
+
+  function renderTitleSelector() {
+    const titles = Array.isArray(perfil?.titulos) ? perfil.titulos : [];
+    const unlocked = titles.filter(title => title.liberado);
+    const currentId = perfil?.titulo || 'novato';
+    const selected = unlocked.some(title => title.id === currentId) ? currentId : (unlocked[0]?.id || 'novato');
+    const select = $('#pfTituloSelect');
+    if (select) {
+      select.replaceChildren();
+      unlocked
+        .sort((a, b) => (RARITY_ORDER[a.r] ?? 99) - (RARITY_ORDER[b.r] ?? 99) || a.nome.localeCompare(b.nome, 'pt-BR'))
+        .forEach(title => select.add(new Option(`${title.nome} · ${RARITY_NAMES[title.r] || 'Título'}`, title.id)));
+      if (!unlocked.length) select.add(new Option('Novato', 'novato'));
+      select.value = selected;
+      select.disabled = unlocked.length <= 1;
+    }
+    const currentTitle = titles.find(title => title.id === selected) || titles.find(title => title.id === currentId);
+    setText('pfCurrentTitle', currentTitle?.nome || 'Novato');
+    const hint = currentTitle?.regra
+      ? `Equipado · ${currentTitle.regra}`
+      : 'Desbloqueie títulos participando das lives e atividades do Arcade.';
+    setText('pfTitleHint', hint);
+    setText('pfTitlesProgress', `${unlocked.length} de ${titles.length || 1} liberados`);
+
+    const collection = $('#pfTitleCatalog');
+    if (!collection) return;
+    collection.replaceChildren();
+    const unlockedSorted = [...unlocked].sort((a, b) =>
+      (RARITY_ORDER[b.r] ?? 99) - (RARITY_ORDER[a.r] ?? 99) || a.nome.localeCompare(b.nome, 'pt-BR')
+    );
+    const lockedSorted = titles.filter(title => !title.liberado).sort((a, b) =>
+      (RARITY_ORDER[a.r] ?? 99) - (RARITY_ORDER[b.r] ?? 99) || a.nome.localeCompare(b.nome, 'pt-BR')
+    );
+    const visible = [
+      ...unlocked.filter(title => title.id === selected),
+      ...unlockedSorted.filter(title => title.id !== selected).slice(0, 4),
+      ...lockedSorted.slice(0, 3)
+    ];
+    if (!visible.length) {
+      collection.appendChild(el('span', 'pf-title-chip is-current', 'Novato'));
+      return;
+    }
+    visible.forEach(title => {
+      const chip = el('span', `pf-title-chip${title.id === selected ? ' is-current' : ''}${title.liberado ? '' : ' is-locked'}`,
+        `${title.liberado ? '✦ ' : '🔒 '}${title.nome}`);
+      chip.title = title.regra || title.nome;
+      collection.appendChild(chip);
+    });
+  }
+
+  function renderOverview() {
+    const player = perfil;
+    const stats = player.stats || {};
+    const level = player.xpNivel || {};
+    const percentage = Math.max(0, Math.min(100, Number(level.pct) || 0));
+    const currentLevelXp = Number(level.dentro) || 0;
+    const levelXpTotal = Math.max(0, (Number(level.prox) || 0) - (Number(level.base) || 0));
+
+    setText('pfNickLarge', `@${player.nick || 'Jogador'}`);
+    setText('pfLevelLarge', player.nivel || 1);
+    setText('pfXpText', `${money(currentLevelXp)} / ${money(levelXpTotal)} XP`);
+    setText('pfXpTotal', `Total acumulado: ${money(player.xp)} XP`);
+    setText('pfXpFaltam', Number(level.falta) > 0 ? `Faltam ${money(level.falta)} XP` : 'Nível máximo alcançado');
+    setText('pfXpPercent', `${Math.round(percentage)}%`);
+
+    const fill = $('#pfXpBarFill');
+    if (fill) fill.style.width = `${percentage}%`;
+    const track = $('#pfXpBarTrack');
+    if (track) track.setAttribute('aria-valuenow', String(Math.round(percentage)));
+
+    setText('pfLivesCount', money(stats.lives));
+    setText('pfWatchHoursCount', fmtHours(stats.horas));
+    setText('pfVotesCount', money(stats.votos));
+    setText('pfSuggestionsCount', money(stats.sugestoesEnv));
+    setText('pfApprovedSuggestionsCount', `${money(stats.sugestoes)} aprovadas`);
+    setText('pfCodesCount', money(stats.codigos));
+    setText('pfCoinsValue', money(player.coins));
+
+    const rank = player.ranking || {};
+    setText('pfPositionNumber', rank.pos ? `#${money(rank.pos)}` : '—');
+    setText('pfPositionTotal', rank.total
+      ? `de ${money(rank.total)} jogadores no placar`
+      : 'Você ainda não entrou no placar.');
+    setText('pfShopBalance', money(player.coins));
+
+    renderTitleSelector();
+    renderProgression(stats, player.regras || {});
+    renderRecentAchievements();
+    renderAvatarPlaces();
+  }
+
+  function renderProgression(stats, rules) {
+    const ruleBox = $('#pfXpRules');
+    if (ruleBox) {
+      ruleBox.replaceChildren();
+      const rulesList = Array.isArray(rules.xp) ? rules.xp : [];
+      const icons = ['🗳️', '💡', '✨', '📺', '🔥', '🔑', '⭐'];
+      if (!rulesList.length) ruleBox.appendChild(empty('As atividades de XP não foram disponibilizadas pela API.'));
+      rulesList.forEach((rule, index) => {
+        const row = el('div', 'pf-rule-item');
+        row.append(el('span', 'pf-rule-icon', icons[index] || '✦'), el('span', 'pf-rule-text', rule));
+        ruleBox.appendChild(row);
+      });
+    }
+
+    const current = Math.max(0, Number(stats.streak) || 0);
+    const best = Math.max(0, Number(stats.melhorStreak) || 0);
+    setText('pfStreakCurrent', money(current));
+    setText('pfStreakBest', money(best));
+
+    const milestones = Object.entries(rules.streak?.marcos || {})
+      .map(([lives, coins]) => ({ lives: Number(lives), coins: Number(coins) }))
+      .filter(item => Number.isFinite(item.lives) && item.lives > 0)
+      .sort((a, b) => a.lives - b.lives);
+    const next = milestones.find(item => item.lives > current);
+    setText('pfStreakNext', next
+      ? `${next.lives} lives · faltam ${next.lives - current}`
+      : (milestones.length ? 'Todos' : '—'));
+
+    const list = $('#pfStreakMilestones .pf-milestone-list');
+    if (list) {
+      list.replaceChildren();
+      if (!milestones.length) list.appendChild(empty('Nenhum marco de sequência foi configurado.'));
+      milestones.forEach((milestone, index) => {
+        const reachedNow = current >= milestone.lives;
+        const reachedBefore = best >= milestone.lives;
+        const status = reachedNow
+          ? 'Nesta sequência'
+          : (reachedBefore ? 'Recorde pessoal' : `Faltam ${milestone.lives - current}`);
+        const card = el('span', `pf-milestone${reachedNow ? ' is-reached' : (reachedBefore ? ' is-record' : '')}`);
+        card.append(
+          el('span', 'pf-milestone-icon', MILESTONE_ICONS[index] || '✦'),
+          el('strong', '', `${milestone.lives} lives`),
+          el('span', 'pf-milestone-reward', `+${money(milestone.coins)} SC`),
+          el('span', 'pf-milestone-status', status)
+        );
+        list.appendChild(card);
+      });
+    }
+    setText('pfStreakRuleText', rules.streak?.texto || 'Sua sequência aumenta quando sua presença é confirmada em lives consecutivas. Vincule sua Twitch nas configurações.');
+  }
+
+  function renderRecentAchievements() {
+    const box = $('#pfRecentAchievements');
+    if (!box) return;
+    box.replaceChildren();
+    const unlocked = (perfil?.conquistas || [])
+      .filter(achievement => achievement.ts)
+      .sort((a, b) => Number(b.ts) - Number(a.ts))
+      .slice(0, 3);
+    if (!unlocked.length) {
+      box.appendChild(empty('Ainda sem conquistas. Monte seu boneco e participe das lives para começar.'));
+      return;
+    }
+    unlocked.forEach(achievement => {
+      const item = el('div', 'pf-recent-ach');
+      item.append(el('span', 'pf-ach-icon', achievement.icone || '🏆'), el('span', 'pf-ach-name', achievement.nome));
+      box.appendChild(item);
+    });
+  }
+
+  function itemOwned(slot, item) {
+    return (perfil?.liberados?.[slot] || []).includes(item.id)
+      || (perfil?.comprados || []).includes(`${slot}:${item.id}`);
+  }
+
+  function itemEquipped(slot, item) {
+    return perfil?.boneco?.[slot] === item.id;
+  }
+
+  function itemColor(slot, item) {
+    if (item.cor) return item.cor;
+    const palettes = {
+      pele: { clara: '#f2c9a0', media: '#d99a6c', bronze: '#b87345', morena: '#8a5230', escura: '#5c3521', alien: '#7dd3a8' },
+      cabeloCor: { preto: '#2b2540', roxo: '#8b5cf6', loiro: '#f2c94c', ruivo: '#c2531b', prata: '#cbd5e1', rosa: '#ff6ec7', ciano: '#22d3ee' },
+      roupaCor: { roxo: '#7c3aed', grafite: '#454560', preto: '#28233c', vermelho: '#dc2626', ciano: '#06b6d4', dourado: '#f5b82e' },
+      calcadoCor: { branco: '#f5f3ff', preto: '#1a1330', vermelho: '#dc2626', roxo: '#7c3aed', ciano: '#22d3ee' },
+      acessorioCor: { dourado: '#ffd166', lilas: '#c084fc', azul: '#7dd3fc', rosa: '#ff6ec7', branco: '#f5f3ff' }
+    };
+    return palettes[slot]?.[item.id] || null;
+  }
+
+  function miniaturaItem(slot, item) {
+    const preview = el('div', 'pf-item-preview');
+    const color = itemColor(slot, item);
+    if (color) {
+      const swatch = el('span', 'pf-item-swatch');
+      swatch.style.background = color;
+      swatch.style.color = color;
+      preview.appendChild(swatch);
+    } else {
+      preview.appendChild(el('span', 'pf-item-glyph', item.icone || SLOT_ICONS[slot] || '✦'));
+    }
     return preview;
   }
-  function itemCard(slot,item,mode){
-    const owned=itemOwned(slot,item),rarity=String(item.r||'comum').toLowerCase();
-    const card=el('article',`pf-item-card rarity-${rarity}`+(owned?' is-owned':' is-locked'));
-    card.dataset.rarity=rarity;
-    const top=el('div','pf-item-card-top');
-    top.append(el('span','pf-item-slot',SLOT_NAMES[slot]||slot),el('span','pf-rarity pf-rarity-badge',rarityName(rarity)));
-    card.append(top,miniaturaItem(slot,item),el('h3','pf-item-name',item.nome),el('p','pf-item-rule',item.regraTxt||'Item do Arcade'));
-    if(itemEquipped(slot,item))card.appendChild(el('span','pf-item-equipped','✓ EQUIPADO'));
-    if(mode==='shop'){
-      const footer=el('div','pf-item-footer');footer.append(el('strong','pf-item-price',item.preco?`${money(item.preco)} SC`:'EVENTO'));
-      const action=button(owned?'Adquirido':(item.regra?.t==='loja'?'Comprar':'Bloqueado'),'pf-btn pf-item-action',()=>buyItem(slot,item));
-      if(owned||item.regra?.t!=='loja')action.disabled=true;
-      footer.appendChild(action);card.appendChild(footer);
-    }else if(!owned){card.appendChild(el('span','pf-item-equipped pf-item-locked','🔒 BLOQUEADO'));}
+
+  function experimentarItem(slot, item) {
+    const tab = $(`[data-pf-tab="boneco"]`);
+    if (tab) tab.click();
+    window.dispatchEvent(new CustomEvent('soso:experimentar-item', { detail: { slot, id: item.id } }));
+  }
+
+  function itemCard(slot, item) {
+    const rarity = String(item.r || 'comum').toLowerCase();
+    const equipped = itemEquipped(slot, item);
+    const card = el('article', `pf-item-card rarity-${rarity} is-owned${equipped ? ' is-equipped' : ''}`);
+    card.dataset.rarity = rarity;
+    const header = el('div', 'pf-item-card-top');
+    header.append(
+      el('span', 'pf-item-slot', SLOT_NAMES[slot] || slot),
+      el('span', 'pf-rarity pf-rarity-badge', RARITY_NAMES[rarity] || 'Item')
+    );
+    card.append(header, miniaturaItem(slot, item), el('h3', 'pf-item-name', item.nome || 'Item do Arcade'));
+    if (equipped) card.appendChild(el('span', 'pf-item-equipped', '✓ EQUIPADO NO PERSONAGEM'));
+    else card.appendChild(el('p', 'pf-item-rule', item.regraTxt || 'Peça liberada para personalização.'));
+    const actions = el('div', 'pf-item-actions');
+    const previewButton = button(equipped ? 'Já está no boneco' : 'Ver no boneco', 'pf-btn pf-btn-secondary', () => experimentarItem(slot, item));
+    previewButton.disabled = equipped;
+    actions.appendChild(previewButton);
+    card.appendChild(actions);
     return card;
   }
-  function renderInventory(){
-    const grid=$('#pfInventoryGrid');if(!grid)return;grid.replaceChildren();let count=0;
-    Object.entries(catalogo?.catalogo||{}).forEach(([slot,items])=>{
-      (items||[]).filter(item=>itemOwned(slot,item)).forEach(item=>{count++;grid.appendChild(itemCard(slot,item,'inventory'));});
+
+  function renderInventory() {
+    const grid = $('#pfInventoryGrid');
+    if (!grid) return;
+    grid.replaceChildren();
+    const owned = [];
+    Object.entries(catalogo?.catalogo || {}).forEach(([slot, items]) => {
+      (items || []).filter(item => itemOwned(slot, item)).forEach(item => owned.push({ slot, item }));
     });
-    setText('pfInventoryCount',`${count} ${count===1?'item':'itens'}`);
-    if(!count)grid.appendChild(empty('Seu inventário está vazio por enquanto. Comece pelo guarda-roupa ou desbloqueie itens na loja.'));
+    setText('pfInventoryCount', `${owned.length} ${owned.length === 1 ? 'item' : 'itens'}`);
+    setText('pfInventoryHint', `${owned.filter(({ slot, item }) => itemEquipped(slot, item)).length} peça(s) atualmente equipada(s).`);
+
+    const filtered = inventoryFilter === 'todos'
+      ? owned
+      : owned.filter(({ slot }) => SLOT_FILTER[slot] === inventoryFilter);
+    if (!filtered.length) {
+      grid.appendChild(empty(owned.length
+        ? 'Nenhuma peça dessa categoria foi desbloqueada ainda.'
+        : 'Seu inventário está vazio por enquanto. Desbloqueie peças participando da comunidade e evoluindo no Arcade.'));
+      return;
+    }
+    filtered.sort((a, b) => {
+      const rarityDiff = (RARITY_ORDER[a.item.r] ?? 99) - (RARITY_ORDER[b.item.r] ?? 99);
+      return rarityDiff || (SLOT_NAMES[a.slot] || a.slot).localeCompare(SLOT_NAMES[b.slot] || b.slot, 'pt-BR')
+        || String(a.item.nome).localeCompare(String(b.item.nome), 'pt-BR');
+    });
+    filtered.forEach(({ slot, item }) => grid.appendChild(itemCard(slot, item)));
   }
-  function renderShop(){
-    const grid=$('#pfShopGrid');if(!grid)return;grid.replaceChildren();
-    const teaser=el('section','pf-shop-coming-soon');
-    teaser.append(el('span','pf-shop-coming-icon','🛍️'),el('span','pf-eyebrow','ARCADE MARKET'),el('h3','','A loja está em manutenção'),el('p','','Estamos preparando novos visuais, acessórios e efeitos para o cantinho da Soso. Seu saldo de SosoCoins continua guardado.'),el('strong','',`${money(perfil?.coins)} SosoCoins disponíveis`));
-    grid.appendChild(teaser);
+
+  function renderShop() {
+    setText('pfShopBalance', money(perfil?.coins));
   }
-  async function buyItem(slot,item){
-    if(!perfil){window.AuthUI?.open();return;}
-    const res=await api(API_GAME,'comprar',{method:'POST',body:{slot,id:item.id}});
-    if(!res.ok){notify(res.data?.error||'Não foi possível comprar esse item.','erro');return;}
-    notify(`${item.nome} entrou no seu inventário!`,'ok');
-    await loadAll(true);renderShop();
-  }
-  function renderAchievements(){
-    const grid=$('#pfAchievementsGrid');if(!grid)return;grid.replaceChildren();
-    const list=perfil?.conquistas||[];const normal=list.filter(c=>c.id!=='platina');
-    const done=normal.filter(c=>c.ts).length;setText('pfAchievementProgress',`${done} / ${normal.length}`);
-    const ordenar=(a,b)=>Number(!!b.ts)-Number(!!a.ts) || Number(a.progresso?.meta||0)-Number(b.progresso?.meta||0);
-    const ordered=[...normal].sort(ordenar);
-    const addCard=c=>{
-      const unlocked=!!c.ts,progress=c.progresso||null;
-      const current=progress?Math.max(0,Number(c.progressoAtual)||0):(unlocked?1:0);
-      const goal=progress?Math.max(1,Number(progress.meta)||1):1;
-      const pct=Math.max(0,Math.min(100,Math.round((current/goal)*100)));
-      const card=el('article','pf-achievement-card'+(unlocked?' is-unlocked':' is-locked')+(c.id==='platina'?' is-platinum':''));
-      if(c.id==='platina'){
-        card.append(el('span','pf-platinum-label','✦ PLATINA'),el('div','pf-achievement-icon pf-platinum-trophy',c.icone||'🏆'));
-      }else card.append(el('div','pf-achievement-icon',c.icone||'🏆'));
-      card.append(el('h3','pf-achievement-name',c.nome),el('p','pf-achievement-desc',c.desc||''));
-      if(progress){
-        const progressWrap=el('div','pf-achievement-progress');
-        const meta=el('div','pf-achievement-progress-meta');
-        const label=progress.unidade==='horas'?`${current.toFixed(current%1?1:0)} / ${goal}h`:`${money(Math.floor(current))} / ${money(goal)} ${progress.unidade||''}`;
-        meta.append(el('span','', 'PROGRESSO'),el('strong','',label));
-        const track=el('div','pf-achievement-progress-track');track.setAttribute('role','progressbar');track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax',String(goal));track.setAttribute('aria-valuenow',String(Math.min(goal,current)));
-        const bar=el('span','pf-achievement-progress-fill');bar.style.width=pct+'%';track.appendChild(bar);progressWrap.append(meta,track);card.appendChild(progressWrap);
-      }
-      const reward=c.premio||{};const rewards=[];if(Number(reward.xp)>0)rewards.push(`+${money(reward.xp)} XP`);if(Number(reward.coins)>0)rewards.push(`+${money(reward.coins)} SosoCoins`);
-      card.appendChild(el('p','pf-achievement-reward',c.id==='platina'?'🏆 Recompensa lendária: moldura e honra do Arcade':(rewards.length?`Recompensa: ${rewards.join(' · ')}`:'Recompensa de jornada')));
-      card.appendChild(el('span','pf-achievement-status',unlocked?'✓ DESBLOQUEADA':'🔒 EM PROGRESSO'));
-      if(unlocked&&c.ts){const time=new Date(Number(c.ts));if(!Number.isNaN(time.getTime()))card.appendChild(el('small','pf-achievement-date','Desbloqueada em '+time.toLocaleDateString('pt-BR')));}
-      grid.appendChild(card);
+
+  function renderAchievements() {
+    const grid = $('#pfAchievementsGrid');
+    if (!grid) return;
+    grid.replaceChildren();
+    const achievements = perfil?.conquistas || [];
+    const normal = achievements.filter(item => item.id !== 'platina');
+    const unlockedCount = normal.filter(item => !!item.ts).length;
+    setText('pfAchievementProgress', `${unlockedCount} / ${normal.length}`);
+
+    const counts = {
+      andamento: normal.length - unlockedCount,
+      desbloqueadas: unlockedCount,
+      todas: normal.length + (achievements.some(item => item.id === 'platina') ? 1 : 0)
     };
-    ordered.forEach(addCard);
-    const platinum=list.find(c=>c.id==='platina');if(platinum)addCard(platinum);
-  }
-  async function renderProfileRanking(){
-    const me=$('#pfProfileRankingMe'),list=$('#pfProfileRankingList');if(!list)return;list.replaceChildren(empty('Carregando ranking…'));
-    const r=await api(API_GAME,'ranking',{query:{limite:100}});if(!r.ok){list.replaceChildren(empty('Não foi possível carregar o ranking agora.'));return;}
-    ranking=r.data?.lista||[];if(me){me.replaceChildren();const pos=perfil?.ranking?.pos;const hero=el('div','pf-profile-ranking-card');renderBoneco(hero,perfil.boneco,'Seu boneco',true);const info=el('div','');info.append(el('span','pf-eyebrow','SUA POSIÇÃO'),el('h3','',`${pos?'#'+pos:'Sem posição'} · ${perfil?.nick||'Jogador'}`),el('p','',`Nível ${perfil?.nivel||1} · ${money(perfil?.xp)} XP · ${titleName(perfil?.titulo)}`));hero.appendChild(info);me.appendChild(hero);
-    }
-    list.replaceChildren();ranking.slice(0,20).forEach(j=>{const row=el('div','pf-profile-ranking-row'+(String(j.id)===String(perfil?.id)?' is-me':''));row.append(el('strong','pf-profile-rank-pos','#'+j.pos));const avatar=el('span','pf-profile-rank-avatar');renderBoneco(avatar,j.boneco,'Boneco de '+j.nome,true);row.append(avatar,el('span','pf-profile-rank-name',j.nome),el('span','pf-profile-rank-level',`Nv ${j.nivel}`),el('strong','pf-profile-rank-xp',`${money(j.xp)} XP`));list.appendChild(row);});
-    if(!ranking.length)list.appendChild(empty('O ranking ainda não tem jogadores.'));
-  }
-  async function renderSettings(){
-    const u=usuarioAtual()||{};
-    const legadoDiscord=u.tipo==='discord';
-    setText('pfSettingsEmail',u.email||'E-mail não vinculado');
-    setText('pfSettingsAccount',u.metodoLogin==='google'?'Google':(legadoDiscord?'Discord antigo — migração disponível':(u.id?'Conta antiga (usuário e senha)':'Não conectado')));
+    setText('pfAchievementHint', `${money(counts[achievementFilter] ?? counts.andamento)} conquista(s) nesta visualização.`);
+    $$('[data-achievement-filter]').forEach(filterButton => {
+      const activeFilter = filterButton.dataset.achievementFilter === achievementFilter;
+      filterButton.classList.toggle('is-active', activeFilter);
+      filterButton.setAttribute('aria-pressed', activeFilter ? 'true' : 'false');
+    });
 
-    const googleLink=$('#pfGoogleLink');
-    if(googleLink){
-      googleLink.hidden=u.metodoLogin==='google';
-      googleLink.textContent=legadoDiscord?'Migrar para Google e preservar meu progresso':(u.id?'Vincular conta Google':'Entrar com Google');
-    }
-
-    const nickInput=$('#pfSettingsNick'),saveNick=$('#pfSaveNick');
-    if(nickInput){if(document.activeElement!==nickInput)nickInput.value=perfil?.nick||u.nick||'';nickInput.disabled=!u.id||legadoDiscord;}
-    if(saveNick)saveNick.disabled=!u.id||legadoDiscord;
-
-    const twitch=perfil?.twitch||u.twitch;
-    const status=$('#pfTwitchStatus'),link=$('#pfTwitchLink'),unlink=$('#pfTwitchUnlink');
-    if(legadoDiscord){
-      if(status)status.textContent='Migre sua conta para Google para gerenciar a conexão Twitch.';
-      if(link)link.hidden=true;if(unlink)unlink.hidden=true;
-    } else if(!u.id){
-      if(status)status.textContent='Entre com Google para conectar sua Twitch.';
-      if(link)link.hidden=true;if(unlink)unlink.hidden=true;
-    } else {
-      if(status)status.textContent=twitch?`Conectada: ${twitch.nome||twitch.login||'conta Twitch'}`:'Twitch não vinculada';
-      if(link)link.hidden=!!twitch;if(unlink)unlink.hidden=!twitch;
-    }
-    const devBox=$('#pfDevInsights');
-    if(devBox){devBox.hidden=perfil?.cargo!=='dev';if(perfil?.cargo==='dev')loadDevInsights();}
-  }
-
-  function fmtHours(n){return n==null?'—':`${Number(n).toLocaleString('pt-BR',{maximumFractionDigits:1})}h`;}
-  function statTile(label,value,detail=''){const card=el('div','pf-dev-stat');card.append(el('small','',label),el('strong','',value),el('span','',detail));return card;}
-  function renderDevInsights(){
-    const root=$('#pfDevInsightsContent'),status=$('#pfDevInsightsStatus');if(!root)return;root.replaceChildren();
-    if(!devInsights){if(status)status.textContent=devInsightsLoading?'Consultando Arcade, StreamElements e Twitch…':'Ainda não há dados carregados.';return;}
-    const a=devInsights.arcade||{},st=devInsights.streamElements||{},watch=st.watchtime||{},sum=watch.summary||{},stats=a.stats||{};
-    if(status)status.textContent=`Atualizado em ${new Date(devInsights.generatedAt).toLocaleString('pt-BR')}${devInsights.cached?' · cache de 5 min':''}`;
-    const arcadeSection=el('section','pf-dev-source');arcadeSection.append(el('h4','','Base do Soso Arcade'),el('p','',`${a.players||0} contas no ranking · amostra de ${a.sampleSize||0}${a.complete?' (base completa)':' (amostra estratificada)'}`));
-    if(a.error){arcadeSection.appendChild(el('p','pf-dev-warning','Falha ao ler Redis/Arcade: '+a.error));}
-    const arcadeGrid=el('div','pf-dev-stat-grid');
-    arcadeGrid.append(statTile('Média de horas',fmtHours(stats.hours?.mean),`Mediana ${fmtHours(stats.hours?.median)}`),statTile('P75 / P90',`${fmtHours(stats.hours?.p75)} / ${fmtHours(stats.hours?.p90)}`,'Horas contabilizadas pelo cron'),statTile('Média de lives',stats.lives?.mean==null?'—':stats.lives.mean.toFixed(1),`Mediana ${stats.lives?.median??'—'}`),statTile('Média de votos',stats.votes?.mean==null?'—':stats.votes.mean.toFixed(1),`P75 ${stats.votes?.p75??'—'}`),statTile('Sugestões enviadas',stats.suggestions?.mean==null?'—':stats.suggestions.mean.toFixed(1),`Média por conta · aprovadas: ${stats.approvedSuggestions?.mean?.toFixed?.(1)??'—'}`));
-    arcadeSection.appendChild(arcadeGrid);root.appendChild(arcadeSection);
-    const seSection=el('section','pf-dev-source');seSection.append(el('h4','','StreamElements'),el('p','',st.configured?`Canal ${st.channelId||''} · watchtime: ${watch.sampled||0} viewers analisados${watch.complete?' (paginação completa)':' (amostra limitada)'}`:(st.error||'JWT não configurado.')));
-    if(st.configured){
-      const subs=st.subscribers||{},tips=st.donations||{};
-      const subsDetail=`${subs.activeInFetchedPages??0} encontrados em ${subs.sampleCount??0} registros${subs.complete?' · paginação completa':' · amostra limitada'}`;
-      const tipsDetail=`${tips.tipsInMonth??0} doações no mês · ${tips.recordsFetched??0} registros lidos${tips.complete?' · paginação completa':' · amostra limitada'}`;
-      const seGrid=el('div','pf-dev-stat-grid');
-      seGrid.append(
-        statTile('Média de watchtime',fmtHours(sum.mean),`Mediana ${fmtHours(sum.median)} · ${watch.sampled||0} viewers interpretados`),
-        statTile('P75 / P90',`${fmtHours(sum.p75)} / ${fmtHours(sum.p90)}`,`${watch.unparsed||0} registros sem unidade reconhecida`),
-        statTile('Inscritos ativos',money(subs.activeTotal??subs.activeInFetchedPages??0),subsDetail),
-        statTile('Doações no mês',tips.month?.length?tips.month.map(x=>`${x.currency} ${money(x.total)}`).join(' · '):'Sem registros',tipsDetail)
-      );
-      seSection.appendChild(seGrid);
-      if(watch.leaderboard?.length){const h=el('div','pf-dev-leaderboard');h.append(el('h5','','Top watchtime'));watch.leaderboard.slice(0,5).forEach(row=>h.append(el('p','',`#${row.pos} ${row.nome} · ${fmtHours(row.horas)}`)));seSection.appendChild(h);}
-      if(st.points?.leaderboard?.length){const h=el('div','pf-dev-leaderboard');h.append(el('h5','','Ranking global de pontos (!points)'));st.points.leaderboard.slice(0,5).forEach(row=>h.append(el('p','',`#${row.pos} ${row.nome} · ${money(row.points)} pontos`)));seSection.appendChild(h);}
-      if(watch.unparsed){
-        const note=el('p','pf-dev-warning',`A API devolveu ${watch.unparsed} registros de watchtime em formato ainda não reconhecido. Unidade numérica configurada: ${watch.numericUnit||'nenhuma'}. Veja a amostra de campos abaixo e só defina STREAMELEMENTS_WATCHTIME_UNIT depois de confirmar se são minutos, segundos ou milissegundos.`);
-        seSection.appendChild(note);
-        if(watch.fieldShapeSample?.length){const pre=el('pre','pf-dev-json-sample',JSON.stringify(watch.fieldShapeSample,null,2));seSection.appendChild(pre);}
+    let visible = [...achievements];
+    if (achievementFilter === 'andamento') visible = visible.filter(item => item.id !== 'platina' && !item.ts);
+    if (achievementFilter === 'desbloqueadas') visible = visible.filter(item => !!item.ts);
+    visible.sort((a, b) => {
+      const aUnlocked = !!a.ts;
+      const bUnlocked = !!b.ts;
+      if (achievementFilter === 'andamento') {
+        const aGoal = Math.max(1, Number(a.progresso?.meta) || 1);
+        const bGoal = Math.max(1, Number(b.progresso?.meta) || 1);
+        const aPct = Math.min(1, (Number(a.progressoAtual) || 0) / aGoal);
+        const bPct = Math.min(1, (Number(b.progressoAtual) || 0) / bGoal);
+        return bPct - aPct || a.nome.localeCompare(b.nome, 'pt-BR');
       }
-      if(!subs.complete||!tips.complete){seSection.appendChild(el('p','pf-dev-warning','A paginação de inscritos ou doações atingiu o limite de leitura. Os valores são uma amostra e não devem ser tratados como totais absolutos.'));}
-      if(st.errors){const errors=Object.entries(st.errors).filter(([,v])=>v);if(errors.length)seSection.append(el('p','pf-dev-warning','Avisos da API: '+errors.map(([k,v])=>`${k}: ${v}`).join(' | ')));}
+      if (aUnlocked !== bUnlocked) return Number(bUnlocked) - Number(aUnlocked);
+      return Number(b.ts || 0) - Number(a.ts || 0) || a.nome.localeCompare(b.nome, 'pt-BR');
+    });
+
+    if (!visible.length) {
+      grid.appendChild(empty(achievementFilter === 'andamento'
+        ? 'Tudo em dia! Você já desbloqueou todas as conquistas disponíveis. 💜'
+        : 'Nenhuma conquista encontrada nesse filtro.'));
+      return;
     }
-    root.appendChild(seSection);
-    const twitch=devInsights.twitch||{};const live=el('section','pf-dev-source');live.append(el('h4','','Status da live'),el('p','',twitch.online===true?`AO VIVO · ${money(twitch.viewers)} espectadores · ${twitch.title||'sem título'}`:twitch.online===false?'Offline':(twitch.error||'Status não disponível.')));root.appendChild(live);
-    const rec=devInsights.recommendation?.hours;if(rec){const suggestion=el('section','pf-dev-recommendation');suggestion.append(el('h4','','Referência de metas por percentil'),el('p','',`Entrada: ${rec.entry}h · Frequente: ${rec.regular}h · Fiel: ${rec.loyal}h · Lendária: ${rec.legendary}h`),el('small','','Sugestão calculada pelo watchtime do StreamElements. Confira a cobertura da amostra antes de alterar as metas.'));root.appendChild(suggestion);}
-    const foot=el('p','pf-dev-footnote','Importante: o watchtime do StreamElements é usado aqui para análise. Ele não altera automaticamente o XP nem as horas do Arcade, que continuam sendo creditados pelo cron de presença para evitar duplicidade.');root.appendChild(foot);
-  }
-  async function loadDevInsights(force=false){
-    if(devInsightsLoading||(!force&&devInsights))return;devInsightsLoading=true;renderDevInsights();
-    try{const r=await api(API_GAME,'dev-insights');if(!r.ok)throw new Error(r.data?.error||`HTTP ${r.status}`);devInsights=r.data;}
-    catch(e){devInsights={arcade:null,streamElements:{configured:false,error:e.message},twitch:{online:null,error:e.message},generatedAt:new Date().toISOString()};console.error('[PerfilUI] Diagnóstico dev:',e);}
-    finally{devInsightsLoading=false;renderDevInsights();}
+
+    visible.forEach(achievement => {
+      const unlocked = !!achievement.ts;
+      const progress = achievement.progresso || null;
+      const current = progress ? Math.max(0, Number(achievement.progressoAtual) || 0) : (unlocked ? 1 : 0);
+      const goal = progress ? Math.max(1, Number(progress.meta) || 1) : 1;
+      const percent = Math.max(0, Math.min(100, Math.round(current / goal * 100)));
+      const rarity = String(achievement.r || 'comum').toLowerCase();
+      const card = el('article', `pf-achievement-card rarity-${rarity}${unlocked ? ' is-unlocked' : ' is-locked'}${achievement.id === 'platina' ? ' is-platinum' : ''}`);
+
+      if (achievement.id === 'platina') {
+        card.append(el('span', 'pf-platinum-label', '✦ CONQUISTA ESPECIAL'), el('div', 'pf-achievement-icon pf-platinum-trophy', achievement.icone || '💎'));
+      } else {
+        card.appendChild(el('div', 'pf-achievement-icon', achievement.icone || '🏆'));
+      }
+      card.append(el('h3', 'pf-achievement-name', achievement.nome), el('p', 'pf-achievement-desc', achievement.desc || ''));
+
+      if (progress && !unlocked) {
+        const wrap = el('div', 'pf-achievement-progress');
+        const meta = el('div', 'pf-achievement-progress-meta');
+        const amount = progress.unidade === 'horas'
+          ? `${current.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} / ${goal}h`
+          : `${money(Math.floor(current))} / ${money(goal)} ${progress.unidade || ''}`.trim();
+        meta.append(el('span', '', 'PROGRESSO'), el('strong', '', amount));
+        const track = el('div', 'pf-achievement-progress-track');
+        track.setAttribute('role', 'progressbar');
+        track.setAttribute('aria-valuemin', '0');
+        track.setAttribute('aria-valuemax', String(goal));
+        track.setAttribute('aria-valuenow', String(Math.min(goal, current)));
+        track.setAttribute('aria-label', `Progresso de ${achievement.nome}`);
+        const fill = el('span', 'pf-achievement-progress-fill');
+        fill.style.width = `${percent}%`;
+        track.appendChild(fill);
+        wrap.append(meta, track);
+        card.appendChild(wrap);
+      }
+
+      const reward = achievement.premio || {};
+      const rewards = [];
+      if (Number(reward.xp) > 0) rewards.push(`+${money(reward.xp)} XP`);
+      if (Number(reward.coins) > 0) rewards.push(`+${money(reward.coins)} SosoCoins`);
+      if (rewards.length) card.appendChild(el('p', 'pf-achievement-reward', `Recompensa: ${rewards.join(' · ')}`));
+      card.appendChild(el('span', 'pf-achievement-status', unlocked ? '✓ DESBLOQUEADA' : '○ EM PROGRESSO'));
+      if (unlocked && achievement.ts) {
+        const timestamp = Number(achievement.ts);
+        const date = new Date(timestamp);
+        if (Number.isFinite(timestamp) && !Number.isNaN(date.getTime())) {
+          card.appendChild(el('small', 'pf-achievement-date', `Desbloqueada em ${date.toLocaleDateString('pt-BR')}`));
+        }
+      }
+      grid.appendChild(card);
+    });
   }
 
-  function initTabs(){
-    const tabs=$$('[data-pf-tab]'),panels=$$('[data-pf-panel]');if(!tabs.length)return;
-    const activate=tab=>{active=tab.dataset.pfTab;tabs.forEach(t=>{const on=t===tab;t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false');t.tabIndex=on?0:-1;});panels.forEach(p=>{const on=p.dataset.pfPanel===active;p.classList.toggle('on',on);p.hidden=!on;});if(active==='boneco'){/* o criador original mantém seu próprio estado */}else if(!perfil)renderGuest();else updateAll();};
-    tabs.forEach((tab,i)=>{tab.addEventListener('click',()=>activate(tab));tab.tabIndex=tab.classList.contains('on')?0:-1;tab.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();let n=i;if(e.key==='ArrowLeft')n=(i-1+tabs.length)%tabs.length;if(e.key==='ArrowRight')n=(i+1)%tabs.length;if(e.key==='Home')n=0;if(e.key==='End')n=tabs.length-1;tabs[n].focus();tabs[n].click();});});
-    $$('[data-pf-go]').forEach(b=>b.addEventListener('click',()=>{const t=$(`[data-pf-tab="${b.dataset.pfGo}"]`);t?.click();}));
+  function renderSettings() {
+    const user = usuarioAtual() || {};
+    const legacyDiscord = user.tipo === 'discord';
+    const loggedIn = !!user.id;
+    setText('pfSettingsEmail', user.email || 'E-mail não vinculado');
+    setText('pfSettingsAccount', user.metodoLogin === 'google'
+      ? 'Google'
+      : (legacyDiscord ? 'Discord antigo — migração necessária' : (loggedIn ? 'Conta antiga / senha' : 'Não conectado')));
+
+    const nickInput = $('#pfSettingsNick');
+    const saveNick = $('#pfSaveNick');
+    if (nickInput) {
+      if (document.activeElement !== nickInput) nickInput.value = perfil?.nick || user.nick || '';
+      nickInput.disabled = !loggedIn || legacyDiscord;
+    }
+    if (saveNick) saveNick.disabled = !loggedIn || legacyDiscord;
+
+    const googleLink = $('#pfGoogleLink');
+    if (googleLink) {
+      googleLink.hidden = !loggedIn || user.metodoLogin === 'google';
+      googleLink.textContent = legacyDiscord
+        ? 'Migrar para Google e preservar meu progresso'
+        : 'Vincular conta Google';
+    }
+    const logout = $('#pfSettingsLogout');
+    if (logout) logout.hidden = !loggedIn;
+
+    const twitch = perfil?.twitch || user.twitch;
+    const status = $('#pfTwitchStatus');
+    const link = $('#pfTwitchLink');
+    const unlink = $('#pfTwitchUnlink');
+    if (legacyDiscord) {
+      if (status) status.textContent = 'Migre sua conta para Google para gerenciar a conexão Twitch.';
+      if (link) link.hidden = true;
+      if (unlink) unlink.hidden = true;
+    } else if (!loggedIn) {
+      if (status) status.textContent = 'Entre com sua conta para conectar a Twitch.';
+      if (link) link.hidden = true;
+      if (unlink) unlink.hidden = true;
+    } else {
+      if (status) status.textContent = twitch
+        ? `Conectada: ${twitch.nome || twitch.login || 'conta Twitch'}`
+        : 'Twitch não vinculada — a presença nas lives não será contabilizada.';
+      if (link) link.hidden = !!twitch;
+      if (unlink) unlink.hidden = !twitch;
+    }
+
+    const devBox = $('#pfDevInsights');
+    const isDev = perfil?.cargo === 'dev';
+    if (devBox) {
+      devBox.hidden = !isDev;
+      if (isDev) renderDevInsights();
+    }
   }
-  function bindActions(){
-    $('#pfTituloSelect')?.addEventListener('change',async e=>{if(!e.target.value)return;const r=await api(API_GAME,'titulo',{method:'POST',body:{id:e.target.value}});if(!r.ok){notify(r.data?.error||'Não foi possível equipar o título.','erro');return;}notify('Título equipado!','ok');await loadAll(true);});
-    $('#pfSaveNick')?.addEventListener('click',async()=>{const nick=String($('#pfSettingsNick')?.value||'').trim();if(nick.length<3||nick.length>24){setText('pfSettingsNickNote','Use de 3 a 24 caracteres.');return;}const r=await api(API_AUTH,'change-nick',{method:'POST',body:{nick}});if(!r.ok){setText('pfSettingsNickNote',r.data?.error||'Não foi possível salvar.');return;}setText('pfSettingsNickNote','Nick atualizado com sucesso!');await window.checarLogin?.();await loadAll(true);});
-    $('#pfSettingsLogout')?.addEventListener('click',()=>window.sair?.());
-    $('#pfDevRefresh')?.addEventListener('click',()=>loadDevInsights(true));
-    $('#pfGoogleLink')?.addEventListener('click',e=>{e.preventDefault();location.href='/api/auth?action=google-login';});
-    $('#pfTwitchLink')?.addEventListener('click',()=>{location.href='/api/auth?action=twitch-link';});
-    $('#pfTwitchUnlink')?.addEventListener('click',async()=>{if(!confirm('Desvincular sua conta Twitch? A presença nas lives deixará de ser contabilizada.'))return;const r=await api(API_AUTH,'twitch-unlink',{method:'POST'});if(!r.ok){notify(r.data?.error||'Não foi possível desvincular.','erro');return;}notify('Twitch desvinculada.','ok');await window.checarLogin?.();await loadAll(true);});
+
+  function statTile(label, value, detail = '') {
+    const tile = el('div', 'pf-dev-stat');
+    tile.append(el('small', '', label), el('strong', '', value), el('span', '', detail));
+    return tile;
   }
-  function init(){initTabs();bindActions();if(window.GameState){window.GameState.on('perfil',p=>{perfil=p;if(p)updateAll();else renderGuest();});window.GameState.on('catalogo',c=>{catalogo=c;if(active==='inventario')renderInventory();if(active==='loja')renderShop();});}
-    window.addEventListener('soso:auth',e=>{if(!e.detail){perfil=null;window.GameState?.limpar();renderGuest();}else loadAll(true);});
-    window.addEventListener('soso:logout',()=>{perfil=null;renderGuest();});window.addEventListener('soso:aba',e=>{if(e.detail==='perfil')loadAll(false);});
-    if(window.GameState?.perfil)perfil=window.GameState.perfil;if(window.GameState?.catalogo)catalogo=window.GameState.catalogo;
-    if(perfil)updateAll();else renderGuest();loadAll(false);
+
+  function devSection(title, description = '') {
+    const section = el('section', 'pf-dev-source');
+    section.appendChild(el('h4', '', title));
+    if (description) section.appendChild(el('p', '', description));
+    return section;
   }
-  window.PerfilUI={init,refresh:()=>loadAll(true),get perfilAtual(){return perfil;},carregarVisaoGeral:renderOverview,carregarInventario:renderInventory,carregarConquistas:renderAchievements,carregarConfiguracoes:renderSettings};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+
+  function renderDevInsights() {
+    const root = $('#pfDevInsightsContent');
+    const status = $('#pfDevInsightsStatus');
+    const refreshButton = $('#pfDevRefresh');
+    if (!root) return;
+    root.replaceChildren();
+    if (refreshButton) refreshButton.disabled = devInsightsLoading;
+
+    if (devInsightsLoading) {
+      if (status) status.textContent = 'Consultando as fontes do Arcade…';
+      root.appendChild(empty('Buscando estatísticas da base, StreamElements e Twitch.'));
+      return;
+    }
+    if (devInsightsError) {
+      if (status) status.textContent = 'A consulta do diagnóstico não foi concluída.';
+      const errorCard = devSection('Não foi possível acessar o diagnóstico', devInsightsError);
+      errorCard.appendChild(el('p', 'pf-dev-warning', 'Confira se sua conta continua com cargo DEV e se a rota /api/game está respondendo.'));
+      root.appendChild(errorCard);
+      return;
+    }
+    if (!devInsights) {
+      if (status) status.textContent = 'Nenhuma consulta realizada nesta sessão.';
+      root.appendChild(empty('Clique em “Atualizar dados” para executar o diagnóstico.'));
+      return;
+    }
+
+    const generated = new Date(devInsights.generatedAt || '');
+    if (status) status.textContent = `Atualizado em ${Number.isNaN(generated.getTime()) ? 'horário não informado' : generated.toLocaleString('pt-BR')}${devInsights.cached ? ' · resultado em cache de 5 min' : ''}`;
+
+    // Base do Arcade
+    const arcade = devInsights.arcade || {};
+    const arcadeStats = arcade.stats || {};
+    const arcadeCard = devSection('Base do Soso Arcade', `${money(arcade.players)} contas no ranking · ${money(arcade.sampleSize)} contas analisadas · ${arcade.complete ? 'base completa' : 'amostra estratificada'}`);
+    if (arcade.error) arcadeCard.appendChild(el('p', 'pf-dev-warning', `Falha ao consultar Redis: ${arcade.error}`));
+    const arcadeGrid = el('div', 'pf-dev-stat-grid');
+    arcadeGrid.append(
+      statTile('Média de horas', fmtHours(arcadeStats.hours?.mean), `Mediana ${fmtHours(arcadeStats.hours?.median)}`),
+      statTile('P75 / P90 de horas', `${fmtHours(arcadeStats.hours?.p75)} / ${fmtHours(arcadeStats.hours?.p90)}`, 'Distribuição de watchtime do Arcade'),
+      statTile('Média de lives', arcadeStats.lives?.mean == null ? '—' : Number(arcadeStats.lives.mean).toFixed(1), `Mediana ${arcadeStats.lives?.median ?? '—'}`),
+      statTile('Média de votos', arcadeStats.votes?.mean == null ? '—' : Number(arcadeStats.votes.mean).toFixed(1), `P75 ${arcadeStats.votes?.p75 ?? '—'}`),
+      statTile('Sugestões enviadas', arcadeStats.suggestions?.mean == null ? '—' : Number(arcadeStats.suggestions.mean).toFixed(1), `Aprovadas: ${arcadeStats.approvedSuggestions?.mean == null ? '—' : Number(arcadeStats.approvedSuggestions.mean).toFixed(1)} em média`)
+    );
+    arcadeCard.appendChild(arcadeGrid);
+    root.appendChild(arcadeCard);
+
+    // StreamElements — configuração e falhas são exibidas como estado, não como tela quebrada.
+    const streamElements = devInsights.streamElements || {};
+    const watch = streamElements.watchtime || {};
+    const summary = watch.summary || {};
+    const seDescription = streamElements.configured
+      ? `Canal ${streamElements.channelId || 'não informado'} · ${money(watch.sampled)} viewers com watchtime interpretado · ${watch.complete ? 'paginação completa' : 'amostra limitada'}`
+      : (streamElements.error || 'StreamElements não configurado.');
+    const seCard = devSection('StreamElements', seDescription);
+    if (!streamElements.configured) {
+      seCard.appendChild(el('p', 'pf-dev-warning', 'Configure STREAMELEMENTS_JWT nas variáveis de ambiente da Vercel para habilitar estas métricas.'));
+    } else {
+      const subscribers = streamElements.subscribers || {};
+      const donations = streamElements.donations || {};
+      const seGrid = el('div', 'pf-dev-stat-grid');
+      seGrid.append(
+        statTile('Média de watchtime', fmtHours(summary.mean), `Mediana ${fmtHours(summary.median)}`),
+        statTile('P75 / P90', `${fmtHours(summary.p75)} / ${fmtHours(summary.p90)}`, `${money(watch.unparsed)} registros sem formato reconhecido`),
+        statTile('Inscritos ativos', money(subscribers.activeTotal ?? subscribers.activeInFetchedPages), `${money(subscribers.sampleCount)} registros lidos${subscribers.complete ? '' : ' · amostra'}`),
+        statTile('Doações neste mês', donations.month?.length
+          ? donations.month.map(item => `${item.currency} ${money(item.total)}`).join(' · ')
+          : 'Sem registros', `${money(donations.tipsInMonth)} doação(ões) · ${money(donations.recordsFetched)} registros lidos`)
+      );
+      seCard.appendChild(seGrid);
+
+      if (watch.leaderboard?.length) {
+        const board = el('div', 'pf-dev-leaderboard');
+        board.appendChild(el('h5', '', 'Top 5 de watchtime'));
+        watch.leaderboard.slice(0, 5).forEach(row => board.appendChild(el('p', '', `#${row.pos} ${row.nome} · ${fmtHours(row.horas)}`)));
+        seCard.appendChild(board);
+      }
+      if (streamElements.points?.leaderboard?.length) {
+        const board = el('div', 'pf-dev-leaderboard');
+        board.appendChild(el('h5', '', 'Top 5 de pontos do StreamElements'));
+        streamElements.points.leaderboard.slice(0, 5).forEach(row => board.appendChild(el('p', '', `#${row.pos} ${row.nome} · ${money(row.points)} pontos`)));
+        seCard.appendChild(board);
+      }
+      if (watch.unparsed) {
+        seCard.appendChild(el('p', 'pf-dev-warning', `${money(watch.unparsed)} registros de watchtime não foram interpretados. Unidade numérica configurada: ${watch.numericUnit || 'nenhuma'}. Não configure a unidade sem confirmar o formato retornado pela API.`));
+        if (watch.fieldShapeSample?.length) {
+          const sample = el('details', 'pf-dev-sample-details');
+          sample.append(el('summary', '', 'Ver amostra dos campos (sem identificadores)'), el('pre', 'pf-dev-json-sample', JSON.stringify(watch.fieldShapeSample, null, 2)));
+          seCard.appendChild(sample);
+        }
+      }
+      if (!subscribers.complete || !donations.complete) {
+        seCard.appendChild(el('p', 'pf-dev-warning', 'A leitura de inscritos ou doações atingiu o limite de paginação. Esses números representam a amostra lida, não necessariamente o total do canal.'));
+      }
+      const sourceErrors = Object.entries(streamElements.errors || {}).filter(([, message]) => message);
+      if (sourceErrors.length) {
+        sourceErrors.forEach(([source, message]) => seCard.appendChild(el('p', 'pf-dev-warning', `${source}: ${message}`)));
+      }
+    }
+    root.appendChild(seCard);
+
+    // Twitch
+    const twitch = devInsights.twitch || {};
+    const twitchCard = devSection('Status da Twitch', twitch.online === true
+      ? `AO VIVO · ${money(twitch.viewers)} espectadores · ${twitch.title || 'sem título'}${twitch.game ? ` · ${twitch.game}` : ''}`
+      : (twitch.online === false ? 'Canal offline neste momento.' : (twitch.error || 'Status da live indisponível.')));
+    if (!twitch.configured) twitchCard.appendChild(el('p', 'pf-dev-warning', 'TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET precisam estar configurados na Vercel.'));
+    else if (twitch.online === null) twitchCard.appendChild(el('p', 'pf-dev-warning', twitch.error || 'A Twitch não retornou um status válido.'));
+    root.appendChild(twitchCard);
+
+    const recommendation = devInsights.recommendation?.hours;
+    if (recommendation) {
+      const card = devSection('Referência de metas por percentil', 'Sugestão baseada na distribuição de watchtime do StreamElements. Revise a cobertura da amostra antes de alterar qualquer regra.');
+      const grid = el('div', 'pf-dev-stat-grid');
+      grid.append(
+        statTile('Entrada', `${recommendation.entry}h`, 'P25 arredondado'),
+        statTile('Frequente', `${recommendation.regular}h`, 'Mediana arredondada'),
+        statTile('Fiel', `${recommendation.loyal}h`, 'P75 arredondado'),
+        statTile('Lendária', `${recommendation.legendary}h`, 'P90 arredondado')
+      );
+      card.appendChild(grid);
+      root.appendChild(card);
+    }
+
+    root.appendChild(el('p', 'pf-dev-footnote', 'O watchtime do StreamElements é apenas uma fonte de análise. Ele não altera XP nem horas do Arcade: esses créditos continuam sendo feitos pelo cron de presença para evitar duplicidade.'));
+  }
+
+  async function loadDevInsights(force = false) {
+    if (devInsightsLoading || (!force && devInsights)) return;
+    devInsightsLoading = true;
+    devInsightsError = '';
+    renderDevInsights();
+    try {
+      const result = await api(API_GAME, 'dev-insights');
+      if (!result.ok) {
+        const message = result.data?.error || `A API respondeu HTTP ${result.status || 'desconhecido'}.`;
+        throw new Error(message);
+      }
+      if (!result.data || typeof result.data !== 'object') throw new Error('A API retornou uma resposta vazia ou inválida.');
+      devInsights = result.data;
+      devInsightsError = '';
+    } catch (error) {
+      devInsights = null;
+      devInsightsError = error?.message || 'Erro desconhecido ao consultar o diagnóstico.';
+      console.error('[PerfilUI] Diagnóstico DEV:', error);
+    } finally {
+      devInsightsLoading = false;
+      renderDevInsights();
+    }
+  }
+
+  function activateTab(tab) {
+    if (!tab) return;
+    active = tab.dataset.pfTab;
+    const tabs = $$('[data-pf-tab]');
+    const panels = $$('[data-pf-panel]');
+    tabs.forEach(item => {
+      const selected = item === tab;
+      item.classList.toggle('on', selected);
+      item.setAttribute('aria-selected', selected ? 'true' : 'false');
+      item.tabIndex = selected ? 0 : -1;
+    });
+    panels.forEach(panel => {
+      const selected = panel.dataset.pfPanel === active;
+      panel.classList.toggle('on', selected);
+      panel.hidden = !selected;
+    });
+
+    if (active === 'boneco') {
+      window.dispatchEvent(new CustomEvent('soso:boneco-open'));
+    } else if (!perfil) {
+      renderGuest();
+    } else {
+      updateAll();
+    }
+  }
+
+  function initTabs() {
+    const tabs = $$('[data-pf-tab]');
+    if (!tabs.length) return;
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => activateTab(tab));
+      tab.tabIndex = tab.classList.contains('on') ? 0 : -1;
+      tab.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        let next = index;
+        if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+        if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = tabs.length - 1;
+        tabs[next].focus();
+        activateTab(tabs[next]);
+      });
+    });
+    $$('[data-pf-go]').forEach(link => {
+      link.addEventListener('click', () => $(`[data-pf-tab="${link.dataset.pfGo}"]`)?.click());
+    });
+  }
+
+  function bindActions() {
+    $('#pfTituloSelect')?.addEventListener('change', async event => {
+      const titleId = event.target.value;
+      if (!titleId || !perfil) return;
+      event.target.disabled = true;
+      const result = await api(API_GAME, 'titulo', { method: 'POST', body: { id: titleId } });
+      if (!result.ok) {
+        notify(result.data?.error || 'Não foi possível equipar o título.', 'erro');
+      } else {
+        notify('Título equipado!', 'ok');
+        await loadAll(true);
+      }
+      event.target.disabled = false;
+    });
+
+    $('#pfOpenGlobalRanking')?.addEventListener('click', () => window.mudarAba?.('ranking'));
+
+    $('#pfInventoryFilter')?.addEventListener('change', event => {
+      inventoryFilter = event.target.value || 'todos';
+      renderInventory();
+    });
+
+    $('#pfAchievementFilters')?.addEventListener('click', event => {
+      const target = event.target.closest('[data-achievement-filter]');
+      if (!target) return;
+      achievementFilter = target.dataset.achievementFilter;
+      renderAchievements();
+    });
+
+    $('#pfSaveNick')?.addEventListener('click', async () => {
+      const input = $('#pfSettingsNick');
+      const note = $('#pfSettingsNickNote');
+      const nick = String(input?.value || '').trim();
+      if (nick.length < 3 || nick.length > 24) {
+        if (note) note.textContent = 'Use um nick de 3 a 24 caracteres.';
+        return;
+      }
+      const saveButton = $('#pfSaveNick');
+      if (saveButton) saveButton.disabled = true;
+      if (note) note.textContent = 'Salvando seu nick…';
+      try {
+        const result = await api(API_AUTH, 'change-nick', { method: 'POST', body: { nick } });
+        if (!result.ok) throw new Error(result.data?.error || 'Não foi possível salvar o nick.');
+        if (note) note.textContent = 'Nick atualizado com sucesso!';
+        await window.checarLogin?.();
+        await loadAll(true);
+        notify('Nick atualizado!', 'ok');
+      } catch (error) {
+        if (note) note.textContent = error.message || 'Não foi possível salvar o nick.';
+      } finally {
+        if (saveButton) saveButton.disabled = false;
+        renderSettings();
+      }
+    });
+
+    $('#pfSettingsLogout')?.addEventListener('click', () => window.sair?.());
+    $('#pfDevRefresh')?.addEventListener('click', () => loadDevInsights(true));
+    $('#pfGoogleLink')?.addEventListener('click', event => {
+      event.preventDefault();
+      window.location.href = '/api/auth?action=google-login';
+    });
+    $('#pfTwitchLink')?.addEventListener('click', () => {
+      window.location.href = '/api/auth?action=twitch-link';
+    });
+    $('#pfTwitchUnlink')?.addEventListener('click', async () => {
+      if (!confirm('Desvincular sua conta Twitch? A presença nas lives deixará de ser contabilizada.')) return;
+      const result = await api(API_AUTH, 'twitch-unlink', { method: 'POST' });
+      if (!result.ok) {
+        notify(result.data?.error || 'Não foi possível desvincular.', 'erro');
+        return;
+      }
+      notify('Twitch desvinculada.', 'ok');
+      await window.checarLogin?.();
+      await loadAll(true);
+    });
+  }
+
+  function init() {
+    initTabs();
+    bindActions();
+    if (window.GameState) {
+      window.GameState.on('perfil', updatedProfile => {
+        perfil = updatedProfile;
+        if (perfil) updateAll();
+        else renderGuest();
+      });
+      window.GameState.on('catalogo', updatedCatalog => {
+        catalogo = updatedCatalog;
+        if (active === 'inventario') renderInventory();
+      });
+    }
+
+    window.addEventListener('soso:auth', event => {
+      if (!event.detail) {
+        perfil = null;
+        window.GameState?.limpar();
+        renderGuest();
+      } else {
+        loadAll(true);
+      }
+    });
+    window.addEventListener('soso:logout', () => {
+      perfil = null;
+      renderGuest();
+    });
+    window.addEventListener('soso:aba', event => {
+      if (event.detail === 'perfil') loadAll(false);
+    });
+
+    if (window.GameState?.perfil) perfil = window.GameState.perfil;
+    if (window.GameState?.catalogo) catalogo = window.GameState.catalogo;
+    if (perfil) updateAll();
+    else renderGuest();
+    loadAll(false);
+  }
+
+  window.PerfilUI = {
+    init,
+    refresh: () => loadAll(true),
+    get perfilAtual() { return perfil; },
+    carregarVisaoGeral: renderOverview,
+    carregarInventario: renderInventory,
+    carregarConquistas: renderAchievements,
+    carregarConfiguracoes: renderSettings
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
