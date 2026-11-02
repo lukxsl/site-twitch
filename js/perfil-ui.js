@@ -29,6 +29,15 @@
     lendario: 'Lendário', limitado: 'Limitado'
   };
   const RARITY_ORDER = { comum: 0, incomum: 1, raro: 2, epico: 3, lendario: 4, limitado: 5 };
+  // Tradução visual inspirada nos troféus de console: a raridade interna continua intacta.
+  const TROPHY_GRADE = {
+    comum: { nome: 'Bronze', classe: 'bronze' },
+    incomum: { nome: 'Bronze', classe: 'bronze' },
+    raro: { nome: 'Prata', classe: 'silver' },
+    epico: { nome: 'Ouro', classe: 'gold' },
+    lendario: { nome: 'Ouro', classe: 'gold' },
+    limitado: { nome: 'Edição especial', classe: 'special' }
+  };
   const MILESTONE_ICONS = ['🔥', '⚡', '💜', '👑'];
   const money = value => Number(value || 0).toLocaleString('pt-BR');
   const fmtHours = value => value == null || !Number.isFinite(Number(value))
@@ -417,40 +426,31 @@
     const base = perfil?.boneco || catalogo?.padrao || window.PixelAvatar?.PADRAO || {};
     const look = { ...base, [slot]: item.id };
     const avatar = el('div', 'pf-item-avatar-thumb');
+
     if (window.PixelAvatar?.render) {
       try {
-        const svg = window.PixelAvatar.render(look, { label: `${item.nome || 'Item'} do inventário`, mini: false, animar: false });
-        const layersBySlot = {
-          base: ['px-corpo'], pele: ['px-corpo'], rosto: ['px-olhos', 'px-boca'],
-          cabelo: ['px-cabelo-tras', 'px-cabelo'], cabeloCor: ['px-cabelo-tras', 'px-cabelo'],
-          roupa: ['px-roupa'], roupaCor: ['px-roupa'], calcado: ['px-calcado'], calcadoCor: ['px-calcado'],
-          acessorio: ['px-acessorio'], acessorioCor: ['px-acessorio'],
-          efeito: ['px-fx-fundo', 'px-fx-frente'], moldura: ['px-moldura']
-        };
-        const layers = layersBySlot[slot];
-        if (svg && layers) {
-          [...svg.children].forEach(layer => {
-            const classes = [...layer.classList];
-            if (!layers.some(name => classes.includes(name))) layer.remove();
-          });
-          const viewBoxes = {
-            base: '2 4 20 31', pele: '2 4 20 31', rosto: '2 5 20 16',
-            cabelo: '0 0 24 20', cabeloCor: '0 0 24 20', roupa: '2 13 20 18', roupaCor: '2 13 20 18',
-            calcado: '2 26 20 10', calcadoCor: '2 26 20 10', acessorio: '0 0 24 36', acessorioCor: '0 0 24 36',
-            efeito: '0 0 24 36', moldura: '0 0 24 36'
-          };
-          svg.setAttribute('viewBox', viewBoxes[slot] || '0 0 24 36');
+        // Mostrar o personagem inteiro com a peça aplicada deixa acessórios,
+        // roupas e efeitos muito mais fáceis de reconhecer do que camadas soltas.
+        const svg = window.PixelAvatar.render(look, {
+          label: `Prévia de ${item.nome || 'item do inventário'}`,
+          mini: false,
+          animar: false
+        });
+        if (svg) {
+          svg.classList.add('pf-item-avatar-art');
           svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-          svg.classList.add('pf-piece-art');
+          avatar.appendChild(svg);
+        } else {
+          avatar.textContent = item.icone || '✦';
         }
-        if (svg && slot === 'animacao') svg.classList.add(`px-anim-${look.animacao || item.id}`);
-        if (svg) avatar.appendChild(svg);
-        else avatar.textContent = item.icone || '✦';
       } catch (error) {
         console.warn('[PerfilUI] Falha ao gerar miniatura da peça:', error);
         avatar.textContent = item.icone || '✦';
       }
-    } else avatar.textContent = item.icone || '✦';
+    } else {
+      avatar.textContent = item.icone || '✦';
+    }
+
     preview.append(avatar, el('span', 'pf-item-slot-caption', SLOT_NAMES[slot] || slot));
     return preview;
   }
@@ -458,7 +458,7 @@
   function experimentarItem(slot, item) {
     inventoryPreviewChanges = { ...inventoryPreviewChanges, [slot]: item.id };
     inventoryPreviewLabel = `${item.nome || 'Peça'} adicionada à prévia. Você pode escolher outras peças para combinar.`;
-    renderInventoryPreview();
+    renderInventory();
   }
 
   function itemCard(slot, item) {
@@ -472,12 +472,13 @@
       el('span', 'pf-rarity pf-rarity-badge', RARITY_NAMES[rarity] || 'Item')
     );
     card.append(header, miniaturaItem(slot, item), el('h3', 'pf-item-name', item.nome || 'Item do Arcade'));
-    if (equipped) card.appendChild(el('span', 'pf-item-equipped', '✓ EQUIPADO NO PERSONAGEM'));
-    else card.appendChild(el('p', 'pf-item-rule', item.regraTxt || 'Peça liberada para personalização.'));
+    if (equipped) card.appendChild(el('span', 'pf-item-equipped', '✓ FAZ PARTE DO VISUAL ATUAL'));
+    else card.appendChild(el('p', 'pf-item-rule', item.regraTxt || 'Desbloqueado · pronto para experimentar.'));
     const actions = el('div', 'pf-item-actions');
     const isPreviewed = inventoryPreviewChanges[slot] === item.id;
-    const previewButton = button(isPreviewed ? 'Na prévia ✓' : (equipped ? 'Visual atual' : 'Ver no boneco'), 'pf-btn pf-btn-secondary', () => experimentarItem(slot, item));
+    const previewButton = button(isPreviewed ? 'Na prévia ✓' : (equipped ? 'Visual atual' : 'Experimentar'), 'pf-btn pf-btn-secondary', () => experimentarItem(slot, item));
     previewButton.setAttribute('aria-pressed', isPreviewed ? 'true' : 'false');
+    if (isPreviewed || equipped) previewButton.disabled = true;
     actions.appendChild(previewButton);
     card.appendChild(actions);
     return card;
@@ -562,30 +563,49 @@
       return;
     }
 
-    visible.forEach(achievement => {
+    visible.forEach((achievement, index) => {
       const unlocked = !!achievement.ts;
       const isPlatinum = achievement.id === 'platina';
       const progress = isPlatinum ? { unidade: 'troféus' } : (achievement.progresso || null);
-      const current = isPlatinum ? unlockedCount : (progress ? Math.max(0, Number(achievement.progressoAtual) || 0) : (unlocked ? 1 : 0));
+      const current = isPlatinum
+        ? unlockedCount
+        : (progress ? Math.max(0, Number(achievement.progressoAtual) || 0) : (unlocked ? 1 : 0));
       const goal = isPlatinum ? Math.max(1, normal.length) : (progress ? Math.max(1, Number(progress.meta) || 1) : 1);
       const percent = Math.max(0, Math.min(100, Math.round(current / goal * 100)));
       const rarity = String(achievement.r || 'comum').toLowerCase();
-      const card = el('article', `pf-achievement-card rarity-${rarity}${unlocked ? ' is-unlocked' : ' is-locked'}${achievement.id === 'platina' ? ' is-platinum' : ''}`);
+      const grade = TROPHY_GRADE[rarity] || TROPHY_GRADE.comum;
+      const trophyClass = isPlatinum ? 'platinum' : grade.classe;
+      const card = el('article', `pf-achievement-card trophy-${trophyClass}${unlocked ? ' is-unlocked' : ' is-locked'}${isPlatinum ? ' is-platinum' : ''}`);
+      card.dataset.rarity = rarity;
+      card.setAttribute('aria-label', `${achievement.nome}: ${unlocked ? 'desbloqueado' : 'bloqueado'}`);
 
-      if (achievement.id === 'platina') {
-        card.append(el('span', 'pf-platinum-label', '✦ CONQUISTA ESPECIAL'), el('div', 'pf-achievement-icon pf-platinum-trophy', achievement.icone || '💎'));
-      } else {
-        card.appendChild(el('div', 'pf-achievement-icon', achievement.icone || '🏆'));
-      }
-      card.append(el('h3', 'pf-achievement-name', achievement.nome), el('p', 'pf-achievement-desc', achievement.desc || ''));
+      const top = el('div', 'pf-trophy-top');
+      top.append(
+        el('span', 'pf-trophy-number', `TROFÉU ${String(index + 1).padStart(2, '0')}`),
+        el('span', 'pf-trophy-grade', isPlatinum ? 'PLATINA' : grade.nome.toUpperCase())
+      );
+
+      const medal = el('div', 'pf-trophy-medal');
+      medal.appendChild(el('span', 'pf-trophy-icon', achievement.icone || '🏆'));
+      medal.setAttribute('aria-hidden', 'true');
+
+      card.append(
+        top,
+        medal,
+        el('h3', 'pf-achievement-name', achievement.nome),
+        el('p', 'pf-achievement-desc', achievement.desc || '')
+      );
 
       if (progress && !unlocked) {
         const wrap = el('div', 'pf-achievement-progress');
         const meta = el('div', 'pf-achievement-progress-meta');
-        const amount = isPlatinum ? `${current} / ${goal} troféus` : progress.unidade === 'horas'
-          ? `${current.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} / ${goal}h`
-          : `${money(Math.floor(current))} / ${money(goal)} ${progress.unidade || ''}`.trim();
+        const amount = isPlatinum
+          ? `${current} / ${goal} troféus`
+          : progress.unidade === 'horas'
+            ? `${current.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} / ${goal}h`
+            : `${money(Math.floor(current))} / ${money(goal)} ${progress.unidade || ''}`.trim();
         meta.append(el('span', '', 'PROGRESSO'), el('strong', '', amount));
+
         const track = el('div', 'pf-achievement-progress-track');
         track.setAttribute('role', 'progressbar');
         track.setAttribute('aria-valuemin', '0');
@@ -604,12 +624,13 @@
       if (Number(reward.xp) > 0) rewards.push(`+${money(reward.xp)} XP`);
       if (Number(reward.coins) > 0) rewards.push(`+${money(reward.coins)} SosoCoins`);
       if (rewards.length) card.appendChild(el('p', 'pf-achievement-reward', `Recompensa: ${rewards.join(' · ')}`));
-      card.appendChild(el('span', 'pf-achievement-status', unlocked ? '✓ DESBLOQUEADA' : '○ EM PROGRESSO'));
+
+      card.appendChild(el('span', 'pf-achievement-status', unlocked ? '✓ TROFÉU DESBLOQUEADO' : '○ TROFÉU EM ANDAMENTO'));
       if (unlocked && achievement.ts) {
         const timestamp = Number(achievement.ts);
         const date = new Date(timestamp);
         if (Number.isFinite(timestamp) && !Number.isNaN(date.getTime())) {
-          card.appendChild(el('small', 'pf-achievement-date', `Desbloqueada em ${date.toLocaleDateString('pt-BR')}`));
+          card.appendChild(el('small', 'pf-achievement-date', `Conquistado em ${date.toLocaleDateString('pt-BR')}`));
         }
       }
       grid.appendChild(card);

@@ -3086,7 +3086,7 @@
 }
 @media(max-width:360px){#sec-perfil .pf-achievement-grid,#sec-perfil .pf-item-grid{grid-template-columns:minmax(0,1fr)}}
 
-/* Miniaturas de inventário: exibe a peça/layer correspondente, não o boneco inteiro. */
+/* Miniaturas de inventário: personagem completo para contextualizar cada peça. */
 #sec-perfil .pf-item-avatar-thumb{display:grid;place-items:center;width:100%;height:104px;overflow:hidden}
 #sec-perfil .pf-item-avatar-thumb .pf-piece-art{display:block;width:auto;max-width:100%;height:96px;image-rendering:pixelated;overflow:visible}
 #sec-perfil .pf-item-preview-character .pf-item-slot-caption{display:block;color:#a99abf;font-size:.65rem;line-height:1.2;text-align:center}
@@ -3098,3 +3098,526 @@
 #sec-perfil .pf-item-avatar-thumb svg.px-anim-meditar{animation:pxMeditar 4.2s steps(2,end) infinite;transform-origin:50% 100%}
 #sec-perfil .pf-item-avatar-thumb svg.px-anim-comemorar{animation:pxComemorar 1.3s steps(3,end) infinite;transform-origin:50% 100%}
 #sec-perfil .pf-item-avatar-thumb svg.px-anim-hype{animation:pxHype 1.05s steps(3,end) infinite;transform-origin:50% 100%}
+
+
+/* ============================================================
+   POLIMENTO 2026 — boneco, provador fixo, inventário e troféus
+   ============================================================ */
+
+/* Boneco: palco sem recortes diagonais e SVG com tamanho explícito. */
+#sec-perfil .pf-creator{
+  grid-template-columns:minmax(290px,360px) minmax(0,1fr);
+  align-items:stretch;
+  gap:clamp(16px,2vw,24px);
+}
+#sec-perfil .pf-avatar-stage{
+  --u:clamp(8px,.68vw,10px);
+  --g:52px;
+  height:480px;
+  min-height:440px;
+  overflow:hidden;
+  clip-path:none;
+  border:1px solid rgba(192,132,252,.42);
+  border-radius:20px;
+  background:
+    radial-gradient(ellipse at 50% 36%,rgba(192,132,252,.25),transparent 48%),
+    radial-gradient(ellipse at 50% 100%,rgba(124,58,237,.23),transparent 52%),
+    linear-gradient(180deg,#26123f 0%,#160b29 70%,#10071d 100%);
+  box-shadow:inset 0 0 44px rgba(168,85,247,.12),0 18px 42px rgba(0,0,0,.24);
+}
+#sec-perfil .pf-avatar-stage::before{
+  inset:0 0 var(--g);
+  opacity:.85;
+}
+#sec-perfil .pf-avatar-stage::after{
+  z-index:1;
+  opacity:.22;
+}
+#sec-perfil .pf-ground{
+  z-index:0;
+  border-top:2px solid rgba(192,132,252,.72);
+  background:
+    linear-gradient(180deg,rgba(168,85,247,.3),transparent 28%),
+    conic-gradient(#2c1658 25%,#21103c 0 50%,#2c1658 0 75%,#21103c 0) 0 0/26px 26px;
+}
+#sec-perfil .pf-shade{z-index:1;filter:blur(1px);opacity:.75}
+#sec-perfil .pf-avatar-wrap{
+  z-index:3;
+  margin-bottom:calc(var(--g) - 2 * var(--u) - 2px);
+  filter:drop-shadow(0 13px 15px rgba(0,0,0,.35));
+}
+#sec-perfil .pf-avatar{
+  display:grid;
+  place-items:center;
+  width:calc(24 * var(--u));
+  height:calc(36 * var(--u));
+  min-width:calc(24 * var(--u));
+  line-height:0;
+  overflow:visible;
+}
+#sec-perfil .pf-avatar > svg{
+  display:block;
+  width:100%;
+  height:100%;
+  max-width:none;
+  overflow:visible;
+  image-rendering:pixelated;
+  shape-rendering:crispEdges;
+}
+#sec-perfil .pf-avatar[data-render="erro"]{
+  display:grid;
+  place-items:center;
+  color:#e9d5ff;
+  font-size:2.4rem;
+}
+#sec-perfil .pf-stage-caption{
+  z-index:6;
+  bottom:12px;
+  max-width:calc(100% - 28px);
+  padding:7px 12px;
+  border:1px solid rgba(192,132,252,.2);
+  border-radius:999px;
+  background:rgba(10,5,18,.72);
+  color:#e9d5ff;
+  text-align:center;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  overflow:hidden;
+  backdrop-filter:blur(10px);
+}
+#sec-perfil .pf-options{min-width:0}
+#sec-perfil .pf-options-intro p{max-width:60ch;line-height:1.55}
+#sec-perfil .pf-wardrobe-panel{max-height:440px;overflow:auto;padding:2px 4px 6px 0}
+#sec-perfil .pf-wardrobe-tabs{position:sticky;top:0;z-index:4;padding:5px 2px 9px;background:linear-gradient(180deg,rgba(19,10,31,.98),rgba(19,10,31,.88),transparent);}
+
+/* O provador fica acima da coleção e acompanha a rolagem da página. */
+#sec-perfil .pf-inventory-dressing-room{
+  position:sticky;
+  top:82px;
+  z-index:25;
+  display:grid;
+  grid-template-columns:132px minmax(0,1fr);
+  grid-template-rows:auto 1fr auto;
+  grid-template-areas:
+    "head head"
+    "avatar info"
+    "avatar actions";
+  align-items:center;
+  gap:8px 18px;
+  min-width:0;
+  margin:0 0 16px;
+  padding:12px 16px;
+  border:1px solid rgba(192,132,252,.32);
+  border-radius:16px;
+  background:linear-gradient(110deg,rgba(35,18,57,.97),rgba(16,9,29,.96));
+  box-shadow:0 12px 32px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.04);
+  backdrop-filter:blur(18px);
+}
+#sec-perfil .pf-inventory-dressing-room .pf-extra-head{grid-area:head;margin:0;align-items:center}
+#sec-perfil .pf-inventory-dressing-room .pf-extra-head h3{margin:2px 0 0;font-size:.96rem}
+#sec-perfil .pf-inventory-dressing-room .pf-eyebrow{font-size:.58rem}
+#sec-perfil .pf-inventory-dressing-room .pf-preview-live{
+  padding:5px 8px;
+  border:1px solid rgba(74,222,128,.25);
+  border-radius:999px;
+  background:rgba(74,222,128,.08);
+  color:#86efac;
+  font-size:.58rem;
+  letter-spacing:.06em;
+}
+#sec-perfil .pf-inventory-avatar-preview{
+  grid-area:avatar;
+  display:grid;
+  place-items:center;
+  width:132px;
+  height:154px;
+  min-height:154px;
+  margin:0;
+  padding:5px;
+  border:1px solid rgba(192,132,252,.24);
+  border-radius:12px;
+  background:
+    radial-gradient(circle at 50% 42%,rgba(192,132,252,.22),transparent 68%),
+    linear-gradient(180deg,#211239,#10091d);
+}
+#sec-perfil .pf-inventory-avatar-preview svg{
+  display:block;
+  width:auto;
+  max-width:100%;
+  height:144px;
+  max-height:144px;
+  overflow:visible;
+  image-rendering:pixelated;
+}
+#sec-perfil .pf-inventory-tryon-label{
+  grid-area:info;
+  align-self:end;
+  min-height:0;
+  margin:0;
+  color:#d3c4e6;
+  font-size:.78rem;
+  line-height:1.45;
+}
+#sec-perfil .pf-inventory-preview-actions{
+  grid-area:actions;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin:0;
+}
+#sec-perfil .pf-inventory-preview-actions .pf-btn{
+  width:auto;
+  min-height:34px;
+  padding:8px 12px;
+  font-size:.7rem;
+}
+#sec-perfil .pf-inventory-preview-actions .pf-btn:disabled{opacity:.45;cursor:not-allowed}
+#sec-perfil .pf-inventory-layout{display:block;min-width:0}
+#sec-perfil .pf-item-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(178px,1fr));
+  gap:13px;
+  min-width:0;
+}
+#sec-perfil .pf-item-card{
+  min-width:0;
+  min-height:238px;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  padding:12px;
+  border:1px solid color-mix(in srgb,var(--item-rarity,#9ca3af) 40%,rgba(168,85,247,.18));
+  border-radius:14px;
+  background:
+    radial-gradient(ellipse at 50% 0,color-mix(in srgb,var(--item-rarity,#9ca3af) 11%,transparent),transparent 60%),
+    linear-gradient(155deg,rgba(27,15,45,.97),rgba(13,8,24,.98));
+  box-shadow:inset 0 1px rgba(255,255,255,.035);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+#sec-perfil .pf-item-card:hover{
+  transform:translateY(-3px);
+  border-color:color-mix(in srgb,var(--item-rarity,#9ca3af) 68%,white);
+  box-shadow:0 12px 26px rgba(0,0,0,.2),0 0 18px color-mix(in srgb,var(--item-rarity,#9ca3af) 12%,transparent);
+}
+#sec-perfil .pf-item-card-top{display:flex;justify-content:space-between;gap:7px;min-width:0}
+#sec-perfil .pf-item-slot{max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sec-perfil .pf-item-preview-character{
+  display:grid;
+  grid-template-rows:1fr auto;
+  place-items:center;
+  gap:4px;
+  min-height:145px;
+  height:145px;
+  padding:7px 6px 5px;
+  border:1px solid rgba(168,85,247,.15);
+  border-radius:11px;
+  background:
+    radial-gradient(circle at 50% 35%,rgba(168,85,247,.15),transparent 68%),
+    linear-gradient(180deg,rgba(30,17,49,.88),rgba(12,7,22,.82));
+}
+#sec-perfil .pf-item-avatar-thumb{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:120px;
+  min-width:0;
+  overflow:hidden;
+}
+#sec-perfil .pf-item-avatar-thumb svg.pf-item-avatar-art{
+  display:block;
+  width:auto;
+  max-width:100%;
+  height:118px;
+  max-height:118px;
+  overflow:visible;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 4px 7px rgba(0,0,0,.3));
+}
+#sec-perfil .pf-item-slot-caption{
+  display:block;
+  color:#9f91b4;
+  font-size:.57rem;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-align:center;
+  text-transform:uppercase;
+}
+#sec-perfil .pf-item-name{
+  min-height:2.4em;
+  margin:0;
+  color:#fff;
+  font-size:.84rem;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+#sec-perfil .pf-item-rule{
+  min-height:2.4em;
+  margin:0;
+  color:#a99bbd;
+  font-size:.65rem;
+  line-height:1.4;
+  white-space:normal;
+}
+#sec-perfil .pf-item-equipped{
+  display:inline-flex;
+  align-self:flex-start;
+  max-width:100%;
+  padding:5px 7px;
+  border:1px solid rgba(74,222,128,.24);
+  border-radius:7px;
+  background:rgba(74,222,128,.08);
+  color:#86efac;
+  font-size:.57rem;
+  line-height:1.25;
+  letter-spacing:.04em;
+}
+#sec-perfil .pf-item-actions{margin-top:auto;padding-top:9px}
+#sec-perfil .pf-item-actions .pf-btn{min-height:34px;font-size:.68rem}
+#sec-perfil .pf-item-actions .pf-btn:disabled{opacity:.52;cursor:default}
+
+/* Troféus com medalhas metálicas e quatro níveis de raridade. */
+#sec-perfil .pf-achievement-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:14px;
+}
+#sec-perfil .pf-achievement-card{
+  --trophy-a:#b87945;
+  --trophy-b:#f0c18b;
+  --trophy-glow:rgba(205,127,50,.2);
+  position:relative;
+  isolation:isolate;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  min-width:0;
+  min-height:310px;
+  gap:9px;
+  padding:15px;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--trophy-a) 45%,rgba(168,85,247,.18));
+  border-radius:16px;
+  background:
+    radial-gradient(ellipse at 50% 0,var(--trophy-glow),transparent 55%),
+    linear-gradient(155deg,rgba(31,18,48,.98),rgba(13,8,23,.99));
+  box-shadow:inset 0 1px rgba(255,255,255,.045),0 10px 24px rgba(0,0,0,.12);
+  opacity:1;
+}
+#sec-perfil .pf-achievement-card::before{
+  content:'';
+  position:absolute;
+  z-index:-1;
+  inset:0 0 auto;
+  height:3px;
+  background:linear-gradient(90deg,transparent,var(--trophy-b),var(--trophy-a),transparent);
+  opacity:.9;
+}
+#sec-perfil .pf-achievement-card.trophy-silver{
+  --trophy-a:#8996a8;--trophy-b:#f3f6fb;--trophy-glow:rgba(203,213,225,.16);
+}
+#sec-perfil .pf-achievement-card.trophy-gold{
+  --trophy-a:#b7791f;--trophy-b:#ffe7a3;--trophy-glow:rgba(245,185,66,.19);
+}
+#sec-perfil .pf-achievement-card.trophy-platinum{
+  --trophy-a:#9b8ce0;--trophy-b:#eff6ff;--trophy-glow:rgba(192,132,252,.22);
+}
+#sec-perfil .pf-achievement-card.trophy-special{
+  --trophy-a:#db4f9e;--trophy-b:#ffd5ec;--trophy-glow:rgba(244,114,182,.2);
+}
+#sec-perfil .pf-achievement-card.is-locked{
+  background:
+    radial-gradient(ellipse at 50% 0,color-mix(in srgb,var(--trophy-glow) 70%,transparent),transparent 55%),
+    linear-gradient(155deg,rgba(24,17,35,.98),rgba(12,8,20,.99));
+}
+#sec-perfil .pf-achievement-card.is-unlocked{
+  border-color:color-mix(in srgb,var(--trophy-b) 55%,rgba(168,85,247,.2));
+  box-shadow:inset 0 1px rgba(255,255,255,.06),0 0 24px var(--trophy-glow),0 12px 26px rgba(0,0,0,.18);
+}
+#sec-perfil .pf-trophy-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  width:100%;
+}
+#sec-perfil .pf-trophy-number{
+  color:#827591;
+  font:700 .58rem 'JetBrains Mono',monospace;
+  letter-spacing:.06em;
+}
+#sec-perfil .pf-trophy-grade{
+  padding:4px 8px;
+  border:1px solid color-mix(in srgb,var(--trophy-a) 55%,transparent);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--trophy-a) 13%,transparent);
+  color:var(--trophy-b);
+  font-size:.59rem;
+  font-weight:900;
+  letter-spacing:.09em;
+}
+#sec-perfil .pf-trophy-medal{
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:74px;
+  height:74px;
+  margin:3px auto 4px;
+  border:3px solid color-mix(in srgb,var(--trophy-a) 70%,#fff);
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 34% 24%,rgba(255,255,255,.8),transparent 17%),
+    radial-gradient(circle at 50% 42%,var(--trophy-b),var(--trophy-a) 72%);
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--trophy-a) 14%,transparent),inset 0 2px 6px rgba(255,255,255,.5),inset 0 -7px 12px rgba(0,0,0,.22),0 8px 18px rgba(0,0,0,.25);
+}
+#sec-perfil .pf-trophy-medal::before,
+#sec-perfil .pf-trophy-medal::after{
+  content:'';
+  position:absolute;
+  z-index:-1;
+  top:48px;
+  width:19px;
+  height:26px;
+  background:linear-gradient(180deg,var(--trophy-a),color-mix(in srgb,var(--trophy-a) 65%,#180d28));
+  clip-path:polygon(0 0,100% 0,82% 100%,50% 76%,18% 100%);
+}
+#sec-perfil .pf-trophy-medal::before{left:8px;transform:rotate(11deg)}
+#sec-perfil .pf-trophy-medal::after{right:8px;transform:rotate(-11deg)}
+#sec-perfil .pf-trophy-icon{
+  display:grid;
+  place-items:center;
+  width:48px;
+  height:48px;
+  border:1px solid rgba(255,255,255,.52);
+  border-radius:50%;
+  background:rgba(20,12,31,.18);
+  color:#fff;
+  font-size:1.65rem;
+  line-height:1;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.25));
+}
+#sec-perfil .pf-achievement-card.is-locked .pf-trophy-medal{filter:saturate(.62) brightness(.78)}
+#sec-perfil .pf-achievement-card.is-unlocked .pf-trophy-medal{animation:pfTrophyShine 4s ease-in-out infinite}
+@keyframes pfTrophyShine{
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.13) drop-shadow(0 0 8px var(--trophy-glow))}
+}
+#sec-perfil .pf-achievement-card .pf-achievement-name{
+  width:100%;
+  min-height:2.35em;
+  margin:0;
+  color:#fff;
+  font:800 .98rem/1.22 'Bricolage Grotesque',sans-serif;
+  text-align:center;
+}
+#sec-perfil .pf-achievement-card .pf-achievement-desc{
+  width:100%;
+  min-height:3.9em;
+  margin:0;
+  color:#a99bbd;
+  font-size:.74rem;
+  line-height:1.5;
+  text-align:center;
+}
+#sec-perfil .pf-achievement-progress{width:100%;margin:0}
+#sec-perfil .pf-achievement-progress-meta{font-size:.59rem}
+#sec-perfil .pf-achievement-progress-meta strong{color:var(--trophy-b)}
+#sec-perfil .pf-achievement-progress-track{height:8px;background:rgba(255,255,255,.08)}
+#sec-perfil .pf-achievement-progress-fill{
+  background:linear-gradient(90deg,var(--trophy-a),var(--trophy-b));
+  box-shadow:0 0 10px var(--trophy-glow);
+}
+#sec-perfil .pf-achievement-reward{
+  width:100%;
+  margin:auto 0 0;
+  color:var(--trophy-b);
+  font-size:.68rem;
+}
+#sec-perfil .pf-achievement-status{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin-top:3px;
+  padding:5px 8px;
+  border:1px solid rgba(168,85,247,.18);
+  border-radius:7px;
+  background:rgba(168,85,247,.07);
+  color:#a99bbd;
+  font-size:.59rem;
+  letter-spacing:.04em;
+}
+#sec-perfil .pf-achievement-card.is-unlocked .pf-achievement-status{
+  border-color:rgba(74,222,128,.22);
+  background:rgba(74,222,128,.07);
+  color:#86efac;
+}
+#sec-perfil .pf-achievement-date{color:#847493;font-size:.62rem}
+#sec-perfil .pf-achievement-card.is-platinum{
+  grid-column:1/-1;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  padding:18px;
+  border-width:2px;
+}
+#sec-perfil .pf-achievement-card.is-platinum .pf-trophy-medal{width:82px;height:82px;margin:6px auto}
+#sec-perfil .pf-achievement-card.is-platinum .pf-trophy-icon{width:54px;height:54px;font-size:1.9rem}
+
+/* Responsividade: o boneco e a prévia não cortam em telas menores. */
+@media(max-width:980px){
+  #sec-perfil .pf-creator{grid-template-columns:minmax(0,1fr)}
+  #sec-perfil .pf-avatar-stage{height:430px;min-height:430px;--u:9px}
+  #sec-perfil .pf-achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  #sec-perfil .pf-avatar-stage{height:420px;min-height:420px;--u:8px}
+  #sec-perfil .pf-inventory-dressing-room{
+    top:70px;
+    grid-template-columns:104px minmax(0,1fr);
+    gap:7px 12px;
+    padding:10px;
+  }
+  #sec-perfil .pf-inventory-avatar-preview{width:104px;height:124px;min-height:124px}
+  #sec-perfil .pf-inventory-avatar-preview svg{height:116px;max-height:116px}
+  #sec-perfil .pf-item-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
+  #sec-perfil .pf-achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px){
+  #sec-perfil .pf-avatar-stage{height:390px;min-height:390px;--u:7px;--g:44px}
+  #sec-perfil .pf-stage-top{inset:9px 9px auto}
+  #sec-perfil .pf-avatar-tag{padding:4px 7px;font-size:.5rem}
+  #sec-perfil .pf-save-state{padding:4px 7px;font-size:.5rem}
+  #sec-perfil .pf-inventory-dressing-room{top:64px;grid-template-columns:82px minmax(0,1fr);gap:6px 9px}
+  #sec-perfil .pf-inventory-avatar-preview{width:82px;height:108px;min-height:108px;padding:3px}
+  #sec-perfil .pf-inventory-avatar-preview svg{height:101px;max-height:101px}
+  #sec-perfil .pf-inventory-dressing-room .pf-extra-head h3{font-size:.82rem}
+  #sec-perfil .pf-inventory-dressing-room .pf-preview-live{font-size:.48rem;padding:4px 6px}
+  #sec-perfil .pf-inventory-tryon-label{font-size:.66rem}
+  #sec-perfil .pf-inventory-preview-actions{gap:5px}
+  #sec-perfil .pf-inventory-preview-actions .pf-btn{flex:1 1 112px;min-height:31px;padding:6px 8px;font-size:.61rem}
+  #sec-perfil .pf-item-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  #sec-perfil .pf-item-card{min-height:222px;padding:9px}
+  #sec-perfil .pf-item-preview-character{height:132px;min-height:132px}
+  #sec-perfil .pf-item-avatar-thumb{height:108px}
+  #sec-perfil .pf-item-avatar-thumb svg.pf-item-avatar-art{height:106px;max-height:106px}
+  #sec-perfil .pf-item-name{font-size:.76rem}
+  #sec-perfil .pf-item-rule{font-size:.6rem}
+  #sec-perfil .pf-achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  #sec-perfil .pf-achievement-card{min-height:285px;padding:10px;gap:7px}
+  #sec-perfil .pf-trophy-medal{width:62px;height:62px}
+  #sec-perfil .pf-trophy-icon{width:40px;height:40px;font-size:1.35rem}
+  #sec-perfil .pf-trophy-grade{font-size:.5rem;padding:4px 6px}
+  #sec-perfil .pf-trophy-number{font-size:.5rem}
+  #sec-perfil .pf-achievement-card .pf-achievement-name{font-size:.84rem}
+  #sec-perfil .pf-achievement-card .pf-achievement-desc{font-size:.66rem;min-height:4.5em}
+  #sec-perfil .pf-achievement-reward{font-size:.6rem}
+  #sec-perfil .pf-achievement-status{font-size:.52rem}
+}
+@media(max-width:360px){
+  #sec-perfil .pf-item-grid,
+  #sec-perfil .pf-achievement-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){
+  #sec-perfil .pf-achievement-card.is-unlocked .pf-trophy-medal{animation:none}
+}
