@@ -172,7 +172,7 @@
       }
 
       if (!ehCooldown && !ehLimite) {
-        limparCooldown();n      }
+        limparCooldown();      }
 
       adicionarAoHistorico(codigo, 'erro', erro);
     }
