@@ -264,3 +264,10 @@ body.sou-admin .tl-card[draggable="true"] { cursor: grab; }
   .tl-shelf { padding: 16px; gap: 16px 12px; min-height: 0; }
   .tl-tier.is-empty .tl-shelf { min-height: 90px; }
 }
+/* Ações rápidas do admin sem alterar o fluxo de drag-and-drop da Tier List */
+.g-admin-wrap{position:relative;display:block;flex:0 0 var(--card-w);width:var(--card-w);max-width:100%;}
+.g-admin-wrap>.g{width:100%;}
+.g-quick-edit{position:absolute;top:7px;right:7px;z-index:5;display:grid;place-items:center;width:29px;height:29px;border:1px solid rgba(216,180,254,.48);border-radius:9px;background:rgba(14,7,25,.88);color:#f5d0fe;font-size:1rem;line-height:1;cursor:pointer;opacity:0;transform:translateY(-3px);transition:opacity .18s,transform .18s,border-color .18s,background .18s;backdrop-filter:blur(8px);}
+.g-admin-wrap:hover .g-quick-edit,.g-admin-wrap:focus-within .g-quick-edit{opacity:1;transform:none;}
+.g-quick-edit:hover{background:#7c3aed;border-color:#d8b4fe;color:#fff;}
+@media(max-width:720px){.g-quick-edit{opacity:1;transform:none;width:27px;height:27px;}}

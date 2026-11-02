@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
   if (!REDIS_URL || !REDIS_TOKEN) {
-    return res.status(503).json({ error: 'Redis não configurado', jogos: [], filmes: [] });
+    return res.status(503).json({ error: 'Redis não configurado', jogos: [], filmes: [], animes: [] });
   }
 
   try {
@@ -33,24 +33,26 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify([
         ['GET', 'tierlist:jogos'],
-        ['GET', 'tierlist:filmes']
+        ['GET', 'tierlist:filmes'],
+        ['GET', 'tierlist:animes']
       ]),
       signal: AbortSignal.timeout(8000)
     });
 
     let dados;
     try { dados = await resposta.json(); }
-    catch { return res.status(502).json({ error: 'Resposta inválida do Redis', jogos: [], filmes: [] }); }
+    catch { return res.status(502).json({ error: 'Resposta inválida do Redis', jogos: [], filmes: [], animes: [] }); }
 
     if (!resposta.ok || !Array.isArray(dados) || dados.some(item => item && item.error)) {
-      return res.status(502).json({ error: 'Não foi possível ler a Tier List', jogos: [], filmes: [] });
+      return res.status(502).json({ error: 'Não foi possível ler a Tier List', jogos: [], filmes: [], animes: [] });
     }
 
     return res.status(200).json({
       jogos: parseLista(dados[0]?.result),
-      filmes: parseLista(dados[1]?.result)
+      filmes: parseLista(dados[1]?.result),
+      animes: parseLista(dados[2]?.result)
     });
   } catch (error) {
-    return res.status(502).json({ error: 'Falha ao consultar o Redis', jogos: [], filmes: [] });
+    return res.status(502).json({ error: 'Falha ao consultar o Redis', jogos: [], filmes: [], animes: [] });
   }
 }

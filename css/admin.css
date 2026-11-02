@@ -506,3 +506,19 @@
   color: #ffd0d0;
   box-shadow: 0 0 0 3px rgba(239,68,68,.14);
 }
+
+/* ADMIN — navegação estável e formulários com leitura melhor */
+.admin-shell{grid-template-columns:220px minmax(0,1fr);gap:16px}
+.admin-sidebar{max-height:calc(100vh - 110px);overflow:auto;overscroll-behavior:contain}
+.admin-main,.admin-card,.admin-form,.admin-sug-card{min-width:0}
+.admin-nav-btn{min-height:42px}
+.admin-nav-btn.on{box-shadow:inset 3px 0 var(--accent,var(--purple))}
+.admin-tabs{display:flex;flex-wrap:wrap;gap:7px}
+.admin-tabs button{max-width:100%}
+.admin-form input,.admin-form select,.admin-form textarea{min-width:0;max-width:100%}
+.admin-item-select{min-width:0}
+@media(max-width:960px){
+  .admin-shell{grid-template-columns:minmax(0,1fr)}
+  .admin-sidebar{position:relative;top:auto;max-height:none;overflow:visible}
+  .admin-sidebar-nav{flex-wrap:nowrap}
+}

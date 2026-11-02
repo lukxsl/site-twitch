@@ -287,6 +287,7 @@
       <div class="tl-modo" id="modo" role="group" aria-label="Tipo de lista">
         <button type="button" class="on" data-m="jogos" aria-pressed="true">🎮 Jogos</button>
         <button type="button" data-m="filmes" aria-pressed="false">🎬 Filmes</button>
+        <button type="button" data-m="animes" aria-pressed="false">🍥 Animes</button>
       </div>
     </div>
   </header>
@@ -724,14 +725,16 @@
       <span class="pf-banner-chip">SOSO ARCADE <i>● ONLINE</i></span>
     </div>
 
-    <div class="pf-tabs" role="tablist" aria-label="Abas do perfil">
+    <div class="pf-body-layout">
+    <nav class="pf-tabs" role="tablist" aria-label="Navegação do perfil">
       <button type="button" class="pf-tab on" data-pf-tab="visao-geral" role="tab" aria-selected="true">👁️ Visão Geral</button>
       <button type="button" class="pf-tab" data-pf-tab="boneco" role="tab" aria-selected="false">🕹️ Meu Boneco</button>
       <button type="button" class="pf-tab" data-pf-tab="inventario" role="tab" aria-selected="false">🎒 Inventário</button>
       <button type="button" class="pf-tab" data-pf-tab="loja" role="tab" aria-selected="false">🛍️ Loja</button>
       <button type="button" class="pf-tab" data-pf-tab="conquistas" role="tab" aria-selected="false">🏆 Conquistas</button>
       <button type="button" class="pf-tab" data-pf-tab="configuracoes" role="tab" aria-selected="false">⚙️ Configurações</button>
-    </div>
+    </nav>
+    <div class="pf-content-layout">
 
     <!-- VISÃO GERAL -->
     <div class="pf-panel on" data-pf-panel="visao-geral">
@@ -852,7 +855,15 @@
     <div class="pf-panel" data-pf-panel="inventario" hidden>
       <div class="pf-panel-heading"><div><span class="pf-eyebrow">COLEÇÃO PESSOAL</span><h2>Meu inventário</h2><p>Veja suas peças desbloqueadas. Use “Ver no boneco” para experimentar sem salvar automaticamente.</p></div><span class="pf-count-pill" id="pfInventoryCount">0 itens</span></div>
       <div class="pf-inventory-toolbar"><label for="pfInventoryFilter">Filtrar por categoria</label><select id="pfInventoryFilter"><option value="todos">Todas as categorias</option><option value="base">Corpo e pele</option><option value="rosto">Rosto</option><option value="cabelo">Cabelo</option><option value="roupa">Roupa</option><option value="calcado">Calçado</option><option value="acessorio">Acessórios</option><option value="efeito">Efeitos</option><option value="animacao">Animações</option><option value="moldura">Molduras</option></select><span id="pfInventoryHint">As peças equipadas ficam marcadas.</span></div>
-      <div id="pfInventoryGrid" class="pf-item-grid"><p class="pf-empty">Carregando inventário…</p></div>
+      <div class="pf-inventory-layout">
+        <aside class="pf-inventory-dressing-room" aria-label="Provador do inventário">
+          <div class="pf-extra-head"><div><span class="pf-eyebrow">PROVADOR</span><h3>Monte seu kit</h3></div><span class="pf-preview-live">PRÉVIA</span></div>
+          <div id="pfInventoryAvatarPreview" class="pf-inventory-avatar-preview" role="img" aria-label="Prévia temporária do personagem"></div>
+          <p id="pfInventoryTryonLabel" class="pf-inventory-tryon-label">Escolha uma peça para experimentar.</p>
+          <div class="pf-inventory-preview-actions"><button type="button" class="pf-btn pf-btn-secondary" id="pfInventoryPreviewReset">Limpar prévia</button><button type="button" class="pf-btn pf-btn-primary" id="pfInventoryEditLook">Editar visual</button></div>
+        </aside>
+        <div id="pfInventoryGrid" class="pf-item-grid"><p class="pf-empty">Carregando inventário…</p></div>
+      </div>
     </div>
 
     <!-- LOJA -->
@@ -873,10 +884,12 @@
       <div class="pf-panel-heading"><div><span class="pf-eyebrow">SUA CONTA</span><h2>Configurações</h2><p>Cuide do seu nick, da sua conta e das conexões usadas para registrar sua presença.</p></div></div>
       <div class="pf-settings-grid">
         <section class="pf-settings-card"><span class="pf-settings-icon">👤</span><div><h3>Identidade</h3><p>Seu nick aparece no cartão de jogador, nas conquistas e no ranking.</p></div><label for="pfSettingsNick">Nick do Arcade</label><input id="pfSettingsNick" maxlength="24" autocomplete="nickname" placeholder="Seu nick"><p class="pf-settings-note" id="pfSettingsNickNote">Use de 3 a 24 caracteres. A primeira troca é livre; depois, há um intervalo de 7 dias.</p><button class="pf-btn pf-btn-primary" id="pfSaveNick" type="button">Salvar nick</button></section>
-        <section class="pf-settings-card"><span class="pf-settings-icon">🔐</span><div><h3>Conta e acesso</h3><p>Confira como sua conta está conectada ao Arcade.</p></div><div class="pf-settings-data"><small>E-MAIL VINCULADO</small><strong id="pfSettingsEmail">—</strong><small>MÉTODO DE LOGIN</small><strong id="pfSettingsAccount">—</strong></div><a class="pf-btn pf-btn-secondary" id="pfGoogleLink" href="/api/auth?action=google-login" hidden>Vincular conta Google</a><button class="pf-btn pf-btn-danger" id="pfSettingsLogout" type="button">Sair da conta</button></section>
+        <section class="pf-settings-card"><span class="pf-settings-icon">🔐</span><div><h3>Conta e acesso</h3><p>Confira como sua conta está conectada ao Arcade.</p></div><div class="pf-settings-data"><small>E-MAIL VINCULADO</small><strong id="pfSettingsEmail">—</strong><small>MÉTODO DE LOGIN</small><strong id="pfSettingsAccount">—</strong><small>ID DO JOGADOR</small><strong class="pf-player-id-line"><code id="pfSettingsPlayerId">—</code><button type="button" class="pf-copy-id" id="pfCopyPlayerId">Copiar</button></strong></div><a class="pf-btn pf-btn-secondary" id="pfGoogleLink" href="/api/auth?action=google-login" hidden>Vincular conta Google</a><button class="pf-btn pf-btn-danger" id="pfSettingsLogout" type="button">Sair da conta</button></section>
         <section class="pf-settings-card pf-settings-twitch"><span class="pf-settings-icon">📺</span><div><h3>Conexão com a Twitch</h3><p>Vincule a conta que você usa no chat. O Arcade precisa dessa conexão para confirmar presença, horas assistidas e sequência de lives.</p></div><div class="pf-twitch-status" id="pfTwitchStatus">Twitch não vinculada</div><div class="pf-settings-actions"><button class="pf-btn pf-btn-primary" id="pfTwitchLink" type="button">Vincular Twitch</button><button class="pf-btn pf-btn-danger" id="pfTwitchUnlink" type="button" hidden>Desvincular Twitch</button></div></section>
         <section class="pf-settings-card pf-dev-insights" id="pfDevInsights" hidden><div class="pf-dev-heading"><div><span class="pf-settings-icon">🧪</span><h3>Diagnóstico do Arcade · DEV</h3><p>Saúde da base, métricas do StreamElements e status da Twitch. Cada fonte informa separadamente quando não está configurada ou falha.</p></div><button type="button" class="pf-btn pf-btn-secondary" id="pfDevRefresh">↻ Atualizar dados</button></div><p class="pf-settings-note" id="pfDevInsightsStatus" role="status" aria-live="polite">Aguardando consulta…</p><div id="pfDevInsightsContent" class="pf-dev-insights-content"></div></section>
       </div>
+    </div>
+    </div>
     </div>
   </div>
 </section>
@@ -919,7 +932,7 @@
     </div>
     <div class="footer-bottom">
       <p class="footer-credit">© 2026 asemtet0 · Feito com 💜 por <b>lukxsl</b></p>
-      <div class="footer-updated">🔄 Atualizado em <b id="siteUpdated">—</b></div>
+      <div class="footer-updated">⚙️ Configurações atualizadas em <b id="siteUpdated">—</b></div>
     </div>
   </div>
 </footer>

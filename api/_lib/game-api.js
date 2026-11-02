@@ -95,7 +95,7 @@ const REGRAS_PUBLICAS = {
     'Sugestão aprovada pela Soso: +60 XP · +30 moedas',
     `Cada minuto assistido na live: +1 XP · +1 moeda a cada 10 min (máx. ${LIVE.TETO_MIN_SESSAO / 60}h por live)`,
     `Live contada (≥ ${LIVE.MIN_PRESENCA} min): +${LIVE.XP_PRESENCA} XP + ${LIVE.XP_STREAK_POR_LIVE} XP × sua sequência`,
-    'Códigos secretos falados na live: XP, moedas ou itens',
+    'Drops e códigos de eventos: resgate no Arcade quando forem publicados; não precisam ser falados em voz alta na live.',
     'Cada nível novo: +20 moedas'
   ],
   streak: {
@@ -427,7 +427,7 @@ export default async function handler(req, res){
         return {
           pos: i + 1, id, nome, xp: xps[i], nivel: infoNivel(xps[i]).nivel,
           titulo: titulos[titulo] || 'Novato', boneco,
-          avatar: (!conta && perfil && perfil.avatar) || null   // Discord legado sem boneco
+          avatar: (conta && (conta.google?.picture || conta.google?.avatar || conta.avatar || conta.picture || conta.foto)) || (perfil && (perfil.avatar || perfil.picture || perfil.foto)) || null
         };
       });
       return res.status(200).json({ total: Number(total), lista });
@@ -511,7 +511,7 @@ export default async function handler(req, res){
           streak: S.streak, melhorStreak: S.melhorStreak
         },
         twitch: S.conta && S.conta.twitch ? { login: S.conta.twitch.login, nome: S.conta.twitch.nome, desde: S.conta.twitch.desde } : null,
-        titulo: S.titulo, titulos: titulosDe(S),
+        titulo: S.titulo, titulos: titulosDe(S, ehDev),
         conquistas, progresso: { feitas, total: CONQUISTAS.length, platina: S.platina },
         boneco: S.boneco ? validarBoneco(S.boneco, S, ehDev).boneco : BONECO_PADRAO,
         liberados,
@@ -610,7 +610,7 @@ export default async function handler(req, res){
       if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
       const tid = safeStr(req.body?.id, 30);
       const S = await lerStats(id);
-      const t = titulosDe(S).find(x => x.id === tid);
+      const t = titulosDe(S, (await cargoDe(id, sessao.email)) === 'dev').find(x => x.id === tid);
       if(!t) return res.status(400).json({ error: 'Título inexistente.' });
       if(!t.liberado && !ehDev) return res.status(403).json({ error: `Bloqueado: ${t.regra}` });
       await redis([['HSET', `g:${id}`, 'titulo', tid]]);

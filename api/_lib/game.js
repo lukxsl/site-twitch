@@ -678,10 +678,10 @@ export function bonecoSeguro(salvo, S){
 /* ============================================================
    12) TÍTULOS
    ============================================================ */
-export function titulosDe(S){
+export function titulosDe(S, ehDev = false){
   return TITULOS.map(t => {
     let ok = false; try { ok = !!t.cond(S); } catch {}
-    return { id: t.id, nome: t.nome, r: t.r, regra: t.regra, liberado: ok };
+    return { id: t.id, nome: t.nome, r: t.r, regra: t.regra, liberado: !!ehDev || ok };
   });
 }
 

@@ -100,7 +100,7 @@ const SETUP_DATA = {
 };
 
 // Rota do tour: um circuito pelo quarto (Itens removidos não estão aqui)
-const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinete', 'cadeira', 'microfone'];
+const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinete', 'microfone', 'cadeira'];
 const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
 
@@ -149,7 +149,7 @@ const S = {
   typeTimer: null, finish: null, wake: null,
   catClicks: 0, catReset: null, catLastStamp: -1,
   gatoVisto: false,
-  balaoTimer: null, saudou: false
+  balaoTimer: null, saudou: false, falaIndex: 0, tourOferecido: false
 };
 try { S.gatoVisto = localStorage.getItem('setup_gato') === '1'; } catch (_) { /* ignore */ }
 
@@ -233,8 +233,20 @@ function interagir() {
   setTimeout(() => el.classList.remove('hop'), 520);
   snd('playPop');
 
-  const fala = BAO_FALAS[Math.floor(Math.random() * BAO_FALAS.length)];
-  falaTemporaria(fala);
+  if (S.tourOferecido) {
+    falaTemporaria('O tour já está pronto! Use o botão “Iniciar Tour Guiado” se quiser passear de novo. 💜');
+    return;
+  }
+  const ultima = S.falaIndex >= BAO_FALAS.length - 1;
+  const fala = ultima
+    ? 'Agora que você já me conhece, vou te mostrar o cantinho inteiro. No final, te levo até a cadeira da Soso! 🪑'
+    : BAO_FALAS[S.falaIndex];
+  S.falaIndex = Math.min(S.falaIndex + 1, BAO_FALAS.length);
+  falaTemporaria(fala, ultima ? 5200 : 4200);
+  if (ultima) {
+    S.tourOferecido = true;
+    window.setTimeout(() => { if (!S.tour) iniciarTour(); }, 1850);
+  }
 }
 
 function ligarLuk() {

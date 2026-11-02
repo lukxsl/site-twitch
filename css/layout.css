@@ -246,3 +246,30 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
   overflow-x:hidden;
   overflow-y:visible;
 }
+
+/* ============================================================
+   REFINAMENTO DE LAYOUT — BENTO, PROPORÇÕES E RESPONSIVIDADE
+   ============================================================ */
+.bento{
+  grid-template-columns:minmax(235px,.88fr) minmax(420px,1.62fr) minmax(250px,.92fr);
+  gap:16px;
+  align-items:stretch !important;
+}
+.bento-col{align-self:stretch !important;gap:16px}
+.bento-col > *{min-width:0;max-width:100%}
+.bento-center{min-width:0}
+.bento-center .twitch-player-box{min-width:0;overflow:hidden}
+.bento-center .twitch-player{aspect-ratio:16/9;min-height:0}
+.bento .jogos-card{min-width:0;align-self:stretch}
+@media(max-width:1360px){
+  .bento{grid-template-columns:minmax(220px,.86fr) minmax(360px,1.4fr) minmax(230px,.86fr);gap:12px}
+}
+@media(max-width:1180px){
+  .bento{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .bento-center{grid-column:1/-1;order:-1}
+  .bento-left,.bento-right{align-self:stretch !important}
+}
+@media(max-width:760px){
+  .bento{grid-template-columns:minmax(0,1fr)}
+  .bento-center{grid-column:auto}
+}

@@ -57,6 +57,7 @@ const ROTULO_CONCLUIDO = {
 let USUARIO = null;
 let JOGOS = [];
 let FILMES = [];
+let ANIMES = [];
 let VOTOS_DADOS = [], meuVoto = null, votoStatus = 'carregando';
 let VOTOS_FECHAMENTO = null;
 let ultGame = null, ultVivo = false;
@@ -66,7 +67,7 @@ let ADMIN_PAGE = 'home';
 let ADMIN_TAB = 'votos';
 let ADMIN_DADOS = null;
 let ADMIN_TIER_TAB = 'jogos';
-let ADMIN_TIER = { jogos: [], filmes: [] };
+let ADMIN_TIER = { jogos: [], filmes: [], animes: [] };
 let ADMIN_MULTISEL = { ativo: false, ids: new Set() };
 let vodAtual = null, assistindoVod = false;
 let videosTw = [];
@@ -294,9 +295,9 @@ async function carregarEmotes(){
 function renderSiteUpdate(){
   const el = $('siteUpdated'); if(!el) return;
   const raw = CONFIG_GERAL && CONFIG_GERAL.updatedAt;
-  let d = raw ? new Date(raw) : new Date();
-  if(isNaN(d.getTime())) d = new Date();
-  el.textContent = fmtDataHora(d.toISOString());
+  const d = raw ? new Date(raw) : null;
+  el.textContent = d && !Number.isNaN(d.getTime()) ? fmtDataHora(d.toISOString()) : '—';
+  el.title = 'Data da última alteração nas configurações do site, não a data do deploy.';
 }
 
 function renderHomeExtras(){
@@ -676,10 +677,7 @@ function _executarMudarAba(nome, salvar){
   const adminBtn = $('btn-admin');
   if(adminBtn) adminBtn.classList.toggle('on', nome === 'admin');
 
-  if(nome !== 'admin' && _ultimaAba === 'admin'){
-    try { localStorage.removeItem('admin:page'); } catch(e){}
-    ADMIN_PAGE = 'home';
-  }
+  // Mantém a última seção do painel Admin ao navegar para outras páginas.
   if(nome === 'admin'){
     const hash = (location.hash || '').replace(/^#/, '');
     if(hash.startsWith('admin/')){
@@ -768,28 +766,18 @@ function renderComandos(filtroTxt = ''){
    TIER LIST V2
    ============================================================ */
 const TIERS = ['S','A','B','C'];
-const JOGOS_FALLBACK = [
-  { id:'red-dead-2', nome:'Red Dead Redemption 2', appid:1174180, tier:'S', status:'Jogando', horas:50, nota:8,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
-    comentario:'Um dos mundos mais vivos e detalhados dos games.', generos:['Ação','Aventura'] },
-  { id:'hollow-knight', nome:'Hollow Knight', tier:'S', status:'Zerado', nota:9, horas:40,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario:'', generos:['Metroidvania'] },
-  { id:'stardew-valley', nome:'Stardew Valley', tier:'A', status:'Jogando', nota:8, horas:120,
-    capa:'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario:'', generos:['Simulação'] }
-];
-const FILMES_FALLBACK = [
-  { id:'interestelar', nome:'Interestelar', tier:'S', status:'Assistido', nota:9, duracao:169, ano:2014,
-    capa:'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario:'As reservas naturais da Terra estão chegando ao fim.', generos:['Ficção'] }
-];
-
 async function carregarBiblioteca(){
   try{
-    const r = await fetch('/api/tierlist');
-    const d = r.ok ? await r.json() : {};
-    JOGOS = (Array.isArray(d.jogos) && d.jogos.length) ? d.jogos : JOGOS_FALLBACK;
-    FILMES = (Array.isArray(d.filmes) && d.filmes.length) ? d.filmes : FILMES_FALLBACK;
-  }catch(e){ JOGOS = JOGOS_FALLBACK; FILMES = FILMES_FALLBACK; }
+    const r = await fetch('/api/tierlist', { cache: 'no-store' });
+    if(!r.ok) throw new Error('Não foi possível carregar a Tier List');
+    const d = await r.json();
+    JOGOS = Array.isArray(d.jogos) ? d.jogos : [];
+    FILMES = Array.isArray(d.filmes) ? d.filmes : [];
+    ANIMES = Array.isArray(d.animes) ? d.animes : [];
+  }catch(e){
+    JOGOS = []; FILMES = []; ANIMES = [];
+    console.warn('[tierlist] listas vazias até o servidor responder:', e);
+  }
   desenharStats(); desenhar(); atualizarFoco(ultGame, ultVivo);
 }
 window.carregarBiblioteca = carregarBiblioteca;
@@ -801,7 +789,7 @@ const MODOS = {
     feito:'Zerado', plural:'jogos', hrs:'horas jogadas', hl:'horas jogadas',
     l4:'jogos zerados', titulo:'Tier List de Jogos',
     sub:'Tudo o que eu já joguei ou pretendo jogar, do melhor ao pior.',
-    busca:'Buscar jogo...', vazio:'Nenhum jogo aqui'
+    busca:'Buscar jogo...', vazio:'Ainda não há jogos cadastrados.'
   },
   filmes: {
     get lista(){ return FILMES; },
@@ -809,7 +797,15 @@ const MODOS = {
     feito:'Assistido', plural:'filmes', hrs:'duração total', hl:'duração',
     l4:'filmes assistidos', titulo:'Tier List de Filmes',
     sub:'Tudo o que eu já assisti ou pretendo assistir.',
-    busca:'Buscar filme...', vazio:'Nenhum filme aqui'
+    busca:'Buscar filme...', vazio:'Ainda não há filmes cadastrados.'
+  },
+  animes: {
+    get lista(){ return ANIMES; },
+    status:['Todos','Assistindo','Assistido','Dropado','Na fila'],
+    feito:'Assistido', plural:'animes', hrs:'episódios vistos', hl:'episódios',
+    l4:'animes concluídos', titulo:'Tier List de Animes',
+    sub:'Animes que acompanho, concluí ou quero assistir.',
+    busca:'Buscar anime...', vazio:'Ainda não há animes cadastrados.'
   }
 };
 const LISTA = () => MODOS[modo].lista;
@@ -822,6 +818,8 @@ function desenharStats(){
   if (modo === 'filmes') {
     const totalMin = L.reduce((a,j) => a + (j.duracao || 0), 0);
     totalLabel = fmtDuracao(totalMin) || '—';
+  } else if (modo === 'animes') {
+    totalLabel = L.reduce((a,j) => a + (Number(j.episodiosVistos) || 0), 0).toLocaleString('pt-BR');
   } else {
     const hs = Math.round(L.reduce((a,j) => a + (j.horas || 0), 0) * 10) / 10;
     totalLabel = hs.toLocaleString('pt-BR');
@@ -935,7 +933,7 @@ function aplicarModo(novo, salvar = true){
   $('tlSub').textContent = m.sub;
   $('q').placeholder = m.busca;
   renderChips(); desenharStats(); desenhar();
-  $('tmdbNote').style.display = modo === 'filmes' ? '' : 'none';
+  const note = $('tmdbNote'); if(note) note.style.display = modo === 'filmes' ? '' : 'none';
   if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
 }
 
@@ -956,7 +954,7 @@ function cartao(j,i){
 
   const tierCls = j.tier && j.tier !== 'NR' ? `t-${j.tier}` : '';
 
-  return `
+  const card = `
     <button class="g ${tierCls}" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}"${tooltip}>
       <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
         <div class="ph">${esc(ini)}</div>
@@ -970,11 +968,31 @@ function cartao(j,i){
         <span class="cn">${esc(j.nome)}</span>
         ${j.horas > 0 ? `<span class="ch">${fh(j.horas)}</span>` : ''}
         ${j.duracao > 0 ? `<span class="ch">${fmtDuracao(j.duracao)}</span>` : ''}
+        ${j.episodios > 0 ? `<span class="ch">${j.episodios} eps.</span>` : ''}
       </div>
       ${conq}
-    </button>
-  `;
+    </button>`;
+  return podeArrastar ? `<div class="g-admin-wrap">${card}<button type="button" class="g-quick-edit" onclick="editarNotaTier(${i})" title="Editar nota sem abrir o Admin" aria-label="Editar nota de ${esc(j.nome)}">✎</button></div>` : card;
 }
+
+
+async function editarNotaTier(index){
+  if(!USUARIO?.admin) return;
+  const lista = LISTA(); const item = lista[index]; if(!item) return;
+  const valor = window.prompt(`Nova nota para ${item.nome} (0 a 10):`, String(item.nota || 0));
+  if(valor === null) return;
+  const nota = Number(String(valor).replace(',', '.'));
+  if(!Number.isFinite(nota) || nota < 0 || nota > 10){ window.alert('Digite uma nota entre 0 e 10.'); return; }
+  const notaAnterior = item.nota;
+  item.nota = Math.round(nota * 10) / 10;
+  const payload = { jogos:JOGOS, filmes:FILMES, animes:ANIMES, logAcao:`Ajustou a nota de ${item.nome} para ${item.nota}` };
+  try{
+    const r = await fetch('/api/admin?action=tierlist-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d = await r.json(); if(!r.ok) throw new Error(d.error || 'Não foi possível salvar');
+    desenharStats(); desenhar(); toast('Nota atualizada 💜','ok');
+  }catch(e){ item.nota = notaAnterior; desenhar(); window.alert(e.message || 'Falha ao salvar a nota.'); }
+}
+window.editarNotaTier = editarNotaTier;
 
 function linha(cls, rotulo, lista){
   const L = LISTA();
@@ -987,10 +1005,10 @@ function linha(cls, rotulo, lista){
       : null;
     const somaHoras = modo === 'jogos'
       ? Math.round(lista.reduce((a,j) => a + (j.horas || 0), 0))
-      : 0;
+      : (modo === 'animes' ? lista.reduce((a,j) => a + (Number(j.episodiosVistos)||0),0) : 0);
     const partes = [`${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`];
     if(media) partes.push(`média ${media}`);
-    if(somaHoras > 0) partes.push(`${somaHoras}h`);
+    if(somaHoras > 0) partes.push(modo === 'animes' ? `${somaHoras} eps.` : `${somaHoras}h`);
     resumo = partes.join(' · ');
   }
   return `
@@ -1077,14 +1095,20 @@ function setupDragDrop(){
       const tierAntigo = item.tier;
       item.tier = novoTier;
       desenharStats(); desenhar();
-      toast(`✅ "${item.nome}" movido de ${tierAntigo} para ${novoTier}`, 'ok');
       try {
-        await fetch('/api/admin?action=tierlist-set', {
+        const resposta = await fetch('/api/admin?action=tierlist-set', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jogos: JOGOS, filmes: FILMES, logAcao: `Moveu "${item.nome}" de ${tierAntigo} pra ${novoTier}` })
+          body: JSON.stringify({ jogos: JOGOS, filmes: FILMES, animes: ANIMES, logAcao: `Moveu "${item.nome}" de ${tierAntigo} pra ${novoTier}` })
         });
-      } catch(e){ console.warn('Erro ao salvar', e); }
+        const dados = await resposta.json().catch(() => ({}));
+        if(!resposta.ok) throw new Error(dados.error || `Erro ${resposta.status}`);
+        toast(`✅ "${item.nome}" movido para ${novoTier}`, 'ok');
+      } catch(e){
+        item.tier = tierAntigo;
+        desenharStats(); desenhar();
+        toast(`Não foi possível salvar a mudança: ${e.message}`, 'erro');
+      }
       dragItem = null;
     });
   });
@@ -1135,16 +1159,7 @@ function desenhar(){
   }
 
   if(!lista.length && !total){
-    el.innerHTML = TIERS.map(t => `
-      <div class="tier t-${t}">
-        <div class="label"><div>${t}</div></div>
-        <div class="games">
-          <div class="g skeleton"></div>
-          <div class="g skeleton"></div>
-          <div class="g skeleton"></div>
-        </div>
-      </div>
-    `).join('');
+    el.innerHTML = `<section class="tl-empty-state"><span class="tl-empty-icon">${modo === 'jogos' ? '🎮' : modo === 'filmes' ? '🎬' : '🍥'}</span><h3>${esc(MODOS[modo].vazio)}</h3><p>Essa lista está vazia de propósito. Quando a Soso adicionar ou importar itens, eles aparecerão aqui para serem organizados nos tiers.</p>${USUARIO?.admin ? '<small>Use o painel Admin → Tier List para cadastrar itens.</small>' : ''}</section>`;
     return;
   }
 
@@ -1387,7 +1402,9 @@ function renderVotacao(){
   if(!VOTOS_DADOS.length){
     if(infoTop) infoTop.style.display = 'none';
     destBox.innerHTML = '';
-    listaBox.innerHTML = `<div class="vazio-voto"><b>${votoStatus === 'erro' ? 'Votação indisponível' : 'Carregando votação…'}</b></div>`;
+    const mensagem = votoStatus === 'erro' ? 'Não foi possível carregar a votação agora.' : votoStatus === 'carregando' ? 'Carregando votação…' : 'A Soso ainda não adicionou opções nesta votação.';
+    const apoio = votoStatus === 'ok' ? 'Quando as opções forem publicadas, você poderá votar por aqui. 💜' : 'Tente novamente em alguns instantes.';
+    listaBox.innerHTML = `<div class="vazio-voto voto-empty-state"><span>🗳️</span><b>${mensagem}</b><small>${apoio}</small></div>`;
     return;
   }
 

@@ -12,8 +12,9 @@ function adminIrPara(pagina){
 }
 function adminIrAba(aba){ ADMIN_TAB = aba; renderAdminVotacao(); }
 function adminIrTierTab(tab){
+  if(!['jogos','filmes','animes'].includes(tab)) tab = 'jogos';
   ADMIN_TIER_TAB = tab;
-  localStorage.setItem('admin:tierTab', tab);
+  try { localStorage.setItem('admin:tierTab', tab); } catch(e) {}
   renderAdminTierList();
 }
 function adminIrConfigTab(tab){ ADMIN_CONFIG_TAB = tab; renderAdminConfig(); }
@@ -72,7 +73,7 @@ function renderSidebar(){
       if(it.badgeKey === 'votacao' && ADMIN_SHARED.votos){
         count = Object.values(ADMIN_SHARED.votos.contagem || {}).reduce((a,b)=>a+(Number(b)||0),0);
       } else if(it.badgeKey === 'tierlist' && ADMIN_SHARED.tier){
-        count = (ADMIN_SHARED.tier.jogos||[]).length + (ADMIN_SHARED.tier.filmes||[]).length;
+        count = (ADMIN_SHARED.tier.jogos||[]).length + (ADMIN_SHARED.tier.filmes||[]).length + (ADMIN_SHARED.tier.animes||[]).length;
       } else if(it.badgeKey === 'sugestoes' && ADMIN_SHARED.sugestoes){
         count = (ADMIN_SHARED.sugestoes.itens||[]).length;
       } else if(it.badgeKey === 'admins' && ADMIN_SHARED.admins){
@@ -217,7 +218,9 @@ async function carregarAdmin(){
     }
   } catch(e){}
 
-  ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
+  let savedTierTab = 'jogos';
+  try { savedTierTab = localStorage.getItem('admin:tierTab') || 'jogos'; } catch(e) {}
+  ADMIN_TIER_TAB = ['jogos','filmes','animes'].includes(savedTierTab) ? savedTierTab : 'jogos';
 
   bindSidebarOnce();
   renderSidebar();

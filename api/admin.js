@@ -85,21 +85,6 @@ const LABEL_PERM = {
   ver_logs: 'Ver logs', ver_sugestoes: 'Ver sugestões'
 };
 
-const JOGOS_PADRAO = [
-  { id: 'red-dead-2', nome: 'Red Dead Redemption 2', appid: 1174180, tier: 'S', status: 'Jogando', nota: 8, horas: 50,
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/library_600x900.jpg',
-    comentario: 'Um dos mundos mais vivos e detalhados dos games.', generos: ['Ação','Aventura'] },
-  { id: 'hollow-knight', nome: 'Hollow Knight', tier: 'S', status: 'Zerado', nota: 9, horas: 40,
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg', comentario: '', generos: ['Metroidvania','Plataforma'] },
-  { id: 'stardew-valley', nome: 'Stardew Valley', tier: 'A', status: 'Jogando', nota: 8, horas: 120,
-    capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/library_600x900.jpg', comentario: '', generos: ['Simulação','RPG'] }
-];
-const FILMES_PADRAO = [
-  { id: 'interestelar', nome: 'Interestelar', tier: 'S', status: 'Assistido', nota: 9, duracao: 169, ano: 2014,
-    capa: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg',
-    comentario: 'As reservas naturais da Terra estão chegando ao fim.', generos: ['Ficção'] }
-];
-
 const STATUS_SUG_VALIDOS = ['nova','analise','aceita','recusada','concluido'];
 const ROTULO_CONCLUIDO = {
   'Sugestão / ideia':      'Aplicada',
@@ -347,41 +332,38 @@ async function buscarSinopseSteam(appid){
       const jaPt = idioma === 'brazilian' || idioma === 'portuguese';
       const pt = jaPt ? null : await traduzir(original);
       const generos = Array.isArray(dados.genres) ? dados.genres.map(g => g.description).filter(Boolean) : [];
-      return { nome: dados.name || null, sinopse: pt || original, capa: dados.header_image || null, generos };
+      return { nome: dados.name || null, sinopse: pt || original, capa: dados.library_600x900 || dados.capsule_image || dados.header_image || null, generos };
     } catch(e) { /* tenta o próximo idioma */ }
   }
   return null;
 }
 
 async function buscarDadosJogo(nome, appid = null){
+  // Quando o jogo veio da Steam, a própria Steam é a fonte prioritária:
+  // capa vertical correta e sinopse no idioma brasileiro antes de qualquer fallback.
+  let steam = null;
+  if(appid) { try { steam = await buscarSinopseSteam(appid); } catch(e) {} }
+
   let igdb = {};
-  try { igdb = await igdbBuscar(nome); } catch(e){}
+  try { igdb = await igdbBuscar((steam && steam.nome) || nome); } catch(e){}
   if(igdb && igdb.erro) igdb = {};
 
-  let steam = null;
-  if(appid && (!igdb.sinopse || !igdb.capa || !Array.isArray(igdb.generos) || !igdb.generos.length)){
-    steam = await buscarSinopseSteam(appid);
-  }
-
-  let sinopse = (igdb && igdb.sinopse) || (steam && steam.sinopse) || '';
+  let sinopse = (steam && steam.sinopse) || (igdb && igdb.sinopse) || '';
   if(!sinopse){
-    sinopse = await sinopseWikipedia(nome, 'pt') || '';
+    sinopse = await sinopseWikipedia((steam && steam.nome) || nome, 'pt') || '';
     if(!sinopse){
-      const ingles = await sinopseWikipedia(nome, 'en');
+      const ingles = await sinopseWikipedia((steam && steam.nome) || nome, 'en');
       if(ingles) sinopse = await traduzir(ingles) || ingles;
     }
   }
-  if(sinopse && !(igdb && igdb.sinopse) && !(steam && steam.sinopse)){
-    sinopse = await traduzir(sinopse) || sinopse;
-  }
+  if(sinopse && !(steam && steam.sinopse) && !(igdb && igdb.sinopse)) sinopse = await traduzir(sinopse) || sinopse;
 
   return {
     ...(igdb || {}),
-    nome: (igdb && igdb.nome) || (steam && steam.nome) || nome,
-    sinopse,
-    comentario: sinopse,
-    capa: (igdb && igdb.capa) || (steam && steam.capa) || null,
-    generos: (igdb && Array.isArray(igdb.generos) && igdb.generos.length) ? igdb.generos : ((steam && steam.generos) || [])
+    nome: (steam && steam.nome) || (igdb && igdb.nome) || nome,
+    sinopse, comentario: sinopse,
+    capa: (steam && steam.capa) || (igdb && igdb.capa) || null,
+    generos: (steam && steam.generos && steam.generos.length) ? steam.generos : ((igdb && igdb.generos) || [])
   };
 }
 
@@ -893,10 +875,15 @@ export default async function handler(req, res){
       if(!userId || !NIVEIS[cargo]) return res.status(400).json({ error: 'Dados inválidos' });
       if(cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs criam Devs' });
       if(NIVEIS[cargo] >= meNivel && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Cargo maior ou igual ao seu' });
-      if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'ID já é admin fixo' });
-      const [perfilRaw] = await redis([['HGET', 'user_profiles', String(userId)]]);
+      const idAlvo = String(userId).trim();
+      if(ENV_ADMINS.includes(idAlvo)) return res.status(400).json({ error: 'ID já é admin fixo' });
+      const [perfilRaw, adminRaw] = await redis([
+        ['HGET', 'user_profiles', idAlvo], ['HGET', 'admins', idAlvo]
+      ]);
+      if(!perfilRaw) return res.status(404).json({ error: 'Essa pessoa ainda não tem perfil no Arcade. Ela precisa entrar no site primeiro.' });
+      if(adminRaw) return res.status(409).json({ error: 'Essa pessoa já possui acesso. Use Editar para trocar o cargo.' });
       let perfil = {};
-      try { perfil = perfilRaw ? JSON.parse(perfilRaw) : {}; } catch(e){}
+      try { perfil = JSON.parse(perfilRaw); } catch(e){}
       const payload = JSON.stringify({ username: username || perfil.username || null, avatar: avatar || perfil.avatar || null, cargo, ts: Date.now() });
       await redis([['HSET', 'admins', String(userId), payload]]);
       await logAcao(quem, sessao.cargo, `Adicionou admin ${userId} (${cargo})`);
@@ -911,9 +898,11 @@ export default async function handler(req, res){
       if(cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs promovem a Dev' });
       if(NIVEIS[cargo] > meNivel) return res.status(403).json({ error: 'Cargo maior que o seu' });
       const [atualRaw] = await redis([['HGET', 'admins', String(userId)]]);
+      if(!atualRaw) return res.status(404).json({ error: 'Esse acesso administrativo não existe mais.' });
       let atual = {};
-      try { atual = atualRaw ? JSON.parse(atualRaw) : {}; } catch(e){}
+      try { atual = JSON.parse(atualRaw); } catch(e){}
       if(atual.cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs editam Devs' });
+      if(sessao.cargo !== 'dev' && (NIVEIS[atual.cargo] || 0) >= meNivel) return res.status(403).json({ error: 'Você não pode editar alguém com cargo igual ou superior ao seu.' });
       const [perfilRaw] = await redis([['HGET', 'user_profiles', String(userId)]]);
       let perfil = {};
       try { perfil = perfilRaw ? JSON.parse(perfilRaw) : {}; } catch(e){}
@@ -932,11 +921,14 @@ export default async function handler(req, res){
       if(!(await temPermissao(sessao, 'editar_admins'))) return res.status(403).json({ error: 'Sem permissão' });
       const { userId } = req.body || {};
       if(!userId) return res.status(400).json({ error: 'ID obrigatório' });
+      if(String(userId) === String(sessao.id)) return res.status(400).json({ error: 'Por segurança, você não pode remover seu próprio acesso.' });
       if(ENV_ADMINS.includes(String(userId))) return res.status(400).json({ error: 'Admin fixo não pode ser removido' });
       const [atualRaw] = await redis([['HGET', 'admins', String(userId)]]);
+      if(!atualRaw) return res.status(404).json({ error: 'Esse acesso administrativo não existe mais.' });
       let atual = {};
-      try { atual = atualRaw ? JSON.parse(atualRaw) : {}; } catch(e){}
+      try { atual = JSON.parse(atualRaw); } catch(e){}
       if(atual.cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Só Devs removem Devs' });
+      if(sessao.cargo !== 'dev' && (NIVEIS[atual.cargo] || 0) >= meNivel) return res.status(403).json({ error: 'Você não pode remover alguém com cargo igual ou superior ao seu.' });
       await redis([['HDEL', 'admins', String(userId)]]);
       await logAcao(quem, sessao.cargo, `Removeu admin ${userId}`);
       return res.status(200).json({ ok: true });
@@ -944,34 +936,29 @@ export default async function handler(req, res){
 
     if(req.method === 'GET' && (action === 'tierlist' || action === 'tierlist-get')){
       if(!(await temPermissao(sessao, 'ver_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
-      const [jogosRaw, filmesRaw, seedFeitoRaw] = await redis([
-        ['GET','tierlist:jogos'],
-        ['GET','tierlist:filmes'],
-        ['GET','tierlist:seedFeito']
+      const [jogosRaw, filmesRaw, animesRaw, seedFeitoRaw, cleanRaw] = await redis([
+        ['GET','tierlist:jogos'], ['GET','tierlist:filmes'], ['GET','tierlist:animes'],
+        ['GET','tierlist:seedFeito'], ['GET','tierlist:seed-clean-v2']
       ]);
-      const seedFeito = seedFeitoRaw === '1';
-      let jogos = [], filmes = [];
-      const cmdsSalvar = [];
-      if(jogosRaw === null || jogosRaw === undefined){
-        if(!seedFeito){ jogos = JOGOS_PADRAO; cmdsSalvar.push(['SET', 'tierlist:jogos', JSON.stringify(jogos)]); }
-        else jogos = [];
-      } else {
-        try { jogos = JSON.parse(jogosRaw); if(!Array.isArray(jogos)) jogos = []; } catch(e){ jogos = []; }
+      const parse = raw => { try { const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v : []; } catch(e){ return []; } };
+      let jogos = parse(jogosRaw), filmes = parse(filmesRaw), animes = parse(animesRaw);
+      // Remove apenas os itens de demonstração antigos, uma única vez. Itens criados/importados
+      // pela Soso são preservados, inclusive se compartilham a mesma categoria.
+      if(seedFeitoRaw === '1' && cleanRaw !== '1'){
+        jogos = jogos.filter(it => !['red-dead-2','hollow-knight','stardew-valley'].includes(String(it.id || '')));
+        filmes = filmes.filter(it => String(it.id || '') !== 'interestelar');
+        await redis([
+          ['SET','tierlist:jogos',JSON.stringify(jogos)],
+          ['SET','tierlist:filmes',JSON.stringify(filmes)],
+          ['SET','tierlist:seed-clean-v2','1']
+        ]);
       }
-      if(filmesRaw === null || filmesRaw === undefined){
-        if(!seedFeito){ filmes = FILMES_PADRAO; cmdsSalvar.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]); }
-        else filmes = [];
-      } else {
-        try { filmes = JSON.parse(filmesRaw); if(!Array.isArray(filmes)) filmes = []; } catch(e){ filmes = []; }
-      }
-      if(!seedFeito) cmdsSalvar.push(['SET', 'tierlist:seedFeito', '1']);
-      if(cmdsSalvar.length) await redis(cmdsSalvar);
-      return res.status(200).json({ jogos, filmes });
+      return res.status(200).json({ jogos, filmes, animes });
     }
 
     if(req.method === 'POST' && (action === 'tierlist' || action === 'tierlist-set')){
       if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
-      const { jogos, filmes, logAcao: acao } = req.body || {};
+      const { jogos, filmes, animes, logAcao: acao } = req.body || {};
       const cmds = [];
       if(Array.isArray(jogos)){
         const [rawAtuais] = await redis([['GET', 'tierlist:jogos']]);
@@ -981,7 +968,20 @@ export default async function handler(req, res){
         const processados = await prepararJogosManuais(jogos, atuais);
         cmds.push(['SET', 'tierlist:jogos', JSON.stringify(processados)]);
       }
-      if(Array.isArray(filmes)) cmds.push(['SET', 'tierlist:filmes', JSON.stringify(filmes)]);
+      if(Array.isArray(filmes)) cmds.push(['SET', 'tierlist:filmes', JSON.stringify(filmes.slice(0, 500))]);
+      if(Array.isArray(animes)) {
+        const limpos = animes.slice(0, 500).map(it => ({
+          id: String(it.id || '').slice(0, 100), nome: String(it.nome || '').slice(0, 180),
+          tier: ['S','A','B','C','NR'].includes(it.tier) ? it.tier : 'NR',
+          status: ['Assistindo','Assistido','Dropado','Na fila'].includes(it.status) ? it.status : 'Na fila',
+          nota: Math.max(0, Math.min(10, Number(it.nota) || 0)),
+          capa: typeof it.capa === 'string' ? it.capa.slice(0, 1500) : null,
+          comentario: String(it.comentario || '').slice(0, 4200), generos: Array.isArray(it.generos) ? it.generos.slice(0, 8).map(x => String(x).slice(0, 60)) : [],
+          ano: Number(it.ano) || null, episodios: Number(it.episodios) || null, episodiosVistos: Number(it.episodiosVistos) || 0,
+          adicionadoEm: it.adicionadoEm || new Date().toISOString()
+        })).filter(it => it.nome);
+        cmds.push(['SET','tierlist:animes',JSON.stringify(limpos)]);
+      }
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
       await redis(cmds);
       if(acao) await logAcao(quem, sessao.cargo, acao);
@@ -992,7 +992,8 @@ export default async function handler(req, res){
       if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
       const { ids, tipo } = req.body || {};
       if(!Array.isArray(ids) || !ids.length) return res.status(400).json({ error: 'Nada pra apagar' });
-      const key = (tipo === 'filmes') ? 'tierlist:filmes' : 'tierlist:jogos';
+      const key = ({ jogos:'tierlist:jogos', filmes:'tierlist:filmes', animes:'tierlist:animes' })[tipo];
+      if(!key) return res.status(400).json({ error: 'Categoria inválida' });
       const [raw] = await redis([['GET', key]]);
       let lista = [];
       try { lista = raw ? JSON.parse(raw) : []; } catch(e){}
@@ -1017,6 +1018,30 @@ export default async function handler(req, res){
       const ano = req.query?.ano;
       if(!nome) return res.status(400).json({ erro: 'Informe um nome' });
       return res.status(200).json(await tmdbBuscar(nome, ano));
+    }
+
+    if(req.method === 'GET' && action === 'buscar-anime'){
+      if(!(await temPermissao(sessao, 'editar_tierlist'))) return res.status(403).json({ error: 'Sem permissão' });
+      const nome = String(req.query?.nome || '').trim();
+      if(!nome) return res.status(400).json({ erro: 'Informe um nome' });
+      try {
+        const url = 'https://api.jikan.moe/v4/anime?q=' + encodeURIComponent(nome) + '&limit=1&sfw=true';
+        const resposta = await fetch(url, { signal: AbortSignal.timeout(7000), headers: { 'User-Agent': 'SosoArcade/1.0' } });
+        if(!resposta.ok) return res.status(502).json({ erro: 'A busca de animes está temporariamente indisponível.' });
+        const payload = await resposta.json();
+        const item = payload?.data?.[0];
+        if(!item) return res.status(404).json({ erro: 'Anime não encontrado.' });
+        const original = String(item.synopsis || '').slice(0, 4200);
+        const sinopse = original && /[A-Za-z]/.test(original) ? (await traduzir(original) || original) : original;
+        return res.status(200).json({
+          nome: item.title || nome,
+          sinopse,
+          capa: item.images?.jpg?.large_image_url || item.images?.jpg?.image_url || null,
+          episodios: item.episodes || null,
+          ano: item.year || item.aired?.prop?.from?.year || null,
+          generos: (item.genres || []).map(g => g.name).filter(Boolean)
+        });
+      } catch(e) { return res.status(502).json({ erro: 'Não foi possível buscar esse anime agora.' }); }
     }
 
     if(req.method === 'GET' && action === 'buscar-conquistas'){

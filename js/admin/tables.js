@@ -9,12 +9,14 @@ async function carregarAdminTierList(){
     const r = await fetch('/api/admin?action=tierlist-get');
     if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
     const d = await r.json();
-    ADMIN_TIER = { jogos: d.jogos || [], filmes: d.filmes || [] };
+    ADMIN_TIER = { jogos: d.jogos || [], filmes: d.filmes || [], animes: d.animes || [] };
   }catch(e){
     area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
     return;
   }
-  ADMIN_TIER_TAB = localStorage.getItem('admin:tierTab') || 'jogos';
+  let savedTierTab = ADMIN_TIER_TAB || 'jogos';
+  try { savedTierTab = localStorage.getItem('admin:tierTab') || savedTierTab; } catch(e) {}
+  ADMIN_TIER_TAB = ['jogos','filmes','animes'].includes(savedTierTab) ? savedTierTab : 'jogos';
   ADMIN_MULTISEL = { ativo: false, ids: new Set() };
   document.body.classList.remove('admin-multisel');
   renderAdminTierList();
@@ -70,16 +72,17 @@ function renderAdminTierList(){
     <div class="admin-tabs">
       <button class="${ADMIN_TIER_TAB === 'jogos' ? 'on' : ''}" onclick="adminIrTierTab('jogos')">🎮 Jogos (${ADMIN_TIER.jogos.length})</button>
       <button class="${ADMIN_TIER_TAB === 'filmes' ? 'on' : ''}" onclick="adminIrTierTab('filmes')">🎬 Filmes (${ADMIN_TIER.filmes.length})</button>
+      <button class="${ADMIN_TIER_TAB === 'animes' ? 'on' : ''}" onclick="adminIrTierTab('animes')">🍥 Animes (${ADMIN_TIER.animes.length})</button>
     </div>
     ${barraSel}
     <div class="admin-card">
-      <h3>${ADMIN_TIER_TAB === 'jogos' ? '🎮 Jogos' : '🎬 Filmes'} <span class="cont">${lista.length} itens</span></h3>
+      <h3>${ADMIN_TIER_TAB === 'jogos' ? '🎮 Jogos' : ADMIN_TIER_TAB === 'filmes' ? '🎬 Filmes' : '🍥 Animes'} <span class="cont">${lista.length} itens</span></h3>
       <div>
         ${lista.length ? lista.map(itemHTML).join('') : '<div class="logs-empty"><b>Nenhum item ainda</b>Adiciona o primeiro.</div>'}
       </div>
       <div class="admin-actions">
         ${podeEditar && !ADMIN_MULTISEL.ativo && lista.length ? `<button class="admin-btn ghost" onclick="ativarMultiSel()">☑️ Selecionar vários</button>` : ''}
-        ${podeEditar ? `<button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : 'filme'}</button>` : ''}
+        ${podeEditar ? `<button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : ADMIN_TIER_TAB === 'filmes' ? 'filme' : 'anime'}</button>` : ''}
         ${botaoImport}
         ${botaoSync}
         <button class="admin-btn ghost" onclick="carregarAdminTierList()">🔄 Recarregar</button>
@@ -177,9 +180,10 @@ function abrirModalItemTier(i){
   const tipo = ADMIN_TIER_TAB;
   const lista = ADMIN_TIER[tipo];
   const ehNovo = (i === -1);
-  const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':'Na fila', nota:0, comentario:'', capa:null, appid:null, generos:[] } : lista[i];
-  const statusOpcoes = tipo === 'jogos' ? ['Jogando','Zerado','Dropado','Na fila'] : ['Assistindo','Assistido','Na fila'];
-  document.getElementById('dTitle').textContent = (ehNovo ? 'Adicionar ' : 'Editar ') + (tipo === 'jogos' ? 'jogo' : 'filme');
+  const it = ehNovo ? { nome:'', tier:'NR', status: tipo==='jogos'?'Jogando':tipo==='animes'?'Na fila':'Na fila', nota:0, comentario:'', capa:null, appid:null, generos:[] } : lista[i];
+  const statusOpcoes = tipo === 'jogos' ? ['Jogando','Zerado','Dropado','Na fila'] : ['Assistindo','Assistido','Dropado','Na fila'];
+  const singular = tipo === 'jogos' ? 'jogo' : tipo === 'filmes' ? 'filme' : 'anime';
+  document.getElementById('dTitle').textContent = (ehNovo ? 'Adicionar ' : 'Editar ') + singular;
   document.getElementById('dBody').innerHTML = `
     <div class="admin-form">
       <div>
@@ -216,8 +220,11 @@ function abrirModalItemTier(i){
               <input id="itemConqTot" type="number" min="0" value="${it.conquistas?.total || 0}" placeholder="50">
             </div>
           </div>
-        ` : `
+        ` : tipo === 'filmes' ? `
           <div><label>Duração (min)</label><input id="itemDuracao" type="number" min="0" value="${it.duracao || ''}"></div>
+          <div><label>Ano</label><input id="itemAno" type="number" min="1900" max="2100" value="${it.ano || ''}"></div>
+        ` : `
+          <div><label>Episódios da obra</label><input id="itemEpisodios" type="number" min="0" value="${it.episodios || ''}"></div>
           <div><label>Ano</label><input id="itemAno" type="number" min="1900" max="2100" value="${it.ano || ''}"></div>
         `}
       </div>
@@ -256,7 +263,7 @@ async function buscarItemAuto(){
   const tipo = ADMIN_TIER_TAB;
   status.textContent = '🔎 Buscando…';
   try{
-    const action = tipo === 'jogos' ? 'buscar-jogo' : 'buscar-filme';
+    const action = tipo === 'jogos' ? 'buscar-jogo' : tipo === 'filmes' ? 'buscar-filme' : 'buscar-anime';
     const r = await fetch(`/api/admin?action=${action}&nome=${encodeURIComponent(nome)}`);
     const d = await r.json();
     if(d.erro){ status.textContent = '⚠️ ' + d.erro; return; }
@@ -273,7 +280,8 @@ async function buscarItemAuto(){
     if(tipo === 'jogos'){
       if(d.sinopse && !document.getElementById('itemComentario').value) document.getElementById('itemComentario').value = d.sinopse;
     } else {
-      if(d.duracao && !document.getElementById('itemDuracao').value) document.getElementById('itemDuracao').value = d.duracao;
+      if(tipo === 'filmes' && d.duracao && !document.getElementById('itemDuracao').value) document.getElementById('itemDuracao').value = d.duracao;
+      if(tipo === 'animes' && d.episodios && !document.getElementById('itemEpisodios').value) document.getElementById('itemEpisodios').value = d.episodios;
       if(d.ano && !document.getElementById('itemAno').value) document.getElementById('itemAno').value = d.ano;
       if(d.sinopse && !document.getElementById('itemComentario').value) document.getElementById('itemComentario').value = d.sinopse;
     }
@@ -349,8 +357,12 @@ async function salvarItemTier(i){
     const o = Number(document.getElementById('itemConqObt').value) || 0;
     const t = Number(document.getElementById('itemConqTot').value) || 0;
     item.conquistas = (o || t) ? { obtidas: o, total: t } : null;
-  } else {
+  } else if(tipo === 'filmes') {
     item.duracao = Number(document.getElementById('itemDuracao').value) || null;
+    item.ano = Number(document.getElementById('itemAno').value) || null;
+  } else {
+    item.episodios = Number(document.getElementById('itemEpisodios').value) || null;
+    item.episodiosVistos = Number(anterior.episodiosVistos) || 0;
     item.ano = Number(document.getElementById('itemAno').value) || null;
   }
   const nova = ADMIN_TIER[tipo].slice();
@@ -377,7 +389,7 @@ async function salvarTierList(logAcao){
     const r = await fetch('/api/admin?action=tierlist-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jogos: ADMIN_TIER.jogos, filmes: ADMIN_TIER.filmes, logAcao })
+      body: JSON.stringify({ jogos: ADMIN_TIER.jogos, filmes: ADMIN_TIER.filmes, animes: ADMIN_TIER.animes, logAcao })
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
@@ -752,6 +764,7 @@ async function renderAdminAdmins(){
   area.innerHTML = adminVoltarHTML('👥 Admins') + `
     <div class="admin-card">
       <h3>👥 Administradores <span class="cont">${(dados.admins||[]).length}</span></h3>
+      <p class="admin-field-help">A pessoa precisa entrar no Arcade primeiro. Donos gerenciam Moderadores e Administradores; somente Devs podem gerenciar cargos de Dono ou Dev. O servidor confere essas regras em cada ação.</p>
       ${dados.admins && dados.admins.length ? `<div class="admin-votos">${adminsHTML}</div>` : '<div class="logs-empty"><b>Nenhum admin cadastrado</b>Adiciona o primeiro.</div>'}
       <div class="admin-actions">
         ${podeGerenciar ? `<button class="admin-btn" onclick="adicionarAdmin()">+ Adicionar admin</button>` : ''}
@@ -930,7 +943,7 @@ function adicionarAdmin(){
   document.getElementById('dTitle').textContent = 'Adicionar admin';
   document.getElementById('dBody').innerHTML = `
     <div class="admin-form">
-      <div><label>ID do Discord</label><input id="novoAdminId" type="text" placeholder="123456789012345678"></div>
+      <div><label>ID do jogador no Arcade</label><input id="novoAdminId" type="text" placeholder="ID numérico da conta"><small class="admin-field-help">A pessoa precisa entrar no site primeiro. Peça o ID que aparece em Perfil → Configurações; não use o nick. Dono pode administrar a equipe, mas não substitui o cargo Dev.</small></div>
       <div><label>Cargo</label>
         <select id="novoAdminCargo">
           <option value="moderador">🔰 Moderador</option>

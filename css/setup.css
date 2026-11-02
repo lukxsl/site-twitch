@@ -649,3 +649,9 @@
 
 #btnLukFala { animation: lukCall 3.2s ease-in-out infinite; }
 @keyframes lukCall { 0%, 88%, 100% { transform: none; } 92% { transform: rotate(-12deg) scale(1.1); } 96% { transform: rotate(10deg) scale(1.1); } }
+
+/* SETUP — sprite inteiro, com área de respiro e base limpa */
+.luk-character{width:clamp(42px,6.2%,88px);clip-path:inset(-700px -600px -180px -600px)}
+.luk-sprite{width:100%;height:auto;max-width:none;object-fit:contain;object-position:center bottom;image-rendering:pixelated}
+.luk-character::before{width:210%;top:48%;opacity:.8}
+@media(max-width:700px){.luk-character{width:clamp(38px,8%,72px)}}

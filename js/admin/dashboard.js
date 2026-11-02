@@ -25,9 +25,10 @@ async function renderAdminHome(){
   if(podeTier && shared.tier){
     const jg = (shared.tier.jogos || []).length;
     const fl = (shared.tier.filmes || []).length;
-    const total = jg + fl;
+    const an = (shared.tier.animes || []).length;
+    const total = jg + fl + an;
     const pulse = kpiChanged('tier', total);
-    kpis.push({ icon:'🎮', value: total, label:'itens', sub: `${jg} jogos · ${fl} filmes`, href:'tierlist', accent:'amber', pulse });
+    kpis.push({ icon:'🎮', value: total, label:'itens', sub: `${jg} jogos · ${fl} filmes · ${an} animes`, href:'tierlist', accent:'amber', pulse });
   }
   if(podeSug && shared.sugestoes){
     const total = (shared.sugestoes.itens || []).length;

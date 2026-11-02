@@ -41,6 +41,8 @@
   let loading = false;
   let loadAllRequestId = 0;
   let inventoryFilter = 'todos';
+  let inventoryPreviewChanges = {};
+  let inventoryPreviewLabel = '';
   let achievementFilter = 'andamento';
   let devInsights = null;
   let devInsightsError = '';
@@ -192,6 +194,7 @@
     const inventory = $('#pfInventoryGrid');
     if (inventory) inventory.replaceChildren(empty('Entre no Arcade para desbloquear e guardar peças.'));
     setText('pfInventoryCount', '0 itens');
+    renderInventoryPreview();
     const achievements = $('#pfAchievementsGrid');
     if (achievements) achievements.replaceChildren(empty('Entre no Arcade para começar a desbloquear conquistas.'));
     setText('pfAchievementProgress', '0 / 0');
@@ -304,6 +307,8 @@
     const ruleBox = $('#pfXpRules');
     if (ruleBox) {
       ruleBox.replaceChildren();
+      const intro = el('p', 'pf-xp-rules-intro', 'Você evolui participando do cantinho. Cada atividade tem um limite ou condição; os pontos são registrados pelo servidor.');
+      ruleBox.appendChild(intro);
       const rulesList = Array.isArray(rules.xp) ? rules.xp : [];
       const icons = ['🗳️', '💡', '✨', '📺', '🔥', '🔑', '⭐'];
       if (!rulesList.length) ruleBox.appendChild(empty('As atividades de XP não foram disponibilizadas pela API.'));
@@ -391,24 +396,69 @@
     return palettes[slot]?.[item.id] || null;
   }
 
+  function previewLook(){
+    const base = perfil?.boneco || catalogo?.padrao || window.PixelAvatar?.PADRAO || {};
+    return { ...base, ...inventoryPreviewChanges };
+  }
+
+  function renderInventoryPreview(){
+    const stage = $('#pfInventoryAvatarPreview');
+    if (!stage) return;
+    renderBoneco(stage, previewLook(), 'Provador do inventário', false);
+    setText('pfInventoryTryonLabel', inventoryPreviewLabel || (Object.keys(inventoryPreviewChanges).length
+      ? `${Object.keys(inventoryPreviewChanges).length} peça(s) na prévia · não salva automaticamente.`
+      : 'Seu visual atual. Escolha peças para montar um kit.'));
+    const reset = $('#pfInventoryPreviewReset');
+    if (reset) reset.disabled = !Object.keys(inventoryPreviewChanges).length;
+  }
+
   function miniaturaItem(slot, item) {
-    const preview = el('div', 'pf-item-preview');
-    const color = itemColor(slot, item);
-    if (color) {
-      const swatch = el('span', 'pf-item-swatch');
-      swatch.style.background = color;
-      swatch.style.color = color;
-      preview.appendChild(swatch);
-    } else {
-      preview.appendChild(el('span', 'pf-item-glyph', item.icone || SLOT_ICONS[slot] || '✦'));
-    }
+    const preview = el('div', 'pf-item-preview pf-item-preview-character');
+    const base = perfil?.boneco || catalogo?.padrao || window.PixelAvatar?.PADRAO || {};
+    const look = { ...base, [slot]: item.id };
+    const avatar = el('div', 'pf-item-avatar-thumb');
+    if (window.PixelAvatar?.render) {
+      try {
+        const svg = window.PixelAvatar.render(look, { label: `${item.nome || 'Item'} do inventário`, mini: false, animar: false });
+        const layersBySlot = {
+          base: ['px-corpo'], pele: ['px-corpo'], rosto: ['px-olhos', 'px-boca'],
+          cabelo: ['px-cabelo-tras', 'px-cabelo'], cabeloCor: ['px-cabelo-tras', 'px-cabelo'],
+          roupa: ['px-roupa'], roupaCor: ['px-roupa'], calcado: ['px-calcado'], calcadoCor: ['px-calcado'],
+          acessorio: ['px-acessorio'], acessorioCor: ['px-acessorio'],
+          efeito: ['px-fx-fundo', 'px-fx-frente'], moldura: ['px-moldura']
+        };
+        const layers = layersBySlot[slot];
+        if (svg && layers) {
+          [...svg.children].forEach(layer => {
+            const classes = [...layer.classList];
+            if (!layers.some(name => classes.includes(name))) layer.remove();
+          });
+          const viewBoxes = {
+            base: '2 4 20 31', pele: '2 4 20 31', rosto: '2 5 20 16',
+            cabelo: '0 0 24 20', cabeloCor: '0 0 24 20', roupa: '2 13 20 18', roupaCor: '2 13 20 18',
+            calcado: '2 26 20 10', calcadoCor: '2 26 20 10', acessorio: '0 0 24 36', acessorioCor: '0 0 24 36',
+            efeito: '0 0 24 36', moldura: '0 0 24 36'
+          };
+          svg.setAttribute('viewBox', viewBoxes[slot] || '0 0 24 36');
+          svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+          svg.classList.add('pf-piece-art');
+        }
+        if (svg && slot === 'animacao') svg.classList.add(`px-anim-${look.animacao || item.id}`);
+        if (svg) avatar.appendChild(svg);
+        else avatar.textContent = item.icone || '✦';
+      } catch (error) {
+        console.warn('[PerfilUI] Falha ao gerar miniatura da peça:', error);
+        avatar.textContent = item.icone || '✦';
+      }
+    } else avatar.textContent = item.icone || '✦';
+    preview.append(avatar, el('span', 'pf-item-slot-caption', SLOT_NAMES[slot] || slot));
     return preview;
   }
 
   function experimentarItem(slot, item) {
-    const tab = $(`[data-pf-tab="boneco"]`);
-    if (tab) tab.click();
-    window.dispatchEvent(new CustomEvent('soso:experimentar-item', { detail: { slot, id: item.id } }));
+    inventoryPreviewChanges = { ...inventoryPreviewChanges, [slot]: item.id };
+    inventoryPreviewLabel = `${item.nome || 'Peça'} adicionada à prévia. Você pode escolher outras peças para combinar.`;
+    renderInventoryPreview();
   }
 
   function itemCard(slot, item) {
@@ -425,8 +475,9 @@
     if (equipped) card.appendChild(el('span', 'pf-item-equipped', '✓ EQUIPADO NO PERSONAGEM'));
     else card.appendChild(el('p', 'pf-item-rule', item.regraTxt || 'Peça liberada para personalização.'));
     const actions = el('div', 'pf-item-actions');
-    const previewButton = button(equipped ? 'Já está no boneco' : 'Ver no boneco', 'pf-btn pf-btn-secondary', () => experimentarItem(slot, item));
-    previewButton.disabled = equipped;
+    const isPreviewed = inventoryPreviewChanges[slot] === item.id;
+    const previewButton = button(isPreviewed ? 'Na prévia ✓' : (equipped ? 'Visual atual' : 'Ver no boneco'), 'pf-btn pf-btn-secondary', () => experimentarItem(slot, item));
+    previewButton.setAttribute('aria-pressed', isPreviewed ? 'true' : 'false');
     actions.appendChild(previewButton);
     card.appendChild(actions);
     return card;
@@ -446,6 +497,7 @@
     const filtered = inventoryFilter === 'todos'
       ? owned
       : owned.filter(({ slot }) => SLOT_FILTER[slot] === inventoryFilter);
+    renderInventoryPreview();
     if (!filtered.length) {
       grid.appendChild(empty(owned.length
         ? 'Nenhuma peça dessa categoria foi desbloqueada ainda.'
@@ -487,7 +539,7 @@
     });
 
     let visible = [...achievements];
-    if (achievementFilter === 'andamento') visible = visible.filter(item => item.id !== 'platina' && !item.ts);
+    if (achievementFilter === 'andamento') visible = visible.filter(item => item.id === 'platina' ? !item.ts : !item.ts);
     if (achievementFilter === 'desbloqueadas') visible = visible.filter(item => !!item.ts);
     visible.sort((a, b) => {
       const aUnlocked = !!a.ts;
@@ -505,16 +557,17 @@
 
     if (!visible.length) {
       grid.appendChild(empty(achievementFilter === 'andamento'
-        ? 'Tudo em dia! Você já desbloqueou todas as conquistas disponíveis. 💜'
+        ? 'Tudo em dia! Você já desbloqueou todos os troféus disponíveis. A Platina aparece aqui quando completar a coleção. 💜'
         : 'Nenhuma conquista encontrada nesse filtro.'));
       return;
     }
 
     visible.forEach(achievement => {
       const unlocked = !!achievement.ts;
-      const progress = achievement.progresso || null;
-      const current = progress ? Math.max(0, Number(achievement.progressoAtual) || 0) : (unlocked ? 1 : 0);
-      const goal = progress ? Math.max(1, Number(progress.meta) || 1) : 1;
+      const isPlatinum = achievement.id === 'platina';
+      const progress = isPlatinum ? { unidade: 'troféus' } : (achievement.progresso || null);
+      const current = isPlatinum ? unlockedCount : (progress ? Math.max(0, Number(achievement.progressoAtual) || 0) : (unlocked ? 1 : 0));
+      const goal = isPlatinum ? Math.max(1, normal.length) : (progress ? Math.max(1, Number(progress.meta) || 1) : 1);
       const percent = Math.max(0, Math.min(100, Math.round(current / goal * 100)));
       const rarity = String(achievement.r || 'comum').toLowerCase();
       const card = el('article', `pf-achievement-card rarity-${rarity}${unlocked ? ' is-unlocked' : ' is-locked'}${achievement.id === 'platina' ? ' is-platinum' : ''}`);
@@ -529,7 +582,7 @@
       if (progress && !unlocked) {
         const wrap = el('div', 'pf-achievement-progress');
         const meta = el('div', 'pf-achievement-progress-meta');
-        const amount = progress.unidade === 'horas'
+        const amount = isPlatinum ? `${current} / ${goal} troféus` : progress.unidade === 'horas'
           ? `${current.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} / ${goal}h`
           : `${money(Math.floor(current))} / ${money(goal)} ${progress.unidade || ''}`.trim();
         meta.append(el('span', '', 'PROGRESSO'), el('strong', '', amount));
@@ -568,6 +621,9 @@
     const legacyDiscord = user.tipo === 'discord';
     const loggedIn = !!user.id;
     setText('pfSettingsEmail', user.email || 'E-mail não vinculado');
+    const playerId = perfil?.id || user.id || '';
+    setText('pfSettingsPlayerId', playerId || 'Entre para ver seu ID');
+    const copyId = $('#pfCopyPlayerId'); if (copyId) copyId.disabled = !playerId;
     setText('pfSettingsAccount', user.metodoLogin === 'google'
       ? 'Google'
       : (legacyDiscord ? 'Discord antigo — migração necessária' : (loggedIn ? 'Conta antiga / senha' : 'Não conectado')));
@@ -952,6 +1008,19 @@
       inventoryFilter = event.target.value || 'todos';
       renderInventory();
     });
+    $('#pfInventoryPreviewReset')?.addEventListener('click', () => {
+      inventoryPreviewChanges = {}; inventoryPreviewLabel = ''; renderInventory();
+    });
+    $('#pfInventoryEditLook')?.addEventListener('click', () => {
+      const tab = $('[data-pf-tab="boneco"]');
+      if (tab) tab.click();
+      const changes = Object.entries(inventoryPreviewChanges);
+      changes.forEach(([slot, id], index) => window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('soso:experimentar-item', { detail: { slot, id } }));
+      }, index * 240));
+      if (!changes.length) window.dispatchEvent(new CustomEvent('soso:boneco-open'));
+    });
+
 
     $('#pfAchievementFilters')?.addEventListener('click', event => {
       const target = event.target.closest('[data-achievement-filter]');
@@ -987,6 +1056,7 @@
     });
 
     $('#pfSettingsLogout')?.addEventListener('click', () => window.sair?.());
+    $('#pfCopyPlayerId')?.addEventListener('click', async () => { const id = String(perfil?.id || usuarioAtual()?.id || ''); if(!id) return; try { await navigator.clipboard.writeText(id); notify('ID copiado!','ok'); } catch(e) { notify('Não consegui copiar o ID neste navegador.','warn'); } });
     $('#pfDevRefresh')?.addEventListener('click', () => loadDevInsights(true));
     $('#pfGoogleLink')?.addEventListener('click', event => {
       event.preventDefault();

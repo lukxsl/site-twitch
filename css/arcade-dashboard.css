@@ -20,3 +20,35 @@
 .nav-mini-avatar{display:grid;place-items:center;overflow:hidden}.nav-mini-avatar svg{width:100%;height:100%;image-rendering:pixelated;animation:miniAvatarIdle 3s ease-in-out infinite}.nav-mini-avatar:not(.is-empty){border-color:rgba(192,132,252,.55);box-shadow:0 0 18px rgba(168,85,247,.25)}@keyframes miniAvatarIdle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 @media(max-width:900px){.pf-overview-extras{grid-template-columns:1fr}.ranking-layout{grid-template-columns:1fr}.ranking-toolbar{align-items:flex-start;flex-direction:column}.pf-settings-grid{grid-template-columns:1fr}.pf-settings-twitch{grid-column:auto}}
 @media(max-width:560px){.pf-panel-heading{align-items:flex-start;flex-direction:column;padding:17px}.pf-item-grid,.pf-achievement-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.pf-item-card{min-height:230px;padding:11px}.pf-item-preview{height:68px}.ranking-podium{gap:6px}.podium-item{min-height:185px;padding:12px 5px}.podium-item.podium-1st{min-height:215px}.podium-nick{font-size:.75rem}.ranking-item{grid-template-columns:32px 32px minmax(0,1fr) 48px}.ranking-mini-xp{display:none}.pf-profile-ranking-row{grid-template-columns:32px 30px minmax(0,1fr) 46px}.pf-profile-rank-xp{display:none}.pf-banner-chip{display:none}}
+
+
+/* ============================================================
+   RANKING — FOTOGRAFIA + BONECO, DADOS EM CAMADAS
+   ============================================================ */
+#sec-ranking .ranking-shell{gap:18px}
+#sec-ranking .ranking-toolbar{align-items:center;padding:20px 22px}
+#sec-ranking .ranking-podium{max-width:920px;gap:16px;align-items:end}
+#sec-ranking .podium-item{min-width:0;min-height:235px;border-radius:18px;padding:18px 12px;background:radial-gradient(ellipse at 50% 0,rgba(168,85,247,.18),transparent 65%),linear-gradient(160deg,rgba(35,20,57,.97),rgba(13,8,24,.99))}
+#sec-ranking .podium-item.podium-1st{min-height:270px;border-color:rgba(250,204,21,.4)}
+#sec-ranking .ranking-avatar-art{position:relative;display:grid;place-items:end center;flex:none;width:48px;height:54px;overflow:hidden;border:1px solid rgba(192,132,252,.3);border-radius:12px;background:radial-gradient(circle at 50% 35%,rgba(192,132,252,.2),transparent 70%),#130b22}
+#sec-ranking .ranking-avatar-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.62}
+#sec-ranking .ranking-avatar-character{position:absolute;inset:auto 0 0;display:grid;place-items:end center;width:100%;height:92%;filter:drop-shadow(0 3px 5px rgba(0,0,0,.55))}
+#sec-ranking .ranking-avatar-character svg{display:block;width:84%;height:100%;object-fit:contain;image-rendering:pixelated}
+#sec-ranking .podium-item .ranking-avatar-art{width:86px;height:100px;margin:0 auto 10px;border-radius:18px}
+#sec-ranking .podium-item.podium-1st .ranking-avatar-art{width:98px;height:112px}
+#sec-ranking .podium-item .ranking-avatar-photo{opacity:.74}
+#sec-ranking .podium-item .ranking-avatar-character svg{width:90%}
+#sec-ranking .ranking-item{grid-template-columns:42px 46px minmax(0,1fr) 64px minmax(76px,100px);min-width:0;border-radius:12px}
+#sec-ranking .ranking-nick{font-weight:800;font-size:.86rem}
+#sec-ranking .ranking-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sec-ranking .ranking-mini-xp{font-weight:800}
+#sec-ranking .ranking-your-card{padding:16px;border:1px solid rgba(168,85,247,.2);border-radius:15px;background:linear-gradient(150deg,rgba(29,17,49,.96),rgba(13,8,24,.98))}
+#sec-ranking .ranking-your-header .ranking-avatar-art{width:64px;height:72px}
+@media(max-width:760px){
+  #sec-ranking .ranking-toolbar{align-items:flex-start;flex-direction:column}
+  #sec-ranking .ranking-podium{gap:7px}
+  #sec-ranking .podium-item,#sec-ranking .podium-item.podium-1st{min-height:190px;padding:12px 6px}
+  #sec-ranking .podium-item .ranking-avatar-art{width:58px;height:70px}
+  #sec-ranking .ranking-item{grid-template-columns:30px 38px minmax(0,1fr) 54px;gap:6px;padding:9px 7px}
+  #sec-ranking .ranking-mini-xp{grid-column:3/5;text-align:left}
+}
