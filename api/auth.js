@@ -10,7 +10,7 @@
 //   POST /api/auth?action=change-password   { atual, nova }
 //   POST /api/auth?action=change-nick       { nick }
 //   GET  /api/auth?action=twitch-link       → redireciona para a Twitch
-//   GET  /api/auth?action=twitch-callback   (retorno da Twitch)
+//   GET  /api/twitch-callback               (retorno da Twitch; compatível também com a rota antiga)
 //   POST /api/auth?action=twitch-unlink
 //   GET  /api/auth?action=discord-login     (legado — mantém votos/admins antigos)
 //
@@ -22,12 +22,12 @@ import {
   addCookie, pegarCookie, hashSenha, conferirSenha, safeStr, RE_USUARIO, nickValido, cargoDe, SITE
 } from './_lib/core.js';
 import { evento, avaliarConquistas, lerStats, validarBoneco, BONECO_PADRAO } from './_lib/game.js';
-import { urlVinculo, identificarViewer, twitchConfigurada } from './_lib/twitch.js';
+import { urlVinculo, identificarViewer, twitchConfigurada, urlAutorizacaoBroadcaster, concluirAutorizacaoBroadcaster } from './_lib/twitch.js';
 import gameHandler from './_lib/game-api.js';
 
 /* Ações do jogo atendidas por api/_lib/game-api.js (delegadas aqui para
    não criar uma nova função serverless na raiz de /api). */
-const ACOES_JOGO = ['catalogo', 'ranking', 'perfil', 'resgatar', 'comprar', 'titulo', 'notif-lidas', 'cron-presenca', 'dev-insights'];
+const ACOES_JOGO = ['catalogo', 'ranking', 'perfil', 'resgatar', 'comprar', 'titulo', 'notif-lidas', 'cron-presenca', 'dev-insights', 'twitch-presence-test'];
 
 const DISCORD_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET;
@@ -35,7 +35,14 @@ const DISCORD_REDIRECT = `${SITE}/api/auth`;                     // legado: cont
 const GOOGLE_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT = process.env.GOOGLE_REDIRECT_URI || `${SITE.replace(/\/+$/, '')}/api/auth?action=google-callback`;
-const TWITCH_REDIRECT = `${SITE}/api/auth?action=twitch-callback`; // cadastre este na dev.twitch.tv
+const TWITCH_REDIRECT = String(process.env.TWITCH_REDIRECT_URI || `${SITE}/api/twitch-callback`).trim().replace(/\/+$/, ''); // precisa ser idêntico ao Redirect URL no Twitch Developers
+
+const CONSUMIR_ESTADO_TWITCH_LUA = `
+local value = redis.call('GET', KEYS[1])
+if not value then return nil end
+redis.call('DEL', KEYS[1])
+return value
+`;
 
 const ERRO_LOGIN = 'Usuário ou senha incorretos.';
 const DIA = 86400;
@@ -410,24 +417,69 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, nick });
     }
 
-    /* ====================== TWITCH: VINCULAR ====================== */
+    /* ====================== TWITCH: LINK ADMINISTRATIVO ====================== */
+    // Um DEV gera um link de uso único para a broadcaster. Ela não precisa entrar
+    // no site: apenas autoriza a aplicação na Twitch; o token vai direto ao Redis.
+    if(action === 'twitch-broadcaster-link' && req.method === 'POST'){
+      if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida. Abra o painel pelo domínio oficial.' });
+      const { conta } = await contaDaSessao(req);
+      if(!conta) return res.status(401).json({ error: 'Entre com sua conta DEV para gerar o link.' });
+      const email = String(conta.google?.email || conta.email || '').trim().toLowerCase();
+      if((await cargoDe(conta.id, email)) !== 'dev') return res.status(403).json({ error: 'Apenas a equipe DEV pode gerar este link.' });
+      if(!twitchConfigurada()) return res.status(503).json({ error: 'Configure TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET na Vercel.' });
+      if(!(await rateLimit(`rl:twitch:bc-link:${conta.id}`, 5, 3600))) return res.status(429).json({ error: 'Limite de links atingido. Aguarde uma hora.' });
+      const state = randomBytes(32).toString('hex');
+      const { url, broadcaster } = await urlAutorizacaoBroadcaster(TWITCH_REDIRECT, state);
+      await redis([['SET', `twitch:bc:oauth:${state}`, JSON.stringify({ expectedUserId: broadcaster.id, login: broadcaster.login, createdBy: String(conta.id), createdAt: Date.now() }), 'EX', '900']]);
+      return res.status(200).json({ ok: true, url, expiresIn: 900, broadcasterLogin: broadcaster.login, callbackUrl: TWITCH_REDIRECT });
+    }
+
+    /* ====================== TWITCH: VINCULAR CONTA DE JOGADOR ====================== */
     if(action === 'twitch-link'){
       const { conta } = await contaDaSessao(req);
       if(!conta) { res.writeHead(302, { Location: '/?entrar=1' }); return res.end(); }
       if(!twitchConfigurada()) return res.status(500).json({ error: 'Twitch OAuth não configurado' });
-      const state = randomBytes(16).toString('hex');
+      const state = randomBytes(24).toString('hex');
       addCookie(res, `twitch_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
       res.writeHead(302, { Location: urlVinculo(TWITCH_REDIRECT, state) });
       return res.end();
     }
 
     if(action === 'twitch-callback'){
+      const { code, state, error } = req.query || {};
+      const stateValue = String(state || '');
+      // Primeiro tenta consumir um estado de autorização da broadcaster (sem sessão site).
+      if(/^[a-f0-9]{64}$/i.test(stateValue)){
+        const stateKey = `twitch:bc:oauth:${stateValue}`;
+        const [pendingRaw] = await redis([['EVAL', CONSUMIR_ESTADO_TWITCH_LUA, '1', stateKey]]);
+        const pending = jparse(pendingRaw, null);
+        if(pending){
+          if(error || !code){
+            res.writeHead(302, { Location: `${SITE}/?twitch-channel=cancelado` });
+            return res.end();
+          }
+          try {
+            const authorized = await concluirAutorizacaoBroadcaster(String(code), TWITCH_REDIRECT, pending.expectedUserId);
+            await redis([['SET', 'twitch:presence:last-run', JSON.stringify({ status: 'authorized', at: Date.now(), login: authorized.login }) , 'EX', '2592000']]);
+            res.writeHead(302, { Location: `${SITE}/?twitch-channel=ok` });
+            return res.end();
+          } catch(authorizationError) {
+            console.error('[Twitch broadcaster OAuth]', authorizationError?.message || authorizationError);
+            const wrongAccount = /conta autorizada|canal esperado/i.test(String(authorizationError?.message || ''));
+            res.writeHead(302, { Location: `${SITE}/?twitch-channel=${wrongAccount ? 'conta-errada' : 'erro'}` });
+            return res.end();
+          }
+        }
+        res.writeHead(302, { Location: `${SITE}/?twitch-channel=expirado` });
+        return res.end();
+      }
+
+      // Fluxo original de vínculo individual dos jogadores, protegido por cookie/state.
       const { conta } = await contaDaSessao(req);
       if(!conta) { res.writeHead(302, { Location: '/?entrar=1' }); return res.end(); }
-      const { code, state, error } = req.query || {};
       if(error) { res.writeHead(302, { Location: '/?twitch=cancelado' }); return res.end(); }
       if(!code || !state || pegarCookie(req, 'twitch_state') !== state)
-        return res.status(400).json({ error: 'State inválido (CSRF?)' });
+        return res.status(400).json({ error: 'State inválido. Volte ao site e tente vincular a Twitch novamente.' });
       addCookie(res, 'twitch_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
 
       const tw = await identificarViewer(String(code), TWITCH_REDIRECT);
@@ -441,7 +493,7 @@ export default async function handler(req, res){
       conta.twitch = { id: tw.id, login: tw.login, nome: tw.nome, desde: Date.now() };
       await salvarConta(conta);
       await redis([['HSET', 'twitch_idx', tw.id, conta.id]]);
-      await evento(conta.id, 'vincular_twitch', tw.id);   // paga uma vez por conta da Twitch
+      await evento(conta.id, 'vincular_twitch', tw.id);
       res.writeHead(302, { Location: '/?twitch=ok' });
       return res.end();
     }

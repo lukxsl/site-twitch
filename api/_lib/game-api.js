@@ -20,7 +20,7 @@ import {
   catalogoPublico, acharItem, precoDe, infoNivel, lerStats, contarItens, itemLiberado, titulosDe,
   validarBoneco, notificar, lerNotificacoes, avaliarConquistas, xpDoNivel, nivelPorXP, CATALOGO, VERSAO_CONQUISTAS
 } from './game.js';
-import { cronPresenca, diagnosticoTwitchPresenca } from './twitch.js';
+import { cronPresenca, diagnosticoTwitchPresenca, testarTwitchPresenca } from './twitch.js';
 
 /* sessão válida (para contas próprias confere a versão → senha trocada derruba o resto) */
 async function sessaoValida(req){
@@ -157,14 +157,17 @@ async function seFetch(path){
   });
   const raw = await response.text();
   let data=null; try{data=raw?JSON.parse(raw):null;}catch{}
-  if(!response.ok) throw new Error(`StreamElements HTTP ${response.status} em ${path}`);
+  if(!response.ok){
+    const detalhe = data?.error || data?.message || data?.msg || data?.detail || null;
+    throw new Error(`StreamElements HTTP ${response.status} em ${path}${detalhe ? `: ${String(detalhe).slice(0, 220)}` : ''}`);
+  }
   if(raw && data===null) throw new Error(`Resposta inválida do StreamElements em ${path}`);
   return data;
 }
 async function seChannelId(){
   if(seChannelCache.id && Date.now()<seChannelCache.expiresAt) return seChannelCache.id;
   const me=await seFetch('/channels/me');
-  const id=me?._id || me?.id || me?.channel?._id;
+  const id=me?._id || me?.id || me?.channel?._id || me?.channel?.id;
   if(!id) throw new Error('O StreamElements não retornou o ID do canal em /channels/me.');
   seChannelCache={id:String(id),expiresAt:Date.now()+15*60*1000};
   return seChannelCache.id;
@@ -302,8 +305,17 @@ async function twitchLiveStatus(){
   }catch(e){return {configured:true,online:null,error:e.message||'Falha ao consultar a Twitch.'};}
 }
 async function streamElementsInsights(){
-  if(!SE_JWT) return {configured:false,error:'STREAMELEMENTS_JWT não configurado no ambiente da Vercel.'};
-  const channelId=await seChannelId();
+  if(!SE_JWT) return {configured:false,connected:false,error:'STREAMELEMENTS_JWT não configurado no ambiente da Vercel.'};
+  let channelId;
+  try {
+    channelId=await seChannelId();
+  } catch(error) {
+    return {
+      configured:true, connected:false, channelId:null,
+      error:String(error?.message || 'Não foi possível identificar o canal no StreamElements.'),
+      hint:'Confira se STREAMELEMENTS_JWT é o JWT da conta/canal asemtet0 e se o token ainda está válido. O diagnóstico não mostra nem registra o segredo.'
+    };
+  }
   const [watchResult,pointsResult,subsResult,tipsResult]=await Promise.allSettled([
     sePages(`/points/${encodeURIComponent(channelId)}/watchtime`,20),
     seFetch(`/points/${encodeURIComponent(channelId)}/top?limit=10&offset=0`),
@@ -340,7 +352,7 @@ async function streamElementsInsights(){
     .filter(row=>Number.isFinite(row.points)).sort((a,b)=>b.points-a.points);
   const watchSorted=parsedWatch.sort((a,b)=>b.minutos-a.minutos);
   return {
-    configured:true,channelId,
+    configured:true,connected:true,channelId,
     watchtime:{summary:roundSummary(summary(watchValues),60),sampled:parsedWatch.length,rowsReceived:watch.rows.length,complete:watch.complete,totalReported:watch.total,unparsed:watch.rows.length-parsedWatch.length,numericUnit:SE_WATCHTIME_NUMERIC_UNIT||null,fieldShapeSample:watchShape,leaderboard:watchSorted.slice(0,10).map((row,i)=>({pos:i+1,nome:row.nome||'Viewer',horas:Math.round(row.minutos/60*10)/10}))},
     points:{leaderboard:pointsSorted.slice(0,10).map((row,i)=>({pos:i+1,...row})),rowsReceived:points.length},
     subscribers:{activeTotal:subsPage.complete?activeSubscribers:null,activeInFetchedPages:activeSubscribers,sampleCount:subsPage.rows.length,complete:subsPage.complete,totalReported:totalSubsApi??subsPage.total},
@@ -352,7 +364,7 @@ async function carregarDevInsights(force = false){
   if(!force && seDevCache.data && Date.now()<seDevCache.expiresAt) return {...seDevCache.data,cached:true};
   const [arcade,se,live,twitchPresence]=await Promise.allSettled([arcadeCommunitySample(),streamElementsInsights(),twitchLiveStatus(),diagnosticoTwitchPresenca()]);
   const arcadeData=arcade.status==='fulfilled'?arcade.value:{error:String(arcade.reason?.message||arcade.reason)};
-  const seData=se.status==='fulfilled'?se.value:{configured:!!SE_JWT,error:String(se.reason?.message||se.reason)};
+  const seData=se.status==='fulfilled'?se.value:{configured:!!SE_JWT,connected:false,error:String(se.reason?.message||se.reason),hint:'Falha durante a leitura do StreamElements.'};
   const liveData=live.status==='fulfilled'?live.value:{configured:false,online:null,error:String(live.reason?.message||live.reason)};
   const presenceData=twitchPresence.status==='fulfilled'?twitchPresence.value:{ready:false,error:String(twitchPresence.reason?.message||twitchPresence.reason)};
   const h=seData.watchtime?.summary;
@@ -371,7 +383,15 @@ export default async function handler(req, res){
       if(!segredo) return res.status(500).json({ error: 'CRON_SECRET não configurado' });
       const a = Buffer.from(req.headers.authorization || ''), b = Buffer.from(`Bearer ${segredo}`);
       if(a.length !== b.length || !timingSafeEqual(a, b)) return res.status(401).json({ error: 'Não autorizado' });
-      return res.status(200).json(await cronPresenca());
+      try {
+        const result = await cronPresenca();
+        await redis([['SET', 'twitch:presence:last-run', JSON.stringify({status:'ok',at:Date.now(),result}), 'EX', '2592000']]);
+        return res.status(200).json(result);
+      } catch(error) {
+        await redis([['SET', 'twitch:presence:last-run', JSON.stringify({status:'error',at:Date.now(),message:String(error?.message||'Falha no cron de presença').slice(0,300)}), 'EX', '2592000']]).catch(()=>{});
+        console.error('[Arcade cron-presenca]', error?.message || error);
+        return res.status(500).json({error:String(error?.message || 'Falha no cron de presença')});
+      }
     }
 
     /* ============ CATÁLOGO (público) ============ */
@@ -430,6 +450,22 @@ export default async function handler(req, res){
       if(!ehDev) return res.status(403).json({error:'Acesso restrito à equipe de desenvolvimento.'});
       res.setHeader('Cache-Control','no-store');
       return res.status(200).json(await carregarDevInsights(req.query?.force === '1'));
+    }
+
+    /* Teste real da conexão Twitch sem distribuir XP, moedas ou presença. */
+    if(action === 'twitch-presence-test'){
+      if(req.method !== 'POST') return res.status(405).json({error:'Método não permitido.'});
+      if(!ehDev) return res.status(403).json({error:'Acesso restrito à equipe de desenvolvimento.'});
+      if(!origemOk(req)) return res.status(403).json({error:'Origem inválida.'});
+      try {
+        const result = await testarTwitchPresenca();
+        await redis([['SET','twitch:presence:last-run',JSON.stringify({status:result.ok?'test-ok':'test-error',at:Date.now(),result}), 'EX','2592000']]);
+        return res.status(200).json(result);
+      } catch(error) {
+        const message=String(error?.message || 'Falha ao testar a conexão Twitch.').slice(0,320);
+        await redis([['SET','twitch:presence:last-run',JSON.stringify({status:'test-error',at:Date.now(),message}), 'EX','2592000']]).catch(()=>{});
+        return res.status(400).json({error:message});
+      }
     }
 
     /* ============ PERFIL ============ */

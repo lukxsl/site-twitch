@@ -16,7 +16,7 @@ export const ENV = {
 
 export const COOKIE_NAME = 'sessao_site';
 export const DIAS_SESSAO = 30;
-export const SITE = process.env.SITE_URL || 'https://asemtet0.vercel.app';
+export const SITE = String(process.env.SITE_URL || 'https://asemtet0.vercel.app').trim().replace(/\/+$/, '');
 
 /* ---------------- Redis (REST pipeline) ---------------- */
 export async function redis(cmds){

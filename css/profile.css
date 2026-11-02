@@ -981,7 +981,7 @@
 }
 
 
-/* ===== BLOCO DO PERFIL INTEGRADO (antigo profile-new.css) ===== */
+/* ===== BLOCO DO PERFIL INTEGRADO ===== */
 /* ============================================================
    NOVO PERFIL UI — estilos para as novas abas e componentes
    ============================================================ */
@@ -2999,3 +2999,14 @@
   #sec-perfil .pf-panel{animation:none}
   #sec-perfil *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
+
+
+/* Diagnóstico DEV: autorização OAuth temporária e testes seguros */
+.pf-dev-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;margin-top:12px}
+.pf-dev-link-box{flex:1 1 100%;min-width:0;padding:12px;border:1px solid rgba(168,85,247,.24);border-radius:11px;background:rgba(168,85,247,.055)}
+.pf-dev-link-label{display:block;margin-bottom:7px;color:#e9d5ff;font-size:.72rem;font-weight:700}
+.pf-dev-copy-row{display:flex;gap:8px;min-width:0}
+.pf-dev-copy-input{flex:1;min-width:0;width:100%;height:38px;padding:8px 10px;border:1px solid rgba(168,85,247,.3);border-radius:8px;background:rgba(5,3,12,.8);color:#ddd6fe;font:11px 'JetBrains Mono',monospace;outline:none}
+.pf-dev-copy-input:focus{border-color:#c084fc;box-shadow:0 0 0 2px rgba(192,132,252,.14)}
+.pf-dev-test-output{flex:1 1 100%;margin:0;color:var(--dim);font-size:.74rem;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:540px){.pf-dev-copy-row{flex-direction:column}.pf-dev-copy-row>.pf-btn{width:100%}.pf-dev-actions>.pf-btn{width:100%}}

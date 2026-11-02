@@ -79,8 +79,35 @@
     } else if(params.get('login') && params.get('login')!=='ok'){
       setTimeout(()=>window.toast?.('Não foi possível concluir o acesso Google. Tente novamente.','erro'),80);
     }
+    const twitchChannel = params.get('twitch-channel');
+    if (twitchChannel) {
+      const messages = {
+        ok: ['Autorização da Twitch concluída. O token foi salvo com segurança no servidor.', 'ok'],
+        cancelado: ['A autorização da Twitch foi cancelada. Nenhuma alteração foi feita.', 'info'],
+        'conta-errada': ['A conta Twitch autorizada não é @asemtet0. Abra o link com a conta correta.', 'erro'],
+        erro: ['Não foi possível concluir a autorização da Twitch. Gere um novo link no Diagnóstico DEV.', 'erro'],
+        expirado: ['Este link de autorização expirou ou já foi usado. Gere um novo no Diagnóstico DEV.', 'erro']
+      };
+      const [message, type] = messages[twitchChannel] || ['Retorno da Twitch recebido.', 'info'];
+      setTimeout(() => window.toast?.(message, type), 120);
+      params.delete('twitch-channel');
+    }
+    const twitchPlayer = params.get('twitch');
+    if (twitchPlayer) {
+      const messages = {
+        ok: ['Sua conta Twitch foi vinculada ao perfil.', 'ok'],
+        cancelado: ['A vinculação da Twitch foi cancelada.', 'info'],
+        erro: ['Não foi possível vincular sua Twitch. Tente novamente.', 'erro'],
+        'em-uso': ['Esta conta Twitch já está vinculada a outro perfil.', 'erro']
+      };
+      const [message, type] = messages[twitchPlayer] || ['Não foi possível concluir a vinculação Twitch.', 'erro'];
+      setTimeout(() => window.toast?.(message, type), 120);
+      params.delete('twitch');
+    }
     if(['entrar','login','novo','vinculado'].some(k=>params.has(k))){
       ['entrar','login','novo','vinculado'].forEach(k=>params.delete(k));
+    }
+    if(twitchChannel || twitchPlayer || ['entrar','login','novo','vinculado'].some(k=>new URLSearchParams(location.search).has(k))){
       const q=params.toString(); history.replaceState(null,'',location.pathname+(q?'?'+q:'')+(location.hash||''));
     }
   }

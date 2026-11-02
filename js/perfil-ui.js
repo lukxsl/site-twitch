@@ -680,12 +680,18 @@
     const streamElements = devInsights.streamElements || {};
     const watch = streamElements.watchtime || {};
     const summary = watch.summary || {};
-    const seDescription = streamElements.configured
-      ? `Canal ${streamElements.channelId || 'não informado'} · ${money(watch.sampled)} viewers com watchtime interpretado · ${watch.complete ? 'paginação completa' : 'amostra limitada'}`
-      : (streamElements.error || 'StreamElements não configurado.');
+    const seDescription = !streamElements.configured
+      ? (streamElements.error || 'Token do StreamElements não configurado.')
+      : (streamElements.connected === false
+        ? 'O token está cadastrado, mas o servidor não conseguiu consultar o canal.'
+        : `Canal ${streamElements.channelId || 'identificado'} · ${money(watch.sampled)} viewers com watchtime interpretado · ${watch.complete ? 'paginação completa' : 'amostra limitada'}`);
     const seCard = devSection('StreamElements', seDescription);
     if (!streamElements.configured) {
-      seCard.appendChild(el('p', 'pf-dev-warning', 'Configure STREAMELEMENTS_JWT nas variáveis de ambiente da Vercel para habilitar estas métricas.'));
+      seCard.appendChild(el('p', 'pf-dev-warning', streamElements.error || 'Configure STREAMELEMENTS_JWT nas variáveis de ambiente da Vercel.'));
+    } else if (streamElements.connected === false) {
+      seCard.appendChild(el('p', 'pf-dev-warning', `Falha de conexão: ${streamElements.error || 'erro não informado'}`));
+      if (streamElements.hint) seCard.appendChild(el('p', 'pf-dev-footnote', streamElements.hint));
+      seCard.appendChild(el('p', 'pf-dev-footnote', 'O token não é exibido nem enviado ao navegador. Não é necessário pedir outro token antes de investigar esta mensagem.'));
     } else {
       const subscribers = streamElements.subscribers || {};
       const donations = streamElements.donations || {};
@@ -720,7 +726,7 @@
           seCard.appendChild(sample);
         }
       }
-      if (!subscribers.complete || !donations.complete) {
+      if ((!subscribers.complete && !streamElements.errors?.subscribers) || (!donations.complete && !streamElements.errors?.tips)) {
         seCard.appendChild(el('p', 'pf-dev-warning', 'A leitura de inscritos ou doações atingiu o limite de paginação. Esses números representam a amostra lida, não necessariamente o total do canal.'));
       }
       const sourceErrors = Object.entries(streamElements.errors || {}).filter(([, message]) => message);
@@ -742,20 +748,97 @@
     // Configuração usada pelo cron que contabiliza a presença dos espectadores.
     const presence = devInsights.twitchPresence || {};
     const presenceCard = devSection('Contabilização de presença nas lives', presence.pronta
-      ? 'As variáveis básicas estão presentes. A validação final depende do escopo OAuth do token e de uma execução real do agendador.'
-      : 'A presença só é contabilizada quando todas as credenciais abaixo estão configuradas.');
+      ? `Canal @${presence.broadcasterLogin || 'asemtet0'} identificado. ${presence.broadcasterRefreshToken ? 'Autorização da Twitch armazenada no servidor.' : 'Falta autorizar o canal.'}`
+      : 'O aplicativo será identificado automaticamente. A leitura de participantes exige uma autorização da broadcaster.');
+    const scopeLabel = presence.scopeOk === true ? 'Permissão confirmada' : (presence.scopeOk === false ? 'Permissão ausente' : 'Ainda não verificada');
     const presenceGrid = el('div', 'pf-dev-stat-grid');
     presenceGrid.append(
       statTile('App Twitch', presence.clientCredentials ? 'Configurado' : 'Pendente', 'TWITCH_CLIENT_ID + TWITCH_CLIENT_SECRET'),
-      statTile('ID do canal', presence.broadcasterId ? 'Configurado' : 'Pendente', 'TWITCH_BROADCASTER_ID'),
-      statTile('Token do canal', presence.broadcasterRefreshToken ? 'Disponível' : 'Pendente', 'TWITCH_BROADCASTER_REFRESH ou token salvo no Redis'),
-      statTile('Token de acesso', presence.accessTokenEmCache ? 'Em cache' : 'Será renovado', 'Acesso temporário da Twitch')
+      statTile('Canal', presence.broadcasterId ? `@${presence.broadcasterLogin || 'asemtet0'}` : 'Não identificado', presence.broadcasterUserId ? `ID ${presence.broadcasterUserId}` : 'Identificado pelo login público'),
+      statTile('Autorização da Soso', presence.broadcasterRefreshToken ? 'Salva no servidor' : 'Aguardando', 'O token fica somente no Redis'),
+      statTile('Permissão do chat', scopeLabel, presence.scopeNecessario || 'moderator:read:chatters'),
+      statTile('Token temporário', presence.accessTokenEmCache ? 'Em cache' : 'Gerado sob demanda', 'Renovado automaticamente pelo servidor')
     );
     presenceCard.appendChild(presenceGrid);
-    if (!presence.pronta) {
-      presenceCard.appendChild(el('p', 'pf-dev-warning', presence.error || 'Configure as variáveis pendentes na Vercel antes de testar a presença.'));
+    if (presence.broadcasterError) presenceCard.appendChild(el('p', 'pf-dev-warning', `Não foi possível identificar o canal: ${presence.broadcasterError}`));
+    if (presence.lastCron?.status === 'error' || presence.lastCron?.status === 'test-error') {
+      presenceCard.appendChild(el('p', 'pf-dev-warning', `Última falha (${new Date(presence.lastCron.at || Date.now()).toLocaleString('pt-BR')}): ${presence.lastCron.message || presence.lastCron.result?.message || 'erro não detalhado'}`));
+    } else if (presence.lastCron?.at) {
+      presenceCard.appendChild(el('p', 'pf-dev-footnote', `Última execução/teste: ${new Date(presence.lastCron.at).toLocaleString('pt-BR')} · ${presence.lastCron.status || 'registrada'}`));
     }
-    presenceCard.appendChild(el('p', 'pf-dev-footnote', `O token do canal precisa ter o escopo OAuth ${presence.scopeNecessario || 'moderator:read:chatters'}. O agendador também precisa chamar /api/game?action=cron-presenca a cada 5 minutos, enviando Authorization: Bearer CRON_SECRET. Veja CONFIGURACAO-VERCEL.md.`));
+
+    if (presence.clientCredentials && presence.broadcasterId && (!presence.broadcasterRefreshToken || presence.scopeOk === false || presence.lastCron?.status === 'error' || presence.lastCron?.status === 'test-error')) {
+      const authActions = el('div', 'pf-dev-actions');
+      const authButton = button('Gerar link seguro para a Soso autorizar', 'pf-btn pf-btn-primary', async () => {
+        authButton.disabled = true;
+        authButton.textContent = 'Gerando link…';
+        try {
+          const result = await window.api(window.API_AUTH || '/api/auth', 'twitch-broadcaster-link', { method: 'POST' });
+          if (!result.ok || !result.data?.url) throw new Error(result.data?.error || 'Não foi possível gerar o link.');
+          linkInput.value = result.data.url;
+          linkBox.hidden = false;
+          try { await navigator.clipboard.writeText(result.data.url); notify('Link copiado. Envie para a Soso; ele expira em 15 minutos.', 'ok'); }
+          catch (_) { linkInput.focus(); linkInput.select(); notify('Link gerado. Copie o endereço exibido e envie para a Soso.', 'ok'); }
+        } catch (error) {
+          notify(error.message || 'Falha ao gerar o link de autorização.', 'erro');
+        } finally {
+          authButton.disabled = false;
+          authButton.textContent = 'Gerar novo link de autorização';
+        }
+      });
+      const linkBox = el('div', 'pf-dev-link-box');
+      const linkLabel = el('label', 'pf-dev-link-label', 'Link temporário de autorização (válido por 15 minutos; uso único)');
+      const linkRow = el('div', 'pf-dev-copy-row');
+      const linkInput = el('input', 'pf-dev-copy-input');
+      linkInput.type = 'text'; linkInput.readOnly = true; linkInput.autocomplete = 'off';
+      const copyLink = button('Copiar link', 'pf-btn pf-btn-secondary', async () => {
+        if (!linkInput.value) return;
+        try { await navigator.clipboard.writeText(linkInput.value); notify('Link copiado.', 'ok'); }
+        catch (_) { linkInput.focus(); linkInput.select(); notify('Pressione Ctrl+C para copiar.', 'info'); }
+      });
+      linkRow.append(linkInput, copyLink);
+      linkBox.append(linkLabel, linkRow, el('p', 'pf-dev-footnote', 'A Soso só precisa abrir o link, entrar na Twitch correta e clicar em Autorizar. O token é enviado diretamente para o servidor e salvo no Redis; ela não precisa copiar nem compartilhar nenhum segredo.'));
+      linkBox.hidden = true;
+      authActions.append(authButton, linkBox);
+      presenceCard.appendChild(authActions);
+    }
+
+    const callbackBox = el('div', 'pf-dev-link-box');
+    callbackBox.appendChild(el('label', 'pf-dev-link-label', 'URL de retorno cadastrada no aplicativo Twitch Developers'));
+    const callbackRow = el('div', 'pf-dev-copy-row');
+    const callbackInput = el('input', 'pf-dev-copy-input');
+    callbackInput.type = 'text'; callbackInput.readOnly = true; callbackInput.value = presence.callbackUrl || 'https://asemtet0.vercel.app/api/twitch-callback';
+    const copyCallback = button('Copiar callback', 'pf-btn pf-btn-secondary', async () => {
+      try { await navigator.clipboard.writeText(callbackInput.value); notify('Callback copiado.', 'ok'); }
+      catch (_) { callbackInput.focus(); callbackInput.select(); notify('Pressione Ctrl+C para copiar.', 'info'); }
+    });
+    callbackRow.append(callbackInput, copyCallback);
+    callbackBox.append(callbackRow, el('p', 'pf-dev-footnote', 'Esse endereço precisa estar cadastrado exatamente igual no campo OAuth Redirect URLs do app Twitch. Não use localhost. O callback não é um segredo.'));
+    presenceCard.appendChild(callbackBox);
+
+    if (presence.broadcasterRefreshToken && presence.broadcasterId) {
+      const testActions = el('div', 'pf-dev-actions');
+      const testOutput = el('p', 'pf-dev-test-output', 'O teste consulta a Twitch, mas nunca credita XP, moedas ou presença.');
+      const testButton = button('Testar conexão sem dar XP', 'pf-btn pf-btn-secondary', async () => {
+        testButton.disabled = true; testButton.textContent = 'Testando Twitch…';
+        testOutput.textContent = 'Consultando status da live e, se estiver ao vivo, participantes do chat…';
+        try {
+          const result = await window.api(window.API_GAME || '/api/game', 'twitch-presence-test', { method: 'POST', body: {} });
+          if (!result.ok) throw new Error(result.data?.error || `Erro HTTP ${result.status}`);
+          testOutput.textContent = result.data?.message || 'Conexão consultada.';
+          notify(result.data?.online ? 'Twitch conectada e chatters consultados.' : 'Canal identificado; está offline agora.', 'ok');
+        } catch (error) {
+          testOutput.textContent = error.message || 'Falha ao testar a Twitch.';
+          notify(testOutput.textContent, 'erro');
+        } finally {
+          testButton.disabled = false; testButton.textContent = 'Testar conexão novamente';
+          loadDevInsights(true);
+        }
+      });
+      testActions.append(testButton, testOutput);
+      presenceCard.appendChild(testActions);
+    }
+    presenceCard.appendChild(el('p', 'pf-dev-footnote', `A API lista participantes somente com OAuth ${presence.scopeNecessario || 'moderator:read:chatters'}. O agendador deve chamar /api/game?action=cron-presenca a cada 5 minutos com Authorization: Bearer CRON_SECRET. O site não usa o watchtime acumulado do StreamElements para inventar presença por live. Consulte CONFIGURACAO-VERCEL.md.`));
     root.appendChild(presenceCard);
 
     const recommendation = devInsights.recommendation?.hours;

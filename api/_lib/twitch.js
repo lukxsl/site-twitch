@@ -11,18 +11,22 @@
 //
 //  Env necessárias:
 //   TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET   (app na dev.twitch.tv)
-//   TWITCH_BROADCASTER_ID                    (id numérico do canal da asemtet0)
-//   TWITCH_BROADCASTER_REFRESH               (refresh token da Soso, scope moderator:read:chatters)
-//   CRON_SECRET                              (já existe; usado como Bearer)
+//   CRON_SECRET                              (protege o agendador)
+//  O ID público do canal é descoberto pelo login asemtet0. A autorização OAuth
+//  da broadcaster é feita por um link temporário no Diagnóstico DEV e fica no Redis.
 // ============================================================================
 import { redis, jparse } from './core.js';
 import { LIVE, registrarPresenca, notificar } from './game.js';
 
-const CLIENT_ID = process.env.TWITCH_CLIENT_ID;
-const CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const BC_ID = process.env.TWITCH_BROADCASTER_ID;
-const BC_REFRESH_ENV = process.env.TWITCH_BROADCASTER_REFRESH;
+const CLIENT_ID = String(process.env.TWITCH_CLIENT_ID || '').trim();
+const CLIENT_SECRET = String(process.env.TWITCH_CLIENT_SECRET || '').trim();
+const BC_ID_ENV = String(process.env.TWITCH_BROADCASTER_ID || '').trim();
+const BC_LOGIN = String(process.env.TWITCH_BROADCASTER_LOGIN || 'asemtet0').trim().replace(/^@/, '').toLowerCase();
+const BC_REFRESH_ENV = String(process.env.TWITCH_BROADCASTER_REFRESH || '').trim();
 const BC_REFRESH_LOCK = 'twitch:bc:refresh-lock';
+const BC_SCOPE = 'moderator:read:chatters';
+const TWITCH_REDIRECT_URI = String(process.env.TWITCH_REDIRECT_URI || `${String(process.env.SITE_URL || 'https://asemtet0.vercel.app').trim().replace(/\/+$/, '')}/api/twitch-callback`).trim().replace(/\/+$/, '');
+let broadcasterCache = { value: null, expiresAt: 0 };
 
 export const twitchConfigurada = () => !!(CLIENT_ID && CLIENT_SECRET);
 
@@ -61,18 +65,39 @@ return {1, minutos, newXP, antes, depois, totalCoins, coins}
 `;
 
 export async function diagnosticoTwitchPresenca(){
-  const [raw] = await redis([['GET', 'twitch:bc']]);
+  const [raw, lastRaw] = await redis([
+    ['GET', 'twitch:bc'],
+    ['GET', 'twitch:presence:last-run']
+  ]);
   const salvo = jparse(raw, null);
+  const lastRun = jparse(lastRaw, null);
   const clientCredentials = twitchConfigurada();
-  const broadcasterId = !!BC_ID;
-  const broadcasterRefreshToken = !!((salvo && salvo.refresh) || BC_REFRESH_ENV);
+  let broadcaster = null, broadcasterError = null;
+  if(clientCredentials){
+    try { broadcaster = await obterBroadcasterInfo(); }
+    catch(error){ broadcasterError = error?.message || 'Não foi possível identificar o canal.'; }
+  }
+  const refreshAvailable = !!((salvo && salvo.refresh) || BC_REFRESH_ENV);
+  const scopes = Array.isArray(salvo?.scopes) ? salvo.scopes : [];
+  const scopeOk = scopes.length ? scopes.includes(BC_SCOPE) : null;
+  const broadcasterId = !!(broadcaster?.id || BC_ID_ENV || salvo?.userId);
+  const authorizationAvailable = refreshAvailable && !!(broadcasterId) && scopeOk !== false;
   return {
     clientCredentials,
     broadcasterId,
-    broadcasterRefreshToken,
+    broadcasterUserId: broadcaster?.id || BC_ID_ENV || salvo?.userId || null,
+    broadcasterLogin: broadcaster?.login || salvo?.login || BC_LOGIN,
+    broadcasterName: broadcaster?.name || salvo?.name || BC_LOGIN,
+    broadcasterRefreshToken: refreshAvailable,
     accessTokenEmCache: !!(salvo && salvo.access && Number(salvo.exp) > Date.now()),
-    scopeNecessario: 'moderator:read:chatters',
-    pronta: clientCredentials && broadcasterId && broadcasterRefreshToken
+    scopeNecessario: BC_SCOPE,
+    scopeOk,
+    authorizationAvailable,
+    authorizedAt: salvo?.authorizedAt || null,
+    callbackUrl: TWITCH_REDIRECT_URI,
+    broadcasterError,
+    lastCron: lastRun,
+    pronta: clientCredentials && broadcasterId && refreshAvailable && scopeOk !== false
   };
 }
 
@@ -117,6 +142,135 @@ async function tokenApp(){
   await redis([['SET', 'twitch:apptoken', t.access_token, 'EX', String(Math.max(60, (t.expires_in || 3600) - 300))]]);
   return t.access_token;
 }
+/* Identifica o canal pelo login público. TWITCH_BROADCASTER_ID é opcional. */
+export async function obterBroadcasterInfo(){
+  if(broadcasterCache.value && Date.now() < broadcasterCache.expiresAt) return broadcasterCache.value;
+  const [cachedRaw] = await redis([['GET', 'twitch:bc:profile']]);
+  const cached = jparse(cachedRaw, null);
+  if(cached?.id && cached?.login && Number(cached.expiresAt || 0) > Date.now()){
+    broadcasterCache = { value: cached, expiresAt: Date.now() + 10 * 60 * 1000 };
+    return cached;
+  }
+  if(!CLIENT_ID || !CLIENT_SECRET) throw new Error('Configure TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET na Vercel.');
+  const token = await tokenApp();
+  const query = BC_ID_ENV
+    ? `id=${encodeURIComponent(BC_ID_ENV)}`
+    : `login=${encodeURIComponent(BC_LOGIN)}`;
+  const response = await fetch(`https://api.twitch.tv/helix/users?${query}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Client-Id': CLIENT_ID }
+  });
+  const payload = await response.json().catch(() => null);
+  if(!response.ok) throw new Error(`Twitch users HTTP ${response.status}: ${payload?.message || 'falha ao identificar o canal.'}`);
+  const user = payload?.data?.[0];
+  if(!user?.id) throw new Error(`Canal @${BC_LOGIN} não encontrado na Twitch. Confira TWITCH_BROADCASTER_LOGIN.`);
+  const result = {
+    id: String(user.id), login: String(user.login || BC_LOGIN),
+    name: String(user.display_name || user.login || BC_LOGIN),
+    expiresAt: Date.now() + 24 * 60 * 60 * 1000
+  };
+  await redis([['SET', 'twitch:bc:profile', JSON.stringify(result), 'EX', '86400']]);
+  broadcasterCache = { value: result, expiresAt: Date.now() + 10 * 60 * 1000 };
+  return result;
+}
+
+export async function urlAutorizacaoBroadcaster(redirectUri, state){
+  const broadcaster = await obterBroadcasterInfo();
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: BC_SCOPE,
+    state,
+    force_verify: 'true'
+  });
+  return { url: `https://id.twitch.tv/oauth2/authorize?${params}`, broadcaster };
+}
+
+export async function concluirAutorizacaoBroadcaster(code, redirectUri, expectedUserId){
+  if(!CLIENT_ID || !CLIENT_SECRET) throw new Error('O aplicativo Twitch não está configurado.');
+  const response = await fetch('https://id.twitch.tv/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code: String(code),
+      grant_type: 'authorization_code', redirect_uri: redirectUri
+    })
+  });
+  const token = await response.json().catch(() => null);
+  if(!response.ok || !token?.access_token || !token?.refresh_token){
+    throw new Error(`A Twitch não concluiu a autorização (HTTP ${response.status}). Gere um link novo e tente novamente.`);
+  }
+
+  const validationResponse = await fetch('https://id.twitch.tv/oauth2/validate', {
+    headers: { Authorization: `OAuth ${token.access_token}` }
+  });
+  const validation = await validationResponse.json().catch(() => null);
+  if(!validationResponse.ok || !validation?.user_id) throw new Error('A Twitch não conseguiu validar a conta autorizada.');
+  if(String(validation.client_id) !== CLIENT_ID) throw new Error('A autorização foi feita por outro aplicativo Twitch.');
+
+  const channel = await obterBroadcasterInfo();
+  if(String(validation.user_id) !== String(expectedUserId || channel.id)){
+    throw new Error(`A conta autorizada é @${validation.login || 'desconhecida'}, mas o canal esperado é @${channel.login}. Entre na Twitch com a conta da streamer e abra o link novamente.`);
+  }
+  const scopes = Array.isArray(validation.scopes) ? validation.scopes : (Array.isArray(token.scope) ? token.scope : []);
+  if(!scopes.includes(BC_SCOPE)) throw new Error(`A autorização não incluiu a permissão ${BC_SCOPE}. Gere um link novo e aceite todas as permissões solicitadas.`);
+
+  const saved = {
+    access: token.access_token,
+    refresh: token.refresh_token,
+    exp: Date.now() + Math.max(60, Number(token.expires_in || 3600)) * 1000,
+    scopes,
+    userId: String(validation.user_id),
+    login: String(validation.login || channel.login),
+    name: String(validation.login || channel.name),
+    authorizedAt: Date.now()
+  };
+  await redis([
+    ['SET', 'twitch:bc', JSON.stringify(saved)],
+    ['SET', 'twitch:bc:profile', JSON.stringify({ ...channel, expiresAt: Date.now() + 86400000 }), 'EX', '86400']
+  ]);
+  broadcasterCache = { value: { ...channel }, expiresAt: Date.now() + 10 * 60 * 1000 };
+  return { login: saved.login, userId: saved.userId, scopes: saved.scopes, authorizedAt: saved.authorizedAt };
+}
+
+async function validarAutorizacaoBroadcaster(){
+  const channel = await obterBroadcasterInfo();
+  const access = await tokenBroadcaster();
+  const response = await fetch('https://id.twitch.tv/oauth2/validate', {
+    headers: { Authorization: `OAuth ${access}` }
+  });
+  const validation = await response.json().catch(() => null);
+  if(!response.ok || !validation?.user_id){
+    throw new Error(`Twitch: não foi possível validar o token do canal (HTTP ${response.status}). Gere um novo link de autorização se o problema persistir.`);
+  }
+  if(String(validation.client_id) !== CLIENT_ID){
+    throw new Error('Twitch: o token salvo pertence a outro aplicativo. Gere um novo link de autorização.');
+  }
+  if(String(validation.user_id) !== String(channel.id)){
+    throw new Error(`Twitch: o token pertence a @${validation.login || 'outra conta'}, mas o canal configurado é @${channel.login}.`);
+  }
+  const scopes = Array.isArray(validation.scopes) ? validation.scopes : [];
+  if(!scopes.includes(BC_SCOPE)){
+    throw new Error(`Twitch: o token não possui a permissão ${BC_SCOPE}. Gere um novo link de autorização e aceite a permissão solicitada.`);
+  }
+  const [raw] = await redis([['GET', 'twitch:bc']]);
+  const saved = jparse(raw, {});
+  await redis([['SET', 'twitch:bc', JSON.stringify({
+    ...saved, scopes, userId: String(validation.user_id),
+    login: String(validation.login || channel.login),
+    validatedAt: Date.now()
+  })]]);
+  return { channel, scopes };
+}
+
+export async function testarTwitchPresenca(){
+  const { channel } = await validarAutorizacaoBroadcaster();
+  const stream = await streamAtual(channel.id);
+  if(!stream) return { ok: true, online: false, channel: channel.login, chatters: null, message: 'Aplicativo, token e permissão da Twitch validados. O canal está offline agora; a lista de participantes será testada durante uma live. Nenhum XP ou moeda foi concedido.' };
+  const chatters = await chattersAgora(channel.id);
+  return { ok: true, online: true, channel: channel.login, chatters: chatters.length, message: `Conexão válida. A Twitch retornou ${chatters.length} participantes no chat. Nenhum XP ou moeda foi concedido neste teste.` };
+}
+
 /* O refresh token da Twitch ROTACIONA a cada uso → guardamos o mais novo no Redis. */
 async function tokenBroadcaster(){
   const lerCache = async () => {
@@ -143,7 +297,7 @@ async function tokenBroadcaster(){
     bc = await lerCache();
     if(bc && bc.access && bc.exp > Date.now() + 120000) return bc.access;
     const refresh = (bc && bc.refresh) || BC_REFRESH_ENV;
-    if(!refresh) throw new Error('Twitch: TWITCH_BROADCASTER_REFRESH não configurado');
+    if(!refresh) throw new Error('Twitch: o canal ainda não autorizou o Arcade. Gere um link seguro no Diagnóstico DEV.');
     const response = await fetch('https://id.twitch.tv/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -151,7 +305,7 @@ async function tokenBroadcaster(){
     });
     const t = await response.json().catch(() => null);
     if(!response.ok || !t?.access_token) throw new Error(`Twitch: refresh do broadcaster falhou (HTTP ${response.status}; gere um novo token se persistir).`);
-    bc = { access: t.access_token, refresh: t.refresh_token || refresh, exp: Date.now() + (t.expires_in || 3600) * 1000 };
+    bc = { ...(bc || {}), access: t.access_token, refresh: t.refresh_token || refresh, exp: Date.now() + (t.expires_in || 3600) * 1000, scopes: Array.isArray(t.scope) ? t.scope : (bc?.scopes || []) };
     await redis([['SET', 'twitch:bc', JSON.stringify(bc)]]);
     return bc.access;
   } finally {
@@ -160,9 +314,10 @@ async function tokenBroadcaster(){
 }
 
 /* ---------- Helix ---------- */
-async function streamAtual(){
+async function streamAtual(broadcasterId){
+  const id = String(broadcasterId || (await obterBroadcasterInfo()).id);
   const consultar = async token => {
-    const response = await fetch(`https://api.twitch.tv/helix/streams?user_id=${encodeURIComponent(BC_ID)}`, {
+    const response = await fetch(`https://api.twitch.tv/helix/streams?user_id=${encodeURIComponent(id)}`, {
       headers: { Authorization: `Bearer ${token}`, 'Client-Id': CLIENT_ID }
     });
     const dados = await response.json().catch(() => null);
@@ -182,12 +337,13 @@ async function streamAtual(){
   return { id: String(stream.id), inicio };
 }
 
-async function chattersAgora(){
+async function chattersAgora(broadcasterId){
+  const id = String(broadcasterId || (await obterBroadcasterInfo()).id);
   const token = await tokenBroadcaster();
   const ids = [];
   let cursor = '';
   for(let pagina = 0; pagina < 20; pagina++){ // até 20k chatters
-    const url = `https://api.twitch.tv/helix/chat/chatters?broadcaster_id=${encodeURIComponent(BC_ID)}&moderator_id=${encodeURIComponent(BC_ID)}&first=1000${cursor ? '&after=' + encodeURIComponent(cursor) : ''}`;
+    const url = `https://api.twitch.tv/helix/chat/chatters?broadcaster_id=${encodeURIComponent(id)}&moderator_id=${encodeURIComponent(id)}&first=1000${cursor ? '&after=' + encodeURIComponent(cursor) : ''}`;
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, 'Client-Id': CLIENT_ID } });
     const dados = await response.json().catch(() => null);
     if(!response.ok){
@@ -214,14 +370,15 @@ export async function cronPresenca(){
   if(!diagnostico.pronta){
     const faltando = [];
     if(!diagnostico.clientCredentials) faltando.push('TWITCH_CLIENT_ID/TWITCH_CLIENT_SECRET');
-    if(!diagnostico.broadcasterId) faltando.push('TWITCH_BROADCASTER_ID');
-    if(!diagnostico.broadcasterRefreshToken) faltando.push('TWITCH_BROADCASTER_REFRESH');
+    if(!diagnostico.broadcasterId) faltando.push('identificação pública do canal');
+    if(!diagnostico.broadcasterRefreshToken) faltando.push('autorização da broadcaster (link no Diagnóstico DEV)');
     throw new Error(`Presença Twitch não configurada. Falta: ${faltando.join(', ')}.`);
   }
 
+  const channel = await obterBroadcasterInfo();
   const tick = Math.floor(Date.now() / (LIVE.TICK_MIN * 60000));
   const chaveTick = `tick:${tick}`;
-  const stream = await streamAtual();
+  const stream = await streamAtual(channel.id);
   if(!stream){
     const [lockOffline] = await redis([['EVAL', INICIAR_TICK_LUA, '1', chaveTick]]);
     if(Number(lockOffline?.[0]) !== 1) return { pulou: lockOffline?.[1] === 'done' ? 'tick já processado' : 'tick em execução' };
@@ -231,7 +388,7 @@ export async function cronPresenca(){
 
   // Busca os participantes antes de adquirir o lock. Se a Twitch falhar ou
   // o token não tiver o escopo correto, a execução seguinte ainda pode tentar.
-  const chatters = await chattersAgora();
+  const chatters = await chattersAgora(channel.id);
   const [lock] = await redis([['EVAL', INICIAR_TICK_LUA, '1', chaveTick]]);
   if(Number(lock?.[0]) !== 1) return { pulou: lock?.[1] === 'done' ? 'tick já processado' : 'tick em execução' };
 
