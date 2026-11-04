@@ -10,7 +10,7 @@ async function renderAdminHome(){
   const adminAccount = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : {};
   const adminNick = String(adminAccount.nick || adminAccount.username || 'Admin').replace(/[<>]/g, '');
   const dataAtual = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' }).format(new Date());
-  const hero = `<section class="admin-command-hero"><div class="admin-command-copy"><span class="admin-command-kicker">SOSO ARCADE · CENTRAL DE CONTROLE</span><h1>Olá, ${esc(adminNick)}. Tudo sob controle?</h1><p>Acompanhe o estado da comunidade, atualize as listas e gerencie o conteúdo do site em um só lugar.</p></div><div class="admin-command-meta"><span class="admin-system-live">PAINEL OPERACIONAL</span><span class="admin-command-date">${esc(dataAtual)}</span></div></section>`;
+  const hero = `<section class="admin-command-hero"><div class="admin-command-copy"><span class="admin-command-kicker">ASEMTET0 · CENTRAL DE CONTROLE</span><h1>Olá, ${esc(adminNick)}. Tudo sob controle?</h1><p>Acompanhe o estado da comunidade, atualize as listas e gerencie o conteúdo do site em um só lugar.</p></div><div class="admin-command-meta"><span class="admin-system-live">PAINEL OPERACIONAL</span><span class="admin-command-date">${esc(dataAtual)}</span></div></section>`;
   area.innerHTML = crumbs + hero + `<p class="admin-vazio">Carregando painel…</p>`;
 
   const shared = await carregarShared(true);

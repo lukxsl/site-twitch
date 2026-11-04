@@ -72,18 +72,44 @@ let canalCache = { id: null, ate: 0 };
 let canalPendente = null;
 
 export async function canalId() {
-  if (CHANNEL_ID_ENV) return CHANNEL_ID_ENV;
   if (canalCache.id && Date.now() < canalCache.ate) return canalCache.id;
   if (canalPendente) return canalPendente;
   canalPendente = (async () => {
-    let id = null, ultimoErro = null;
-    // 1) /channels/me (precisa do JWT)   2) /channels/<login> (público)
+    let idPublico = null, idConfigurado = null, ultimoErro = null;
+    try {
+      const canal = await seGet(`/channels/${encodeURIComponent(CANAL_LOGIN)}`, { publico: true });
+      idPublico = canal?._id || canal?.id || canal?.channel?._id || null;
+    } catch (e) { ultimoErro = e; }
+
+    if (CHANNEL_ID_ENV) {
+      idConfigurado = CHANNEL_ID_ENV;
+      if (idPublico && String(idPublico) !== String(CHANNEL_ID_ENV)) {
+        const e = erro(`STREAMELEMENTS_CHANNEL_ID não pertence ao canal @${CANAL_LOGIN}. Confira o ID configurado na Vercel.`, 502, 'se_channel');
+        throw e;
+      }
+    }
+
+    // /channels/me só é usado como verificação adicional; um JWT válido de outro
+    // canal não pode fazer o site exibir o ranking da conta errada.
     if (JWT) {
-      try { const me = await seGet('/channels/me'); id = me?._id || me?.id || me?.channel?._id; } catch (e) { ultimoErro = e; }
+      try {
+        const me = await seGet('/channels/me');
+        const idMe = me?._id || me?.id || me?.channel?._id || null;
+        if (idMe) {
+          if (idPublico && String(idMe) !== String(idPublico)) {
+            throw erro(`O STREAMELEMENTS_JWT pertence a outro canal. Gere o token logada na conta StreamElements vinculada ao canal @${CANAL_LOGIN}.`, 502, 'se_channel');
+          }
+          if (idConfigurado && String(idMe) !== String(idConfigurado)) {
+            throw erro('O STREAMELEMENTS_JWT e STREAMELEMENTS_CHANNEL_ID apontam para canais diferentes. Confira as duas variáveis na Vercel.', 502, 'se_channel');
+          }
+        }
+      } catch (e) {
+        if (e?.code === 'se_channel') throw e;
+        ultimoErro = ultimoErro || e;
+      }
     }
-    if (!id) {
-      try { const c = await seGet(`/channels/${encodeURIComponent(CANAL_LOGIN)}`, { publico: true }); id = c?._id || c?.id; } catch (e) { ultimoErro = ultimoErro || e; }
-    }
+
+    const id = idConfigurado || idPublico;
     if (!id) throw ultimoErro || erro('Não foi possível descobrir o ID do canal no StreamElements.', 502, 'se_canal');
     canalCache = { id: String(id), ate: Date.now() + 15 * 60 * 1000 };
     return canalCache.id;
@@ -95,7 +121,7 @@ export async function canalId() {
 export function linhas(payload) {
   if (Array.isArray(payload)) return payload;
   if (!payload || typeof payload !== 'object') return [];
-  for (const k of ['users', 'docs', 'results', 'items', 'data', 'tips', 'top', 'ranking', 'watchtime']) {
+  for (const k of ['users', 'docs', 'results', 'items', 'data', 'tips', 'top', 'topDonors', 'leaderboard', 'tippers', 'donations', 'ranking', 'watchtime']) {
     if (Array.isArray(payload[k])) return payload[k];
   }
   if (payload.data && typeof payload.data === 'object') {
@@ -173,7 +199,7 @@ async function todasGorjetas(paginas = 10) {
   const id = await canalId();
   const out = [];
   for (let p = 0; p < paginas; p++) {
-    const d = await seGet(`/tips/${encodeURIComponent(id)}`, { query: { limit: 100, offset: p * 100, sort: '-createdAt' } });
+    const d = await seGet(`/tips/${encodeURIComponent(id)}`, { query: { limit: 100, offset: p * 100, sort: '-create' } });
     const docs = linhas(d);
     out.push(...docs);
     if (docs.length < 100) break;
@@ -184,15 +210,32 @@ async function todasGorjetas(paginas = 10) {
 async function doadoresPorLeaderboard() {
   const id = await canalId();
   let ultimo = null;
-  for (const rota of [`/tips/${encodeURIComponent(id)}/leaderboard`, `/leaderboard/${encodeURIComponent(id)}/tips`]) {
+  // /tips/:channel/top é a rota oficial de top tippers. As outras rotas
+  // permanecem como fallback para instalações/formatos antigos.
+  const rotas = [
+    `/tips/${encodeURIComponent(id)}/top`,
+    `/tips/${encodeURIComponent(id)}/leaderboard`,
+    `/leaderboard/${encodeURIComponent(id)}/tips`
+  ];
+  for (const rota of rotas) {
     try {
       const d = await seGet(rota, { publico: true, query: { limit: 100 } });
       const rows = linhas(d);
       if (!rows.length) continue;
-      const lista = rows.map(r => ({ nome: nomeDe(r), valor: numero(r.amount ?? r.total ?? r.tips ?? r.value ?? r.donation?.amount), doacoes: numero(r.count ?? r.donations) || 1 }))
-        .filter(x => x.valor > 0 && !NOMES_ANONIMOS.has(x.nome.toLowerCase())).sort((a, b) => b.valor - a.valor)
+      const lista = rows.map(r => ({
+        nome: nomeDe(r),
+        valor: numero(r.amount ?? r.total ?? r.totalAmount ?? r.totalTipAmount ?? r.tips ?? r.value ?? r.donation?.amount),
+        doacoes: numero(r.count ?? r.donationsCount ?? (typeof r.donations === 'number' ? r.donations : 0)) || 1
+      }))
+        .filter(x => x.valor > 0 && !NOMES_ANONIMOS.has(x.nome.toLowerCase()))
+        .sort((a, b) => b.valor - a.valor)
         .map((x, i) => ({ pos: i + 1, nome: x.nome, valor: Math.round(x.valor * 100) / 100, doacoes: x.doacoes, maior: 0, ultima: null }));
-      if (lista.length) return { lista, totalMes: 0, totalGeral: Math.round(lista.reduce((t, x) => t + x.valor, 0) * 100) / 100, apoiadores: lista.length, doacoes: lista.length, ultimo: null, moeda: 'BRL' };
+      if (lista.length) return {
+        lista, totalMes: 0,
+        totalGeral: Math.round(lista.reduce((t, x) => t + x.valor, 0) * 100) / 100,
+        apoiadores: lista.length, doacoes: lista.reduce((total, x) => total + x.doacoes, 0),
+        ultimo: null, moeda: 'BRL'
+      };
     } catch (e) { ultimo = e; }
   }
   throw ultimo || erro('Sem dados de doadores no StreamElements.', 502, 'se_tips');
@@ -202,10 +245,14 @@ export async function rankingDoadores() {
   let tips;
   try { tips = await todasGorjetas(); }
   catch (e) {
-    if (e.code === 'se_auth' || e.code === 'se_404') {
-      try { return await doadoresPorLeaderboard(); } catch (_) { /* devolve o erro original */ }
-    }
-    throw e;
+    try { return await doadoresPorLeaderboard(); }
+    catch (_) { throw e; }
+  }
+  // Algumas contas não liberam o histórico paginado, mas disponibilizam o
+  // ranking agregado. Não deixe uma resposta vazia esconder o top de doadores.
+  if (!tips.length) {
+    try { return await doadoresPorLeaderboard(); }
+    catch (_) { /* mantém o resultado vazio do endpoint principal */ }
   }
   const ini = new Date(); ini.setDate(1); ini.setHours(0, 0, 0, 0);
   const porPessoa = new Map();
@@ -215,8 +262,8 @@ export async function rankingDoadores() {
   for (const t of tips) {
     if (t.deleted === true) continue;
     if (t.status && STATUS_RUINS.has(String(t.status).toLowerCase())) continue;
-    if (t.approved && !['allowed', 'approved'].includes(String(t.approved).toLowerCase())) continue;
-    const valor = numero(t.donation?.amount ?? t.amount);
+    if (t.approved !== undefined && t.approved !== null && t.approved !== true && !['allowed', 'approved'].includes(String(t.approved).toLowerCase())) continue;
+    const valor = numero(t.donation?.amount ?? t.amount ?? t.donationAmount ?? t.totalAmount);
     if (valor <= 0) continue;
     const moeda = String(t.donation?.currency || t.currency || 'BRL').toUpperCase();
     moedas[moeda] = (moedas[moeda] || 0) + 1;

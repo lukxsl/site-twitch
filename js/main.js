@@ -377,16 +377,6 @@ function hallPodioHTML(itens){
   }).join('') + `</div>`;
 }
 
-function hallRestoHTML(itens){
-  return itens.map((p, k) => `
-    <div class="hall-row" style="--d:${(k + 3) * 80}ms">
-      <span class="hr-pos">${k + 4}º</span>
-      ${hallAvatar(p, 'hr-avatar')}
-      <span class="hr-name">${esc(p.nome || '—')}</span>
-      <span class="hr-meta">${esc(hallValor(p))}</span>
-    </div>`).join('');
-}
-
 function renderHall(){
   const lista = $('hallLista');
   const updated = $('hallUpdated');
@@ -409,11 +399,17 @@ function renderHall(){
 
   const bruto = !d || d.vazio ? [] :
     (HALL_ABA === 'gift' ? (d.gift || []) : HALL_ABA === 'fieis' ? (d.fieis || []) : (d.doadores || []));
-  const itens = bruto.slice(0, 5);
+  // A home mostra apenas o pódio. O ranking completo continua disponível no painel.
+  const itens = bruto.slice(0, 3);
 
   let html = hallPodioHTML(itens);
   if(itens.length > 3) html += `<div class="hall-resto">${hallRestoHTML(itens.slice(3))}</div>`;
-  if(!itens.length) html += d?.erro ? `<p class="hall-cta-vazio hall-erro">Não foi possível carregar os apoiadores agora. Tente novamente em instantes. 💜</p>` : `<p class="hall-cta-vazio">Ninguém no pódio ainda. <b>Seja a primeira pessoa a aparecer aqui!</b> 💜</p>`;
+  if(!itens.length){
+    html += (d?.aviso || d?.erro)
+      ? `<p class="hall-cta-vazio hall-erro">Ranking de apoiadores indisponível no momento. Tente novamente em instantes. 💜</p>`
+      : `<p class="hall-cta-vazio">Ninguém no pódio ainda. <b>Seja a primeira pessoa a aparecer aqui!</b> 💜</p>`;
+  }
+  if(d?.aviso) html += `<p class="hall-cta-vazio hall-erro hall-aviso">${esc(d.aviso)}</p>`;
   lista.innerHTML = html;
 
   if(total){
@@ -1275,7 +1271,7 @@ function renderLogin(){
     btn.type = 'button';
     btn.className = 'nav-user-deslogado nav-auth-entrar';
     btn.textContent = 'ENTRAR';
-    btn.setAttribute('aria-label', 'Entrar no Arcade');
+    btn.setAttribute('aria-label', 'Entrar no site');
     btn.addEventListener('click', () => {
       if(window.AuthUI) window.AuthUI.open('entrar');
     });
@@ -1358,6 +1354,7 @@ function renderVotacao(){
   const destBox = $('destaqueBox'), listaBox = $('votoLista');
   if(!destBox || !listaBox) return;
   const proxCover = $('proxCover');
+  const proxCoverFallback = $('proxCoverFallback');
   const proxBarWrap = $('proxBarWrap');
   const proxBarI = $('proxBarI');
 
@@ -1390,12 +1387,13 @@ function renderVotacao(){
       <div class="voto-bloqueado">
         <span class="loot">🔒</span>
         <b>Só falta você escolher!</b>
-        <p>Entra rapidinho no Arcade pra votar e ajudar a decidir o próximo jogo da live 💜</p>
+        <p>Entre rapidinho no site para votar e ajudar a decidir o próximo jogo da live 💜</p>
         <button type="button" class="btn-entrar" onclick="AuthUI.open('entrar')">
-          🕹️ Entrar no Arcade
+          🕹️ Entrar no site
         </button>
       </div>`;
     if(proxCover) proxCover.style.display = 'none';
+    if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
     return;
   }
@@ -1405,6 +1403,9 @@ function renderVotacao(){
     const mensagem = votoStatus === 'erro' ? 'Não foi possível carregar a votação agora.' : votoStatus === 'carregando' ? 'Carregando votação…' : 'A Soso ainda não adicionou opções nesta votação.';
     const apoio = votoStatus === 'ok' ? 'Quando as opções forem publicadas, você poderá votar por aqui. 💜' : 'Tente novamente em alguns instantes.';
     listaBox.innerHTML = `<div class="vazio-voto voto-empty-state"><span>🗳️</span><b>${mensagem}</b><small>${apoio}</small></div>`;
+    if(proxCover) proxCover.style.display = 'none';
+    if(proxCoverFallback) proxCoverFallback.style.display = '';
+    if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
     return;
   }
 
@@ -1467,15 +1468,17 @@ function renderVotacao(){
         <div class="vhero-cta">${vBtn(l)}</div>
       </div>`;
     if(proxCover){
-      if(l.capa){ proxCover.onerror = () => { proxCover.style.display = 'none'; }; proxCover.src = l.capa; proxCover.style.display = ''; }
+      if(l.capa){ proxCover.onerror = () => { proxCover.style.display = 'none'; if(proxCoverFallback) proxCoverFallback.style.display = ''; }; proxCover.src = l.capa; proxCover.style.display = ''; }
       else proxCover.style.display = 'none';
     }
+    if(proxCoverFallback) proxCoverFallback.style.display = l.capa ? 'none' : '';
     $('proxNome').textContent = l.nome;
     $('proxInfo').textContent = fechada ? `Encerrada com ${p}% dos votos` : `Liderando com ${p}% dos votos`;
     if(proxBarWrap && proxBarI){ proxBarWrap.style.visibility = 'visible'; proxBarI.style.width = p + '%'; }
   } else {
     destBox.innerHTML = fechada ? '' : `<div class="vhint"><span>🗳️</span><div><b>Ainda ninguém votou</b><small>Seja a primeira pessoa a escolher o próximo jogo!</small></div></div>`;
     if(proxCover) proxCover.style.display = 'none';
+    if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
     $('proxNome').textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
     $('proxInfo').textContent = fechada ? 'Aguardando nova votação 💜' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';

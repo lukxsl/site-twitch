@@ -16,7 +16,9 @@
 //  da broadcaster é feita por um link temporário no Diagnóstico DEV e fica no Redis.
 // ============================================================================
 import { redis, jparse } from './core.js';
-import { LIVE, registrarPresenca, notificar } from './game.js';
+import { registrarPresenca } from './atividade.js';
+
+const LIVE = { TICK_MIN: 5, MIN_LIVE_VALIDA: 30, TETO_MIN_SESSAO: 240, MIN_PRESENCA: 20 };
 
 const CLIENT_ID = String(process.env.TWITCH_CLIENT_ID || '').trim();
 const CLIENT_SECRET = String(process.env.TWITCH_CLIENT_SECRET || '').trim();
@@ -39,29 +41,15 @@ return {1, 'running'}
 
 const PROCESSAR_TICK_LUA = `
 local atual = tonumber(redis.call('HGET', KEYS[2], ARGV[1]) or '0')
-if redis.call('EXISTS', KEYS[1]) == 1 then return {0, atual, 0, 0, 0, 0, 0} end
-redis.call('SET', KEYS[1], '1', 'EX', tonumber(ARGV[6]) or 3600)
-local minutos = redis.call('HINCRBY', KEYS[2], ARGV[1], tonumber(ARGV[2]) or 5)
-if minutos > (tonumber(ARGV[3]) or 240) then return {1, minutos, 0, 0, 0, 0, 0} end
-redis.call('HINCRBY', KEYS[3], 'minutos', tonumber(ARGV[2]) or 5)
-local xp = tonumber(ARGV[4]) or 5
-local passoCoins = tonumber(ARGV[5]) or 2
-local coins = (minutos / (tonumber(ARGV[2]) or 5)) % passoCoins == 0 and 1 or 0
-local oldXP = tonumber(redis.call('HGET', KEYS[3], 'xp') or '0')
-local newXP = redis.call('HINCRBY', KEYS[3], 'xp', xp)
-redis.call('ZADD', KEYS[4], newXP, ARGV[1])
-local function nivel(value)
-  local n = math.floor((1 + math.sqrt(1 + math.max(0, value) / 12.5)) / 2)
-  if n < 1 then return 1 end
-  if n > 100 then return 100 end
-  return n
-end
-local antes = nivel(oldXP)
-local depois = nivel(newXP)
-local bonusNivel = math.max(0, depois - antes) * (tonumber(ARGV[7]) or 20)
-local totalCoins = coins + bonusNivel
-if totalCoins > 0 then redis.call('HINCRBY', KEYS[3], 'coins', totalCoins) end
-return {1, minutos, newXP, antes, depois, totalCoins, coins}
+if redis.call('EXISTS', KEYS[1]) == 1 then return {0, atual, 0} end
+redis.call('SET', KEYS[1], '1', 'EX', tonumber(ARGV[4]) or 3600)
+local tick = tonumber(ARGV[2]) or 5
+local limite = tonumber(ARGV[3]) or 240
+local adicionar = math.max(0, math.min(tick, limite - atual))
+if adicionar <= 0 then return {1, atual, 0} end
+local minutos = redis.call('HINCRBY', KEYS[2], ARGV[1], adicionar)
+redis.call('HINCRBY', KEYS[3], 'minutes', adicionar)
+return {1, minutos, adicionar}
 `;
 
 export async function diagnosticoTwitchPresenca(){
@@ -126,7 +114,7 @@ export async function identificarViewer(code, redirectUri){
   const me = u && u.data && u.data[0];
   if(!me) return null;
   // descartamos o token do viewer de propósito: não precisamos dele para nada
-  return { id: String(me.id), login: String(me.login), nome: String(me.display_name || me.login) };
+  return { id: String(me.id), login: String(me.login), nome: String(me.display_name || me.login), avatar: String(me.profile_image_url || '') || null };
 }
 
 /* ---------- Tokens ---------- */
@@ -266,9 +254,9 @@ async function validarAutorizacaoBroadcaster(){
 export async function testarTwitchPresenca(){
   const { channel } = await validarAutorizacaoBroadcaster();
   const stream = await streamAtual(channel.id);
-  if(!stream) return { ok: true, online: false, channel: channel.login, chatters: null, message: 'Aplicativo, token e permissão da Twitch validados. O canal está offline agora; a lista de participantes será testada durante uma live. Nenhum XP ou moeda foi concedido.' };
+  if(!stream) return { ok: true, online: false, channel: channel.login, chatters: null, message: 'Aplicativo, token e permissão da Twitch validados. O canal está offline agora; a lista de participantes será testada durante uma live. Nenhuma recompensa de jogo é distribuída por este teste.' };
   const chatters = await chattersAgora(channel.id);
-  return { ok: true, online: true, channel: channel.login, chatters: chatters.length, message: `Conexão válida. A Twitch retornou ${chatters.length} participantes no chat. Nenhum XP ou moeda foi concedido neste teste.` };
+  return { ok: true, online: true, channel: channel.login, chatters: chatters.length, message: `Conexão válida. A Twitch retornou ${chatters.length} participantes no chat. Este teste não distribui recompensas de jogo.` };
 }
 
 /* O refresh token da Twitch ROTACIONA a cada uso → guardamos o mais novo no Redis. */
@@ -297,7 +285,7 @@ async function tokenBroadcaster(){
     bc = await lerCache();
     if(bc && bc.access && bc.exp > Date.now() + 120000) return bc.access;
     const refresh = (bc && bc.refresh) || BC_REFRESH_ENV;
-    if(!refresh) throw new Error('Twitch: o canal ainda não autorizou o Arcade. Gere um link seguro no Diagnóstico DEV.');
+    if(!refresh) throw new Error('Twitch: o canal ainda não autorizou a integração do site. Gere um link seguro no Diagnóstico DEV.');
     const response = await fetch('https://id.twitch.tv/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -361,7 +349,7 @@ async function chattersAgora(broadcasterId){
 }
 
 /* ============================================================
-   CRON — chamado por GET /api/game?action=cron-presenca (Bearer CRON_SECRET)
+   CRON — chamado por GET /api/auth?action=cron-presenca (Bearer CRON_SECRET)
    O agendador precisa chamar esta rota a cada 5 min e enviar
    Authorization: Bearer <CRON_SECRET>. Consulte CONFIGURACAO-VERCEL.md.
    ============================================================ */
@@ -425,32 +413,12 @@ export async function cronPresenca(){
   const processa = async uid => {
     const marker = `pres:tick:${tick}:${uid}`;
     const [resultado] = await redis([[
-      'EVAL', PROCESSAR_TICK_LUA, '4', marker, presKey, `g:${uid}`, 'rank:xp',
-      String(uid), String(LIVE.TICK_MIN), String(LIVE.TETO_MIN_SESSAO),
-      String(LIVE.XP_POR_TICK), String(LIVE.COINS_A_CADA_TICKS), '3600', '20'
+      'EVAL', PROCESSAR_TICK_LUA, '3', marker, presKey, `activity:${uid}`,
+      String(uid), String(LIVE.TICK_MIN), String(LIVE.TETO_MIN_SESSAO), '3600'
     ]]);
     const dados = Array.isArray(resultado) ? resultado.map(Number) : [];
     const minutos = Number(dados[1] || 0);
-    const creditouAgora = dados[0] === 1 && dados[2] > 0;
-    if(creditouAgora){
-      creditados++;
-      const antes = Number(dados[3] || 1);
-      const depois = Number(dados[4] || antes);
-      const totalCoins = Number(dados[5] || 0);
-      if(depois > antes){
-        await notificar(uid, 'nivel', `Subiu para o nível ${depois}! +${(depois - antes) * 20} SosoCoins`);
-        const { CATALOGO, SLOTS } = await import('./game.js');
-        const liberados = [];
-        SLOTS.forEach(slot => CATALOGO[slot].forEach(item => {
-          if(item.regra.t === 'nivel' && item.regra.n > antes && item.regra.n <= depois) liberados.push(item.nome);
-        }));
-        if(liberados.length) await notificar(uid, 'item', `Liberado no inventário: ${liberados.join(', ')}`);
-      }
-      if(totalCoins && Number(dados[6] || 0) > 0){
-        // O bônus por 10 minutos é informado sem confundir com moedas de nível.
-        await notificar(uid, 'presenca', `Presença na live: +${LIVE.XP_POR_TICK} XP · +${Number(dados[6])} SosoCoin(s)`);
-      }
-    }
+    if(dados[0] === 1 && Number(dados[2] || 0) > 0) creditados++;
     if(sess.num && minutos >= LIVE.MIN_PRESENCA){
       if(await registrarPresenca(uid, sess.num)) contadas++;
     }
@@ -458,18 +426,11 @@ export async function cronPresenca(){
   for(let i = 0; i < idsVinculados.length; i += 15){
     await Promise.all(idsVinculados.slice(i, i + 15).map(async uid => {
       try { await processa(uid); }
-      catch(error) { falhas++; console.error(`[Twitch cron] Falha ao creditar ${uid}:`, error?.message || error); }
+      catch(error) { falhas++; console.error(`[Twitch cron] Falha ao registrar atividade de ${uid}:`, error?.message || error); }
     }));
   }
   await redis([['EXPIRE', presKey, String(3 * 86400)]]);
 
-  // conquistas por horas/streak são avaliadas em lote leve (só quem pontuou nesta rodada)
-  const { avaliarConquistas } = await import('./game.js');
-  for(let i = 0; i < idsVinculados.length; i += 10){
-    await Promise.all(idsVinculados.slice(i, i + 10).map(u => avaliarConquistas(u).catch(error => {
-      console.error(`[Twitch cron] Falha ao avaliar conquistas de ${u}:`, error?.message || error);
-    })));
-  }
   await redis([['SET', chaveTick, falhas ? 'partial' : 'done', 'EX', '3600']]);
   return { online: true, live: sess.num, chatters: chatters.length, vinculados: idsVinculados.length, creditados, contadas, falhas };
 }

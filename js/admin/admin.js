@@ -195,7 +195,7 @@ async function carregarAdmin(){
     area.innerHTML = `<div class="admin-vazio">
       <b>🔒 Acesso restrito</b>
       Só administradores do site podem ver esta área.
-      ${!USUARIO ? '<br><button type="button" class="btn-entrar" onclick="AuthUI.open(\'entrar\')">Entrar no Arcade</button>' : ''}
+      ${!USUARIO ? '<br><button type="button" class="btn-entrar" onclick="AuthUI.open(\'entrar\')">Entrar no site</button>' : ''}
     </div>`;
     return;
   }

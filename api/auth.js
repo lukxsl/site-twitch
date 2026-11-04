@@ -2,11 +2,10 @@
 // Login PRÓPRIO (usuário + senha, scrypt) em Redis + vínculo Twitch + Discord legado (opcional).
 //
 // Rotas:
-//   POST /api/auth?action=register          { usuario, senha, nick }
+//   POST /api/auth?action=register          { email, senha, nick }
 //   POST /api/auth?action=login             { usuario, senha }
 //   GET|POST /api/auth?action=logout
 //   GET  /api/auth?action=me
-//   POST /api/auth?action=avatar-save       { boneco: {...} }       (validado contra o inventário)
 //   POST /api/auth?action=change-password   { atual, nova }
 //   POST /api/auth?action=change-nick       { nick }
 //   GET  /api/auth?action=twitch-link       → redireciona para a Twitch
@@ -14,20 +13,17 @@
 //   POST /api/auth?action=twitch-unlink
 //   GET  /api/auth?action=discord-login     (legado — mantém votos/admins antigos)
 //
-// Redis:  accounts (HASH id→JSON) · usernames (HASH usuario→id) · twitch_idx (HASH twitchId→id)
-//         g:{id} (HASH de jogo) · user_profiles (HASH, usado pelo ranking/votos)
+// Redis: accounts e vínculos permanecem; métricas da comunidade ficam em activity:{id}.
 import { randomBytes } from 'crypto';
 import {
   ENV, redis, jparse, rateLimit, ipDe, origemOk, criarToken, lerSessao, setSessao, limparSessao,
-  addCookie, pegarCookie, hashSenha, conferirSenha, safeStr, RE_USUARIO, nickValido, cargoDe, SITE
+  addCookie, pegarCookie, hashSenha, conferirSenha, safeStr, RE_USUARIO, nickValido, cargoDe, SITE, paraObj
 } from './_lib/core.js';
-import { evento, avaliarConquistas, lerStats, validarBoneco, BONECO_PADRAO } from './_lib/game.js';
-import { urlVinculo, identificarViewer, twitchConfigurada, urlAutorizacaoBroadcaster, concluirAutorizacaoBroadcaster } from './_lib/twitch.js';
-import gameHandler from './_lib/game-api.js';
+import { lerAtividade } from './_lib/atividade.js';
+import { urlVinculo, identificarViewer, twitchConfigurada, urlAutorizacaoBroadcaster, concluirAutorizacaoBroadcaster, cronPresenca } from './_lib/twitch.js';
 
-/* Ações do jogo atendidas por api/_lib/game-api.js (delegadas aqui para
-   não criar uma nova função serverless na raiz de /api). */
-const ACOES_JOGO = ['catalogo', 'ranking', 'perfil', 'resgatar', 'comprar', 'titulo', 'notif-lidas', 'cron-presenca', 'dev-insights', 'twitch-presence-test'];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CRON_SECRET = String(process.env.CRON_SECRET || '').trim();
 
 const DISCORD_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET;
@@ -56,11 +52,12 @@ async function salvarConta(conta){
   await redis([['HSET', 'accounts', conta.id, JSON.stringify(conta)]]);
 }
 async function emitirSessao(res, conta){
-  const email = String(conta.google?.email || conta.email || '').trim().toLowerCase();
+  // Só e-mail verificado pelo Google pode conceder cargo DEV.
+  const emailVerificado = String(conta.google?.email || '').trim().toLowerCase();
   const avatar = conta.google?.picture || conta.avatar || null;
-  const cargo = await cargoDe(conta.id, email);
+  const cargo = await cargoDe(conta.id, emailVerificado);
   const token = criarToken({
-    id: conta.id, username: conta.nick, email, avatar,
+    id: conta.id, username: conta.nick, email: emailVerificado, avatar,
     admin: !!cargo, cargo: cargo || null, sv: conta.sv, tipo: 'own'
   });
   setSessao(res, token);
@@ -70,6 +67,70 @@ async function sincronizarPerfil(conta){
   // ranking / votos / webhooks leem daqui
   const avatar = conta.google?.picture || conta.avatar || null;
   await redis([['HSET', 'user_profiles', conta.id, JSON.stringify({ username: conta.nick, avatar, ts: Date.now() })]]);
+}
+
+async function scanRedisKeys(pattern){
+  let cursor = '0';
+  const keys = [];
+  for(let i = 0; i < 1000; i++){
+    const [resposta] = await redis([['SCAN', cursor, 'MATCH', pattern, 'COUNT', '200']]);
+    if(!Array.isArray(resposta) || resposta.length < 2) break;
+    cursor = String(resposta[0]);
+    if(Array.isArray(resposta[1])) keys.push(...resposta[1].map(String));
+    if(cursor === '0') break;
+  }
+  return [...new Set(keys)];
+}
+
+async function executarEmLotes(comandos, tamanho = 100){
+  for(let i = 0; i < comandos.length; i += tamanho) await redis(comandos.slice(i, i + tamanho));
+}
+
+async function limparDadosLegados(){
+  const [accountsFlat, profilesFlat] = await redis([['HGETALL', 'accounts'], ['HGETALL', 'user_profiles']]);
+  const chavesJogo = await scanRedisKeys('g:*');
+  const ids = [...new Set([...Object.keys(paraObj(accountsFlat)), ...Object.keys(paraObj(profilesFlat)), ...chavesJogo.map(key => key.slice(2)).filter(Boolean)])];
+  let migrados = 0;
+  for(let i = 0; i < ids.length; i += 80){
+    const parte = ids.slice(i, i + 80);
+    const antigos = await redis(parte.map(id => ['HGETALL', `g:${id}`]));
+    const comandos = [];
+    antigos.forEach((flat, index) => {
+      const g = paraObj(flat);
+      if(!Object.keys(g).length) return;
+      const id = parte[index];
+      const mapa = {
+        lives: g.lives,
+        minutes: g.minutos,
+        votes: g.votos,
+        suggestions: g.sugestoes_env,
+        approvedSuggestions: g.sugestoes,
+        streak: g.streak,
+        bestStreak: g.melhorStreak,
+        lastLive: g.ultimaLiveN
+      };
+      const campos = Object.entries(mapa).filter(([, value]) => value !== undefined && value !== null && value !== '');
+      if(campos.length){
+        // Cada campo é aplicado individualmente para não sobrescrever contadores recentes.
+        campos.forEach(([field, value]) => comandos.push(['HSETNX', `activity:${id}`, field, String(Number(value) || 0)]));
+        migrados++;
+      }
+    });
+    await executarEmLotes(comandos, 150);
+  }
+
+  // Remove apenas namespaces conhecidos do sistema antigo; contas, e-mails,
+  // vínculos Twitch, votos, sugestões e perfis permanecem intocados.
+  const padroes = ['g:*', 'ach:*', 'inv:*', 'notif:*', 'xpev:*', 'xpdia:*', 'codes:used:*', 'codes:cnt:*', 'codefail:*'];
+  const apagar = ['rank:xp', 'codes'];
+  for(const pattern of padroes) apagar.push(...await scanRedisKeys(pattern));
+  const unicas = [...new Set(apagar)];
+  const delCommands = [];
+  for(let i = 0; i < unicas.length; i += 100) delCommands.push(['DEL', ...unicas.slice(i, i + 100)]);
+  await executarEmLotes(delCommands, 1);
+  const resultado = { concluido: true, contasVerificadas: ids.length, perfisMigrados: migrados, chavesRemovidas: unicas.length, data: new Date().toISOString() };
+  await redis([['SET', 'legacy:community-cleanup:v1', JSON.stringify(resultado)]]);
+  return resultado;
 }
 /* Retorna a conta da sessão, já checando a "versão de sessão" (logout global ao trocar senha). */
 async function contaDaSessao(req){
@@ -83,7 +144,8 @@ const publico = (conta, cargo) => ({
   logado: true, id: conta.id, usuario: conta.usuario, username: conta.nick, nick: conta.nick,
   email: conta.google?.email || conta.email || null,
   avatar: conta.google?.picture || conta.avatar || null,
-  tipo: 'own', metodoLogin: conta.google ? 'google' : (conta.senha ? 'senha' : 'google'),
+  google: conta.google ? { email: conta.google.email || null } : null,
+  tipo: 'own', metodoLogin: conta.google ? 'google' : (conta.loginProvider || (conta.twitch ? 'twitch' : (conta.email ? 'email' : 'senha'))),
   admin: !!cargo, cargo: cargo || null,
   twitch: conta.twitch ? { login: conta.twitch.login, nome: conta.twitch.nome, desde: conta.twitch.desde } : null,
   criadoEm: conta.criadoEm
@@ -99,6 +161,11 @@ function nickDoGoogle(nome, email){
 function usuarioDoGoogle(email){
   let u = String(email || '').split('@')[0].normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 20);
   if(u.length < 3) u = `user_${randomBytes(2).toString('hex')}`;
+  return u;
+}
+function usuarioDaTwitch(login){
+  let u = String(login || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 20);
+  if(u.length < 3) u = `twitch_${randomBytes(2).toString('hex')}`;
   return u;
 }
 async function buscarOuCriarContaGoogle(me, sessaoAtual){
@@ -122,15 +189,13 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
     return { conta, novo: false };
   }
 
-  // Migração segura de uma sessão Discord legada ainda ativa: reaproveita o mesmo ID,
-  // preservando g:{id}, ach:{id}, inv:{id}, notificações, ranking e permissões antigas.
+  // Migração segura de uma sessão Discord antiga ainda ativa: reaproveita o mesmo ID e permissões.
   if(sessaoAtual?.tipo === 'discord'){
     const idLegado = String(sessaoAtual.id || '');
     if(!idLegado || !/^\d{5,30}$/.test(idLegado)) throw new Error('A sessão antiga não pôde ser migrada.');
-    const [contaExistente, donoEmail, perfilRaw, xpRaw, score] = await redis([
+    const [contaExistente, donoEmail, perfilRaw] = await redis([
       ['HGET', 'accounts', idLegado], ['HGET', 'google_email_idx', email],
-      ['HGET', 'user_profiles', idLegado], ['HGET', `g:${idLegado}`, 'xp'],
-      ['ZSCORE', 'rank:xp', idLegado]
+      ['HGET', 'user_profiles', idLegado]
     ]);
     if(contaExistente) throw new Error('Já existe uma conta própria com este identificador. Entre pelo Google normalmente.');
     if(donoEmail) throw new Error('Este e-mail Google já está associado a outro perfil. Saia da conta atual para entrar no perfil correto.');
@@ -153,18 +218,12 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
       sv: 1, criadoEm: Date.now(), nickAlteradoEm: 0, twitch: null
     };
     await salvarConta(conta);
-    await redis([
-      ['HSET', 'google_idx', sub, idLegado], ['HSET', 'google_email_idx', email, idLegado],
-      ['HSETNX', `g:${idLegado}`, 'xp', '0'], ['HSETNX', `g:${idLegado}`, 'coins', '0'],
-      ['HSETNX', `g:${idLegado}`, 'criadoTs', String(Date.now())]
-    ]);
-    if(score == null) await redis([['ZADD', 'rank:xp', String(Number(xpRaw || 0)), idLegado]]);
+    await redis([['HSET', 'google_idx', sub, idLegado], ['HSET', 'google_email_idx', email, idLegado]]);
     await sincronizarPerfil(conta);
-    await avaliarConquistas(idLegado);
     return { conta, novo: false, vinculado: true, migradoDiscord: true };
   }
 
-  // Se o usuário já entrou com a conta local e iniciou o Google OAuth, vincula sem perder XP/inventário.
+  // Se o usuário já entrou com a conta local e iniciou o Google OAuth, vincula à conta existente.
   if(sessaoAtual && sessaoAtual.tipo === 'own'){
     const conta = await pegarConta(sessaoAtual.id);
     if(conta && conta.sv === sessaoAtual.sv){
@@ -178,6 +237,11 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
       await sincronizarPerfil(conta);
       return { conta, novo: false, vinculado: true };
     }
+  }
+
+  if(!sessaoAtual){
+    const [contaLocal] = await redis([['HGET', 'email_idx', email]]);
+    if(contaLocal) throw new Error('Este e-mail já possui acesso por senha. Entre com e-mail e senha para vincular outra opção.');
   }
 
   const [idEmail] = await redis([['HGET', 'google_email_idx', email]]);
@@ -214,13 +278,8 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
     sv: 1, criadoEm: Date.now(), nickAlteradoEm: 0, twitch: null
   };
   await salvarConta(conta);
-  await redis([
-    ['HSET', `g:${id}`, 'xp', '0', 'coins', '0', 'criadoTs', String(Date.now())],
-    ['ZADD', 'rank:xp', '0', id],
-    ['HSET', 'google_email_idx', email, id]
-  ]);
+  await redis([['HSET', 'google_email_idx', email, id]]);
   await sincronizarPerfil(conta);
-  await evento(id, 'cadastro', 'unico');
   return { conta, novo: true };
 }
 
@@ -228,12 +287,26 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
 export default async function handler(req, res){
   const action = (req.query && req.query.action) || '';
   // Catálogo e ranking são públicos; encaminhe antes da validação da sessão.
-  // O gameHandler valida SESSION_SECRET apenas nas ações que realmente exigem login.
-  if(ACOES_JOGO.includes(action)) return gameHandler(req, res);
+  // As rotas públicas de presença são processadas antes da validação de sessão.
+  if(action === 'cron-presenca' && req.method === 'GET'){
+    if(!CRON_SECRET || req.headers.authorization !== `Bearer ${CRON_SECRET}`) return res.status(401).json({ error: 'Não autorizado' });
+    try { const dados = await cronPresenca(); return res.status(200).json({ ok: true, ...dados }); }
+    catch(error){ console.error('[Twitch cron]', error?.message || error); return res.status(503).json({ ok: false, error: error?.message || 'Falha ao registrar presença.' }); }
+  }
   if(!ENV.SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
   res.setHeader('Cache-Control', 'no-store');
 
   try {
+
+    /* ====================== TWITCH LOGIN ====================== */
+    if(action === 'twitch-login' && req.method === 'GET'){
+      if(!twitchConfigurada()) return res.status(503).send('Login Twitch indisponível. Configure TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET na Vercel.');
+      if(!(await rateLimit(`rl:twitch:login:${ipDe(req)}`, 20, 60))) return res.status(429).send('Muitas tentativas. Aguarde um pouco.');
+      const state = randomBytes(24).toString('hex');
+      addCookie(res, `twitch_login_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
+      res.writeHead(302, { Location: urlVinculo(TWITCH_REDIRECT, state) });
+      return res.end();
+    }
 
     /* ====================== GOOGLE OAUTH ====================== */
     if(action === 'google-login' && req.method === 'GET'){
@@ -287,34 +360,44 @@ export default async function handler(req, res){
     /* ====================== REGISTRAR ====================== */
     if(action === 'register' && req.method === 'POST'){
       if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
-      if(!(await rateLimit(`rl:reg:${ipDe(req)}`, 5, 3600)))
-        return res.status(429).json({ error: 'Muitos cadastros deste IP. Tente mais tarde.' });
+      if(!(await rateLimit(`rl:reg:${ipDe(req)}`, 5, 3600))) return res.status(429).json({ error: 'Muitos cadastros deste IP. Tente mais tarde.' });
 
-      const usuario = safeStr(req.body?.usuario, 20).toLowerCase();
+      const email = safeStr(req.body?.email, 254).toLowerCase();
+      const usuarioSolicitado = safeStr(req.body?.usuario, 20).toLowerCase();
+      const baseUsuario = safeStr(usuarioSolicitado || (email ? usuarioDoGoogle(email) : ''), 20).toLowerCase();
       const senha = String(req.body?.senha || '');
-      const nick = safeStr(req.body?.nick || usuario, 24);
-      if(!RE_USUARIO.test(usuario)) return res.status(400).json({ error: 'Usuário: 3 a 20 caracteres (letras minúsculas, números e _).' });
-      if(!nickValido(nick)) return res.status(400).json({ error: 'Nick: 3 a 24 caracteres (letras, números, espaço, _ . -).' });
+      if(email && !EMAIL_RE.test(email)) return res.status(400).json({ error: 'Informe um e-mail válido.' });
+      if(!RE_USUARIO.test(baseUsuario)) return res.status(400).json({ error: 'Não foi possível gerar um identificador para sua conta.' });
+      const nick = safeStr(req.body?.nick || baseUsuario, 24);
+      if(!nickValido(nick)) return res.status(400).json({ error: 'Nome: 3 a 24 caracteres (letras, números, espaço, _ . -).' });
       if(senha.length < 8 || senha.length > 72) return res.status(400).json({ error: 'A senha precisa ter de 8 a 72 caracteres.' });
-      if(senha.toLowerCase().includes(usuario)) return res.status(400).json({ error: 'A senha não pode conter o usuário.' });
+      if(senha.toLowerCase().includes(baseUsuario) || (email && senha.toLowerCase().includes(email.split('@')[0]))) return res.status(400).json({ error: 'A senha não pode conter seu usuário ou e-mail.' });
 
       const id = 'u_' + randomBytes(8).toString('hex');
-      // HSETNX é atômico: dois cadastros simultâneos com o mesmo usuário não passam
-      const [livre] = await redis([['HSETNX', 'usernames', usuario, id]]);
-      if(Number(livre) !== 1) return res.status(409).json({ error: 'Esse usuário já existe.' });
+      let usuario = baseUsuario, reservado = false;
+      const tentativas = usuarioSolicitado ? 1 : 100;
+      for(let i = 0; i < tentativas; i++){
+        const sufixo = i ? String(i + 1) : '';
+        usuario = (baseUsuario.slice(0, 20 - sufixo.length) + sufixo).slice(0, 20);
+        const [livre] = await redis([['HSETNX', 'usernames', usuario, id]]);
+        if(Number(livre) === 1){ reservado = true; break; }
+      }
+      if(!reservado) return res.status(409).json({ error: 'Não foi possível gerar um usuário livre para esta conta.' });
+      let emailReservado = false;
+      if(email){
+        const [emailLivre] = await redis([['HSETNX', 'email_idx', email, id]]);
+        emailReservado = Number(emailLivre) === 1;
+        if(!emailReservado){ await redis([['HDEL', 'usernames', usuario]]); return res.status(409).json({ error: 'Esse e-mail já está cadastrado. Entre com ele ou use a Twitch.' }); }
+      }
 
       const { salt, hash } = await hashSenha(senha);
       const conta = {
-        id, usuario, nick, senha: { salt, hash }, sv: 1,
+        id, usuario, nick, email: email || null, emailVerificado: false,
+        loginProvider: email ? 'email' : 'senha', senha: { salt, hash }, sv: 1,
         criadoEm: Date.now(), nickAlteradoEm: 0, twitch: null
       };
       await salvarConta(conta);
-      await redis([
-        ['HSET', `g:${id}`, 'xp', '0', 'coins', '0', 'criadoTs', String(Date.now())],
-        ['ZADD', 'rank:xp', '0', id]
-      ]);
       await sincronizarPerfil(conta);
-      await evento(id, 'cadastro', 'unico');            // +XP/moedas de boas-vindas (servidor)
       const cargo = await emitirSessao(res, conta);
       return res.status(200).json({ ...publico(conta, cargo), novo: true });
     }
@@ -322,19 +405,21 @@ export default async function handler(req, res){
     /* ====================== LOGIN ====================== */
     if(action === 'login' && req.method === 'POST'){
       if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
-      const usuario = safeStr(req.body?.usuario, 20).toLowerCase();
+      const identificador = safeStr(req.body?.email || req.body?.usuario, 254).toLowerCase();
       const senha = String(req.body?.senha || '');
       const ip = ipDe(req);
-      // limite por IP e por usuário (força bruta)
-      if(!(await rateLimit(`rl:login:ip:${ip}`, 20, 900)) || !(await rateLimit(`rl:login:u:${usuario}`, 8, 900)))
+      if(!(await rateLimit(`rl:login:ip:${ip}`, 20, 900)) || !(await rateLimit(`rl:login:u:${identificador.slice(0, 120)}`, 8, 900)))
         return res.status(429).json({ error: 'Muitas tentativas. Aguarde alguns minutos.' });
-      if(!RE_USUARIO.test(usuario) || !senha) return res.status(401).json({ error: ERRO_LOGIN });
+      if(!identificador || !senha) return res.status(401).json({ error: ERRO_LOGIN });
 
-      const [id] = await redis([['HGET', 'usernames', usuario]]);
+      const emailLogin = identificador.includes('@');
+      if(emailLogin && !EMAIL_RE.test(identificador)) return res.status(401).json({ error: ERRO_LOGIN });
+      if(!emailLogin && !RE_USUARIO.test(identificador)) return res.status(401).json({ error: ERRO_LOGIN });
+      const [id] = await redis([[ 'HGET', emailLogin ? 'email_idx' : 'usernames', identificador ]]);
       const conta = id ? await pegarConta(id) : null;
-      // sempre gasta o mesmo tempo (scrypt) → não revela se o usuário existe
-      const ok = await conferirSenha(senha, conta ? conta.senha.salt : '00'.repeat(16), conta ? conta.senha.hash : '00'.repeat(64));
-      if(!conta || !ok) return res.status(401).json({ error: ERRO_LOGIN });
+      const pass = conta?.senha;
+      const ok = await conferirSenha(senha, pass?.salt || '00'.repeat(16), pass?.hash || '00'.repeat(64));
+      if(!conta || !pass || !ok) return res.status(401).json({ error: ERRO_LOGIN });
 
       const cargo = await emitirSessao(res, conta);
       return res.status(200).json(publico(conta, cargo));
@@ -353,7 +438,7 @@ export default async function handler(req, res){
       if(s.tipo === 'own'){
         const conta = await pegarConta(s.id);
         if(!conta || conta.sv !== s.sv){ limparSessao(res); return res.status(200).json({ logado: false }); }
-        const cargo = await cargoDe(conta.id, conta.google?.email || conta.email);     // cargo sempre ao vivo
+        const cargo = await cargoDe(conta.id, conta.google?.email || '');     // somente e-mail Google verificado pode conceder cargo DEV
         return res.status(200).json(publico(conta, cargo));
       }
       // sessão Discord legada
@@ -364,21 +449,34 @@ export default async function handler(req, res){
       });
     }
 
-    /* ====================== SALVAR AVATAR (boneco) ====================== */
-    if(action === 'avatar-save' && req.method === 'POST'){
-      if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
-      const { sessao: s } = await contaDaSessao(req);   // já descarta sessão própria revogada (sv)
-      if(!s) return res.status(401).json({ error: 'Faça login' });
-      if(!(await rateLimit(`rl:avatar:${s.id}`, 40, 60, false))) return res.status(429).json({ error: 'Calma! Muitas alterações seguidas.' });
+    /* ====================== PERFIL DE ATIVIDADE ====================== */
+    if(action === 'activity-profile' && req.method === 'GET'){
+      const sessao = lerSessao(req);
+      if(!sessao?.id) return res.status(401).json({ error: 'Faça login para ver seu perfil.' });
+      let conta = null;
+      if(sessao.tipo === 'own'){
+        conta = await pegarConta(sessao.id);
+        if(!conta || conta.sv !== sessao.sv) return res.status(401).json({ error: 'Sessão expirada. Entre novamente.' });
+      }
+      const stats = await lerAtividade(sessao.id);
+      return res.status(200).json({
+        usuario: conta ? publico(conta, await cargoDe(conta.id, conta.google?.email || '')) : { logado: true, id: sessao.id, nick: sessao.username, username: sessao.username, avatar: sessao.avatar, tipo: sessao.tipo, cargo: sessao.cargo || null },
+        atividade: stats
+      });
+    }
 
-      const S = await lerStats(s.id);
-      const ehDev = (await cargoDe(s.id, s.email)) === 'dev';
-      const { boneco, rejeitados } = validarBoneco(req.body?.boneco, S, ehDev);
-      if(rejeitados.length) return res.status(400).json({ error: 'Alguns itens ainda estão bloqueados.', rejeitados, boneco });
-
-      await redis([['HSET', `g:${s.id}`, 'boneco', JSON.stringify(boneco)]]);
-      await avaliarConquistas(s.id);          // "Estilo Próprio"
-      return res.status(200).json({ ok: true, boneco });
+    /* ====================== LIMPEZA ÚNICA DOS DADOS LEGADOS ====================== */
+    if(action === 'purge-legacy-data' && req.method === 'POST'){
+      if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida.' });
+      const { conta } = await contaDaSessao(req);
+      if(!conta) return res.status(401).json({ error: 'Entre com sua conta para continuar.' });
+      const cargo = await cargoDe(conta.id, conta.google?.email || '');
+      if(cargo !== 'dev') return res.status(403).json({ error: 'Somente a equipe DEV pode executar esta limpeza.' });
+      if(req.body?.confirm !== 'LIMPAR_DADOS_LEGADOS') return res.status(400).json({ error: 'Confirmação ausente.' });
+      const [feito] = await redis([['GET', 'legacy:community-cleanup:v1']]);
+      if(feito) return res.status(200).json({ ok: true, jaExecutado: true, resultado: jparse(feito, {}) });
+      const resultado = await limparDadosLegados();
+      return res.status(200).json({ ok: true, resultado });
     }
 
     /* ====================== TROCAR SENHA ====================== */
@@ -424,7 +522,7 @@ export default async function handler(req, res){
       if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida. Abra o painel pelo domínio oficial.' });
       const { conta } = await contaDaSessao(req);
       if(!conta) return res.status(401).json({ error: 'Entre com sua conta DEV para gerar o link.' });
-      const email = String(conta.google?.email || conta.email || '').trim().toLowerCase();
+      const email = String(conta.google?.email || '').trim().toLowerCase();
       if((await cargoDe(conta.id, email)) !== 'dev') return res.status(403).json({ error: 'Apenas a equipe DEV pode gerar este link.' });
       if(!twitchConfigurada()) return res.status(503).json({ error: 'Configure TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET na Vercel.' });
       if(!(await rateLimit(`rl:twitch:bc-link:${conta.id}`, 5, 3600))) return res.status(429).json({ error: 'Limite de links atingido. Aguarde uma hora.' });
@@ -474,6 +572,57 @@ export default async function handler(req, res){
         return res.end();
       }
 
+      // Login direto pela Twitch (state protegido por cookie HttpOnly).
+      const loginState = pegarCookie(req, 'twitch_login_state');
+      if(loginState){
+        addCookie(res, 'twitch_login_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+        if(error || !code || !state || loginState !== state){ res.writeHead(302, { Location: '/?login=twitch-erro' }); return res.end(); }
+        if(!twitchConfigurada()){ res.writeHead(302, { Location: '/?login=twitch-config' }); return res.end(); }
+        const tw = await identificarViewer(String(code), TWITCH_REDIRECT);
+        if(!tw){ res.writeHead(302, { Location: '/?login=twitch-erro' }); return res.end(); }
+        const [donoRaw] = await redis([['HGET', 'twitch_idx', tw.id]]);
+        let conta = donoRaw ? await pegarConta(donoRaw) : null;
+        let novo = false;
+        if(!conta){
+          if(donoRaw) await redis([['HDEL', 'twitch_idx', tw.id]]);
+          const id = 'u_' + randomBytes(8).toString('hex');
+          const base = usuarioDaTwitch(tw.login);
+          let usuario = base, reservado = false;
+          for(let i = 0; i < 100; i++){
+            const sufixo = i ? String(i + 1) : '';
+            usuario = (base.slice(0, 20 - sufixo.length) + sufixo).slice(0, 20);
+            const [ok] = await redis([['HSETNX', 'usernames', usuario, id]]);
+            if(Number(ok) === 1){ reservado = true; break; }
+          }
+          if(!reservado){ res.writeHead(302, { Location: '/?login=twitch-erro' }); return res.end(); }
+          conta = {
+            id, usuario, nick: nickValido(tw.nome) ? tw.nome.slice(0, 24) : usuario,
+            avatar: tw.avatar || null, loginProvider: 'twitch',
+            twitch: { id: tw.id, login: tw.login, nome: tw.nome, desde: Date.now() },
+            sv: 1, criadoEm: Date.now(), nickAlteradoEm: 0
+          };
+          await salvarConta(conta);
+          await redis([['HSET', 'twitch_idx', tw.id, id]]);
+          await sincronizarPerfil(conta);
+          novo = true;
+        } else {
+          if(!conta.twitch || String(conta.twitch.id) !== tw.id){
+            const [dono] = await redis([['HGET', 'twitch_idx', tw.id]]);
+            if(dono && String(dono) !== String(conta.id)){ res.writeHead(302, { Location: '/?login=twitch-em-uso' }); return res.end(); }
+            conta.twitch = { id: tw.id, login: tw.login, nome: tw.nome, desde: conta.twitch?.desde || Date.now() };
+          }
+          if(!conta.avatar && !conta.google?.picture && tw.avatar) conta.avatar = tw.avatar;
+          await salvarConta(conta);
+          await redis([['HSET', 'twitch_idx', tw.id, conta.id]]);
+          await sincronizarPerfil(conta);
+        }
+        const cargo = await emitirSessao(res, conta);
+        const qs = new URLSearchParams({ login: 'ok', provider: 'twitch' });
+        if(novo) qs.set('novo', '1');
+        res.writeHead(302, { Location: `/?${qs.toString()}#perfil` });
+        return res.end();
+      }
+
       // Fluxo original de vínculo individual dos jogadores, protegido por cookie/state.
       const { conta } = await contaDaSessao(req);
       if(!conta) { res.writeHead(302, { Location: '/?entrar=1' }); return res.end(); }
@@ -491,9 +640,10 @@ export default async function handler(req, res){
       if(conta.twitch && conta.twitch.id !== tw.id) await redis([['HDEL', 'twitch_idx', conta.twitch.id]]);
 
       conta.twitch = { id: tw.id, login: tw.login, nome: tw.nome, desde: Date.now() };
+      if(!conta.avatar && !conta.google?.picture && tw.avatar) conta.avatar = tw.avatar;
       await salvarConta(conta);
       await redis([['HSET', 'twitch_idx', tw.id, conta.id]]);
-      await evento(conta.id, 'vincular_twitch', tw.id);
+      await sincronizarPerfil(conta);
       res.writeHead(302, { Location: '/?twitch=ok' });
       return res.end();
     }

@@ -244,9 +244,36 @@ function seRows(payload) {
 function seUserName(row) {
   return safeStr(row?.username || row?.data?.username || row?.user?.username || row?.displayName || row?.name || 'Anônimo', 40);
 }
+
+function numeroManual(valor){
+  const texto = String(valor || '').replace(/R\$/gi, '').replace(/\s/g, '').replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
+  const n = Number(texto);
+  return Number.isFinite(n) ? n : 0;
+}
+async function hallManual(){
+  try{
+    const [topRaw, hallRaw] = await redis([['GET', 'config:top3'], ['GET', 'config:hall']]);
+    let top = [], listaHall = [];
+    try { top = topRaw ? JSON.parse(topRaw) : []; } catch(e) {}
+    try { listaHall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e) {}
+    const base = Array.isArray(top) && top.length ? top : listaHall;
+    const doadores = (Array.isArray(base) ? base : []).slice(0, 5).map((item, i) => {
+      const nome = safeStr(item?.nome, 40);
+      const rotulo = safeStr(item?.valor || item?.meta, 60) || 'Apoiador';
+      return { pos: i + 1, nome, avatar: null, total: numeroManual(rotulo), valor: numeroManual(rotulo), valorTexto: rotulo, doacoes: 0, maior: 0, ultima: null };
+    }).filter(item => item.nome);
+    return {
+      vazio: !doadores.length, doadores, gift: [], fieis: [], totalMes: 0, totalGeral: 0,
+      apoiadores: doadores.length, doacoes: 0, moeda: 'BRL', ultimo: null, fonte: 'Manual'
+    };
+  }catch(error){
+    console.warn('[Hall] Não foi possível ler o Top de apoiadores manual:', error?.message || error);
+    return null;
+  }
+}
 let hallErro = null;
 async function hallStreamElements() {
-  if (!temJwt()) { hallErro = 'STREAMELEMENTS_JWT não configurada no servidor.'; return null; }
+  if (!temJwt()) { hallErro = 'STREAMELEMENTS_JWT não configurada no servidor.'; const manual = await hallManual(); return manual ? { ...manual, aviso: 'O ranking automático está temporariamente indisponível. Exibindo a lista configurada pela equipe.' } : null; }
   try {
     const r = await rankingDoadores();
     const fotos = await twitchAvatares(r.lista.slice(0, 100).map(x => x.nome));
@@ -260,7 +287,8 @@ async function hallStreamElements() {
   } catch (error) {
     hallErro = error?.message || 'Falha ao consultar o StreamElements.';
     console.error('[Hall] Falha ao consultar doadores no StreamElements:', hallErro);
-    return null;
+    const manual = await hallManual();
+    return manual ? { ...manual, aviso: 'Não foi possível atualizar os apoiadores automaticamente. Exibindo a lista configurada pela equipe.' } : null;
   }
 }
 
@@ -341,7 +369,6 @@ export default async function handler(req, res) {
       const idade = cache ? (Date.now() - cache.ts) / 1000 : Infinity;
       const forcar = req.query?.refresh === '1';
 
-      if (!temJwt()) return res.status(200).json({ vazio: true, doadores: [], updatedAt: null, erro: 'STREAMELEMENTS_JWT não configurada no servidor.' });
       if (cache && idade < HALL_CACHE_TTL && !forcar) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
 
       const dados = await hallStreamElements();
@@ -362,7 +389,7 @@ export default async function handler(req, res) {
           let d = (cache && (Date.now() - cache.ts) / 1000 < HALL_CACHE_TTL) ? cache.dados : null;
           if (!d) { d = await hallStreamElements(); if (d) await salvarHallCache(d); else if (cache) d = cache.dados; }
           if (!d) throw Object.assign(new Error(hallErro || 'Não foi possível consultar os doadores.'), { statusCode: 502 });
-          out = { modo, total: d.apoiadores, lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
+          out = { modo, fonte: d.fonte || 'StreamElements', total: d.apoiadores, lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, valorLabel: x.valorTexto || null, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
                   resumo: { totalMes: d.totalMes, totalGeral: d.totalGeral, doacoes: d.doacoes, moeda: d.moeda, ultimo: d.ultimo } };
         } else if (modo === 'chat') {
           const c = await statsChat(limit);

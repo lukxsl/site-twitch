@@ -1,5 +1,5 @@
 // api/_lib/core.js
-// Utilitários compartilhados por auth.js, game.js e admin.js.
+// Utilitários compartilhados por auth.js, admin.js e rotas da comunidade.
 // A pasta começa com "_" → a Vercel NÃO expõe esses arquivos como rotas.
 import { createHmac, timingSafeEqual, randomBytes, scrypt as scryptCb } from 'crypto';
 import { promisify } from 'util';

@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import { evento } from './_lib/game.js';
+import { somarAtividade } from './_lib/atividade.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -881,7 +881,7 @@ export default async function handler(req, res){
       const [perfilRaw, adminRaw] = await redis([
         ['HGET', 'user_profiles', idAlvo], ['HGET', 'admins', idAlvo]
       ]);
-      if(!perfilRaw) return res.status(404).json({ error: 'Essa pessoa ainda não tem perfil no Arcade. Ela precisa entrar no site primeiro.' });
+      if(!perfilRaw) return res.status(404).json({ error: 'Essa pessoa ainda não tem perfil no site. Ela precisa criar uma conta primeiro.' });
       if(adminRaw) return res.status(409).json({ error: 'Essa pessoa já possui acesso. Use Editar para trocar o cargo.' });
       let perfil = {};
       try { perfil = JSON.parse(perfilRaw); } catch(e){}
@@ -1027,7 +1027,7 @@ export default async function handler(req, res){
       if(!nome) return res.status(400).json({ erro: 'Informe um nome' });
       try {
         const url = 'https://api.jikan.moe/v4/anime?q=' + encodeURIComponent(nome) + '&limit=1&sfw=true';
-        const resposta = await fetch(url, { signal: AbortSignal.timeout(7000), headers: { 'User-Agent': 'SosoArcade/1.0' } });
+        const resposta = await fetch(url, { signal: AbortSignal.timeout(7000), headers: { 'User-Agent': 'asemtet0-site/1.0' } });
         if(!resposta.ok) return res.status(502).json({ erro: 'A busca de animes está temporariamente indisponível.' });
         const payload = await resposta.json();
         const item = payload?.data?.[0];
@@ -1211,21 +1211,15 @@ export default async function handler(req, res){
       try { item = JSON.parse(retorno[0]); } catch { return res.status(500).json({ error: 'Não foi possível confirmar a atualização da sugestão' }); }
       const statusAnterior = String(retorno[1] || 'nova');
 
-      let recompensaPendente = false;
-      if(status === 'aceita' && item.userId){
-        try {
-          // A referência é o ID da sugestão: aprovar novamente não paga em dobro.
-          await evento(String(item.userId), 'sugestao_aprovada', String(item.id));
-        } catch(error) {
-          recompensaPendente = true;
-          console.error('[Admin] Sugestão aceita, mas a recompensa ficou pendente:', error?.message || error);
-        }
+      if(status === 'aceita' && statusAnterior !== 'aceita' && item.userId){
+        try { await somarAtividade(String(item.userId), 'approvedSuggestions', 1); }
+        catch(error) { console.error('[Admin] Sugestão aceita, mas a estatística ficou pendente:', error?.message || error); }
       }
 
       await notificarStatus(item, status, item.motivo, quem);
       const label = status === 'recusada' ? `recusou (motivo: ${item.motivo})` : `mudou para ${status}`;
       await logAcao(quem, sessao.cargo, `Sugestão de @${item.nome}: ${label}`);
-      return res.status(200).json({ ok: true, item, recompensaPendente, statusAnterior });
+      return res.status(200).json({ ok: true, item, statusAnterior });
     }
 
     if(req.method === 'POST' && action === 'sugestoes-delete'){

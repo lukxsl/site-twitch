@@ -781,7 +781,7 @@ async function renderAdminAdmins(){
   area.innerHTML = adminVoltarHTML('👥 Admins') + `
     <div class="admin-card">
       <h3>👥 Administradores <span class="cont">${(dados.admins||[]).length}</span></h3>
-      <p class="admin-field-help">A pessoa precisa entrar no Arcade primeiro. Donos gerenciam Moderadores e Administradores; somente Devs podem gerenciar cargos de Dono ou Dev. O servidor confere essas regras em cada ação.</p>
+      <p class="admin-field-help">A pessoa precisa criar uma conta no site primeiro. Donos gerenciam Moderadores e Administradores; somente Devs podem gerenciar cargos de Dono ou Dev. O servidor confere essas regras em cada ação.</p>
       ${dados.admins && dados.admins.length ? `<div class="admin-votos">${adminsHTML}</div>` : '<div class="logs-empty"><b>Nenhum admin cadastrado</b>Adiciona o primeiro.</div>'}
       <div class="admin-actions">
         ${podeGerenciar ? `<button class="admin-btn" onclick="adicionarAdmin()">+ Adicionar admin</button>` : ''}
@@ -960,7 +960,7 @@ function adicionarAdmin(){
   document.getElementById('dTitle').textContent = 'Adicionar admin';
   document.getElementById('dBody').innerHTML = `
     <div class="admin-form">
-      <div><label>ID do jogador no Arcade</label><input id="novoAdminId" type="text" placeholder="ID numérico da conta"><small class="admin-field-help">A pessoa precisa entrar no site primeiro. Peça o ID que aparece em Perfil → Configurações; não use o nick. Dono pode administrar a equipe, mas não substitui o cargo Dev.</small></div>
+      <div><label>ID da conta no site</label><input id="novoAdminId" type="text" placeholder="ID numérico da conta"><small class="admin-field-help">A pessoa precisa entrar no site primeiro. Peça o ID que aparece em Perfil → Configurações; não use o nick. Dono pode administrar a equipe, mas não substitui o cargo Dev.</small></div>
       <div><label>Cargo</label>
         <select id="novoAdminCargo">
           <option value="moderador">🔰 Moderador</option>

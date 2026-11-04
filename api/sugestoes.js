@@ -3,7 +3,7 @@
 // uma falha no webhook não pode apagar uma sugestão já salva.
 import { createHash, randomUUID } from 'crypto';
 import { redis, lerSessao, rateLimit, origemOk, ipDe, safeStr } from './_lib/core.js';
-import { evento } from './_lib/game.js';
+import { somarAtividade } from './_lib/atividade.js';
 
 const LIST_KEY = 'sugestoes:lista';
 const MAX_ITENS = 200;
@@ -165,14 +165,10 @@ export default async function handler(req, res) {
       console.warn('[Sugestões] Não foi possível registrar log administrativo:', error?.message || error);
     }
 
-    let recompensaPendente = false;
+    let estatisticaPendente = false;
     if (userId) {
-      try {
-        await evento(userId, 'sugestao_enviada', item.id);
-      } catch (error) {
-        recompensaPendente = true;
-        console.error('[Sugestões] Sugestão salva, mas a recompensa ficou pendente:', error?.message || error);
-      }
+      try { await somarAtividade(userId, 'suggestions', 1); }
+      catch (error) { estatisticaPendente = true; console.error('[Sugestões] Sugestão salva, mas a estatística ficou pendente:', error?.message || error); }
     }
 
     let discordNotificado = false;
@@ -212,7 +208,7 @@ export default async function handler(req, res) {
       ok: true,
       id: item.id,
       discordNotificado,
-      recompensaPendente,
+      estatisticaPendente,
       aviso: !discordNotificado ? 'A sugestão foi salva no site. A notificação do Discord não foi enviada.' : null
     });
   } catch (error) {

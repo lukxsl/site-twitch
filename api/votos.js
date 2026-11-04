@@ -2,7 +2,7 @@
 // Voto e contagem são atualizados dentro de um único script Redis para
 // evitar contagens negativas ou duplicadas quando duas requisições chegam juntas.
 import { redis, lerSessao, rateLimit, origemOk, safeStr } from './_lib/core.js';
-import { evento } from './_lib/game.js';
+import { somarAtividade } from './_lib/atividade.js';
 
 const COOKIE_SESSAO = 'sessao_site';
 const OPCOES_PADRAO = [
@@ -121,10 +121,8 @@ export default async function handler(req, res) {
       ]]);
       jaVotou = Number(resultado?.[0]) === 0;
 
-      // A referência é o ciclo, não a opção: trocar o voto não gera XP extra.
-      // Também é chamado quando o voto já existia, para recuperar uma recompensa
-      // caso uma tentativa anterior tenha falhado depois de salvar o voto.
-      await evento(String(sessao.id), 'voto', ciclo);
+      // Conta somente o primeiro voto ou uma troca efetiva de opção neste ciclo.
+      if(Number(resultado?.[0]) === 1) await somarAtividade(String(sessao.id), 'votes', 1);
     }
 
     const [flat, meuRaw] = await redis([

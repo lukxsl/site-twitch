@@ -22,10 +22,11 @@
 <link rel="stylesheet" href="css/setup.css">
 <link rel="stylesheet" href="css/admin.css">
 <link rel="stylesheet" href="css/tierlist.css">
-<link rel="stylesheet" href="css/arcade.css">
-<link rel="stylesheet" href="css/arcade-dashboard.css">
-<link rel="stylesheet" href="css/profile.css">
+
 <link rel="stylesheet" href="css/ranking.css">
+<link rel="stylesheet" href="css/auth-new.css">
+<link rel="stylesheet" href="css/profile-clean.css">
+<link rel="stylesheet" href="css/refinements.css">
 </head>
 <body>
 
@@ -226,6 +227,7 @@
         </div>
         <div class="jogo-half">
           <img class="foco-cover" id="proxCover" alt="" style="display:none">
+          <div class="foco-cover prox-cover-fallback" id="proxCoverFallback" aria-hidden="true"><span>🗳️</span><small>PRÓXIMO JOGO</small></div>
           <div class="foco-info">
             <span class="foco-label">🗳️ Próximo na votação</span>
             <h3 id="proxNome">Votação aberta</h3>
@@ -246,7 +248,7 @@
         <div class="sub-hero-top">
           <span class="sub-kicker">👑 Cantinho VIP</span>
           <h3>Entre pro cantinho</h3>
-          <p>Vire Sub e apoie a Soso ganhando recompensas exclusivas. 💜</p>
+          <p>Assine o canal e apoie a Soso com os benefícios exclusivos da Twitch. 💜</p>
         </div>
         <div class="sub-perks-grid">
           <div class="sub-perk"><i>🎁</i><span>Emotes exclusivos</span></div>
@@ -739,142 +741,119 @@
 
 <!-- ==================== PERFIL ==================== -->
 <section id="sec-perfil" class="page-section">
-  <div class="pf-shell">
-    <header class="pf-head">
-      <span class="section-kicker">✦ SEU ESPAÇO NO ARCADE</span>
-      <h1>Meu Perfil</h1>
-      <p>Seu espaço no cantinho da Soso: acompanhe sua evolução, conquistas e participação na comunidade.</p>
+  <div class="community-profile-shell">
+    <header class="community-profile-head">
+      <div>
+        <span class="section-kicker">SEU ESPAÇO NA COMUNIDADE</span>
+        <h1>Meu perfil</h1>
+        <p>Veja sua presença nas lives, sua participação e as conexões da sua conta.</p>
+      </div>
+      <span class="community-profile-status" id="pfProfileStatus" role="status" aria-live="polite">Carregando…</span>
     </header>
 
-    <div class="pf-banner" id="pfBanner">
-      <div class="pf-banner-content">
-        <span class="pf-banner-kicker">BANNER DE PERFIL</span>
+    <div class="community-profile-banner">
+      <div class="community-profile-banner-glow" aria-hidden="true"></div>
+      <div class="community-profile-banner-copy">
+        <span class="community-profile-overline">BEM-VINDA(O) AO CANTINHO</span>
         <h2 id="pfBannerNome">@convidado</h2>
-        <p>Seu espaço no cantinho da Soso.</p>
-        <small class="pf-banner-status" id="pfBannerStatus"></small>
+        <p id="pfBannerStatus">Entre para visualizar seu espaço.</p>
       </div>
-      <span class="pf-banner-chip">SOSO ARCADE <i>● ONLINE</i></span>
+      <span class="community-profile-tag">ASEMTET0 <i>● COMUNIDADE</i></span>
     </div>
 
-    <div class="pf-body-layout">
-    <nav class="pf-tabs" role="tablist" aria-label="Navegação do perfil">
-      <button type="button" class="pf-tab on" data-pf-tab="visao-geral" role="tab" aria-selected="true">👁️ Visão Geral</button>
-      <button type="button" class="pf-tab" data-pf-tab="conquistas" role="tab" aria-selected="false">🏆 Conquistas</button>
-      <button type="button" class="pf-tab" data-pf-tab="configuracoes" role="tab" aria-selected="false">⚙️ Configurações</button>
-    </nav>
-    <div class="pf-content-layout">
+    <div class="community-profile-tabs" role="tablist" aria-label="Abas do perfil">
+      <button type="button" class="is-active" data-pf-tab="overview" role="tab" aria-selected="true">Visão geral</button>
+      <button type="button" data-pf-tab="settings" role="tab" aria-selected="false">Configurações</button>
+    </div>
 
-    <!-- VISÃO GERAL -->
-    <div class="pf-panel on" data-pf-panel="visao-geral">
-      <div class="pf-overview-layout">
-        <aside class="pf-player-column">
-          <div class="pf-visual-section">
-            <div class="pf-avatar-stage-large" id="pfAvatarStageLarge">
-              <span class="pf-avatar-stage-label">SUA FOTO DE PERFIL</span>
-              <div class="pf-avatar-wrap-large">
-                <div class="pf-avatar-large pf-real-photo" id="pfAvatarLarge" role="img" aria-label="Sua foto de perfil"></div>
-              </div>
-              <span class="pf-avatar-stage-floor" aria-hidden="true"></span>
-            </div>
+    <div id="pfSignInPrompt" class="pf-signin-prompt">
+      <div class="pf-signin-icon" aria-hidden="true">✦</div>
+      <h2>Seu cantinho começa aqui</h2>
+      <p>Entre com a Twitch ou seu e-mail para acompanhar suas atividades, conectar sua conta e participar da comunidade.</p>
+      <button type="button" class="auth-primary" id="pfProfileLogin">Entrar ou criar conta <span>→</span></button>
+    </div>
+
+    <div id="pfSignedInContent" hidden>
+      <section class="community-profile-panel is-active" data-pf-panel="overview" role="tabpanel">
+        <div class="community-profile-identity-card">
+          <div class="community-profile-avatar" id="pfAvatar" aria-label="Foto do perfil">?</div>
+          <div class="community-profile-identity-copy">
+            <span class="community-profile-overline">SUA CONTA</span>
+            <h2 id="pfNickLarge">Pessoa da comunidade</h2>
+            <p>Login: <strong id="pfProfileMethod">—</strong></p>
           </div>
+          <button type="button" class="community-profile-secondary" id="pfReloadProfile">Atualizar dados ↻</button>
+        </div>
 
-          <section class="pf-info-summary">
-            <div class="pf-player-identity">
-              <span class="pf-eyebrow">JOGADOR DO ARCADE</span>
-              <h2 class="pf-nick-large" id="pfNickLarge">@convidado</h2>
-              <span class="pf-current-title" id="pfCurrentTitle">Novato</span>
-            </div>
-            <div class="pf-title-row">
-              <label class="pf-title-label" for="pfTituloSelect">Título equipado</label>
-              <select id="pfTituloSelect" aria-describedby="pfTitleHint">
-                <option value="novato">Novato</option>
-              </select>
-            </div>
-            <p class="pf-title-hint" id="pfTitleHint">Desbloqueie novos títulos participando da comunidade.</p>
-            <div class="pf-level-row">
-              <div class="pf-level-large"><span class="pf-level-num" id="pfLevelLarge">1</span><span class="pf-level-label">NÍVEL</span></div>
-              <span class="pf-level-next" id="pfXpFaltam">Próximo nível</span>
-            </div>
-            <div class="pf-xp-bar-container">
-              <div class="pf-xp-bar-track" role="progressbar" aria-label="Progresso para o próximo nível" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pfXpBarTrack">
-                <div class="pf-xp-bar-fill" id="pfXpBarFill" style="width:0%"></div>
-              </div>
-              <div class="pf-xp-meta"><span class="pf-xp-text" id="pfXpText">0 / 100 XP</span><span id="pfXpPercent">0%</span></div>
-              <p class="pf-xp-total" id="pfXpTotal">Total acumulado: 0 XP</p>
-            </div>
-            <div class="pf-title-collection">
-              <div class="pf-title-collection-head"><span>Títulos da sua jornada</span><strong id="pfTitlesProgress">1 disponível</strong></div>
-              <div class="pf-title-collection-list" id="pfTitleCatalog"><span class="pf-title-chip is-current">Novato</span></div>
+        <div class="community-profile-stats" aria-label="Estatísticas da comunidade">
+          <article class="community-stat-card"><span class="community-stat-icon">◉</span><div><strong id="pfLivesCount">0</strong><span>Lives com presença</span></div></article>
+          <article class="community-stat-card"><span class="community-stat-icon">◷</span><div><strong id="pfWatchHoursCount">0 min</strong><span>Tempo acompanhado</span></div></article>
+          <article class="community-stat-card"><span class="community-stat-icon">▤</span><div><strong id="pfVotesCount">0</strong><span>Votos registrados</span></div></article>
+          <article class="community-stat-card"><span class="community-stat-icon">✎</span><div><strong id="pfSuggestionsCount">0</strong><span>Sugestões enviadas</span><small id="pfApprovedSuggestionsCount">0 aprovadas</small></div></article>
+        </div>
+
+        <div class="community-profile-lower-grid">
+          <section class="community-profile-info-card">
+            <span class="community-profile-overline">PRESENÇA NAS LIVES</span>
+            <h3>Sua sequência</h3>
+            <p>Lives consecutivas em que sua presença foi identificada pelo sistema.</p>
+            <div class="community-streak-grid">
+              <div><strong id="pfStreakCurrent">0</strong><span>Atual</span></div>
+              <div><strong id="pfStreakBest">0</strong><span>Recorde</span></div>
             </div>
           </section>
-        </aside>
-
-        <div class="pf-overview-data">
-          <section class="pf-overview-stats" aria-label="Estatísticas do jogador">
-            <article class="pf-stat-card"><span class="pf-stat-icon">🎮</span><div><strong id="pfLivesCount">0</strong><span>Lives válidas</span></div></article>
-            <article class="pf-stat-card"><span class="pf-stat-icon">⏱️</span><div><strong id="pfWatchHoursCount">0h</strong><span>Tempo assistido</span></div></article>
-            <article class="pf-stat-card"><span class="pf-stat-icon">🗳️</span><div><strong id="pfVotesCount">0</strong><span>Votos registrados</span></div></article>
-            <article class="pf-stat-card"><span class="pf-stat-icon">💡</span><div><strong id="pfSuggestionsCount">0</strong><span>Sugestões enviadas</span><small id="pfApprovedSuggestionsCount">0 aprovadas</small></div></article>
-            <article class="pf-stat-card"><span class="pf-stat-icon">🔑</span><div><strong id="pfCodesCount">0</strong><span>Códigos resgatados</span></div></article>
-            <article class="pf-stat-card pf-stat-coins"><img src="img/sosocoin.png" alt=""/><div><strong id="pfCoinsValue">0</strong><span>SosoCoins</span></div></article>
-          </section>
-
-          <section class="pf-position-card">
-            <div class="pf-position-copy">
-              <span class="pf-eyebrow">PLACAR DA COMUNIDADE</span>
-              <h3>Sua posição no ranking</h3>
-              <p id="pfPositionTotal">Entre no Arcade para aparecer no placar.</p>
-            </div>
-            <div class="pf-position-number" id="pfPositionNumber">—</div>
-            <button type="button" class="pf-btn pf-btn-secondary" id="pfOpenGlobalRanking">Ver ranking completo ↗</button>
-          </section>
-
-          <section class="pf-streak-card">
-            <div class="pf-extra-head">
-              <div><span class="pf-eyebrow">PRESENÇA NAS LIVES</span><h3>Sua sequência</h3></div>
-              <span class="pf-streak-flame">🔥</span>
-            </div>
-            <div class="pf-streak-summary">
-              <div><strong id="pfStreakCurrent">0</strong><span>sequência atual</span></div>
-              <div><strong id="pfStreakBest">0</strong><span>seu recorde</span></div>
-              <div><strong id="pfStreakNext">—</strong><span>próximo marco</span></div>
-            </div>
-            <div class="pf-streak-milestones" id="pfStreakMilestones"><div class="pf-milestone-list"></div></div>
-            <p class="pf-streak-rule" id="pfStreakRuleText">A sequência considera lives consecutivas em que sua presença foi confirmada.</p>
+          <section class="community-profile-info-card community-profile-ranking-card">
+            <span class="community-profile-overline">CONTINUE PARTICIPANDO</span>
+            <h3>Faça parte do ranking</h3>
+            <p>Confira os dados de horas assistidas, pontos, chat e apoiadores do canal.</p>
+            <button type="button" class="community-profile-secondary" id="pfOpenGlobalRanking">Ver ranking completo ↗</button>
           </section>
         </div>
-      </div>
+      </section>
 
-      <div class="pf-overview-extras">
-        <section class="pf-extra-card">
-          <div class="pf-extra-head"><div><span class="pf-eyebrow">SEUS MARCOS</span><h3>Conquistas recentes</h3></div><button type="button" class="pf-text-link" data-pf-go="conquistas">Ver conquistas ↗</button></div>
-          <div id="pfRecentAchievements" class="pf-recent-achievements"><p class="pf-empty">Suas primeiras conquistas aparecem aqui.</p></div>
-        </section>
-        <section class="pf-extra-card pf-xp-rules-card">
-          <div class="pf-extra-head"><div><span class="pf-eyebrow">PROGRESSÃO</span><h3>Como ganhar XP</h3></div></div>
-          <div class="pf-xp-rules" id="pfXpRules"><p class="pf-empty">As atividades que dão XP aparecem aqui.</p></div>
-        </section>
-      </div>
-    </div>
-
-    <!-- CONQUISTAS -->
-    <div class="pf-panel" data-pf-panel="conquistas" hidden>
-      <div class="pf-panel-heading"><div><span class="pf-eyebrow">MISSÕES DA COMUNIDADE</span><h2>Conquistas</h2><p>Acompanhe suas metas e veja o que falta para desbloquear cada recompensa.</p></div><span class="pf-count-pill" id="pfAchievementProgress">0 / 0</span></div>
-      <div class="pf-achievement-toolbar"><div class="pf-achievement-filters" id="pfAchievementFilters" role="group" aria-label="Filtrar conquistas"><button type="button" data-achievement-filter="andamento" class="is-active">Em andamento</button><button type="button" data-achievement-filter="desbloqueadas">Desbloqueadas</button><button type="button" data-achievement-filter="todas">Todas</button></div><span id="pfAchievementHint">Priorize as próximas metas da sua jornada.</span></div>
-      <div id="pfAchievementsGrid" class="pf-achievement-grid"><p class="pf-empty">Carregando conquistas…</p></div>
-    </div>
-
-    <!-- CONFIGURAÇÕES -->
-    <div class="pf-panel" data-pf-panel="configuracoes" hidden>
-      <div class="pf-panel-heading"><div><span class="pf-eyebrow">SUA CONTA</span><h2>Configurações</h2><p>Cuide do seu nick, da sua conta e das conexões usadas para registrar sua presença.</p></div></div>
-      <div class="pf-settings-grid">
-        <section class="pf-settings-card"><span class="pf-settings-icon">👤</span><div><h3>Identidade</h3><p>Seu nick aparece no cartão de jogador, nas conquistas e no ranking.</p></div><label for="pfSettingsNick">Nick do Arcade</label><input id="pfSettingsNick" maxlength="24" autocomplete="nickname" placeholder="Seu nick"><p class="pf-settings-note" id="pfSettingsNickNote">Use de 3 a 24 caracteres. A primeira troca é livre; depois, há um intervalo de 7 dias.</p><button class="pf-btn pf-btn-primary" id="pfSaveNick" type="button">Salvar nick</button></section>
-        <section class="pf-settings-card"><span class="pf-settings-icon">🔐</span><div><h3>Conta e acesso</h3><p>Confira como sua conta está conectada ao Arcade.</p></div><div class="pf-settings-data"><small>E-MAIL VINCULADO</small><strong id="pfSettingsEmail">—</strong><small>MÉTODO DE LOGIN</small><strong id="pfSettingsAccount">—</strong><small>ID DO JOGADOR</small><strong class="pf-player-id-line"><code id="pfSettingsPlayerId">—</code><button type="button" class="pf-copy-id" id="pfCopyPlayerId">Copiar</button></strong></div><a class="pf-btn pf-btn-secondary" id="pfGoogleLink" href="/api/auth?action=google-login" hidden>Vincular conta Google</a><button class="pf-btn pf-btn-danger" id="pfSettingsLogout" type="button">Sair da conta</button></section>
-        <section class="pf-settings-card pf-settings-twitch"><span class="pf-settings-icon">📺</span><div><h3>Conexão com a Twitch</h3><p>Vincule a conta que você usa no chat. O Arcade precisa dessa conexão para confirmar presença, horas assistidas e sequência de lives.</p></div><div class="pf-twitch-status" id="pfTwitchStatus">Twitch não vinculada</div><div class="pf-settings-actions"><button class="pf-btn pf-btn-primary" id="pfTwitchLink" type="button">Vincular Twitch</button><button class="pf-btn pf-btn-danger" id="pfTwitchUnlink" type="button" hidden>Desvincular Twitch</button></div></section>
-        <section class="pf-settings-card pf-dev-insights" id="pfDevInsights" hidden><div class="pf-dev-heading"><div><span class="pf-settings-icon">🧪</span><h3>Diagnóstico do Arcade · DEV</h3><p>Saúde da base, métricas do StreamElements e status da Twitch. Cada fonte informa separadamente quando não está configurada ou falha.</p></div><button type="button" class="pf-btn pf-btn-secondary" id="pfDevRefresh">↻ Atualizar dados</button></div><p class="pf-settings-note" id="pfDevInsightsStatus" role="status" aria-live="polite">Aguardando consulta…</p><div id="pfDevInsightsContent" class="pf-dev-insights-content"></div></section>
-      </div>
-    </div>
-    </div>
+      <section class="community-profile-panel" data-pf-panel="settings" role="tabpanel" hidden>
+        <div class="community-settings-grid">
+          <section class="community-settings-card">
+            <span class="community-profile-overline">IDENTIDADE</span>
+            <h3>Seu nome na comunidade</h3>
+            <p>Esse nome aparece nas áreas públicas do site.</p>
+            <label for="pfSettingsNick">Nome de exibição</label>
+            <input id="pfSettingsNick" maxlength="24" autocomplete="nickname" placeholder="Seu nome">
+            <small>Use de 3 a 24 caracteres. O intervalo entre alterações é de 7 dias.</small>
+            <button type="button" class="auth-primary" id="pfSaveNick">Salvar nome <span>→</span></button>
+          </section>
+          <section class="community-settings-card">
+            <span class="community-profile-overline">ACESSO</span>
+            <h3>Dados da conta</h3>
+            <dl class="community-account-data">
+              <div><dt>E-mail</dt><dd id="pfSettingsEmail">—</dd></div>
+              <div><dt>Método de acesso</dt><dd id="pfSettingsAccount">—</dd></div>
+              <div><dt>ID da conta</dt><dd><code id="pfSettingsPlayerId">—</code><button type="button" id="pfCopyPlayerId">Copiar</button></dd></div>
+            </dl>
+            <a class="community-profile-secondary" id="pfGoogleLink" href="/api/auth?action=google-login" hidden>Vincular Google</a>
+            <button type="button" class="community-profile-danger" id="pfSettingsLogout">Sair da conta</button>
+          </section>
+          <section class="community-settings-card community-settings-twitch">
+            <span class="community-profile-overline">PRESENÇA E INTEGRAÇÕES</span>
+            <h3>Conexão com a Twitch</h3>
+            <p>Vincule a conta usada no chat para associar sua presença e seu tempo acompanhado.</p>
+            <div class="community-twitch-status" id="pfTwitchStatus">Twitch não vinculada</div>
+            <div class="community-settings-actions">
+              <button type="button" class="auth-primary" id="pfTwitchLink">Vincular Twitch <span>→</span></button>
+              <button type="button" class="community-profile-danger" id="pfTwitchUnlink" hidden>Desvincular Twitch</button>
+            </div>
+          </section>
+          <section class="community-settings-card community-dev-tools" id="pfDevTools" hidden>
+            <span class="community-profile-overline">FERRAMENTAS RESTRITAS</span>
+            <h3>Manutenção da plataforma</h3>
+            <p>Gere a autorização da conta da streamer e, após conferir o backup, remova os dados antigos de personagem e minijogo.</p>
+            <div class="community-settings-actions">
+              <button type="button" class="community-profile-secondary" id="pfBroadcasterLink">Gerar autorização da Twitch</button>
+              <button type="button" class="community-profile-danger" id="pfPurgeLegacy">Limpar dados antigos de personagem e minijogo</button>
+            </div>
+          </section>
+        </div>
+      </section>
     </div>
   </div>
 </section>
@@ -954,15 +933,13 @@
 <script src="js/utils/format.js"></script>
 <script src="js/utils/audio.js"></script>
 <script src="js/api/client.js"></script>
-<script src="js/api/game-client.js"></script>
-<script src="js/game-state.js"></script>
 <script src="js/auth-ui.js"></script>
 <script src="js/navbar.js"></script>
 <script src="js/twitch/twitch.js"></script>
 <script src="js/setup/setup.js"></script>
 <script src="js/main.js"></script>
-<script src="js/perfil-ui.js"></script>
+<script src="js/profile-summary.js"></script>
 <script src="js/ranking-ui.js"></script>
-<script src="js/secret-codes-ui.js"></script>
+
 </body>
 </html>
