@@ -278,33 +278,23 @@
 
     function renderPreview(){
       if (!refs.avatar) return;
-      try {
-        const svg = window.PixelAvatar.render(boneco, {
-          label: 'Prévia do boneco de ' + ((perfil && perfil.nick) || nickDoUsuario() || 'visitante'),
-          animar: true
-        });
-        if (!svg || svg.nodeType !== 1) throw new Error('O motor não retornou um SVG válido.');
-        refs.avatar.replaceChildren(svg);
-        refs.avatar.dataset.render = 'ok';
-      } catch (erro) {
-        console.error('[Meu Boneco] Erro ao desenhar a prévia:', erro);
-        refs.avatar.replaceChildren();
-        refs.avatar.textContent = '🕹️';
-        refs.avatar.dataset.render = 'erro';
-        if (refs.stageCaption) refs.stageCaption.textContent = 'Não foi possível desenhar o personagem.';
-      }
-      refs.avatar.setAttribute('aria-label', 'Boneco com ' + nomeItem('cabelo') + ', ' + nomeItem('roupa') + ' e ' + nomeItem('acessorio') + '.');
-
-      if (refs.stageCaption && refs.avatar.dataset.render !== 'erro') {
-        if (!catalogo) {
-          refs.stageCaption.textContent = perfil ? 'Carregando seu visual…' : 'Prévia do visual padrão.';
-        } else {
-          const partes = ['cabelo', 'roupa', 'acessorio', 'animacao']
-            .map(slot => nomeItem(slot))
-            .filter(Boolean);
-          refs.stageCaption.textContent = partes.length ? partes.join(' · ') : 'Seu visual aparece aqui.';
-        }
-      }
+      const img = document.createElement('img');
+      img.src = 'img/mascote-arcade.png';
+      img.alt = 'Mascote oficial do Soso Arcade: personagem de cabelo roxo, óculos amarelos e moletom roxo';
+      img.className = 'pf-mascot-image';
+      img.loading = 'eager';
+      img.decoding = 'async';
+      const art = document.createElement('div');
+      art.className = 'pf-mascot-art';
+      art.appendChild(img);
+      const accessory = document.createElement('span');
+      accessory.className = 'pf-mascot-accessory accessory-' + (boneco && boneco.acessorio || 'oculos');
+      accessory.setAttribute('aria-hidden', 'true');
+      art.appendChild(accessory);
+      refs.avatar.replaceChildren(art);
+      refs.avatar.dataset.render = 'ok';
+      refs.avatar.setAttribute('aria-label', 'Mascote oficial do Soso Arcade');
+      if (refs.stageCaption) refs.stageCaption.textContent = 'Mascote do Arcade · acessórios de teste em breve';
     }
 
     function atualizarAcesso(){
@@ -445,10 +435,10 @@
 
     function renderCategorias(){
       if (!refs.tabs) return;
-      categorias = CATEGORIAS.filter(categoria =>
+      categorias = CATEGORIAS.filter(categoria => categoria.id === 'acessorio' &&
         categoria.secoes.some(secao => Array.isArray(catalogo.catalogo[secao.slot]) && catalogo.catalogo[secao.slot].length)
       );
-      if (!categorias.length) categorias = CATEGORIAS.slice();
+      if (!categorias.length) categorias = [CATEGORIAS.find(categoria => categoria.id === 'acessorio')];
 
       if (!categorias.some(categoria => categoria.id === categoriaAtiva)) {
         categoriaAtiva = categorias[0].id;

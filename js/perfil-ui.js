@@ -90,20 +90,18 @@
   function renderBoneco(target, boneco, label, mini = false) {
     if (!target) return;
     target.replaceChildren();
-    if (!window.PixelAvatar || typeof window.PixelAvatar.render !== 'function') {
-      target.textContent = '🕹️';
-      return;
-    }
-    try {
-      const svg = window.PixelAvatar.render(boneco || window.PixelAvatar.PADRAO, {
-        label: label || 'Personagem do jogador', mini, animar: !mini
-      });
-      if (svg) target.appendChild(svg);
-      else target.textContent = '🕹️';
-    } catch (error) {
-      console.warn('[PerfilUI] Não foi possível desenhar o boneco:', error);
-      target.textContent = '🕹️';
-    }
+    const img = el('img', mini ? 'pf-mascot-image pf-mascot-mini' : 'pf-mascot-image');
+    img.src = 'img/mascote-arcade.png';
+    img.alt = mini ? 'Mascote do Soso Arcade' : 'Mascote oficial do Soso Arcade, com cabelo roxo, óculos amarelos e moletom roxo';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    const art = el('div', 'pf-mascot-art' + (mini ? ' is-mini' : ''));
+    art.appendChild(img);
+    const accessory = el('span', 'pf-mascot-accessory accessory-' + (boneco?.acessorio || 'oculos'));
+    accessory.setAttribute('aria-hidden', 'true');
+    art.appendChild(accessory);
+    target.appendChild(art);
+    target.setAttribute('aria-label', img.alt);
   }
 
   async function loadAll(force = false) {
