@@ -1,130 +1,332 @@
 /* ============================================================
-   RANKING UI — Arcade XP + rankings oficiais do StreamElements
+   RANKING UI — XP do Arcade + tudo do StreamElements
+   Abas: xp · horas · pontos · chat · doadores
    ============================================================ */
-(function(){
+(function () {
   'use strict';
-  const $ = s => document.querySelector(s);
-  let currentMode = 'xp';
-  let loadSequence = 0;
-  const cache = { xp: null, horas: null, pontos: null };
-  const node = (tag, cls, txt) => { const el=document.createElement(tag); if(cls) el.className=cls; if(txt!==undefined) el.textContent=txt; return el; };
-  const fmt = n => Number(n||0).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
-  const getName = u => String(u?.nome || u?.username || u?.data?.username || u?.user?.username || u?.user?.displayName || u?.displayName || u?.name || 'Jogador');
-  const getAvatar = u => u?.avatar || u?.data?.avatar || u?.data?.user?.avatar || u?.user?.avatar || u?.user?.profileImage || u?.user?.profile_image_url || u?.profileImage || u?.profile_image_url || '';
-  function formatWatch(v){
-    if(typeof v === 'string'){
-      const raw=v.trim();
-      if(/[hms]/i.test(raw)) return raw.replace(/\s+/g,' ');
-      const num=Number(raw); if(Number.isFinite(num)) v=num; else return raw || '—';
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const PAGE = 25;
+
+  const MODES = {
+    xp:       { titulo: 'XP do Arcade',      desc: 'XP conquistado nas atividades do Arcade.',                 eyebrow: 'PLACAR DA COMUNIDADE', vazio: 'Ninguém pontuou no Arcade ainda.' },
+    horas:    { titulo: 'Horas assistidas',  desc: 'Tempo de tela registrado pelo StreamElements.',            eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há tempo assistido registrado.' },
+    pontos:   { titulo: 'Pontos do canal',   desc: 'Pontos de fidelidade acumulados no StreamElements.',       eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há pontos registrados.' },
+    chat:     { titulo: 'Mais ativos no chat', desc: 'Quem mais conversa no chat do canal.',                   eyebrow: 'CHAT · STREAMELEMENTS', vazio: 'Ainda não há mensagens contabilizadas.' },
+    doadores: { titulo: 'Top doadores',      desc: 'Quem mais apoiou o canal. Obrigado por tudo! 💜',          eyebrow: 'APOIADORES · STREAMELEMENTS', vazio: 'Ninguém no pódio ainda. Seja a primeira pessoa a aparecer aqui! 💜' }
+  };
+
+  let mode = 'xp';
+  let seq = 0;
+  let shown = PAGE;
+  let query = '';
+  const cache = {}; // modo -> { rows, meta, at }
+
+  /* ---------- helpers ---------- */
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
+  const nf = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+  const fmt = n => nf.format(Number(n) || 0);
+  const brl = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const norm = s => String(s || '').toLowerCase().replace(/^@/, '').trim();
+
+  function minutos(m) {
+    m = Math.max(0, Math.round(Number(m) || 0));
+    const h = Math.floor(m / 60), r = m % 60;
+    if (!h) return `${r}min`;
+    if (h >= 100) return `${fmt(h)}h`;
+    return r ? `${h}h ${r}min` : `${h}h`;
+  }
+  function quando(ts) {
+    if (!ts) return '';
+    const d = Math.floor((Date.now() - ts) / 86400000);
+    if (d <= 0) return 'hoje';
+    if (d === 1) return 'ontem';
+    if (d < 30) return `há ${d} dias`;
+    const mm = Math.floor(d / 30);
+    return mm < 12 ? `há ${mm} ${mm === 1 ? 'mês' : 'meses'}` : `há ${Math.floor(mm / 12)} ano(s)`;
+  }
+
+  function valorTxt(r) {
+    switch (mode) {
+      case 'xp': return `${fmt(r.valor)} XP`;
+      case 'horas': return minutos(r.valor);
+      case 'pontos': return fmt(r.valor);
+      case 'chat': return `${fmt(r.valor)} msg`;
+      case 'doadores': return brl(r.valor);
     }
-    const n=Number(v||0); if(!Number.isFinite(n)||n<=0) return '0h';
-    // StreamElements watchtime API commonly returns minutes; explicit seconds are handled via the unit field.
-    const mins = n;
-    const hours=Math.floor(mins/60), rest=Math.round(mins%60);
-    return hours ? `${hours}h ${rest}m` : `${rest}m`;
+    return fmt(r.valor);
   }
-  function metricValue(row, mode){
-    if(mode==='xp') return `${fmt(row.xp)} XP`;
-    if(mode==='pontos') return `${fmt(row.valor)} pts`;
-    const unit=String(row.unit || row.unitType || row.type || '').toLowerCase();
-    const value=row.valor;
-    if(unit.includes('second') || unit==='s') return formatWatch(Number(value)/60);
-    if(unit.includes('hour') || unit==='h') return `${fmt(value)}h`;
-    return formatWatch(value);
+  function subTxt(r) {
+    switch (mode) {
+      case 'xp': return `Nível ${r.nivel || 1} · ${r.titulo || 'Novato'}`;
+      case 'horas': return r.pos <= 3 ? 'Presença VIP' : 'Tempo de tela';
+      case 'pontos': return 'Pontos do canal';
+      case 'chat': return 'Mensagens no chat';
+      case 'doadores': return `${r.doacoes || 1} ${(r.doacoes || 1) === 1 ? 'doação' : 'doações'}${r.ultima ? ' · ' + quando(r.ultima) : ''}`;
+    }
+    return '';
   }
-  function avatar(row){
-    const wrap=node('span','ranking-avatar-art');
-    const url=getAvatar(row);
-    if(url && /^(https:\/\/|\/)/i.test(String(url))){
-      const img=node('img','ranking-avatar-photo'); img.src=String(url); img.alt=''; img.loading='lazy'; img.referrerPolicy='no-referrer';
-      img.onerror=()=>{img.remove(); wrap.appendChild(node('span','ranking-avatar-initial',(getName(row)[0]||'?').toUpperCase()));};
-      wrap.appendChild(img);
-    } else wrap.appendChild(node('span','ranking-avatar-initial',(getName(row)[0]||'?').toUpperCase()));
-    return wrap;
+
+  function avatar(r) {
+    const nome = String(r.nome || '?');
+    let hue = 0; for (const c of nome) hue = (hue * 31 + c.charCodeAt(0)) % 360;
+    const w = el('span', 'rk-av');
+    w.style.setProperty('--h', hue);
+    w.append(el('span', null, (nome.replace(/^@/, '').charAt(0) || '?').toUpperCase()));
+    const url = String(r.avatar || '');
+    if (/^(https:\/\/|\/)/i.test(url)) {
+      const img = new Image();
+      img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
+      img.onerror = () => img.remove();
+      img.src = url;
+      w.append(img);
+    }
+    return w;
   }
-  function normalizeRows(data, mode){
-    let rows=data?.lista || data?.ranking || data?.data || data?.docs || data?.users || data?.results || data;
-    if(rows && !Array.isArray(rows)) rows=rows.docs || rows.users || rows.results || rows.items || rows.data || [];
-    if(!Array.isArray(rows)) rows=[];
-    return rows.map((r,i)=>{
-      const val = mode==='xp' ? (r.xp ?? r.score ?? r.value ?? 0) : mode==='pontos'
-        ? (r.points ?? r.data?.points ?? r.data?.current ?? r.current ?? r.amount ?? r.value ?? r.score ?? 0)
-        : (r.watchtime ?? r.data?.watchtime ?? r.data?.watchTime ?? r.watchTime ?? r.watch_time ?? r.totalWatchTime ?? r.minutesWatched ?? r.hoursWatched ?? r.time ?? r.minutes ?? r.hours ?? r.total ?? r.value ?? 0);
-      return { ...r, id:r.id || r._id || r.userId || getName(r).toLowerCase(), nome:getName(r), avatar:getAvatar(r), pos:(parseInt(r.pos ?? r.position ?? r.rank,10) || i+1), xp:Number(val)||0, valor:val, total:Number(data?.total)||rows.length };
+
+  /* ---------- normalização por origem ---------- */
+  function normXP(data) {
+    const lista = data?.lista || [];
+    return {
+      rows: lista.map((r, i) => ({ id: r.id, pos: r.pos || i + 1, nome: r.nome || 'Jogador', avatar: r.avatar, valor: Number(r.xp) || 0, nivel: r.nivel, titulo: r.titulo })),
+      meta: { total: Number(data?.total) || lista.length }
+    };
+  }
+  function normSE(data) {
+    if (!data || data.ok === false) {
+      const e = new Error(data?.erro || 'Falha ao consultar o StreamElements.');
+      e.codigo = data?.codigo; throw e;
+    }
+    return {
+      rows: (data.lista || []).map((r, i) => ({ ...r, pos: r.pos || i + 1, nome: r.nome || 'Anônimo', valor: Number(r.valor) || 0 })),
+      meta: { total: data.total, resumo: data.resumo || null, at: data.updatedAt }
+    };
+  }
+
+  async function requestMode(m, force) {
+    const bust = force ? { _t: Date.now() } : {};
+    if (m === 'xp') {
+      const r = await api(API_GAME, 'ranking', { query: { limite: 100, ...bust } });
+      if (!r.ok) throw new Error(r.data?.error || 'Falha ao consultar o ranking do Arcade.');
+      return normXP(r.data);
+    }
+    const q = new URLSearchParams({ action: 'ranking-se', modo: m, limit: '100', ...(force ? { _t: String(Date.now()) } : {}) });
+    const res = await fetch('/api/config?' + q.toString(), { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Erro ao consultar o servidor (HTTP ${res.status}).`);
+    return normSE(await res.json());
+  }
+
+  /* ---------- sua posição ---------- */
+  function meIdentity() {
+    const p = window.GameState?.perfil;
+    const acc = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : {};
+    return {
+      logado: !!p,
+      id: p?.id,
+      nomes: [p?.nick, p?.twitch?.login, p?.twitch?.username, p?.twitchLogin, acc.twitch?.login].filter(Boolean).map(norm),
+      nick: p?.nick || 'Jogador',
+      foto: acc.avatar || acc.picture || acc.google?.picture || acc.foto || p?.avatar || null,
+      p
+    };
+  }
+  function findMe(rows, me) {
+    if (!me.logado) return null;
+    return rows.find(r => (mode === 'xp' && me.id && String(r.id) === String(me.id)) || me.nomes.includes(norm(r.nome))) || null;
+  }
+
+  function renderMe(rows) {
+    const box = $('#rankingYourContent'); if (!box) return;
+    const login = $('#rankingLoginBtn');
+    const me = meIdentity();
+    if (login) login.hidden = me.logado;
+    box.replaceChildren();
+
+    if (!me.logado) {
+      box.append(el('h4', 'rk-me-title', 'Sua posição'), el('p', 'rk-me-empty', 'Entre na sua conta para acompanhar seu XP, suas horas e sua posição no ranking.'));
+      return;
+    }
+    const mine = findMe(rows, me);
+    const head = el('div', 'rk-me-head');
+    const info = el('div'); info.style.minWidth = 0;
+    info.append(el('div', 'rk-me-name', me.nick));
+    const pos = mode === 'xp' ? (me.p?.ranking?.pos || mine?.pos) : mine?.pos;
+    info.append(el('div', 'rk-me-pos', pos ? `#${pos} · ${MODES[mode].titulo}` : `Fora do top ${rows.length || 100}`));
+    head.append(avatar({ nome: me.nick, avatar: me.foto }), info);
+    box.append(head);
+
+    const lines = el('div', 'rk-me-lines');
+    const line = (a, b) => { const l = el('div', 'rk-me-line'); l.append(el('span', null, a), el('b', null, b)); lines.append(l); };
+    if (mode === 'xp') {
+      line('Nível', String(me.p?.nivel || 1));
+      line('XP', fmt(me.p?.xp));
+      line('SosoCoins', fmt(me.p?.coins));
+    } else if (mine) {
+      line(MODES[mode].titulo, valorTxt(mine));
+      if (rows[0] && mine.pos > 1) {
+        const diff = rows[mine.pos - 2];
+        if (diff) line('Para subir', mode === 'horas' ? minutos(diff.valor - mine.valor) : mode === 'doadores' ? brl(diff.valor - mine.valor) : fmt(diff.valor - mine.valor));
+      }
+    } else {
+      const p = el('p', 'rk-me-empty', 'Não encontramos você nesta categoria. Vincule sua conta da Twitch no perfil para aparecer com o mesmo nick do canal.');
+      box.append(p);
+    }
+    if (lines.childElementCount) box.append(lines);
+  }
+
+  /* ---------- render ---------- */
+  function podiumSlot(r, place, meIds) {
+    const cls = { 1: 'rk-pod-1', 2: 'rk-pod-2', 3: 'rk-pod-3' }[place];
+    const e = el('article', `rk-pod ${cls}` + (r ? '' : ' is-empty') + (r && isMe(r, meIds) ? ' is-me' : ''));
+    if (place === 1) e.append(el('span', 'rk-pod-crown', r ? '👑' : '·'));
+    const av = el('div', 'rk-pod-av');
+    av.append(avatar(r || { nome: '?' }), el('span', 'rk-pod-badge', String(place)));
+    const block = el('div', 'rk-pod-block');
+    block.append(el('span', 'rk-pod-val', r ? valorTxt(r) : '—'), el('span', 'rk-pod-medal', place === 1 ? '🥇' : place === 2 ? '🥈' : '🥉'));
+    e.append(av, el('div', 'rk-pod-name', r ? r.nome : 'Vaga livre'), el('div', 'rk-pod-sub', r ? subTxt(r) : 'pode ser você'), block);
+    return e;
+  }
+  const isMe = (r, me) => me.logado && ((mode === 'xp' && me.id && String(r.id) === String(me.id)) || me.nomes.includes(norm(r.nome)));
+
+  function renderStats(meta, rows) {
+    const box = $('#rkStats'); if (!box) return;
+    box.replaceChildren();
+    const add = (k, v) => { const s = el('div', 'rk-stat'); const b = el('b'); b.innerHTML = ''; b.textContent = v; s.append(el('small', null, k), b); box.append(s); };
+    const total = meta?.total ?? rows.length;
+    if (mode === 'doadores' && meta?.resumo) {
+      const r = meta.resumo;
+      add('Apoiadores', fmt(total));
+      add('Arrecadado no mês', brl(r.totalMes));
+      add('Total geral', brl(r.totalGeral));
+      if (r.ultimo?.nome) add('Última doação', `${r.ultimo.nome} · ${brl(r.ultimo.valor)}`);
+    } else if (mode === 'chat' && meta?.resumo) {
+      add('No ranking', fmt(rows.length));
+      if (meta.resumo.mensagens) add('Mensagens no total', fmt(meta.resumo.mensagens));
+      const top = meta.resumo.emotes?.[0];
+      if (top?.nome) add('Emote mais usado', `${top.nome} · ${fmt(top.usos)}x`);
+    } else {
+      add('Participantes', fmt(total));
+      if (rows[0]) add('Líder', rows[0].nome);
+      if (rows[0]) add('Marca do líder', valorTxt(rows[0]));
+    }
+    box.hidden = !box.childElementCount;
+  }
+
+  function renderList(rows) {
+    const list = $('#rankingList'), more = $('#rkMore'); if (!list) return;
+    const me = meIdentity();
+    const q = norm(query);
+    const filtered = q ? rows.filter(r => norm(r.nome).includes(q)) : rows.slice(3);
+    list.replaceChildren();
+
+    if (!filtered.length) {
+      const st = el('div', 'rk-state');
+      if (q) st.append(el('span', 'rk-ic', '🔎'), el('div', null, `Ninguém encontrado para “${query}”.`));
+      else if (!rows.length) st.append(el('span', 'rk-ic', '🏁'), el('div', null, MODES[mode].vazio));
+      else st.append(el('span', 'rk-ic', '✨'), el('div', null, 'O pódio é tudo por enquanto. Os próximos nomes aparecem aqui.'));
+      list.append(st);
+      if (more) more.hidden = true;
+      return;
+    }
+    const top = rows[0]?.valor || 1;
+    filtered.slice(0, shown).forEach((r, i) => {
+      const row = el('article', 'rk-row' + (isMe(r, me) ? ' is-me' : ''));
+      row.style.setProperty('--i', Math.min(i, 20));
+      row.style.setProperty('--w', Math.max(4, Math.round((r.valor / top) * 100)) + '%');
+      const who = el('div', 'rk-who'); who.append(el('b', 'rk-nick', r.nome), el('small', 'rk-sub', subTxt(r)));
+      row.append(el('strong', 'rk-pos', '#' + r.pos), avatar(r), who, el('strong', 'rk-val', valorTxt(r)));
+      list.append(row);
+    });
+    if (more) {
+      const left = filtered.length - shown;
+      more.hidden = left <= 0;
+      if (left > 0) more.textContent = `Mostrar mais (${left})`;
+    }
+  }
+
+  function render() {
+    const c = cache[mode]; if (!c) return;
+    const rows = c.rows, me = meIdentity();
+    const podium = $('#rankingPodium');
+    if (podium) {
+      podium.hidden = false;
+      podium.replaceChildren(podiumSlot(rows[1], 2, me), podiumSlot(rows[0], 1, me), podiumSlot(rows[2], 3, me));
+    }
+    renderStats(c.meta, rows);
+    renderList(rows);
+    renderMe(rows);
+    const up = $('#rkUpdated');
+    if (up) { up.hidden = false; up.textContent = 'Atualizado às ' + new Date(c.meta?.at || c.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
+  }
+
+  function renderHead() {
+    const m = MODES[mode];
+    const root = $('#rankingContainer'); if (root) root.dataset.mode = mode;
+    const t = $('#rkTitle'), d = $('#rkDesc'), e = $('#rkEyebrow');
+    if (t) t.textContent = m.titulo; if (d) d.textContent = m.desc; if (e) e.textContent = m.eyebrow;
+    document.querySelectorAll('[data-ranking-mode]').forEach(b => {
+      const on = b.dataset.rankingMode === mode;
+      b.classList.toggle('is-active', on); b.setAttribute('aria-selected', String(on));
     });
   }
-  function row(item, mode, me=false){
-    const el=node('article','ranking-item'+(me?' is-me':''));
-    el.append(node('strong','ranking-pos','#'+item.pos),avatar(item));
-    const info=node('div','ranking-nick-tit'); info.append(node('b','ranking-nick',item.nome),node('small','ranking-title',mode==='xp'?(item.titulo||'Jogador'):'StreamElements'));
-    el.append(info,node('strong','ranking-mini-xp',metricValue(item,mode)));
-    return el;
+
+  function renderLoading() {
+    const list = $('#rankingList'); if (!list) return;
+    list.replaceChildren(...Array.from({ length: 6 }, () => el('div', 'rk-skel')));
+    const more = $('#rkMore'); if (more) more.hidden = true;
   }
-  function podiumItem(item,position,mode){
-    const e=node('article','podium-item podium-'+position);
-    e.append(avatar(item || {nome:'?' }));
-    const info=node('div','podium-info');
-    info.append(node('span','podium-crown',position==='1st'?'👑':position==='2nd'?'🥈':'🥉'),node('b','podium-nick',item?.nome||'Aguardando jogador'),node('small','podium-title',item?(mode==='xp'?(item.titulo||'Jogador'):'StreamElements'):'—'),node('strong','podium-xp',item?metricValue(item,mode):'—'));
-    e.append(info); return e;
+
+  function renderError(err) {
+    const list = $('#rankingList'); if (!list) return;
+    const podium = $('#rankingPodium'); if (podium) { podium.replaceChildren(); podium.hidden = true; }
+    const stats = $('#rkStats'); if (stats) stats.hidden = true;
+    const st = el('div', 'rk-state is-error');
+    const msg = mode === 'xp'
+      ? 'Não conseguimos carregar o ranking do Arcade agora.'
+      : 'Não conseguimos falar com o StreamElements agora. Tente novamente em instantes.';
+    st.append(el('span', 'rk-ic', '⚠️'), el('div', null, msg));
+    const retry = el('button', 'rk-btn', '↻ Tentar de novo'); retry.type = 'button';
+    retry.addEventListener('click', () => load(true, mode));
+    st.append(retry);
+    list.replaceChildren(st);
+    const more = $('#rkMore'); if (more) more.hidden = true;
+    console.error('[Ranking]', mode, err?.codigo || '', err?.message || err);
   }
-  function render(data){
-    const podium=$('#rankingPodium'),list=$('#rankingList'),your=$('#rankingYourContent'),login=$('#rankingLoginBtn');
-    if(!podium||!list)return;
-    const players=normalizeRows(data,currentMode);
-    podium.replaceChildren(podiumItem(players[1],'2nd',currentMode),podiumItem(players[0],'1st',currentMode),podiumItem(players[2],'3rd',currentMode));
-    list.replaceChildren();
-    players.slice(3).forEach(item=>list.appendChild(row(item,currentMode,String(item.id)===String(window.GameState?.perfil?.id))));
-    if(players.length<=3) list.appendChild(node('p','pf-empty','Ainda não há outros participantes nessa categoria.'));
-    const user=window.GameState?.perfil;
-    if(your){
-      your.replaceChildren();
-      if(currentMode==='xp' && user){
-        const pos=user.ranking?.pos; const card=node('div','ranking-your-card'); const head=node('div','ranking-your-header');
-        const account=(typeof USUARIO!=='undefined' && USUARIO) ? USUARIO : {};
-        const photo=account.avatar || account.picture || account.google?.picture || account.foto || user.avatar;
-        const me={nome:user.nick||'Jogador',avatar:photo}; head.append(avatar(me),node('div','ranking-your-info',`${user.nick||'Jogador'} · ${pos?'#'+pos:'Sem posição'}`));
-        card.append(head,node('p','ranking-your-level',`Nível ${user.nivel||1} · ${fmt(user.xp)} XP`),node('p','ranking-your-faltam',`${fmt(user.coins)} SosoCoins no saldo`)); your.appendChild(card);
-      } else {
-        your.appendChild(node('p','pf-empty',currentMode==='xp'?'Entre para acompanhar seu XP e posição no Arcade.':'Dados fornecidos diretamente pelo ranking do StreamElements.'));
-      }
-    }
-    if(login) login.hidden=!!user;
-    const total=$('#rankingContainer .ranking-toolbar h3'); if(total) total.textContent=`${fmt(data?.total ?? players.length)} participantes no placar`;
-    const desc=$('#rankingModeDescription'); if(desc) desc.textContent=currentMode==='xp'?'XP conquistado nas atividades do Arcade.':currentMode==='horas'?'Tempo assistido registrado pelo StreamElements.':'Pontos de fidelidade registrados pelo StreamElements.';
-    document.querySelectorAll('[data-ranking-mode]').forEach(btn=>{const active=btn.dataset.rankingMode===currentMode;btn.classList.toggle('is-active',active);btn.setAttribute('aria-pressed',String(active));});
-  }
-  async function requestMode(mode,force){
-    const refreshQuery = force ? { _refresh: Date.now() } : {};
-    if(mode==='xp') return api(API_GAME,'ranking',{query:{limite:100,...refreshQuery}});
-    const action=mode==='horas'?'ranking-horas':'ranking-pontos';
-    const r=await api('/api/config',action,{query:{limit:100,offset:0,...refreshQuery}});
-    if(!r.ok) return r;
-    return {ok:true,data:r.data?.lista ? r.data : {ranking:r.data?.ranking, total:r.data?.total, data:r.data?.ranking}};
-  }
-  async function load(force=false,mode=currentMode){
-    currentMode=mode;
-    const requestId=++loadSequence;
-    const list=$('#rankingList'); if(list&&!cache[mode]) list.replaceChildren(node('p','pf-empty','Carregando ranking…'));
-    try{
-      const r=await requestMode(mode,force);
-      if(requestId!==loadSequence) return;
-      if(!r.ok) throw new Error(r.data?.error || 'Falha ao consultar ranking');
-      cache[mode]=r.data || {}; render(cache[mode]);
-    }catch(error){
-      if(requestId!==loadSequence) return;
-      console.error('[Ranking] Falha ao carregar:',error);
-      if(list) list.replaceChildren(node('p','pf-empty',`${error.message || 'Não foi possível carregar esta categoria.'} Verifique a conexão com o StreamElements.`));
+
+  /* ---------- carregamento ---------- */
+  async function load(force = false, m = mode) {
+    mode = m; shown = PAGE;
+    const id = ++seq;
+    renderHead();
+    const btn = $('#rankingRefreshBtn');
+    if (cache[m] && !force) render(); else { renderLoading(); const p = $('#rankingPodium'); if (p) { p.replaceChildren(); } }
+    btn?.classList.add('is-loading'); if (btn) btn.disabled = true;
+    try {
+      const r = await requestMode(m, force);
+      if (id !== seq) return;
+      cache[m] = { ...r, at: Date.now() };
+      render();
+    } catch (e) {
+      if (id !== seq) return;
+      if (cache[m]) render(); else renderError(e);
+    } finally {
+      if (id === seq) { btn?.classList.remove('is-loading'); if (btn) btn.disabled = false; }
     }
   }
-  function init(){
-    if(!$('#rankingContainer'))return;
-    $('#rankingRefreshBtn')?.addEventListener('click',()=>load(true,currentMode));
-    $('#rankingLoginBtn')?.addEventListener('click',()=>window.AuthUI?.open());
-    document.querySelectorAll('[data-ranking-mode]').forEach(btn=>btn.addEventListener('click',()=>load(false,btn.dataset.rankingMode)));
-    load(); window.addEventListener('soso:auth',()=>load(true,currentMode));
-    window.addEventListener('soso:aba',e=>{if(e.detail==='ranking')load(true,currentMode);});
-    window.GameState?.on('perfil',()=>{if(cache.xp && currentMode==='xp') render(cache.xp);});
+
+  function init() {
+    if (!$('#rankingContainer')) return;
+    $('#rankingRefreshBtn')?.addEventListener('click', () => load(true, mode));
+    $('#rankingLoginBtn')?.addEventListener('click', () => window.AuthUI?.open());
+    $('#rkMore')?.addEventListener('click', () => { shown += PAGE; if (cache[mode]) renderList(cache[mode].rows); });
+    let t;
+    $('#rkSearch')?.addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { query = e.target.value; shown = PAGE; if (cache[mode]) renderList(cache[mode].rows); }, 120); });
+    document.querySelectorAll('[data-ranking-mode]').forEach(b => b.addEventListener('click', () => { if (b.dataset.rankingMode !== mode) load(false, b.dataset.rankingMode); }));
+    window.addEventListener('soso:auth', () => { if (cache[mode]) render(); load(true, mode); });
+    window.addEventListener('soso:aba', e => { if (e.detail === 'ranking') load(true, mode); });
+    window.GameState?.on?.('perfil', () => { if (cache[mode]) { renderMe(cache[mode].rows); renderList(cache[mode].rows); } });
+    load(false, 'xp');
   }
-  window.RankingUI={init,refresh:()=>load(true,currentMode)};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+
+  window.RankingUI = { init, refresh: () => load(true, mode) };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

@@ -1,14 +1,14 @@
 // Vercel serverless: /api/config.js
+import { seGet, canalId, temJwt, rankingPontos, statsChat, rankingDoadores, resumoSubs } from './_lib/se.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim();
 
 const CANAL = 'asemtet0';
-const HALL_CACHE_KEY = 'cache:hall_v15';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v15';
+const HALL_CACHE_KEY = 'cache:hall_v16';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v16';
 const HALL_CACHE_TTL = 2 * 60;            // doadores: atualiza no máx. a cada 2 min
 const EMOTES_CACHE_KEY = 'cache:emotes_v1';
 const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
@@ -17,73 +17,11 @@ const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
 // CONFIGURAÇÕES DA STREAMELEMENTS (NOVAS)
 // ==========================================
 const SE_BASE_URL = 'https://api.streamelements.com/kappa/v2';
-const CHANNEL_CACHE_TTL = 15 * 60 * 1000; // 15 minutos
 const SUBSCRIBERS_PAGE_SIZE = 100;
 const SUBSCRIBERS_MAX_PAGES = 20; // Até 2.000 registros
 
-let channelCache = { id: null, expiresAt: 0 };
-let channelIdRequest = null;
-
-async function seFetch(endpoint) {
-  if (!STREAMELEMENTS_JWT) {
-    const error = new Error('A variável STREAMELEMENTS_JWT não está configurada.');
-    error.statusCode = 500;
-    throw error;
-  }
-  const path = String(endpoint || '');
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-
-  let response;
-  try {
-    response = await fetch(`${SE_BASE_URL}${normalizedPath}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' }
-    });
-  } catch (cause) {
-    const error = new Error('Não foi possível conectar à API do StreamElements.');
-    error.statusCode = 502;
-    throw error;
-  }
-
-  const responseText = await response.text();
-  let payload = null;
-
-  if (responseText) {
-    try { payload = JSON.parse(responseText); } catch (cause) {
-      if (response.ok) {
-        const error = new Error('A API do StreamElements retornou uma resposta inválida.');
-        error.statusCode = 502;
-        throw error;
-      }
-    }
-  }
-
-  if (!response.ok) {
-    const error = new Error(`Falha na API do StreamElements (HTTP ${response.status}).`);
-    error.statusCode = 502;
-    throw error;
-  }
-  return payload;
-}
-
-async function getChannelId() {
-  if (channelCache.id && Date.now() < channelCache.expiresAt) return channelCache.id;
-  if (channelIdRequest) return channelIdRequest;
-
-  channelIdRequest = (async () => {
-    const channel = await seFetch('/channels/me');
-    const id = channel?._id || channel?.id || channel?.channel?._id;
-    if (!id) {
-      const error = new Error('Não foi possível obter o ID do canal no StreamElements.');
-      error.statusCode = 502;
-      throw error;
-    }
-    channelCache = { id: String(id), expiresAt: Date.now() + CHANNEL_CACHE_TTL };
-    return channelCache.id;
-  })();
-
-  try { return await channelIdRequest; } finally { channelIdRequest = null; }
-}
+const seFetch = (endpoint) => seGet(endpoint);
+const getChannelId = canalId;
 
 function normalizeUsername(value) {
   return String(value || '').trim().replace(/^@/, '').toLowerCase();
@@ -243,24 +181,11 @@ async function twitchSeguidores() {
 }
 
 async function streamElementsBuscar() {
-  if (!STREAMELEMENTS_JWT) return null;
+  if (!temJwt()) return null;
   try {
-    const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
-    const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
-    const cid = me?._id;
-    if (!cid) return null;
-    const subs = await (await fetch(`https://api.streamelements.com/kappa/v2/subscribers/${cid}?limit=1`, { headers: h })).json();
-    const totalSubs = typeof subs?.total === 'number' ? subs.total : 0;
-    const tips = await (await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100`, { headers: h })).json();
-    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
-    let totalDoacoes = 0;
-    (tips?.docs || []).forEach(t => {
-      if (new Date(t.createdAt).getTime() >= inicioMes.getTime()) {
-        totalDoacoes += Number(t.donation?.amount || t.amount) || 0;
-      }
-    });
-    return { totalSubs, totalDoacoes };
-  } catch(e) { return null; }
+    const [subs, doa] = await Promise.all([resumoSubs(), rankingDoadores()]);
+    return { totalSubs: subs.total, totalDoacoes: doa.totalMes };
+  } catch (e) { return null; }
 }
 
 // ---------- Twitch: id do canal, avatares e emotes ----------
@@ -308,42 +233,33 @@ async function twitchEmotes() {
   } catch (e) { return []; }
 }
 
-// ---------- StreamElements: top de doadores pela API oficial ----------
+// ---------- StreamElements: doadores (gorjetas) ----------
 function seRows(payload) {
   if (Array.isArray(payload)) return payload;
-  for (const key of ['docs', 'users', 'results', 'items', 'data', 'tips', 'top', 'ranking', 'watchtime']) {
+  for (const key of ['users', 'docs', 'results', 'items', 'data', 'tips', 'top', 'ranking', 'watchtime']) {
     if (Array.isArray(payload?.[key])) return payload[key];
-  }
-  if (payload?.data && typeof payload.data === 'object') {
-    for (const key of ['docs', 'users', 'results', 'items', 'ranking', 'watchtime']) if (Array.isArray(payload.data[key])) return payload.data[key];
   }
   return [];
 }
 function seUserName(row) {
-  return safeStr(row?.username || row?.data?.username || row?.data?.user?.username || row?.user?.username || row?.user?.displayName || row?.displayName || row?.name || row?.userName || row?.channel || 'Anônimo', 40);
+  return safeStr(row?.username || row?.data?.username || row?.user?.username || row?.displayName || row?.name || 'Anônimo', 40);
 }
-function seAmount(row) {
-  const value = row?.amount ?? row?.data?.amount ?? row?.total ?? row?.donation?.amount ?? row?.tipAmount ?? row?.value ?? row?.current ?? 0;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
+let hallErro = null;
 async function hallStreamElements() {
-  if (!STREAMELEMENTS_JWT) return null;
+  if (!temJwt()) { hallErro = 'STREAMELEMENTS_JWT não configurada no servidor.'; return null; }
   try {
-    const cid = await getChannelId();
-    const payload = await seFetch(`/tips/${encodeURIComponent(cid)}/top?limit=10&offset=0`);
-    const rows = seRows(payload);
-    const ranking = rows.map(row => ({ nome: seUserName(row), total: seAmount(row) }))
-      .filter(row => row.nome && row.total > 0).sort((a,b) => b.total-a.total).slice(0,10);
-    const fotos = await twitchAvatares(ranking.map(row => row.nome));
-    const doadores = ranking.map(row => ({ nome: row.nome, total: Math.round(row.total*100)/100, avatar: fotos[row.nome.toLowerCase().replace(/^@/,'')] || null }));
+    const r = await rankingDoadores();
+    const fotos = await twitchAvatares(r.lista.slice(0, 100).map(x => x.nome));
+    const doadores = r.lista.map(x => ({ ...x, total: x.valor, avatar: fotos[x.nome.toLowerCase()] || null }));
+    hallErro = null;
     return {
       vazio: !doadores.length, doadores, gift: [], fieis: [],
-      totalMes: 0, apoiadores: doadores.length, ultimo: null,
-      fonte: 'StreamElements'
+      totalMes: r.totalMes, totalGeral: r.totalGeral, apoiadores: r.apoiadores,
+      doacoes: r.doacoes, moeda: r.moeda, ultimo: r.ultimo, fonte: 'StreamElements'
     };
   } catch (error) {
-    console.error('[Hall] Falha ao consultar top de gorjetas do StreamElements:', error?.message || error);
+    hallErro = error?.message || 'Falha ao consultar o StreamElements.';
+    console.error('[Hall] Falha ao consultar doadores no StreamElements:', hallErro);
     return null;
   }
 }
@@ -422,17 +338,55 @@ export default async function handler(req, res) {
 
     if (action === 'hall') {
       const cache = await lerHallCache();
-      const agora = Date.now();
-      const idade = cache ? (agora - cache.ts) / 1000 : Infinity;
+      const idade = cache ? (Date.now() - cache.ts) / 1000 : Infinity;
+      const forcar = req.query?.refresh === '1';
 
-      if (!STREAMELEMENTS_JWT) return res.status(200).json({ vazio: true, doadores: [], updatedAt: null, erro: 'STREAMELEMENTS_JWT não configurada no servidor.' });
-
-      if (cache && idade < HALL_CACHE_TTL) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
+      if (!temJwt()) return res.status(200).json({ vazio: true, doadores: [], updatedAt: null, erro: 'STREAMELEMENTS_JWT não configurada no servidor.' });
+      if (cache && idade < HALL_CACHE_TTL && !forcar) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
 
       const dados = await hallStreamElements();
       if (dados) { await salvarHallCache(dados); return res.status(200).json({ ...dados, updatedAt: Date.now() }); }
-      if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
-      return res.status(200).json({ vazio: true, doadores: [], updatedAt: null, erro: 'Não foi possível consultar o ranking de doadores no StreamElements.' });
+      if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
+      return res.status(200).json({ vazio: true, doadores: [], updatedAt: null, erro: hallErro || 'Não foi possível consultar o ranking de doadores no StreamElements.' });
+    }
+
+    // ===== RANKING UNIFICADO DO STREAMELEMENTS =====
+    // ?action=ranking-se&modo=pontos|acumulados|horas|chat|doadores
+    if (action === 'ranking-se') {
+      const modo = String(req.query?.modo || 'pontos');
+      const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || '100', 10) || 100));
+      try {
+        let out;
+        if (modo === 'doadores') {
+          const cache = await lerHallCache();
+          let d = (cache && (Date.now() - cache.ts) / 1000 < HALL_CACHE_TTL) ? cache.dados : null;
+          if (!d) { d = await hallStreamElements(); if (d) await salvarHallCache(d); else if (cache) d = cache.dados; }
+          if (!d) throw Object.assign(new Error(hallErro || 'Não foi possível consultar os doadores.'), { statusCode: 502 });
+          out = { modo, total: d.apoiadores, lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
+                  resumo: { totalMes: d.totalMes, totalGeral: d.totalGeral, doacoes: d.doacoes, moeda: d.moeda, ultimo: d.ultimo } };
+        } else if (modo === 'chat') {
+          const c = await statsChat(limit);
+          out = { modo, total: c.lista.length, lista: c.lista, resumo: { mensagens: c.total, emotes: c.emotes } };
+        } else if (['pontos', 'acumulados', 'horas'].includes(modo)) {
+          const offset = Math.min(100000, Math.max(0, parseInt(req.query?.offset || '0', 10) || 0));
+          const r = await rankingPontos(modo, limit, offset);
+          out = { modo, total: r.total, lista: r.lista };
+        } else {
+          return res.status(400).json({ error: 'Modo inválido.' });
+        }
+        // fotos da Twitch (só quem ainda não tem)
+        const semFoto = out.lista.filter(x => !x.avatar);
+        if (semFoto.length) {
+          const fotos = await twitchAvatares(semFoto.map(x => x.nome));
+          semFoto.forEach(x => { x.avatar = fotos[String(x.nome).toLowerCase()] || null; });
+        }
+        res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        return res.status(200).json({ ok: true, ...out, updatedAt: Date.now() });
+      } catch (e) {
+        console.error('[ranking-se]', modo, e?.message || e);
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json({ ok: false, modo, lista: [], total: 0, erro: e?.message || 'Falha ao consultar o StreamElements.', codigo: e?.code || 'erro' });
+      }
     }
 
     if (action === 'status-perfil') {
@@ -465,23 +419,9 @@ export default async function handler(req, res) {
       if (action === 'ranking-pontos' || action === 'ranking-horas') {
         const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || '100', 10) || 100));
         const offset = Math.min(100000, Math.max(0, parseInt(req.query?.offset || '0', 10) || 0));
-        const endpoint = action === 'ranking-horas' ? 'watchtime' : 'top';
-        const payload = await seFetch(`/points/${encodeURIComponent(channelId)}/${endpoint}?limit=${limit}&offset=${offset}`);
-        const rows = seRows(payload);
-        const fotos = await twitchAvatares(rows.map(seUserName));
-        const ranking = rows.map(row => {
-          const nome = seUserName(row);
-          const login = nome.toLowerCase().replace(/^@/, '');
-          const avatar = row?.avatar || row?.data?.avatar || row?.data?.user?.avatar || row?.user?.avatar || row?.user?.profileImage || row?.user?.profile_image_url || row?.profileImage || row?.profile_image_url || fotos[login] || null;
-          if (action === 'ranking-horas') {
-            const watchtime = row?.watchtime ?? row?.data?.watchtime ?? row?.data?.watchTime ?? row?.watchTime ?? row?.watch_time ?? row?.totalWatchTime ?? row?.minutesWatched ?? row?.hoursWatched ?? row?.time ?? row?.minutes ?? row?.hours ?? row?.total ?? row?.value ?? 0;
-            return { ...row, username: nome, avatar, watchtime };
-          }
-          const points = row?.points ?? row?.data?.points ?? row?.data?.current ?? row?.current ?? row?.amount ?? row?.value ?? row?.score ?? 0;
-          return { ...row, username: nome, avatar, points };
-        });
+        const r = await rankingPontos(action === 'ranking-horas' ? 'horas' : 'top', limit, offset);
         res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-        return res.status(200).json({ ranking, total: extractTotal(payload) ?? ranking.length });
+        return res.status(200).json({ ranking: r.lista.map(x => ({ username: x.nome, points: x.pontos, watchtime: x.minutos })), total: r.total });
       }
       if (action === 'atividades') {
         const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || 25)));

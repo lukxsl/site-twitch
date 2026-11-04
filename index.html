@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="css/arcade.css">
 <link rel="stylesheet" href="css/arcade-dashboard.css">
 <link rel="stylesheet" href="css/profile.css">
+<link rel="stylesheet" href="css/ranking.css">
 </head>
 <body>
 
@@ -353,23 +354,53 @@
 <!-- ==================== RANKING ==================== -->
 <section id="sec-ranking" class="page-section">
   <header class="section-header reveal">
-    <span class="section-kicker">🏆 Arcade</span>
-    <h2>Ranking de Jogadores</h2>
-    <p>Compare a participação da comunidade por XP do Arcade, horas assistidas e pontos do StreamElements.</p>
+    <span class="section-kicker">🏆 Comunidade</span>
+    <h2>Ranking</h2>
+    <p>Quem mais brilha no cantinho: XP do Arcade, horas assistidas, pontos, chat e apoiadores — tudo direto do StreamElements.</p>
   </header>
-  <div class="ranking-shell" id="rankingContainer">
-    <div class="ranking-toolbar">
-      <div><span class="pf-eyebrow">PLACAR DA COMUNIDADE</span><h3>Quem faz parte do cantinho</h3><p id="rankingModeDescription">XP conquistado nas atividades do Arcade.</p></div>
-      <div class="ranking-toolbar-actions"><button class="pf-btn" type="button" id="rankingRefreshBtn">↻ Atualizar</button><button class="pf-btn pf-btn-primary" type="button" id="rankingLoginBtn">Entrar no ranking</button></div>
+
+  <div class="rk" id="rankingContainer" data-mode="xp">
+    <div class="rk-hero">
+      <div class="rk-hero-text">
+        <span class="rk-eyebrow" id="rkEyebrow">PLACAR DA COMUNIDADE</span>
+        <h3 id="rkTitle">XP do Arcade</h3>
+        <p id="rkDesc">XP conquistado nas atividades do Arcade.</p>
+      </div>
+      <div class="rk-hero-actions">
+        <span class="rk-updated" id="rkUpdated" hidden></span>
+        <button class="rk-btn" type="button" id="rankingRefreshBtn"><span class="rk-spin" aria-hidden="true">↻</span> Atualizar</button>
+      </div>
     </div>
-    <div class="ranking-mode-switch" role="group" aria-label="Categoria do ranking">
-      <button type="button" class="is-active" data-ranking-mode="xp" aria-pressed="true">⭐ XP do Arcade</button>
-      <button type="button" data-ranking-mode="horas" aria-pressed="false">⏱️ Horas assistidas</button>
-      <button type="button" data-ranking-mode="pontos" aria-pressed="false">💎 Pontos SE</button>
+
+    <nav class="rk-tabs" role="tablist" aria-label="Categoria do ranking">
+      <button type="button" role="tab" class="is-active" data-ranking-mode="xp" aria-selected="true"><span class="rk-tab-ic">⭐</span><span>XP do Arcade</span></button>
+      <button type="button" role="tab" data-ranking-mode="horas" aria-selected="false"><span class="rk-tab-ic">⏱️</span><span>Horas assistidas</span></button>
+      <button type="button" role="tab" data-ranking-mode="pontos" aria-selected="false"><span class="rk-tab-ic">💎</span><span>Pontos</span></button>
+      <button type="button" role="tab" data-ranking-mode="chat" aria-selected="false"><span class="rk-tab-ic">💬</span><span>Chat</span></button>
+      <button type="button" role="tab" data-ranking-mode="doadores" aria-selected="false"><span class="rk-tab-ic">💜</span><span>Doadores</span></button>
+    </nav>
+
+    <div class="rk-stats" id="rkStats" hidden></div>
+
+    <div class="rk-podium" id="rankingPodium" aria-label="Pódio dos três primeiros"></div>
+
+    <div class="rk-layout">
+      <section class="rk-board" aria-live="polite">
+        <div class="rk-board-head">
+          <h3>Classificação</h3>
+          <label class="rk-search"><span aria-hidden="true">🔎</span><input type="search" id="rkSearch" placeholder="Buscar nick…" autocomplete="off" maxlength="30" aria-label="Buscar no ranking"></label>
+        </div>
+        <div class="rk-list" id="rankingList"></div>
+        <button class="rk-more" type="button" id="rkMore" hidden>Mostrar mais</button>
+      </section>
+
+      <aside class="rk-side">
+        <div class="rk-me" id="rankingYourContent"></div>
+        <button class="rk-btn rk-btn-primary" type="button" id="rankingLoginBtn" hidden>Entrar no ranking</button>
+      </aside>
     </div>
-    <div class="ranking-podium" id="rankingPodium" aria-label="Pódio dos três primeiros"></div>
-    <div class="ranking-layout">
-      <section class="ranking-board-card"><div class="ranking-section-head"><h3>🏆 Classificação</h3><span>TOP 100</span></div><div id="rankingList" class="ranking-list"><p class="pf-empty">Carregando placar…</p></div></section>
+  </div>
+</section>
       <aside class="ranking-side-card" id="rankingYourPosition"><div id="rankingYourContent"><p class="pf-empty">Entre para acompanhar sua posição.</p></div></aside>
     </div>
   </div>
