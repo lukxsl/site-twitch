@@ -413,7 +413,7 @@ function renderHall(){
 
   let html = hallPodioHTML(itens);
   if(itens.length > 3) html += `<div class="hall-resto">${hallRestoHTML(itens.slice(3))}</div>`;
-  if(!itens.length) html += `<p class="hall-cta-vazio">Ninguém no pódio ainda. <b>Seja a primeira pessoa a aparecer aqui!</b> 💜</p>`;
+  if(!itens.length) html += d?.erro ? `<p class="hall-cta-vazio hall-erro">Não foi possível carregar os apoiadores agora. Tente novamente em instantes. 💜</p>` : `<p class="hall-cta-vazio">Ninguém no pódio ainda. <b>Seja a primeira pessoa a aparecer aqui!</b> 💜</p>`;
   lista.innerHTML = html;
 
   if(total){

@@ -52,3 +52,34 @@
   #sec-ranking .ranking-item{grid-template-columns:30px 38px minmax(0,1fr) 54px;gap:6px;padding:9px 7px}
   #sec-ranking .ranking-mini-xp{grid-column:3/5;text-align:left}
 }
+
+
+/* Avatar da navegação agora é a foto da conta, sem arte de personagem */
+.nav-mini-avatar{display:block!important;place-items:center!important;align-self:center;width:36px;height:36px;border-radius:50%;overflow:hidden;background:#170d27;border:1px solid rgba(192,132,252,.5);box-shadow:0 0 14px rgba(168,85,247,.16)}
+.nav-mini-avatar .nav-mini-photo{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.nav-mini-avatar.is-empty{display:grid!important;place-items:center!important;font-weight:800;color:#ead8ff;font-size:.9rem}
+.nav-mini-avatar svg{display:none!important}
+
+/* Escolha de categoria do ranking */
+.ranking-mode-switch{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 20px;padding:8px;border:1px solid rgba(192,132,252,.14);border-radius:16px;background:rgba(13,7,24,.72)}
+.ranking-mode-switch button{border:1px solid transparent;border-radius:11px;padding:10px 15px;background:transparent;color:var(--mute,#b7a8c9);font:700 .82rem 'DM Sans',sans-serif;cursor:pointer;transition:.2s}
+.ranking-mode-switch button:hover{background:rgba(168,85,247,.1);color:#fff}
+.ranking-mode-switch button.is-active{background:linear-gradient(135deg,rgba(124,58,237,.28),rgba(192,132,252,.12));border-color:rgba(192,132,252,.42);color:#fff;box-shadow:inset 0 0 18px rgba(168,85,247,.08)}
+.ranking-avatar-initial{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:linear-gradient(145deg,#49226e,#171027);color:#f4eaff;font-weight:800}
+.ranking-avatar-photo{width:100%;height:100%;object-fit:cover;border-radius:50%}
+@media(max-width:600px){.ranking-mode-switch{display:grid;grid-template-columns:1fr}.ranking-mode-switch button{text-align:left}}
+
+/* Perfil: a foto real ocupa o palco como cartão de identidade */
+.pf-avatar-stage-large{min-height:250px}
+.pf-avatar-stage-large .pf-avatar-wrap-large{display:grid;place-items:center;min-height:210px}
+.pf-avatar-large.pf-real-photo{width:156px;height:156px;border-radius:26px;overflow:hidden;display:grid;place-items:center;background:linear-gradient(145deg,#24133e,#0c0715);border:1px solid rgba(192,132,252,.42);box-shadow:0 18px 48px rgba(0,0,0,.35),0 0 32px rgba(168,85,247,.14)}
+.pf-real-user-photo{display:block;width:100%;height:100%;object-fit:cover}
+.pf-avatar-large.pf-real-photo .pf-avatar-fallback{font-size:3rem;color:#ead8ff}
+@media(max-width:600px){.pf-avatar-large.pf-real-photo{width:128px;height:128px;border-radius:22px}}
+
+#sec-ranking .ranking-avatar-photo{opacity:1;border-radius:inherit}
+#sec-ranking .ranking-avatar-art{place-items:center;border-radius:14px}
+#sec-ranking .ranking-avatar-initial{border-radius:inherit}
+#sec-ranking .ranking-item{grid-template-columns:42px 46px minmax(0,1fr) minmax(76px,100px)}
+#sec-ranking .podium-item .ranking-avatar-photo{opacity:1}
+@media(max-width:760px){#sec-ranking .ranking-item{grid-template-columns:30px 38px minmax(0,1fr) minmax(54px,auto)}}

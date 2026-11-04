@@ -7,7 +7,11 @@ async function renderAdminHome(){
 
   const visitanteBtn = `<button type="button" class="ver-visitante" onclick="verComoVisitante()" title="Abrir home numa nova aba">👁️ Ver como visitante</button>`;
   const crumbs = adminVoltarHTML('⚙️ Painel', visitanteBtn);
-  area.innerHTML = crumbs + `<p class="admin-vazio">Carregando painel…</p>`;
+  const adminAccount = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : {};
+  const adminNick = String(adminAccount.nick || adminAccount.username || 'Admin').replace(/[<>]/g, '');
+  const dataAtual = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full' }).format(new Date());
+  const hero = `<section class="admin-command-hero"><div class="admin-command-copy"><span class="admin-command-kicker">SOSO ARCADE · CENTRAL DE CONTROLE</span><h1>Olá, ${esc(adminNick)}. Tudo sob controle?</h1><p>Acompanhe o estado da comunidade, atualize as listas e gerencie o conteúdo do site em um só lugar.</p></div><div class="admin-command-meta"><span class="admin-system-live">PAINEL OPERACIONAL</span><span class="admin-command-date">${esc(dataAtual)}</span></div></section>`;
+  area.innerHTML = crumbs + hero + `<p class="admin-vazio">Carregando painel…</p>`;
 
   const shared = await carregarShared(true);
   const podeVotos = temPerm('ver_votos');
@@ -81,7 +85,9 @@ async function renderAdminHome(){
     }));
   }
   if(temPerm('ver_tierlist')){
-    const actions = temPerm('editar_tierlist') ? [{ label:'+ Item', fn:"adminIrPara('tierlist')" }] : [];
+    const actions = [];
+    if(temPerm('importar_steam')) actions.push({ label:'📥 Importar Steam', fn:'importarSteam()' });
+    if(temPerm('editar_tierlist')) actions.push({ label:'+ Item', fn:"adminIrPara('tierlist')" });
     cardsOperacao.push(cardAdminV2({
       icon:'🎮', title:'Tier List',
       desc: temPerm('editar_tierlist') ? 'Adicionar, editar, remover e importar.' : 'Ver os itens da tier list.',
@@ -157,7 +163,7 @@ async function renderAdminHome(){
       </div>
     </div>` : '';
 
-  area.innerHTML = crumbs + alertHTML + kpiHTML +
+  area.innerHTML = crumbs + hero + alertHTML + kpiHTML +
     secaoHTML('Operação', cardsOperacao) +
     secaoHTML('Sistema', cardsSistema);
 
@@ -179,6 +185,13 @@ async function renderAdminHome(){
       }
       const card = e.target.closest('.admin-menu-card2');
       if(card){ adminIrPara(card.dataset.page); }
+    });
+    grid.addEventListener('keydown', e => {
+      const card = e.target.closest('.admin-menu-card2');
+      if(card && e.target === card && (e.key === 'Enter' || e.key === ' ')){
+        e.preventDefault();
+        adminIrPara(card.dataset.page);
+      }
     });
   });
 }

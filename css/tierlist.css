@@ -271,3 +271,12 @@ body.sou-admin .tl-card[draggable="true"] { cursor: grab; }
 .g-admin-wrap:hover .g-quick-edit,.g-admin-wrap:focus-within .g-quick-edit{opacity:1;transform:none;}
 .g-quick-edit:hover{background:#7c3aed;border-color:#d8b4fe;color:#fff;}
 @media(max-width:720px){.g-quick-edit{opacity:1;transform:none;width:27px;height:27px;}}
+
+
+/* Capas de jogos/filmes em tamanho equilibrado e sem corte agressivo */
+.tl{--card-w:112px;--gap:13px}
+.tl-card{gap:8px}
+.tl-poster{border-radius:10px;aspect-ratio:2/3;max-height:168px;background:rgba(18,11,31,.92)}
+.tl-poster img{object-fit:contain;object-position:center center;background:rgba(18,11,31,.92)}
+.tl-card:hover .tl-poster img{transform:scale(1.025)}
+@media(max-width:700px){.tl{--card-w:96px;--gap:10px}.tl-poster{max-height:144px}.tl-card{gap:7px}}

@@ -7,8 +7,8 @@ const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const STREAMELEMENTS_JWT = (process.env.STREAMELEMENTS_JWT || '').trim();
 
 const CANAL = 'asemtet0';
-const HALL_CACHE_KEY = 'cache:hall_v14';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v14';
+const HALL_CACHE_KEY = 'cache:hall_v15';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v15';
 const HALL_CACHE_TTL = 2 * 60;            // doadores: atualiza no máx. a cada 2 min
 const EMOTES_CACHE_KEY = 'cache:emotes_v1';
 const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
@@ -308,64 +308,42 @@ async function twitchEmotes() {
   } catch (e) { return []; }
 }
 
-// ---------- StreamElements: ranking de doadores 100% automático ----------
-async function seTodasAsGorjetas(h, cid, paginas = 5) {
-  const tips = [];
-  for (let p = 0; p < paginas; p++) {
-    const r = await fetch(`https://api.streamelements.com/kappa/v2/tips/${cid}?limit=100&offset=${p * 100}&sort=-createdAt`, { headers: h });
-    if (!r.ok) break;
-    const d = await r.json();
-    const docs = Array.isArray(d?.docs) ? d.docs : [];
-    tips.push(...docs);
-    if (docs.length < 100) break;
+// ---------- StreamElements: top de doadores pela API oficial ----------
+function seRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  for (const key of ['docs', 'users', 'results', 'items', 'data', 'tips', 'top', 'ranking', 'watchtime']) {
+    if (Array.isArray(payload?.[key])) return payload[key];
   }
-  return tips;
+  if (payload?.data && typeof payload.data === 'object') {
+    for (const key of ['docs', 'users', 'results', 'items', 'ranking', 'watchtime']) if (Array.isArray(payload.data[key])) return payload.data[key];
+  }
+  return [];
 }
-
+function seUserName(row) {
+  return safeStr(row?.username || row?.data?.username || row?.data?.user?.username || row?.user?.username || row?.user?.displayName || row?.displayName || row?.name || row?.userName || row?.channel || 'Anônimo', 40);
+}
+function seAmount(row) {
+  const value = row?.amount ?? row?.data?.amount ?? row?.total ?? row?.donation?.amount ?? row?.tipAmount ?? row?.value ?? row?.current ?? 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
 async function hallStreamElements() {
   if (!STREAMELEMENTS_JWT) return null;
-  const h = { Authorization: `Bearer ${STREAMELEMENTS_JWT}`, Accept: 'application/json' };
   try {
-    const me = await (await fetch('https://api.streamelements.com/kappa/v2/channels/me', { headers: h })).json();
-    const cid = me?._id;
-    if (!cid) return null;
-
-    const tips = await seTodasAsGorjetas(h, cid);
-    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
-    const RUINS = ['failed', 'rejected', 'refunded', 'chargeback', 'cancelled', 'canceled'];
-
-    const porPessoa = {};
-    let totalMes = 0, ultimo = null;
-    tips.forEach(t => {
-      if (t.status && RUINS.includes(String(t.status).toLowerCase())) return;
-      const valor = Number(t.donation?.amount ?? t.amount) || 0;
-      if (valor <= 0) return;
-      const nome = safeStr(t.donation?.user?.username || t.username || 'Anônimo', 40);
-      const chave = nome.toLowerCase();
-      const quando = new Date(t.createdAt || t.updatedAt || 0).getTime();
-      if (!porPessoa[chave]) porPessoa[chave] = { nome, total: 0, ultima: 0 };
-      porPessoa[chave].total += valor;
-      porPessoa[chave].ultima = Math.max(porPessoa[chave].ultima, quando);
-      if (quando >= inicioMes.getTime()) totalMes += valor;
-      if (!ultimo || quando > ultimo.em) ultimo = { nome, valor, em: quando };
-    });
-
-    const ranking = Object.values(porPessoa).sort((a, b) => b.total - a.total).slice(0, 10);
-    const fotos = await twitchAvatares(ranking.map(r => r.nome));
-    const doadores = ranking.map(r => ({
-      nome: r.nome,
-      total: Math.round(r.total * 100) / 100,
-      avatar: fotos[r.nome.toLowerCase().replace(/^@/, '')] || null
-    }));
-
+    const cid = await getChannelId();
+    const payload = await seFetch(`/tips/${encodeURIComponent(cid)}/top?limit=10&offset=0`);
+    const rows = seRows(payload);
+    const ranking = rows.map(row => ({ nome: seUserName(row), total: seAmount(row) }))
+      .filter(row => row.nome && row.total > 0).sort((a,b) => b.total-a.total).slice(0,10);
+    const fotos = await twitchAvatares(ranking.map(row => row.nome));
+    const doadores = ranking.map(row => ({ nome: row.nome, total: Math.round(row.total*100)/100, avatar: fotos[row.nome.toLowerCase().replace(/^@/,'')] || null }));
     return {
-      vazio: !doadores.length,
-      doadores, gift: [], fieis: [],
-      totalMes: Math.round(totalMes * 100) / 100,
-      apoiadores: Object.keys(porPessoa).length,
-      ultimo
+      vazio: !doadores.length, doadores, gift: [], fieis: [],
+      totalMes: 0, apoiadores: doadores.length, ultimo: null,
+      fonte: 'StreamElements'
     };
-  } catch (e) {
+  } catch (error) {
+    console.error('[Hall] Falha ao consultar top de gorjetas do StreamElements:', error?.message || error);
     return null;
   }
 }
@@ -447,14 +425,14 @@ export default async function handler(req, res) {
       const agora = Date.now();
       const idade = cache ? (agora - cache.ts) / 1000 : Infinity;
 
-      if (!STREAMELEMENTS_JWT) return res.status(200).json({ vazio: true, doadores: [], updatedAt: null });
+      if (!STREAMELEMENTS_JWT) return res.status(200).json({ vazio: true, doadores: [], updatedAt: null, erro: 'STREAMELEMENTS_JWT não configurada no servidor.' });
 
       if (cache && idade < HALL_CACHE_TTL) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
 
       const dados = await hallStreamElements();
       if (dados) { await salvarHallCache(dados); return res.status(200).json({ ...dados, updatedAt: Date.now() }); }
       if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
-      return res.status(200).json({ vazio: true, doadores: [], updatedAt: null });
+      return res.status(200).json({ vazio: true, doadores: [], updatedAt: null, erro: 'Não foi possível consultar o ranking de doadores no StreamElements.' });
     }
 
     if (action === 'status-perfil') {
@@ -471,7 +449,7 @@ export default async function handler(req, res) {
     // ==========================================
     // NOVAS ROTAS DA STREAMELEMENTS (MERGED)
     // ==========================================
-    const validActions = new Set(['issub', 'ranking-pontos', 'atividades', 'channel-info']);
+    const validActions = new Set(['issub', 'ranking-pontos', 'ranking-horas', 'atividades', 'channel-info']);
     if (validActions.has(action)) {
       const requestedUsername = action === 'issub' ? normalizeUsername(req.query?.user) : '';
       if (action === 'issub' && !requestedUsername) {
@@ -484,9 +462,26 @@ export default async function handler(req, res) {
         const subscriber = await checkSubscriber(channelId, requestedUsername);
         return res.status(200).json({ user: requestedUsername, isSub: Boolean(subscriber), active: Boolean(subscriber), subscriber });
       }
-      if (action === 'ranking-pontos') {
-        const ranking = await seFetch(`/points/${encodeURIComponent(channelId)}/top?limit=10&offset=0`);
-        return res.status(200).json({ ranking });
+      if (action === 'ranking-pontos' || action === 'ranking-horas') {
+        const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || '100', 10) || 100));
+        const offset = Math.min(100000, Math.max(0, parseInt(req.query?.offset || '0', 10) || 0));
+        const endpoint = action === 'ranking-horas' ? 'watchtime' : 'top';
+        const payload = await seFetch(`/points/${encodeURIComponent(channelId)}/${endpoint}?limit=${limit}&offset=${offset}`);
+        const rows = seRows(payload);
+        const fotos = await twitchAvatares(rows.map(seUserName));
+        const ranking = rows.map(row => {
+          const nome = seUserName(row);
+          const login = nome.toLowerCase().replace(/^@/, '');
+          const avatar = row?.avatar || row?.data?.avatar || row?.data?.user?.avatar || row?.user?.avatar || row?.user?.profileImage || row?.user?.profile_image_url || row?.profileImage || row?.profile_image_url || fotos[login] || null;
+          if (action === 'ranking-horas') {
+            const watchtime = row?.watchtime ?? row?.data?.watchtime ?? row?.data?.watchTime ?? row?.watchTime ?? row?.watch_time ?? row?.totalWatchTime ?? row?.minutesWatched ?? row?.hoursWatched ?? row?.time ?? row?.minutes ?? row?.hours ?? row?.total ?? row?.value ?? 0;
+            return { ...row, username: nome, avatar, watchtime };
+          }
+          const points = row?.points ?? row?.data?.points ?? row?.data?.current ?? row?.current ?? row?.amount ?? row?.value ?? row?.score ?? 0;
+          return { ...row, username: nome, avatar, points };
+        });
+        res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        return res.status(200).json({ ranking, total: extractTotal(payload) ?? ranking.length });
       }
       if (action === 'atividades') {
         const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || 25)));

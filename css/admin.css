@@ -522,3 +522,17 @@
   .admin-sidebar{position:relative;top:auto;max-height:none;overflow:visible}
   .admin-sidebar-nav{flex-wrap:nowrap}
 }
+
+
+/* Admin dashboard — command center */
+.admin-command-hero{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:22px;overflow:hidden;margin:8px 0 22px;padding:clamp(20px,3vw,32px);border:1px solid rgba(192,132,252,.22);border-radius:22px;background:radial-gradient(ellipse at 88% 5%,rgba(124,58,237,.28),transparent 42%),linear-gradient(125deg,rgba(30,17,51,.96),rgba(12,7,22,.97));box-shadow:0 20px 55px rgba(0,0,0,.22)}
+.admin-command-hero:after{content:"";position:absolute;width:220px;height:220px;right:13%;top:-155px;border:1px solid rgba(192,132,252,.2);border-radius:50%;box-shadow:0 0 0 22px rgba(192,132,252,.025),0 0 0 46px rgba(192,132,252,.018);pointer-events:none}
+.admin-command-copy{position:relative;z-index:1;max-width:660px}.admin-command-kicker{display:block;color:#c9a7ff;font:800 .68rem 'JetBrains Mono',monospace;letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px}.admin-command-hero h1{font:800 clamp(1.55rem,3vw,2.35rem) 'Bricolage Grotesque',sans-serif;color:#fff;letter-spacing:-.04em;margin:0 0 8px}.admin-command-hero p{max-width:58ch;color:#b8a9cc;font-size:.9rem;line-height:1.6;margin:0}.admin-command-meta{position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:155px}.admin-system-live{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border-radius:999px;border:1px solid rgba(74,222,128,.2);background:rgba(34,197,94,.08);color:#a7f3c1;font-size:.72rem;font-weight:800;letter-spacing:.05em}.admin-system-live:before{content:"";width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 12px #4ade80}.admin-command-date{color:#9585aa;font:600 .7rem 'JetBrains Mono',monospace;text-align:right}.admin-kpis{gap:12px}.admin-kpi{min-height:124px;border-radius:17px!important;background:linear-gradient(155deg,rgba(30,20,47,.98),rgba(13,8,23,.98))!important;border-color:rgba(192,132,252,.14)!important;transition:transform .2s,border-color .2s,box-shadow .2s}.admin-kpi:hover{transform:translateY(-3px);border-color:rgba(192,132,252,.4)!important;box-shadow:0 14px 34px rgba(0,0,0,.22)}.admin-section{margin-top:25px}.admin-section-head{margin-bottom:12px}.admin-section-kicker{font:800 .68rem 'JetBrains Mono',monospace;letter-spacing:.13em;color:#c7a7f4;text-transform:uppercase}.admin-section-grid{gap:12px}.admin-menu-card2{border-radius:17px!important;background:linear-gradient(145deg,rgba(29,19,46,.92),rgba(13,8,23,.96))!important;border-color:rgba(192,132,252,.12)!important;transition:transform .2s,border-color .2s}.admin-menu-card2:hover{transform:translateY(-3px);border-color:rgba(192,132,252,.4)!important}.admin-alert{border-radius:15px!important}
+@media(max-width:680px){.admin-command-hero{align-items:flex-start;flex-direction:column}.admin-command-meta{align-items:flex-start}.admin-command-date{text-align:left}}
+
+/* Cartões sem botões aninhados: ações internas permanecem interativas e acessíveis. */
+.admin-menu-card2[role="group"]{width:100%;text-align:left;cursor:pointer}
+.admin-menu-card2[role="group"]:focus-visible{outline:2px solid #c084fc;outline-offset:3px}
+.admin-menu-card2:focus-within .amc-action{opacity:1;transform:none;pointer-events:auto}
+.admin-menu-card2 .amc-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.admin-menu-card2 .amc-action{position:relative;z-index:1}

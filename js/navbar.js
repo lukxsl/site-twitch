@@ -1,6 +1,6 @@
 /* ============================================================
    NAVBAR DO ARCADE
-   Mini boneco, nível, SosoCoins e notificações.
+   Foto de perfil, nível, SosoCoins e notificações.
    O perfil vem do servidor; o front só exibe o que recebe.
    ============================================================ */
 (function(){
@@ -185,15 +185,19 @@
     perfilBtn.addEventListener('click', irParaPerfil);
 
     const avatar = criar('span', 'nav-mini-avatar');
-    let svg = null;
-    if (window.PixelAvatar && typeof window.PixelAvatar.render === 'function' && perfil && perfil.boneco) {
-      svg = window.PixelAvatar.render(perfil.boneco, { label: `Boneco de ${nick}`, mini: true, animar: false });
-    }
-    if (svg) avatar.appendChild(svg);
-    else {
+    const foto = usuario.avatar || usuario.picture || usuario.google?.picture || usuario.foto || '';
+    if (foto && /^(https:\/\/|\/)/i.test(String(foto))) {
+      const img = criar('img', 'nav-mini-photo');
+      img.src = String(foto);
+      img.alt = `Foto de perfil de ${nick}`;
+      img.loading = 'lazy';
+      img.referrerPolicy = 'no-referrer';
+      img.onerror = () => { img.remove(); avatar.classList.add('is-empty'); avatar.textContent = (nick[0] || '?').toUpperCase(); };
+      avatar.appendChild(img);
+    } else {
       avatar.classList.add('is-empty');
-      avatar.textContent = '🎮';
-      avatar.setAttribute('aria-hidden', 'true');
+      avatar.textContent = (nick[0] || '?').toUpperCase();
+      avatar.setAttribute('aria-label', `Foto de perfil indisponível para ${nick}`);
     }
 
     const info = criar('span', 'nav-mini-info');

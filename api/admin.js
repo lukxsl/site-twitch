@@ -409,12 +409,15 @@ function mesclarJogosSteam(atuais, novos){
   const porApp = new Map(), porNome = new Map();
   lista.forEach((j, i) => {
     if(j.appid) porApp.set(String(j.appid), i);
-    if(j.nome) porNome.set(normalizarNomeJogo(j.nome), i);
+    // Um item manual sem AppID pode ser associado ao jogo Steam pelo nome.
+    // Itens que já têm AppID nunca são fundidos só porque compartilham o título.
+    else if(j.nome) porNome.set(normalizarNomeJogo(j.nome), i);
   });
   let adicionados = 0, pulados = 0;
   for(const novo of novos){
     let idx = novo.appid ? porApp.get(String(novo.appid)) : undefined;
-    if(idx === undefined && novo.nome) idx = porNome.get(normalizarNomeJogo(novo.nome));
+    if(idx === undefined && !novo.appid && novo.nome) idx = porNome.get(normalizarNomeJogo(novo.nome));
+    if(idx === undefined && novo.appid && novo.nome) idx = porNome.get(normalizarNomeJogo(novo.nome));
     if(idx !== undefined){
       pulados++;
       const a = lista[idx];
@@ -431,15 +434,14 @@ function mesclarJogosSteam(atuais, novos){
       lista.push(novo);
       const pos = lista.length - 1;
       if(novo.appid) porApp.set(String(novo.appid), pos);
-      if(novo.nome) porNome.set(normalizarNomeJogo(novo.nome), pos);
+      else if(novo.nome) porNome.set(normalizarNomeJogo(novo.nome), pos);
       adicionados++;
     }
   }
   return { lista, resultado: { adicionados, pulados, total: lista.length } };
 }
 
-/* Cada importação processa só um LOTE (sinopse + tradução + conquistas são chamadas externas lentas;
-   60 jogos de uma vez estouram o tempo da função serverless). Clique de novo pra continuar. */
+/* A API trabalha em lotes pequenos para respeitar o tempo da Vercel; o painel percorre todos os lotes automaticamente. */
 const IMPORT_LOTE_MAX = Number(process.env.IMPORT_LOTE_MAX) || 12;
 const IMPORT_CONCORRENCIA = 4;
 const IMPORT_ORCAMENTO_MS = Number(process.env.IMPORT_BUDGET_MS) || 7500;
@@ -451,43 +453,41 @@ async function importarSteam(){
   if(!r.ok) return { error: 'Steam HTTP ' + r.status };
   const sd = await r.json();
   const lista = sd && sd.response && Array.isArray(sd.response.games) ? sd.response.games : [];
-  const jogados = lista.filter(g => g.appid && g.name && g.playtime_forever > 0)
-    .sort((a,b) => b.playtime_forever - a.playtime_forever).slice(0, 60);
+  if (!lista.length) return { error: 'A Steam retornou a biblioteca vazia. Confira se o perfil e a opção “Detalhes de jogos” estão públicos e se o SteamID configurado é o correto.' };
+  const jogados = lista.filter(g => g.appid && (g.name || g.appid))
+    .sort((a,b) => (Number(b.playtime_forever)||0) - (Number(a.playtime_forever)||0));
 
   const [jogosRaw] = await redis([['GET', 'tierlist:jogos']]);
   let atuais = [];
   try { atuais = jogosRaw ? JSON.parse(jogosRaw) : []; } catch(e){ return { error: 'A lista atual está ilegível no Redis. Importação cancelada para não apagar nada.' }; }
   if(!Array.isArray(atuais)) atuais = [];
   const idsExistentes = new Set(atuais.filter(j => j.appid).map(j => String(j.appid)));
-  const nomesExistentes = new Set(atuais.map(j => normalizarNomeJogo(j.nome)));
-  const candidatos = jogados.filter(g => !idsExistentes.has(String(g.appid)) && !nomesExistentes.has(normalizarNomeJogo(g.name)));
+  // A Steam usa AppID como identidade. Títulos iguais podem ser jogos diferentes.
+  const candidatos = jogados.filter(g => !idsExistentes.has(String(g.appid)));
   const puladosAntes = jogados.length - candidatos.length;
 
   const t0 = Date.now();
   const novos = [];
   let processados = 0;
 
-  const montar = async (g) => {
-    const extra = await buscarDadosJogo(g.name, g.appid);
-    let conquistas = null;
-    try { conquistas = await buscarConquistasSteam(g.appid); } catch(e){}
-    const sinopse = extra.sinopse || '';
-    return {
-      id: g.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'-').slice(0,40),
-      appid: g.appid,
-      nome: g.name,
-      tier: 'NR',
-      status: 'Jogando',
-      horas: Math.round(g.playtime_forever / 6) / 10,
-      conquistas,
-      nota: extra.nota || 0,
-      capa: extra.capa || ('https://cdn.cloudflare.steamstatic.com/steam/apps/' + g.appid + '/library_600x900.jpg'),
-      comentario: sinopse,
-      sinopse,
-      generos: Array.isArray(extra.generos) ? extra.generos : [],
-      adicionadoEm: new Date().toISOString()
-    };
-  };
+  // Importação rápida e completa: primeiro garante que TODOS os jogos entram
+  // na lista. Sinopses/conquistas são enriquecimento secundário e não podem
+  // impedir a importação por lentidão ou indisponibilidade de serviços externos.
+  const montar = async (g) => ({
+    id: `steam-${g.appid}`,
+    appid: g.appid,
+    nome: g.name || `Steam App ${g.appid}`,
+    tier: 'NR',
+    status: (Number(g.playtime_forever) || 0) > 0 ? 'Jogando' : 'Na fila',
+    horas: Math.round((Number(g.playtime_forever) || 0) / 6) / 10,
+    conquistas: null,
+    nota: 0,
+    capa: `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`,
+    comentario: '',
+    sinopse: '',
+    generos: [],
+    adicionadoEm: new Date().toISOString()
+  });
 
   for(let i = 0; i < candidatos.length && novos.length < IMPORT_LOTE_MAX; i += IMPORT_CONCORRENCIA){
     if(Date.now() - t0 > IMPORT_ORCAMENTO_MS) break;
@@ -507,7 +507,8 @@ async function importarSteam(){
     pulados: puladosAntes + (Number(merge.pulados) || 0),
     total: jogados.length,
     totalSalvo: Number(merge.total) || atuais.length,
-    restantes: Math.max(0, candidatos.length - processados)   // > 0 → clique em importar de novo
+    restantes: Math.max(0, candidatos.length - processados),
+    processados: processados
   };
 }
 

@@ -263,7 +263,7 @@ function cardAdminV2({ icon, title, desc, page, accent = 'purple', actions = [] 
     `<button type="button" class="amc-action" data-fn="${esc(a.fn)}">${a.label}</button>`
   ).join('');
   return `
-    <button type="button" class="admin-menu-card2" data-accent="${accent}" data-page="${page}">
+    <article class="admin-menu-card2" data-accent="${accent}" data-page="${page}" role="group" tabindex="0" aria-label="Atalho para ${title}">
       <span class="amc-bar"></span>
       <span class="amc-ic-badge"><span class="amc-ic">${icon}</span></span>
       <h3>${title}</h3>
@@ -272,6 +272,6 @@ function cardAdminV2({ icon, title, desc, page, accent = 'purple', actions = [] 
         <span class="amc-open">Abrir →</span>
         ${actionsHTML}
       </div>
-    </button>
+    </article>
   `;
 }

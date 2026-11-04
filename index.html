@@ -25,7 +25,6 @@
 <link rel="stylesheet" href="css/arcade.css">
 <link rel="stylesheet" href="css/arcade-dashboard.css">
 <link rel="stylesheet" href="css/profile.css">
-<link rel="stylesheet" href="css/avatar-2-5d.css?v=4">
 </head>
 <body>
 
@@ -356,12 +355,17 @@
   <header class="section-header reveal">
     <span class="section-kicker">🏆 Arcade</span>
     <h2>Ranking de Jogadores</h2>
-    <p>Quem mais acompanha a Soso sobe no placar. XP, níveis e recompensas ficam salvos na sua conta.</p>
+    <p>Compare a participação da comunidade por XP do Arcade, horas assistidas e pontos do StreamElements.</p>
   </header>
   <div class="ranking-shell" id="rankingContainer">
     <div class="ranking-toolbar">
-      <div><span class="pf-eyebrow">PLACAR DA COMUNIDADE</span><h3>Quem faz parte do cantinho</h3><p>XP conquistado nas lives, votações, sugestões e desafios.</p></div>
+      <div><span class="pf-eyebrow">PLACAR DA COMUNIDADE</span><h3>Quem faz parte do cantinho</h3><p id="rankingModeDescription">XP conquistado nas atividades do Arcade.</p></div>
       <div class="ranking-toolbar-actions"><button class="pf-btn" type="button" id="rankingRefreshBtn">↻ Atualizar</button><button class="pf-btn pf-btn-primary" type="button" id="rankingLoginBtn">Entrar no ranking</button></div>
+    </div>
+    <div class="ranking-mode-switch" role="group" aria-label="Categoria do ranking">
+      <button type="button" class="is-active" data-ranking-mode="xp" aria-pressed="true">⭐ XP do Arcade</button>
+      <button type="button" data-ranking-mode="horas" aria-pressed="false">⏱️ Horas assistidas</button>
+      <button type="button" data-ranking-mode="pontos" aria-pressed="false">💎 Pontos SE</button>
     </div>
     <div class="ranking-podium" id="rankingPodium" aria-label="Pódio dos três primeiros"></div>
     <div class="ranking-layout">
@@ -711,9 +715,9 @@
 <section id="sec-perfil" class="page-section">
   <div class="pf-shell">
     <header class="pf-head">
-      <span class="section-kicker">✦ IDENTIDADE DO ARCADE</span>
-      <h1>Meu Cantinho</h1>
-      <p>Seu personagem, suas conquistas, seus itens e tudo o que você já viveu com a Soso.</p>
+      <span class="section-kicker">✦ SEU ESPAÇO NO ARCADE</span>
+      <h1>Meu Perfil</h1>
+      <p>Seu espaço no cantinho da Soso: acompanhe sua evolução, conquistas e participação na comunidade.</p>
     </header>
 
     <div class="pf-banner" id="pfBanner">
@@ -729,9 +733,6 @@
     <div class="pf-body-layout">
     <nav class="pf-tabs" role="tablist" aria-label="Navegação do perfil">
       <button type="button" class="pf-tab on" data-pf-tab="visao-geral" role="tab" aria-selected="true">👁️ Visão Geral</button>
-      <button type="button" class="pf-tab" data-pf-tab="boneco" role="tab" aria-selected="false">🕹️ Meu Boneco</button>
-      <button type="button" class="pf-tab" data-pf-tab="inventario" role="tab" aria-selected="false">🎒 Inventário</button>
-      <button type="button" class="pf-tab" data-pf-tab="loja" role="tab" aria-selected="false">🛍️ Loja</button>
       <button type="button" class="pf-tab" data-pf-tab="conquistas" role="tab" aria-selected="false">🏆 Conquistas</button>
       <button type="button" class="pf-tab" data-pf-tab="configuracoes" role="tab" aria-selected="false">⚙️ Configurações</button>
     </nav>
@@ -743,9 +744,9 @@
         <aside class="pf-player-column">
           <div class="pf-visual-section">
             <div class="pf-avatar-stage-large" id="pfAvatarStageLarge">
-              <span class="pf-avatar-stage-label">SEU PERSONAGEM</span>
+              <span class="pf-avatar-stage-label">SUA FOTO DE PERFIL</span>
               <div class="pf-avatar-wrap-large">
-                <div class="pf-avatar-large" id="pfAvatarLarge" role="img" aria-label="Prévia do seu avatar 2.5D"></div>
+                <div class="pf-avatar-large pf-real-photo" id="pfAvatarLarge" role="img" aria-label="Sua foto de perfil"></div>
               </div>
               <span class="pf-avatar-stage-floor" aria-hidden="true"></span>
             </div>
@@ -828,49 +829,6 @@
           <div class="pf-xp-rules" id="pfXpRules"><p class="pf-empty">As atividades que dão XP aparecem aqui.</p></div>
         </section>
       </div>
-    </div>
-
-    <!-- MEU BONECO -->
-    <div class="pf-panel" data-pf-panel="boneco" hidden>
-      <div class="pf-creator">
-        <div class="pf-avatar-stage" id="pfAvatarStage">
-          <div class="pf-stage-top"><span class="pf-avatar-tag">Mascote oficial · 3D</span><span class="pf-save-state" id="pfSaveState" data-estado="carregando" role="status" aria-live="polite">Carregando</span></div>
-          <div class="pf-ground" aria-hidden="true"></div><div class="pf-shade" aria-hidden="true"></div>
-          <div class="pf-avatar-wrap"><div class="pf-avatar" id="pfAvatar" role="img" aria-label="Prévia do seu avatar 2.5D"></div></div>
-          <p class="pf-stage-caption" id="pfStageCaption">Mascote oficial do Arcade.</p>
-        </div>
-        <div class="pf-options" id="pfOptions">
-          <div class="pf-options-top"><div class="pf-options-intro"><span class="pf-options-kicker">ACESSÓRIOS DE TESTE · SOSO ARCADE</span><h2>Personalize seu mascote</h2><p id="pfCatalogStatus" role="status">Conectando sua conta…</p></div>
-            <div class="pf-options-actions"><button type="button" class="pf-btn" id="pfRandom" disabled>🎲 Surpreenda-me</button><button type="button" class="pf-btn pf-btn-reset" id="pfReset" disabled>↺ Padrão</button><button type="button" class="pf-btn pf-btn-primary" id="pfSave" disabled>💾 Salvar boneco</button></div>
-          </div>
-          <div class="pf-access-row"><span class="pf-access" id="pfAccess">Visitante</span><span class="pf-save-msg" id="pfSaveMsg" role="status" aria-live="polite"></span><button type="button" class="pf-demo-retry" id="pfDemoRetry" hidden>↻ Tentar conexão</button></div>
-          <p class="pf-lock-note" id="pfLockNote" role="status" aria-live="polite"></p>
-          <div class="pf-wardrobe" id="pfWardrobe" hidden><div class="pf-wardrobe-tabs" id="pfWardrobeTabs" role="tablist" aria-label="Categorias do boneco"></div><div class="pf-wardrobe-panel" id="pfWardrobePanel" role="tabpanel"></div></div>
-          <div class="pf-creator-gate" id="pfCreatorGate" hidden><span class="pf-gate-ic" aria-hidden="true">🔒</span><h3>Entre para montar seu boneco</h3><p>Seu guarda-roupa, itens liberados e conquistas ficam salvos na sua conta do Arcade.</p><button type="button" class="pf-btn pf-btn-primary" id="pfCreatorLogin">Entrar no Arcade</button></div>
-          <div class="pf-creator-gate" id="pfCreatorError" hidden><span class="pf-gate-ic" aria-hidden="true">📡</span><h3>Não consegui carregar o guarda-roupa</h3><p id="pfErrorText">Verifique sua conexão e tente novamente.</p><button type="button" class="pf-btn pf-btn-primary" id="pfCreatorRetry">Tentar novamente</button></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- INVENTÁRIO -->
-    <div class="pf-panel" data-pf-panel="inventario" hidden>
-      <div class="pf-panel-heading"><div><span class="pf-eyebrow">COLEÇÃO PESSOAL</span><h2>Meu inventário</h2><p>Experimente as peças sem salvar. A prévia acompanha você enquanto percorre a coleção.</p></div><span class="pf-count-pill" id="pfInventoryCount">0 itens</span></div>
-      <div class="pf-inventory-toolbar"><label for="pfInventoryFilter">Filtrar por categoria</label><select id="pfInventoryFilter"><option value="todos">Todas as categorias</option><option value="base">Corpo e pele</option><option value="rosto">Rosto</option><option value="cabelo">Cabelo</option><option value="roupa">Roupa</option><option value="calcado">Calçado</option><option value="acessorio">Acessórios</option><option value="efeito">Efeitos</option><option value="animacao">Animações</option><option value="moldura">Molduras</option></select><span id="pfInventoryHint">As peças equipadas ficam marcadas.</span></div>
-      <aside class="pf-inventory-dressing-room" aria-label="Prévia fixa do personagem">
-        <div class="pf-extra-head"><div><span class="pf-eyebrow">PROVADOR AO VIVO</span><h3>Seu personagem</h3></div><span class="pf-preview-live">ATUALIZA EM TEMPO REAL</span></div>
-        <div id="pfInventoryAvatarPreview" class="pf-inventory-avatar-preview" role="img" aria-label="Prévia temporária do personagem"></div>
-        <p id="pfInventoryTryonLabel" class="pf-inventory-tryon-label">Escolha uma peça para experimentar.</p>
-        <div class="pf-inventory-preview-actions"><button type="button" class="pf-btn pf-btn-secondary" id="pfInventoryPreviewReset">Limpar prévia</button><button type="button" class="pf-btn pf-btn-primary" id="pfInventoryEditLook">Editar personagem</button></div>
-      </aside>
-      <div class="pf-inventory-layout">
-        <div id="pfInventoryGrid" class="pf-item-grid"><p class="pf-empty">Carregando inventário…</p></div>
-      </div>
-    </div>
-
-    <!-- LOJA -->
-    <div class="pf-panel" data-pf-panel="loja" hidden>
-      <div class="pf-panel-heading"><div><span class="pf-eyebrow">ARCADE MARKET</span><h2>Loja do Cantinho</h2><p>Novas peças, efeitos e drops especiais estão sendo preparados.</p></div><span class="pf-count-pill">EM BREVE</span></div>
-      <div class="pf-shop-coming-soon"><span class="pf-shop-coming-icon">🛍️</span><span class="pf-eyebrow">ARCADE MARKET</span><h2>Novidades a caminho</h2><p>A loja está sendo reorganizada para receber itens especiais da comunidade. Enquanto isso, suas SosoCoins continuam guardadas e seu inventário segue disponível.</p><div class="pf-shop-balance"><img src="img/sosocoin.png" alt=""/><div><strong id="pfShopBalance">0</strong><span>SosoCoins no seu saldo</span></div></div><a class="pf-btn pf-btn-secondary" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Acompanhar as novidades ↗</a></div>
     </div>
 
     <!-- CONQUISTAS -->
@@ -972,13 +930,11 @@
 <script src="js/api/client.js"></script>
 <script src="js/api/game-client.js"></script>
 <script src="js/game-state.js"></script>
-<script src="js/pixel-engine.js?v=3"></script>
 <script src="js/auth-ui.js"></script>
 <script src="js/navbar.js"></script>
 <script src="js/twitch/twitch.js"></script>
 <script src="js/setup/setup.js"></script>
 <script src="js/main.js"></script>
-<script src="js/profile.js"></script>
 <script src="js/perfil-ui.js"></script>
 <script src="js/ranking-ui.js"></script>
 <script src="js/secret-codes-ui.js"></script>

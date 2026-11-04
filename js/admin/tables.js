@@ -134,21 +134,38 @@ window.apagarSelecionados = apagarSelecionados;
 
 async function importarSteam(){
   const btn = document.getElementById('btnImportarSteam');
-  const ok = await confirmar('Importar da Steam?', 'Vou buscar seus jogos na Steam e adicionar na tier list. Pode demorar um pouco.', '📥');
+  const ok = await confirmar('Importar biblioteca completa da Steam?', 'Vou percorrer automaticamente todos os lotes da sua biblioteca e adicionar os jogos que ainda não estão na Tier List. Não feche a página durante o processo.', '📥');
   if(!ok) return;
-  if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando… (pode demorar)'; }
+  let totalAdicionados = 0, totalProcessados = 0, totalBiblioteca = 0, rodada = 0, semProgresso = 0, concluido = false;
+  const labelOriginal = '📥 Importar da Steam';
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Preparando biblioteca…'; }
   try{
-    const r = await fetch('/api/admin?action=importar-steam', { method: 'POST' });
-    const d = await r.json();
-    if(!r.ok) throw new Error(d.error || 'Falha na importação');
-    toast(`✅ ${d.adicionados} adicionados · ${d.pulados} já existiam`, 'ok');
-    if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; }
+    while(rodada < 250){
+      rodada++;
+      if(btn) btn.textContent = `⏳ Importando biblioteca · lote ${rodada}…`;
+      const r = await fetch('/api/admin?action=importar-steam', { method: 'POST', cache: 'no-store' });
+      let d = {};
+      try { d = await r.json(); } catch(e) { throw new Error('A API retornou uma resposta inválida durante a importação.'); }
+      if(!r.ok || d.error) throw new Error(d.error || `Falha na importação (HTTP ${r.status})`);
+      totalAdicionados += Number(d.adicionados) || 0;
+      totalProcessados += Number(d.processados) || 0;
+      if(btn) btn.textContent = `⏳ ${totalProcessados} processados · ${Number(d.restantes)||0} restantes`;
+      totalBiblioteca = Number(d.total) || totalBiblioteca;
+      if(Number(d.restantes) <= 0){ concluido = true; break; }
+      if(!(Number(d.processados) > 0) && !(Number(d.adicionados) > 0)) semProgresso++; else semProgresso = 0;
+      if(semProgresso >= 2) throw new Error('A Steam ainda retorna jogos pendentes, mas nenhum lote conseguiu avançar. Verifique os logs e tente novamente.');
+    }
+    if(!concluido) throw new Error('O limite de segurança de lotes foi atingido. A importação já salva continuará de onde parou na próxima execução.');
+    toast(`✅ Importação concluída: ${totalAdicionados} novos jogos adicionados à Tier List.`, 'ok');
     await carregarAdminTierList();
     await carregarBiblioteca();
     carregarShared(true).then(() => renderSidebar());
   }catch(e){
-    toast('Erro: ' + e.message, 'erro');
-    if(btn){ btn.disabled = false; btn.textContent = '📥 Importar da Steam'; }
+    toast(`Importação interrompida: ${e.message}`, 'erro');
+    if(totalAdicionados) toast(`${totalAdicionados} jogos já foram importados e permanecem salvos.`, 'warn');
+  }finally{
+    const current = document.getElementById('btnImportarSteam');
+    if(current){ current.disabled = false; current.textContent = labelOriginal; }
   }
 }
 window.importarSteam = importarSteam;

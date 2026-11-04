@@ -1,5 +1,5 @@
 /* ============================================================
-   PERFIL UI — visão geral, inventário, conquistas e configurações
+   PERFIL UI — visão geral, conquistas e configurações
    O estado do jogador continua vindo exclusivamente do servidor.
    ============================================================ */
 (function () {
@@ -8,22 +8,6 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
-  const SLOT_NAMES = {
-    base: 'Corpo', pele: 'Tom de pele', rosto: 'Rosto', cabelo: 'Cabelo',
-    cabeloCor: 'Cor do cabelo', roupa: 'Roupa', roupaCor: 'Cor da roupa',
-    calcado: 'Calçado', calcadoCor: 'Cor do calçado', acessorio: 'Acessório',
-    acessorioCor: 'Cor do acessório', efeito: 'Efeito', animacao: 'Animação', moldura: 'Moldura'
-  };
-  const SLOT_ICONS = {
-    base: '🧍', pele: '🎨', rosto: '😊', cabelo: '💇', cabeloCor: '🎨',
-    roupa: '👕', roupaCor: '🎨', calcado: '👟', calcadoCor: '🎨',
-    acessorio: '🕶️', acessorioCor: '🎨', efeito: '✨', animacao: '🎮', moldura: '🖼️'
-  };
-  const SLOT_FILTER = {
-    base: 'base', pele: 'base', rosto: 'rosto', cabelo: 'cabelo', cabeloCor: 'cabelo',
-    roupa: 'roupa', roupaCor: 'roupa', calcado: 'calcado', calcadoCor: 'calcado',
-    acessorio: 'acessorio', acessorioCor: 'acessorio', efeito: 'efeito', animacao: 'animacao', moldura: 'moldura'
-  };
   const RARITY_NAMES = {
     comum: 'Comum', incomum: 'Incomum', raro: 'Raro', epico: 'Épico',
     lendario: 'Lendário', limitado: 'Limitado'
@@ -45,13 +29,9 @@
     : `${Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h`;
 
   let perfil = null;
-  let catalogo = null;
   let active = 'visao-geral';
   let loading = false;
   let loadAllRequestId = 0;
-  let inventoryFilter = 'todos';
-  let inventoryPreviewChanges = {};
-  let inventoryPreviewLabel = '';
   let achievementFilter = 'andamento';
   let devInsights = null;
   let devInsightsError = '';
@@ -87,21 +67,27 @@
     }
   }
 
-  function renderBoneco(target, boneco, label, mini = false) {
+  function fotoAtual() {
+    const user = usuarioAtual() || {};
+    return perfil?.avatar || user.avatar || user.picture || user.google?.picture || user.foto || '';
+  }
+
+  function renderFotoPerfil(target, label) {
     if (!target) return;
+    const url = fotoAtual();
     target.replaceChildren();
-    const img = el('img', mini ? 'pf-mascot-image pf-mascot-mini' : 'pf-mascot-image');
-    img.src = 'img/mascote-arcade.png';
-    img.alt = mini ? 'Mascote do Soso Arcade' : 'Mascote oficial do Soso Arcade, com cabelo roxo, óculos amarelos e moletom roxo';
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    const art = el('div', 'pf-mascot-art' + (mini ? ' is-mini' : ''));
-    art.appendChild(img);
-    const accessory = el('span', 'pf-mascot-accessory accessory-' + (boneco?.acessorio || 'oculos'));
-    accessory.setAttribute('aria-hidden', 'true');
-    art.appendChild(accessory);
-    target.appendChild(art);
-    target.setAttribute('aria-label', img.alt);
+    if (url && /^(https:\/\/|\/)/i.test(String(url))) {
+      const img = el('img', 'pf-real-user-photo');
+      img.src = String(url);
+      img.alt = label || 'Foto de perfil';
+      img.loading = 'lazy';
+      img.referrerPolicy = 'no-referrer';
+      img.onerror = () => { img.remove(); target.appendChild(el('span', 'pf-avatar-fallback', (perfil?.nick || usuarioAtual()?.nick || '?').charAt(0).toUpperCase())); };
+      target.appendChild(img);
+    } else {
+      target.appendChild(el('span', 'pf-avatar-fallback', (perfil?.nick || usuarioAtual()?.nick || '?').charAt(0).toUpperCase()));
+    }
+    target.setAttribute('aria-label', label || 'Foto de perfil');
   }
 
   async function loadAll(force = false) {
@@ -111,32 +97,16 @@
     try {
       const state = window.GameState;
       const autenticado = !!(usuarioAtual() || state?.perfil);
-      const perfilPromise = autenticado && state
-        ? state.carregarPerfil({ forcar: force })
-        : Promise.resolve(null);
-      const catalogoPromise = state
-        ? state.carregarCatalogo({ forcar: force })
-        : Promise.resolve(null);
-      const [perfilResult, catalogoResult] = await Promise.allSettled([perfilPromise, catalogoPromise]);
+      perfil = autenticado && state
+        ? await state.carregarPerfil({ forcar: force })
+        : null;
       if (requestId !== loadAllRequestId) return;
-
-      perfil = perfilResult.status === 'fulfilled' ? perfilResult.value : null;
-      catalogo = catalogoResult.status === 'fulfilled' ? catalogoResult.value : null;
-
-      // Fallbacks independentes: uma falha de perfil não invalida o catálogo e vice-versa.
       if (autenticado && !perfil) {
         const result = await api(API_GAME, 'perfil');
+        if (requestId !== loadAllRequestId) return;
         if (result.ok) perfil = result.data;
         else console.error('[PerfilUI] Falha ao carregar perfil:', result.status, result.data);
       }
-      if (requestId !== loadAllRequestId) return;
-      if (!catalogo?.catalogo) {
-        const result = await api(API_GAME, 'catalogo');
-        if (requestId !== loadAllRequestId) return;
-        if (result.ok && result.data?.catalogo) catalogo = result.data;
-        else console.error('[PerfilUI] Falha ao carregar catálogo:', result.status, result.data);
-      }
-      if (requestId !== loadAllRequestId) return;
       updateAll();
     } catch (error) {
       if (requestId !== loadAllRequestId) return;
@@ -154,8 +124,6 @@
     }
     if (window.__pfAtualizarNomeBanner) window.__pfAtualizarNomeBanner(perfil);
     if (active === 'visao-geral') renderOverview();
-    if (active === 'inventario') renderInventory();
-    if (active === 'loja') renderShop();
     if (active === 'conquistas') renderAchievements();
     if (active === 'configuracoes') renderSettings();
     renderAvatarPlaces();
@@ -163,7 +131,7 @@
 
   function renderGuest() {
     setText('pfBannerNome', '@convidado');
-    setText('pfNickLarge', 'Entre para criar seu personagem');
+    setText('pfNickLarge', 'Entre no Arcade');
     setText('pfCurrentTitle', 'Visitante');
     setText('pfLevelLarge', '1');
     setText('pfXpText', '0 / 100 XP');
@@ -181,7 +149,7 @@
     if (fill) fill.style.width = '0%';
     const track = $('#pfXpBarTrack');
     if (track) track.setAttribute('aria-valuenow', '0');
-    renderBoneco($('#pfAvatarLarge'), window.PixelAvatar?.PADRAO, 'Prévia do Arcade');
+    renderFotoPerfil($('#pfAvatarLarge'), 'Sua foto de perfil');
 
     const titleSelect = $('#pfTituloSelect');
     if (titleSelect) {
@@ -198,26 +166,14 @@
     const recent = $('#pfRecentAchievements');
     if (recent) recent.replaceChildren(empty('Crie sua conta e participe das lives para desbloquear conquistas.'));
 
-    const inventory = $('#pfInventoryGrid');
-    if (inventory) inventory.replaceChildren(empty('Entre no Arcade para desbloquear e guardar peças.'));
-    setText('pfInventoryCount', '0 itens');
-    renderInventoryPreview();
     const achievements = $('#pfAchievementsGrid');
     if (achievements) achievements.replaceChildren(empty('Entre no Arcade para começar a desbloquear conquistas.'));
     setText('pfAchievementProgress', '0 / 0');
-    const shopBalance = $('#pfShopBalance');
-    if (shopBalance) shopBalance.textContent = '0';
     renderSettings();
   }
 
   function renderAvatarPlaces() {
-    if (!perfil) return;
-    renderBoneco($('#pfAvatarLarge'), perfil.boneco, `Boneco de ${perfil.nick || 'jogador'}`);
-    const navAvatar = $('.nav-mini-avatar');
-    if (navAvatar) {
-      renderBoneco(navAvatar, perfil.boneco, 'Seu boneco', true);
-      navAvatar.classList.remove('is-empty');
-    }
+    renderFotoPerfil($('#pfAvatarLarge'), perfil ? `Foto de perfil de ${perfil.nick || 'jogador'}` : 'Sua foto de perfil');
   }
 
   function renderTitleSelector() {
@@ -302,7 +258,6 @@
     setText('pfPositionTotal', rank.total
       ? `de ${money(rank.total)} jogadores no placar`
       : 'Você ainda não entrou no placar.');
-    setText('pfShopBalance', money(player.coins));
 
     renderTitleSelector();
     renderProgression(stats, player.regras || {});
@@ -372,7 +327,7 @@
       .sort((a, b) => Number(b.ts) - Number(a.ts))
       .slice(0, 3);
     if (!unlocked.length) {
-      box.appendChild(empty('Ainda sem conquistas. Monte seu boneco e participe das lives para começar.'));
+      box.appendChild(empty('Ainda sem conquistas. Participe das lives e atividades para começar.'));
       return;
     }
     unlocked.forEach(achievement => {
@@ -380,139 +335,6 @@
       item.append(el('span', 'pf-ach-icon', achievement.icone || '🏆'), el('span', 'pf-ach-name', achievement.nome));
       box.appendChild(item);
     });
-  }
-
-  function itemOwned(slot, item) {
-    return (perfil?.liberados?.[slot] || []).includes(item.id)
-      || (perfil?.comprados || []).includes(`${slot}:${item.id}`);
-  }
-
-  function itemEquipped(slot, item) {
-    return perfil?.boneco?.[slot] === item.id;
-  }
-
-  function itemColor(slot, item) {
-    if (item.cor) return item.cor;
-    const palettes = {
-      pele: { clara: '#f2c9a0', media: '#d99a6c', bronze: '#b87345', morena: '#8a5230', escura: '#5c3521', alien: '#7dd3a8' },
-      cabeloCor: { preto: '#2b2540', roxo: '#8b5cf6', loiro: '#f2c94c', ruivo: '#c2531b', prata: '#cbd5e1', rosa: '#ff6ec7', ciano: '#22d3ee' },
-      roupaCor: { roxo: '#7c3aed', grafite: '#454560', preto: '#28233c', vermelho: '#dc2626', ciano: '#06b6d4', dourado: '#f5b82e' },
-      calcadoCor: { branco: '#f5f3ff', preto: '#1a1330', vermelho: '#dc2626', roxo: '#7c3aed', ciano: '#22d3ee' },
-      acessorioCor: { dourado: '#ffd166', lilas: '#c084fc', azul: '#7dd3fc', rosa: '#ff6ec7', branco: '#f5f3ff' }
-    };
-    return palettes[slot]?.[item.id] || null;
-  }
-
-  function previewLook(){
-    const base = perfil?.boneco || catalogo?.padrao || window.PixelAvatar?.PADRAO || {};
-    return { ...base, ...inventoryPreviewChanges };
-  }
-
-  function renderInventoryPreview(){
-    const stage = $('#pfInventoryAvatarPreview');
-    if (!stage) return;
-    renderBoneco(stage, previewLook(), 'Provador do inventário', false);
-    setText('pfInventoryTryonLabel', inventoryPreviewLabel || (Object.keys(inventoryPreviewChanges).length
-      ? `${Object.keys(inventoryPreviewChanges).length} peça(s) na prévia · não salva automaticamente.`
-      : 'Seu visual atual. Escolha peças para montar um kit.'));
-    const reset = $('#pfInventoryPreviewReset');
-    if (reset) reset.disabled = !Object.keys(inventoryPreviewChanges).length;
-  }
-
-  function miniaturaItem(slot, item) {
-    const preview = el('div', 'pf-item-preview pf-item-preview-character');
-    const base = perfil?.boneco || catalogo?.padrao || window.PixelAvatar?.PADRAO || {};
-    const look = { ...base, [slot]: item.id };
-    const avatar = el('div', 'pf-item-avatar-thumb');
-
-    if (window.PixelAvatar?.render) {
-      try {
-        // Mostrar o personagem inteiro com a peça aplicada deixa acessórios,
-        // roupas e efeitos muito mais fáceis de reconhecer do que camadas soltas.
-        const svg = window.PixelAvatar.render(look, {
-          label: `Prévia de ${item.nome || 'item do inventário'}`,
-          mini: false,
-          animar: false
-        });
-        if (svg) {
-          svg.classList.add('pf-item-avatar-art');
-          svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-          avatar.appendChild(svg);
-        } else {
-          avatar.textContent = item.icone || '✦';
-        }
-      } catch (error) {
-        console.warn('[PerfilUI] Falha ao gerar miniatura da peça:', error);
-        avatar.textContent = item.icone || '✦';
-      }
-    } else {
-      avatar.textContent = item.icone || '✦';
-    }
-
-    preview.append(avatar, el('span', 'pf-item-slot-caption', SLOT_NAMES[slot] || slot));
-    return preview;
-  }
-
-  function experimentarItem(slot, item) {
-    inventoryPreviewChanges = { ...inventoryPreviewChanges, [slot]: item.id };
-    inventoryPreviewLabel = `${item.nome || 'Peça'} adicionada à prévia. Você pode escolher outras peças para combinar.`;
-    renderInventory();
-  }
-
-  function itemCard(slot, item) {
-    const rarity = String(item.r || 'comum').toLowerCase();
-    const equipped = itemEquipped(slot, item);
-    const card = el('article', `pf-item-card rarity-${rarity} is-owned${equipped ? ' is-equipped' : ''}`);
-    card.dataset.rarity = rarity;
-    const header = el('div', 'pf-item-card-top');
-    header.append(
-      el('span', 'pf-item-slot', SLOT_NAMES[slot] || slot),
-      el('span', 'pf-rarity pf-rarity-badge', RARITY_NAMES[rarity] || 'Item')
-    );
-    card.append(header, miniaturaItem(slot, item), el('h3', 'pf-item-name', item.nome || 'Item do Arcade'));
-    if (equipped) card.appendChild(el('span', 'pf-item-equipped', '✓ FAZ PARTE DO VISUAL ATUAL'));
-    else card.appendChild(el('p', 'pf-item-rule', item.regraTxt || 'Desbloqueado · pronto para experimentar.'));
-    const actions = el('div', 'pf-item-actions');
-    const isPreviewed = inventoryPreviewChanges[slot] === item.id;
-    const previewButton = button(isPreviewed ? 'Na prévia ✓' : (equipped ? 'Visual atual' : 'Experimentar'), 'pf-btn pf-btn-secondary', () => experimentarItem(slot, item));
-    previewButton.setAttribute('aria-pressed', isPreviewed ? 'true' : 'false');
-    if (isPreviewed || equipped) previewButton.disabled = true;
-    actions.appendChild(previewButton);
-    card.appendChild(actions);
-    return card;
-  }
-
-  function renderInventory() {
-    const grid = $('#pfInventoryGrid');
-    if (!grid) return;
-    grid.replaceChildren();
-    const owned = [];
-    Object.entries(catalogo?.catalogo || {}).forEach(([slot, items]) => {
-      (items || []).filter(item => itemOwned(slot, item)).forEach(item => owned.push({ slot, item }));
-    });
-    setText('pfInventoryCount', `${owned.length} ${owned.length === 1 ? 'item' : 'itens'}`);
-    setText('pfInventoryHint', `${owned.filter(({ slot, item }) => itemEquipped(slot, item)).length} peça(s) atualmente equipada(s).`);
-
-    const filtered = inventoryFilter === 'todos'
-      ? owned
-      : owned.filter(({ slot }) => SLOT_FILTER[slot] === inventoryFilter);
-    renderInventoryPreview();
-    if (!filtered.length) {
-      grid.appendChild(empty(owned.length
-        ? 'Nenhuma peça dessa categoria foi desbloqueada ainda.'
-        : 'Seu inventário está vazio por enquanto. Desbloqueie peças participando da comunidade e evoluindo no Arcade.'));
-      return;
-    }
-    filtered.sort((a, b) => {
-      const rarityDiff = (RARITY_ORDER[a.item.r] ?? 99) - (RARITY_ORDER[b.item.r] ?? 99);
-      return rarityDiff || (SLOT_NAMES[a.slot] || a.slot).localeCompare(SLOT_NAMES[b.slot] || b.slot, 'pt-BR')
-        || String(a.item.nome).localeCompare(String(b.item.nome), 'pt-BR');
-    });
-    filtered.forEach(({ slot, item }) => grid.appendChild(itemCard(slot, item)));
-  }
-
-  function renderShop() {
-    setText('pfShopBalance', money(perfil?.coins));
   }
 
   function renderAchievements() {
@@ -974,9 +796,7 @@
       panel.hidden = !selected;
     });
 
-    if (active === 'boneco') {
-      window.dispatchEvent(new CustomEvent('soso:boneco-open'));
-    } else if (!perfil) {
+    if (!perfil) {
       renderGuest();
     } else {
       updateAll();
@@ -1023,22 +843,6 @@
 
     $('#pfOpenGlobalRanking')?.addEventListener('click', () => window.mudarAba?.('ranking'));
 
-    $('#pfInventoryFilter')?.addEventListener('change', event => {
-      inventoryFilter = event.target.value || 'todos';
-      renderInventory();
-    });
-    $('#pfInventoryPreviewReset')?.addEventListener('click', () => {
-      inventoryPreviewChanges = {}; inventoryPreviewLabel = ''; renderInventory();
-    });
-    $('#pfInventoryEditLook')?.addEventListener('click', () => {
-      const tab = $('[data-pf-tab="boneco"]');
-      if (tab) tab.click();
-      const changes = Object.entries(inventoryPreviewChanges);
-      changes.forEach(([slot, id], index) => window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('soso:experimentar-item', { detail: { slot, id } }));
-      }, index * 240));
-      if (!changes.length) window.dispatchEvent(new CustomEvent('soso:boneco-open'));
-    });
 
 
     $('#pfAchievementFilters')?.addEventListener('click', event => {
@@ -1106,10 +910,6 @@
         if (perfil) updateAll();
         else renderGuest();
       });
-      window.GameState.on('catalogo', updatedCatalog => {
-        catalogo = updatedCatalog;
-        if (active === 'inventario') renderInventory();
-      });
     }
 
     window.addEventListener('soso:auth', event => {
@@ -1130,7 +930,6 @@
     });
 
     if (window.GameState?.perfil) perfil = window.GameState.perfil;
-    if (window.GameState?.catalogo) catalogo = window.GameState.catalogo;
     if (perfil) updateAll();
     else renderGuest();
     loadAll(false);
@@ -1141,7 +940,6 @@
     refresh: () => loadAll(true),
     get perfilAtual() { return perfil; },
     carregarVisaoGeral: renderOverview,
-    carregarInventario: renderInventory,
     carregarConquistas: renderAchievements,
     carregarConfiguracoes: renderSettings
   };
