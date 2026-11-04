@@ -1,33 +1,25 @@
+/* ============================================================
+   AVATAR ENGINE 2.5D — SOSO ARCADE
+   Ilustração vetorial em camadas: mantém os mesmos slots/IDs do
+   catálogo do servidor para preservar inventário e avatares salvos.
+   ============================================================ */
 (function(){
   'use strict';
 
-  const W = 24;
-  const H = 36;
+  const W = 240;
+  const H = 360;
+  let instance = 0;
 
   const SLOTS = [
-    'base', 'pele', 'rosto',
-    'cabelo', 'cabeloCor',
-    'roupa', 'roupaCor',
-    'calcado', 'calcadoCor',
-    'acessorio', 'acessorioCor',
-    'efeito', 'animacao', 'moldura'
+    'base', 'pele', 'rosto', 'cabelo', 'cabeloCor', 'roupa', 'roupaCor',
+    'calcado', 'calcadoCor', 'acessorio', 'acessorioCor', 'efeito', 'animacao', 'moldura'
   ];
 
   const PADRAO = {
-    base: 'masc',
-    pele: 'media',
-    rosto: 'feliz',
-    cabelo: 'curto',
-    cabeloCor: 'roxo',
-    roupa: 'moletom',
-    roupaCor: 'roxo',
-    calcado: 'tenis',
-    calcadoCor: 'branco',
-    acessorio: 'oculos',
-    acessorioCor: 'dourado',
-    efeito: 'nenhum',
-    animacao: 'respirar',
-    moldura: 'simples'
+    base: 'masc', pele: 'media', rosto: 'feliz', cabelo: 'curto', cabeloCor: 'roxo',
+    roupa: 'moletom', roupaCor: 'roxo', calcado: 'tenis', calcadoCor: 'branco',
+    acessorio: 'oculos', acessorioCor: 'dourado', efeito: 'nenhum',
+    animacao: 'respirar', moldura: 'simples'
   };
 
   const IDS = {
@@ -49,925 +41,318 @@
 
   const PALETAS = {
     pele: {
-      clara: '#f2c9a0',
-      media: '#d99a6c',
-      bronze: '#b87345',
-      morena: '#8a5230',
-      escura: '#5c3521',
-      alien: '#7dd3a8'
+      clara: '#f5d6bd', media: '#d99a6c', bronze: '#b9784f',
+      morena: '#925b3b', escura: '#633b2c', alien: '#80d7bd'
     },
     cabeloCor: {
-      preto: '#2b2540',
-      roxo: '#8b5cf6',
-      loiro: '#f2c94c',
-      ruivo: '#c2531b',
-      prata: '#cbd5e1',
-      rosa: '#ff6ec7',
-      ciano: '#22d3ee'
+      preto: '#30283e', roxo: '#8b5cf6', loiro: '#e9bd55', ruivo: '#b95736',
+      prata: '#b9c6d8', rosa: '#e66bb7', ciano: '#38b9cf'
     },
     roupaCor: {
-      roxo: '#7c3aed',
-      grafite: '#454560',
-      preto: '#28233c',
-      vermelho: '#dc2626',
-      ciano: '#06b6d4',
-      dourado: '#f5b82e'
+      roxo: '#7950c9', grafite: '#4b4c62', preto: '#343044',
+      vermelho: '#bd4656', ciano: '#218eaa', dourado: '#b98735'
     },
     calcadoCor: {
-      branco: '#f5f3ff',
-      preto: '#1a1330',
-      vermelho: '#dc2626',
-      roxo: '#7c3aed',
-      ciano: '#22d3ee'
+      branco: '#ece9f2', preto: '#282538', vermelho: '#bd4656',
+      roxo: '#6945ad', ciano: '#208ca3'
     },
     acessorioCor: {
-      dourado: '#ffd166',
-      lilas: '#c084fc',
-      azul: '#7dd3fc',
-      rosa: '#ff6ec7',
-      branco: '#f5f3ff'
+      dourado: '#e8b956', lilas: '#bb91ef', azul: '#74c9e5',
+      rosa: '#eb83bf', branco: '#f0edf6'
     }
   };
 
-  const CONTORNO = '#150a26';
-  const BRANCO = '#f5f3ff';
-  const OLHO = '#1d0f2e';
-  const BOCA = '#8d4a52';
+  const OUTLINE = '#332744';
+  const INK = '#34283f';
+  const WHITE = '#fffaf6';
 
-  function canvas(){
-    const pixels = new Map();
-    const chave = (x, y) => x + ',' + y;
-
-    return {
-      set(x, y, cor){
-        const px = Math.round(x);
-        const py = Math.round(y);
-        if (!cor || px < 0 || py < 0 || px >= W || py >= H) return;
-        pixels.set(chave(px, py), cor);
-      },
-      get(x, y){
-        return pixels.get(chave(Math.round(x), Math.round(y))) || null;
-      },
-      mset(x, y, cor){
-        this.set(x, y, cor);
-        this.set(W - 1 - x, y, cor);
-      },
-      rect(x, y, largura, altura, cor){
-        for (let py = y; py < y + altura; py++) {
-          for (let px = x; px < x + largura; px++) this.set(px, py, cor);
-        }
-      },
-      half(y, inicio, cor){
-        for (let px = inicio; px < W / 2; px++) {
-          this.set(px, y, cor);
-          this.set(W - 1 - px, y, cor);
-        }
-      },
-      mrect(x, y, largura, altura, cor){
-        this.rect(x, y, largura, altura, cor);
-        this.rect(W - x - largura, y, largura, altura, cor);
-      },
-      erase(x, y, largura, altura){
-        for (let py = y; py < y + altura; py++) {
-          for (let px = x; px < x + largura; px++) pixels.delete(chave(px, py));
-        }
-      },
-      outline(cor = CONTORNO){
-        const bordas = [];
-        const vistos = new Set();
-        pixels.forEach((_, par) => {
-          const [x, y] = par.split(',').map(Number);
-          [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => {
-            const nx = x + dx;
-            const ny = y + dy;
-            if (nx < 0 || ny < 0 || nx >= W || ny >= H) return;
-            const k = chave(nx, ny);
-            if (pixels.has(k) || vistos.has(k)) return;
-            vistos.add(k);
-            bordas.push([nx, ny]);
-          });
-        });
-        bordas.forEach(([x, y]) => pixels.set(chave(x, y), cor));
-        return this;
-      },
-      pixels(){
-        return [...pixels.entries()].map(([par, cor]) => {
-          const [x, y] = par.split(',').map(Number);
-          return { x, y, cor };
-        });
-      }
-    };
+  function esc(text){
+    return String(text == null ? '' : text).replace(/[&<>"']/g, ch => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[ch]);
   }
 
-  function hex2rgb(hex){
-    let valor = String(hex || '').replace('#', '');
-    if (valor.length === 3) valor = valor.split('').map(c => c + c).join('');
-    if (!/^[0-9a-f]{6}$/i.test(valor)) return [245, 243, 255];
-    return [
-      parseInt(valor.slice(0, 2), 16),
-      parseInt(valor.slice(2, 4), 16),
-      parseInt(valor.slice(4, 6), 16)
-    ];
-  }
-
-  function rgb2hex(r, g, b){
-    return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
-  }
-
-  function misturar(a, b, quantidade = 0.3){
-    const ca = hex2rgb(a);
-    const cb = hex2rgb(b);
-    return rgb2hex(
-      ca[0] + (cb[0] - ca[0]) * quantidade,
-      ca[1] + (cb[1] - ca[1]) * quantidade,
-      ca[2] + (cb[2] - ca[2]) * quantidade
-    );
-  }
-
-  function escurecer(cor, quantidade = 0.28){
-    return misturar(cor, '#0b0614', quantidade);
-  }
-
-  function clarear(cor, quantidade = 0.25){
-    return misturar(cor, '#ffffff', quantidade);
-  }
-
-  function normalizar(entrada){
+  function normalizar(input){
     const out = {};
     SLOTS.forEach(slot => {
-      const valor = entrada && entrada[slot];
-      out[slot] = IDS[slot].includes(valor) ? valor : PADRAO[slot];
+      const value = input && input[slot];
+      out[slot] = IDS[slot].includes(value) ? value : PADRAO[slot];
     });
     return out;
   }
 
-  function corDe(slot, id){
-    const paleta = PALETAS[slot];
-    if (!paleta) return BRANCO;
-    return paleta[id] || paleta[PADRAO[slot]] || BRANCO;
+  function rgb(hex){
+    let value = String(hex || '').replace('#', '');
+    if (value.length === 3) value = value.split('').map(ch => ch + ch).join('');
+    if (!/^[\da-f]{6}$/i.test(value)) return [121, 80, 201];
+    return [parseInt(value.slice(0,2),16), parseInt(value.slice(2,4),16), parseInt(value.slice(4,6),16)];
   }
 
-  function pernaDe(boneco){
-    return boneco.base === 'fem'
-      ? { x: 9, largura: 2 }
-      : { x: 8, largura: 3 };
+  function mix(a, b, amount){
+    const A = rgb(a), B = rgb(b);
+    return '#' + A.map((v,i) => Math.round(v + (B[i] - v) * amount).toString(16).padStart(2,'0')).join('');
   }
 
-  function topoCabeca(boneco){
-    switch (boneco.cabelo) {
-      case 'espetado': return 1;
-      case 'coques': return 2;
-      case 'careca': return 5;
-      default: return 3;
-    }
+  function palette(slot, id){
+    return (PALETAS[slot] && PALETAS[slot][id]) || '#7950c9';
   }
 
-  function miniEstrela(cv, x, y, cor, centro = BRANCO){
-    cv.set(x, y, cor);
-    cv.rect(x - 1, y + 1, 3, 1, cor);
-    cv.set(x, y + 2, cor);
-    cv.set(x, y + 1, centro);
+  function gradient(id, color, dark = 0.32, light = 0.24){
+    return `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${mix(color, '#ffffff', light)}"/>
+      <stop offset=".48" stop-color="${color}"/>
+      <stop offset="1" stop-color="${mix(color, '#171323', dark)}"/>
+    </linearGradient>`;
   }
 
-  function camadaCorpo(boneco){
-    const cv = canvas();
-    const fem = boneco.base === 'fem';
-    const pele = corDe('pele', boneco.pele);
-    const sombra = escurecer(pele, 0.22);
-    const brilho = clarear(pele, 0.18);
-
-    cv.half(5, 7, pele);
-    cv.half(6, 6, pele);
-    for (let y = 7; y <= 14; y++) cv.half(y, 5, pele);
-    cv.half(15, 6, pele);
-    cv.half(16, 7, pele);
-    cv.half(16, 7, sombra);
-    for (let y = 8; y <= 14; y++) cv.set(18, y, sombra);
-    cv.set(17, 15, sombra);
-    cv.mset(4, 11, pele);
-    cv.mset(4, 12, sombra);
-
-    if (boneco.cabelo === 'careca') {
-      cv.rect(8, 6, 3, 1, brilho);
-      cv.set(7, 7, brilho);
-    }
-
-    cv.rect(10, 17, 4, 2, sombra);
-    cv.rect(10, 17, 2, 1, brilho);
-
-    if (fem) {
-      for (let y = 19; y <= 24; y++) cv.half(y, 8, pele);
-      cv.half(25, 7, pele);
-      cv.half(26, 7, pele);
-    } else {
-      for (let y = 19; y <= 26; y++) cv.half(y, 7, pele);
-    }
-
-    const bracoX = fem ? 6 : 5;
-    cv.mrect(bracoX, 20, 2, 7, pele);
-    cv.mrect(bracoX, 27, 2, 2, pele);
-    cv.mrect(bracoX, 26, 2, 1, sombra);
-    cv.mrect(bracoX, 27, 1, 2, sombra);
-
-    const perna = pernaDe(boneco);
-    cv.mrect(perna.x, 27, perna.largura, 5, pele);
-    cv.mrect(perna.x + perna.largura - 1, 27, 1, 5, sombra);
-
-    cv.outline();
-    return cv;
+  function hairBack(b, hair){
+    const fill = `url(#${hair})`;
+    if (b.cabelo === 'longo') return `<path d="M76 77Q67 64 65 99L59 190Q73 205 86 181L87 119L153 119L154 181Q168 204 181 190L175 98Q171 62 160 77Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M68 112L66 174M172 112L174 174" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="5" stroke-linecap="round"/>`;
+    if (b.cabelo === 'rabo') return `<path d="M156 72Q178 77 179 102L183 148Q192 163 185 180Q172 187 163 173L165 125Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M172 106Q180 137 177 166" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"/>`;
+    if (b.cabelo === 'coques') return `<g fill="${fill}" stroke="${OUTLINE}" stroke-width="5"><circle cx="69" cy="54" r="20"/><circle cx="171" cy="54" r="20"/></g><path d="M59 54Q67 43 78 50M161 50Q173 42 182 54" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="4" stroke-linecap="round"/>`;
+    return '';
   }
 
-  function camadaOlhos(boneco){
-    const cv = canvas();
-    const sombra = escurecer(corDe('pele', boneco.pele), 0.32);
-
-    switch (boneco.rosto) {
-      case 'serio':
-        cv.mrect(8, 11, 2, 2, OLHO);
-        cv.rect(7, 9, 4, 1, sombra);
-        cv.rect(13, 9, 4, 1, sombra);
-        cv.mrect(9, 11, 1, 1, BRANCO);
-        break;
-      case 'piscada':
-        cv.rect(7, 12, 3, 1, OLHO);
-        cv.mrect(14, 11, 2, 3, OLHO);
-        cv.mrect(15, 11, 1, 1, BRANCO);
-        break;
-      case 'sono':
-        cv.mrect(7, 12, 3, 1, OLHO);
-        cv.mrect(7, 13, 3, 1, clarear(corDe('pele', boneco.pele), 0.28));
-        break;
-      case 'estrela':
-        miniEstrela(cv, 8, 10, '#ffd166');
-        miniEstrela(cv, 15, 10, '#ffd166');
-        break;
-      case 'neon':
-        cv.mrect(7, 10, 3, 3, 'rgba(34,211,238,.32)');
-        cv.mrect(8, 11, 2, 3, '#22d3ee');
-        cv.mrect(9, 11, 1, 1, BRANCO);
-        break;
-      default:
-        cv.mrect(8, 11, 2, 3, OLHO);
-        cv.mrect(9, 11, 1, 1, BRANCO);
-    }
-
-    return cv;
-  }
-
-  function camadaBoca(boneco){
-    const cv = canvas();
-    const escuro = '#7c3541';
-
-    switch (boneco.rosto) {
-      case 'serio':
-        cv.rect(10, 14, 4, 1, escuro);
-        break;
-      case 'sono':
-        cv.rect(11, 14, 2, 2, escuro);
-        cv.set(11, 14, BOCA);
-        break;
-      case 'neon':
-        cv.rect(10, 14, 3, 1, '#22d3ee');
-        cv.set(13, 13, '#22d3ee');
-        break;
-      case 'estrela':
-        cv.rect(10, 14, 4, 1, escuro);
-        cv.rect(9, 13, 1, 1, escuro);
-        cv.rect(14, 13, 1, 1, escuro);
-        break;
-      default:
-        cv.rect(10, 14, 4, 1, escuro);
-        cv.rect(9, 13, 1, 1, escuro);
-        cv.rect(14, 13, 1, 1, escuro);
-    }
-
-    return cv;
-  }
-
-  function camadaCabeloTras(boneco){
-    const cv = canvas();
-    const cor = corDe('cabeloCor', boneco.cabeloCor);
-    const sombra = escurecer(cor, 0.24);
-
-    switch (boneco.cabelo) {
-      case 'longo':
-        for (let y = 7; y <= 18; y++) cv.half(y, 3, cor);
-        for (let y = 19; y <= 24; y++) cv.half(y, 4, cor);
-        for (let y = 9; y <= 24; y++) cv.set(3, y, sombra);
-        break;
-      case 'rabo':
-        cv.rect(18, 7, 3, 9, cor);
-        cv.rect(19, 16, 2, 5, cor);
-        cv.rect(20, 21, 1, 3, cor);
-        cv.rect(20, 8, 1, 8, sombra);
-        cv.rect(18, 7, 1, 1, clarear(cor, 0.2));
-        break;
-      case 'coques':
-        cv.rect(2, 3, 4, 4, cor);
-        cv.rect(18, 3, 4, 4, cor);
-        cv.rect(3, 2, 2, 1, cor);
-        cv.rect(19, 2, 2, 1, cor);
-        cv.rect(2, 6, 4, 1, sombra);
-        cv.rect(18, 6, 4, 1, sombra);
-        cv.set(3, 3, clarear(cor, 0.18));
-        cv.set(19, 3, clarear(cor, 0.18));
-        break;
-      case 'espetado':
-        for (let y = 3; y <= 8; y++) cv.half(y, y === 3 ? 7 : 5, cor);
-        break;
-      default:
-        break;
-    }
-
-    cv.outline();
-    return cv;
-  }
-
-  function camadaCabelo(boneco){
-    const cv = canvas();
-    const cor = corDe('cabeloCor', boneco.cabeloCor);
-    const sombra = escurecer(cor, 0.28);
-    const brilho = clarear(cor, 0.24);
-
-    switch (boneco.cabelo) {
-      case 'curto':
-        for (let y = 3; y <= 8; y++) cv.half(y, y < 4 ? 7 : 5, cor);
-        for (let y = 8; y <= 10; y++) cv.mrect(5, y, 2, 1, cor);
-        for (let y = 9; y <= 10; y++) { cv.set(5, y, sombra); cv.set(18, y, sombra); }
-        cv.half(9, 6, sombra);
-        cv.rect(8, 3, 3, 1, brilho);
-        break;
-      case 'longo':
-        for (let y = 3; y <= 9; y++) cv.half(y, y < 4 ? 7 : 5, cor);
-        for (let y = 8; y <= 9; y++) cv.mrect(5, y, 2, 1, cor);
-        for (let y = 9; y <= 17; y++) cv.mrect(4, y, 2, 1, cor);
-        for (let y = 10; y <= 17; y++) cv.set(4, y, sombra);
-        cv.half(9, 6, sombra);
-        cv.rect(8, 3, 3, 1, brilho);
-        break;
-      case 'careca':
-        break;
-      case 'rabo':
-        for (let y = 3; y <= 8; y++) cv.half(y, y < 4 ? 7 : 5, cor);
-        for (let y = 8; y <= 10; y++) cv.mrect(5, y, 2, 1, cor);
-        cv.rect(17, 7, 2, 5, cor);
-        cv.rect(17, 11, 2, 1, sombra);
-        cv.half(9, 6, sombra);
-        cv.rect(8, 3, 3, 1, brilho);
-        break;
-      case 'coques':
-        for (let y = 3; y <= 7; y++) cv.half(y, y < 4 ? 7 : 6, cor);
-        cv.mrect(6, 7, 1, 2, sombra);
-        cv.rect(4, 6, 2, 1, sombra);
-        cv.rect(18, 6, 2, 1, sombra);
-        cv.rect(9, 3, 2, 1, brilho);
-        break;
+  function hairFront(b, hair){
+    const fill = `url(#${hair})`;
+    const shine = mix(palette('cabeloCor', b.cabeloCor), '#ffffff', .42);
+    switch (b.cabelo) {
+      case 'careca': return '';
       case 'moicano':
-        for (let y = 3; y <= 5; y++) cv.rect(9, y, 6, 1, cor);
-        for (let y = 4; y <= 8; y++) cv.mrect(6, y, 2, 1, cor);
-        for (let y = 8; y <= 9; y++) cv.half(y, 5, cor);
-        cv.rect(10, 3, 4, 1, brilho);
-        cv.rect(9, 5, 6, 1, sombra);
-        cv.rect(9, 3, 1, 3, sombra);
-        break;
-      case 'espetado': {
-        const alturas = [1, 2, 0, 3, 1, 3, 0, 3, 1, 3, 0, 2, 1];
-        let x = 5;
-        alturas.forEach((altura, indice) => {
-          cv.rect(x, 4 - altura, 1, altura + 1, cor);
-          if (indice % 3 === 1) cv.set(x, 4 - altura, brilho);
-          x++;
-        });
-        for (let y = 4; y <= 8; y++) cv.half(y, 5, cor);
-        cv.half(8, 6, sombra);
-        break;
-      }
-    }
-
-    cv.outline();
-    return cv;
-  }
-
-  function camadaRoupa(boneco){
-    const cv = canvas();
-    const cor = corDe('roupaCor', boneco.roupaCor);
-    const sombra = escurecer(cor, 0.3);
-    const brilho = clarear(cor, 0.24);
-    const perna = pernaDe(boneco);
-    const calca = '#30284a';
-    const calcaSombra = '#1f1933';
-
-    switch (boneco.roupa) {
-      case 'moletom': {
-        for (let y = 19; y <= 26; y++) cv.half(y, 7, cor);
-        cv.mrect(5, 20, 2, 7, cor);
-        cv.mrect(5, 20, 1, 7, sombra);
-        cv.mrect(5, 26, 2, 1, sombra);
-        cv.mrect(5, 18, 7, 2, sombra);
-        cv.erase(10, 18, 4, 2);
-        cv.rect(9, 23, 6, 3, sombra);
-        cv.rect(10, 23, 4, 1, cor);
-        cv.set(10, 20, brilho);
-        cv.set(13, 20, brilho);
-        cv.set(11, 22, brilho);
-        cv.mrect(perna.x, 27, perna.largura, 5, calca);
-        cv.mrect(perna.x + perna.largura - 1, 27, 1, 5, calcaSombra);
-        break;
-      }
-      case 'camiseta':
-        for (let y = 19; y <= 25; y++) cv.half(y, 7, cor);
-        cv.mrect(5, 20, 2, 3, cor);
-        cv.mrect(5, 22, 2, 1, sombra);
-        cv.half(19, 9, sombra);
-        cv.rect(10, 20, 4, 1, brilho);
-        miniEstrela(cv, 12, 22, brilho, BRANCO);
-        cv.set(11, 25, brilho);
-        cv.set(12, 25, brilho);
-        cv.mrect(perna.x, 27, perna.largura, 5, '#34558b');
-        cv.mrect(perna.x + perna.largura - 1, 27, 1, 5, '#243b61');
-        break;
-      case 'social':
-        for (let y = 19; y <= 26; y++) cv.half(y, 7, cor);
-        cv.mrect(5, 20, 2, 7, cor);
-        cv.mrect(5, 20, 1, 7, sombra);
-        cv.rect(9, 19, 3, 2, BRANCO);
-        cv.rect(13, 19, 3, 2, BRANCO);
-        cv.rect(11, 20, 2, 2, '#b91c1c');
-        cv.rect(12, 22, 1, 3, '#b91c1c');
-        cv.rect(12, 22, 1, 1, '#ef4444');
-        cv.set(11, 23, '#fbbf24');
-        cv.set(11, 25, '#fbbf24');
-        cv.rect(10, 24, 4, 1, sombra);
-        cv.mrect(perna.x, 27, perna.largura, 5, '#252038');
-        cv.mrect(perna.x + perna.largura - 1, 27, 1, 5, '#181326');
-        break;
-      case 'vestido':
-        for (let y = 19; y <= 23; y++) cv.half(y, 8, cor);
-        cv.half(24, 7, cor);
-        cv.half(25, 6, cor);
-        for (let y = 26; y <= 29; y++) cv.half(y, 5, cor);
-        cv.half(29, 5, sombra);
-        cv.half(24, 8, sombra);
-        cv.rect(9, 19, 6, 1, clarear(cor, 0.35));
-        cv.set(9, 20, brilho);
-        cv.set(14, 20, brilho);
-        cv.rect(10, 24, 4, 1, sombra);
-        cv.set(11, 25, brilho);
-        cv.set(12, 27, brilho);
-        break;
-      case 'jaqueta':
-        for (let y = 19; y <= 26; y++) cv.half(y, 7, '#241b3b');
-        for (let y = 19; y <= 26; y++) {
-          cv.rect(7, y, 3, 1, cor);
-          cv.rect(14, y, 3, 1, cor);
-        }
-        cv.mrect(5, 20, 2, 7, cor);
-        cv.mrect(5, 20, 1, 7, sombra);
-        cv.rect(10, 19, 1, 8, '#22d3ee');
-        cv.rect(13, 19, 1, 8, '#22d3ee');
-        cv.rect(9, 19, 1, 2, sombra);
-        cv.rect(14, 19, 1, 2, sombra);
-        cv.set(7, 21, brilho);
-        cv.set(16, 21, brilho);
-        cv.mrect(perna.x, 27, perna.largura, 5, '#1d1930');
-        cv.mrect(perna.x + perna.largura - 1, 27, 1, 5, '#22d3ee');
-        break;
-      case 'armadura': {
-        for (let y = 19; y <= 26; y++) cv.half(y, 7, cor);
-        cv.mrect(4, 19, 3, 3, clarear(cor, 0.24));
-        cv.mrect(5, 20, 2, 6, cor);
-        cv.mrect(5, 20, 1, 6, sombra);
-        cv.rect(9, 20, 6, 1, brilho);
-        cv.rect(10, 21, 4, 1, sombra);
-        cv.rect(11, 22, 2, 2, '#ffd166');
-        cv.rect(10, 24, 4, 1, sombra);
-        cv.mrect(perna.x, 27, perna.largura, 5, clarear(cor, 0.12));
-        cv.mrect(perna.x + perna.largura - 1, 27, 1, 5, sombra);
-        cv.mrect(perna.x, 29, perna.largura, 1, brilho);
-        break;
-      }
-    }
-
-    cv.outline();
-    return cv;
-  }
-
-  function formaSapato(boneco){
-    return boneco.base === 'fem'
-      ? { x: 8, largura: 3 }
-      : { x: 7, largura: 4 };
-  }
-
-  function camadaCalcado(boneco){
-    const cv = canvas();
-    const cor = corDe('calcadoCor', boneco.calcadoCor);
-    const sombra = escurecer(cor, 0.34);
-    const brilho = clarear(cor, 0.3);
-    const sapato = formaSapato(boneco);
-
-    switch (boneco.calcado) {
-      case 'chinelo':
-        cv.mrect(sapato.x, 32, sapato.largura, 1, corDe('pele', boneco.pele));
-        cv.mrect(sapato.x, 33, sapato.largura, 1, cor);
-        cv.mrect(sapato.x, 32, 1, 1, sombra);
-        cv.rect(11, 32, 1, 1, sombra);
-        cv.rect(12, 32, 1, 1, sombra);
-        break;
-      case 'botas':
-        cv.mrect(sapato.x, 30, sapato.largura, 3, cor);
-        cv.mrect(sapato.x, 30, sapato.largura, 1, brilho);
-        cv.mrect(sapato.x, 33, sapato.largura, 1, sombra);
-        cv.mrect(sapato.x, 31, 1, 2, sombra);
-        cv.rect(10, 31, 1, 1, brilho);
-        cv.rect(13, 31, 1, 1, brilho);
-        break;
-      case 'tenis_neon':
-        cv.mrect(sapato.x, 32, sapato.largura, 2, cor);
-        cv.mrect(sapato.x, 33, sapato.largura, 1, '#22d3ee');
-        cv.mrect(sapato.x, 32, 1, 1, brilho);
-        cv.rect(9, 32, 2, 1, brilho);
-        cv.rect(13, 32, 2, 1, brilho);
-        cv.set(6, 33, '#22d3ee');
-        cv.set(17, 33, '#22d3ee');
-        break;
-      case 'botas_cyber':
-        cv.mrect(sapato.x, 29, sapato.largura, 4, '#1d1930');
-        cv.mrect(sapato.x, 33, sapato.largura, 1, cor);
-        cv.mrect(sapato.x, 30, 1, 3, cor);
-        cv.mrect(sapato.x, 29, sapato.largura, 1, brilho);
-        cv.rect(9, 31, 2, 1, '#22d3ee');
-        cv.rect(13, 31, 2, 1, '#ff6ec7');
-        break;
+        return `<path d="M91 57Q96 24 107 31L113 18Q121 12 127 31Q141 19 147 36L151 61L142 72L98 72Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M112 34L119 22L124 42M133 38L141 31" fill="none" stroke="${shine}" stroke-width="5" stroke-linecap="round"/>`;
+      case 'espetado':
+        return `<path d="M72 82Q64 51 83 43L77 24L100 38Q108 10 122 31L137 16L140 42Q164 31 169 54L164 91L151 100L88 100Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M87 49L102 57M122 39L131 51M145 55L156 60" stroke="${shine}" stroke-width="5" stroke-linecap="round"/>`;
+      case 'longo':
+        return `<path d="M73 91Q67 42 103 32Q141 18 163 53Q175 73 164 111L155 100L151 75Q132 83 111 74Q94 67 84 85L83 110L74 124Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M91 51Q111 31 139 42" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/><path d="M77 102Q73 133 81 151M161 103Q166 127 157 148" fill="none" stroke="${fill}" stroke-width="13" stroke-linecap="round"/>`;
+      case 'rabo':
+        return `<path d="M72 88Q68 42 104 32Q144 20 164 56Q172 76 163 109L151 96L149 71Q126 83 107 73Q92 67 83 86L82 111L73 121Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M92 52Q114 30 141 45" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/>`;
+      case 'coques':
+        return `<path d="M75 86Q72 43 105 33Q143 21 164 58L163 103L151 94Q140 79 120 79Q99 79 85 96L80 111Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M95 52Q115 34 140 46" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/>`;
       default:
-        cv.mrect(sapato.x, 32, sapato.largura, 2, cor);
-        cv.mrect(sapato.x, 33, sapato.largura, 1, sombra);
-        cv.mrect(sapato.x, 32, 1, 1, brilho);
-        cv.rect(10, 32, 1, 1, brilho);
-        cv.rect(13, 32, 1, 1, brilho);
+        return `<path d="M72 91Q65 45 103 32Q143 19 164 55Q174 74 164 108L151 96L149 72Q132 82 111 73Q94 67 84 86L82 111L73 119Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M91 51Q111 30 140 43" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/><path d="M85 78Q101 86 117 78" fill="none" stroke="${mix(palette('cabeloCor', b.cabeloCor),'#171323',.18)}" stroke-width="4" stroke-linecap="round"/>`;
     }
-
-    cv.outline();
-    return cv;
   }
 
-  function camadaAcessorio(boneco){
-    const cv = canvas();
-    if (boneco.acessorio === 'nenhum') return cv;
+  function clothing(b, cloth){
+    const fill = `url(#${cloth})`;
+    const accent = mix(palette('roupaCor', b.roupaCor), '#ffffff', .46);
+    const dark = mix(palette('roupaCor', b.roupaCor), '#171323', .38);
+    const base = `<path d="M88 164Q101 155 120 155Q139 155 152 164L169 184L161 257Q120 271 79 257L71 184Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>`;
+    const sleeves = `<path d="M88 167Q74 171 68 185L56 235Q56 249 69 252Q81 254 86 240L100 195Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M152 167Q166 171 172 185L184 235Q184 249 171 252Q159 254 154 240L140 195Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>`;
+    const hem = `<path d="M79 249Q120 260 161 249" fill="none" stroke="${dark}" stroke-width="5" stroke-linecap="round"/>`;
 
-    const cor = corDe('acessorioCor', boneco.acessorioCor);
-    const sombra = escurecer(cor, 0.34);
-    const brilho = clarear(cor, 0.32);
-    const topo = Math.max(0, topoCabeca(boneco) - 2);
+    if (b.roupa === 'camiseta') {
+      return `${base}${sleeves}<path d="M105 160Q120 177 135 160" fill="none" stroke="${dark}" stroke-width="7" stroke-linecap="round"/><path d="M120 194L125 202L133 204L125 210L123 219L117 212L108 210L115 204Z" fill="${accent}" opacity=".95"/><path d="M98 232Q120 238 142 232" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"/>${hem}`;
+    }
+    if (b.roupa === 'social') {
+      return `${base}${sleeves}<path d="M103 159L120 181L137 159L130 194L120 202L110 194Z" fill="#f5eee8" stroke="${OUTLINE}" stroke-width="3"/><path d="M117 181L123 181L127 211L120 220L113 211Z" fill="#b94c61" stroke="#743346" stroke-width="2"/><path d="M120 188L124 212" stroke="#f9c3ce" stroke-width="2"/><circle cx="120" cy="231" r="3" fill="${accent}"/>${hem}`;
+    }
+    if (b.roupa === 'vestido') {
+      return `<path d="M91 164Q105 155 120 155Q135 155 149 164L159 208Q171 230 178 265Q120 285 62 265Q69 230 81 208Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M103 159Q120 178 137 159" fill="none" stroke="${dark}" stroke-width="7" stroke-linecap="round"/><path d="M83 231Q120 246 157 231M76 253Q120 270 164 253" fill="none" stroke="${accent}" stroke-opacity=".6" stroke-width="4" stroke-linecap="round"/><path d="M120 188L126 196L120 204L114 196Z" fill="${accent}"/>`;
+    }
+    if (b.roupa === 'jaqueta') {
+      return `<path d="M91 164Q120 154 149 164L165 249Q120 265 75 249Z" fill="#282638" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M88 166Q73 172 67 188L56 234Q56 250 70 252Q81 252 87 240L99 194Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5"/><path d="M152 166Q167 172 173 188L184 234Q184 250 170 252Q159 252 153 240L141 194Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5"/><path d="M91 166L105 171L116 254L91 250Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="4"/><path d="M149 166L135 171L124 254L149 250Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="4"/><path d="M120 174L120 249" stroke="${accent}" stroke-width="3" stroke-linecap="round"/><path d="M82 208L96 211M158 208L144 211" stroke="${accent}" stroke-width="4" stroke-linecap="round"/><path d="M90 232L102 235M150 232L138 235" stroke="#ffffff" stroke-opacity=".32" stroke-width="3"/>`;
+    }
+    if (b.roupa === 'armadura') {
+      return `<path d="M92 164Q120 151 148 164L167 250Q120 269 73 250Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="6" stroke-linejoin="round"/><path d="M88 171L69 178L58 203L82 212L101 188ZM152 171L171 178L182 203L158 212L139 188Z" fill="${accent}" stroke="${OUTLINE}" stroke-width="5"/><path d="M120 178L143 195L135 235L120 248L105 235L97 195Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="4"/><path d="M120 190L132 202L120 219L108 202Z" fill="#6be0ef" stroke="#e6fbff" stroke-width="3"/><path d="M87 228L105 236M153 228L135 236" stroke="${accent}" stroke-width="5" stroke-linecap="round"/><path d="M94 251L146 251" stroke="#ffffff" stroke-opacity=".28" stroke-width="4"/>`;
+    }
+    // Moletom: capuz, bolso canguru e cordões dão leitura própria sem ficar chapado.
+    return `${sleeves}${base}<path d="M99 163Q120 194 141 163L136 185Q120 199 104 185Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="3"/><path d="M104 184L101 198M136 184L139 198" stroke="#f4d9ff" stroke-width="3" stroke-linecap="round"/><path d="M91 220Q120 211 149 220L145 244Q120 252 95 244Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="3"/><path d="M99 224Q120 218 141 224" fill="none" stroke="${accent}" stroke-width="3" stroke-linecap="round"/><path d="M90 174Q79 184 76 202M150 174Q161 184 164 202" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="4" stroke-linecap="round"/>${hem}`;
+  }
 
-    switch (boneco.acessorio) {
+  function accessory(b, accessory){
+    const c = palette('acessorioCor', b.acessorioCor);
+    const dark = mix(c, '#171323', .35);
+    switch (b.acessorio) {
       case 'oculos':
-        cv.mrect(7, 10, 4, 3, cor);
-        cv.erase(8, 11, 2, 1);
-        cv.set(8, 11, 'rgba(255,255,255,.28)');
-        cv.rect(11, 11, 2, 1, cor);
-        cv.mset(6, 11, cor);
-        cv.rect(7, 13, 1, 1, sombra);
-        cv.rect(16, 13, 1, 1, sombra);
-        break;
-      case 'bone': {
-        const cap = Math.max(1, topo - 1);
-        cv.rect(6, cap, 12, 3, cor);
-        cv.rect(7, cap, 10, 1, brilho);
-        cv.rect(6, cap + 2, 12, 1, sombra);
-        cv.rect(17, cap + 2, 5, 1, cor);
-        cv.rect(17, cap + 3, 5, 1, sombra);
-        break;
-      }
-      case 'headset':
-        cv.rect(4, 7, 2, 6, cor);
-        cv.rect(18, 7, 2, 6, cor);
-        cv.rect(4, 6, 16, 2, cor);
-        cv.rect(5, 5, 14, 1, sombra);
-        cv.rect(4, 10, 2, 2, cor);
-        cv.rect(18, 10, 2, 2, cor);
-        cv.rect(6, 15, 1, 1, cor);
-        cv.rect(7, 16, 1, 1, cor);
-        cv.rect(8, 16, 1, 1, cor);
-        cv.rect(9, 15, 1, 1, cor);
-        cv.rect(9, 14, 1, 1, cor);
-        break;
-      case 'orelhas':
-        cv.rect(4, 4, 1, 2, cor);
-        cv.rect(5, 3, 2, 3, cor);
-        cv.rect(7, 4, 1, 2, cor);
-        cv.rect(5, 4, 1, 1, '#ff9ecb');
-        cv.rect(19, 4, 1, 2, cor);
-        cv.rect(17, 3, 2, 3, cor);
-        cv.rect(16, 4, 1, 2, cor);
-        cv.rect(18, 4, 1, 1, '#ff9ecb');
-        break;
-      case 'halo': {
-        const y = Math.max(0, topoCabeca(boneco) - 3);
-        cv.rect(8, y, 8, 1, cor);
-        cv.rect(6, y + 1, 3, 1, cor);
-        cv.rect(15, y + 1, 3, 1, cor);
-        cv.rect(8, y + 2, 8, 1, sombra);
-        cv.rect(10, y, 4, 1, brilho);
-        break;
-      }
-      case 'coroa':
-        cv.rect(7, topo + 1, 10, 2, cor);
-        cv.rect(7, topo, 1, 1, cor);
-        cv.rect(10, topo, 1, 1, cor);
-        cv.rect(13, topo, 1, 1, cor);
-        cv.rect(16, topo, 1, 1, cor);
-        cv.rect(9, topo + 3, 6, 1, sombra);
-        cv.set(11, topo + 1, '#ff4f8b');
-        cv.set(12, topo + 1, '#4dd7ff');
-        break;
-      case 'laco': {
-        const y = Math.max(1, topoCabeca(boneco) + 1);
-        cv.rect(5, y, 3, 2, cor);
-        cv.rect(4, y + 1, 2, 2, brilho);
-        cv.rect(8, y, 3, 2, cor);
-        cv.rect(9, y + 1, 2, 2, sombra);
-        cv.rect(7, y + 1, 2, 2, brilho);
-        cv.set(7, y + 2, '#fff1fa');
-        break;
-      }
+        return `<g class="px-glasses" fill="none" stroke="${dark}" stroke-width="5"><rect x="82" y="91" width="33" height="25" rx="10" fill="#f9e4ac" fill-opacity=".24"/><rect x="125" y="91" width="33" height="25" rx="10" fill="#f9e4ac" fill-opacity=".24"/><path d="M115 101Q120 97 125 101"/><path d="M88 96L103 96M130 96L145 96" stroke="#fff" stroke-opacity=".5" stroke-width="2"/></g>`;
       case 'oculos_sol':
-        cv.mrect(6, 10, 5, 4, sombra);
-        cv.mrect(13, 10, 5, 4, sombra);
-        cv.rect(7, 10, 3, 1, cor);
-        cv.rect(14, 10, 3, 1, cor);
-        cv.rect(11, 11, 2, 1, cor);
-        cv.set(8, 11, 'rgba(255,255,255,.65)');
-        cv.set(15, 11, 'rgba(255,255,255,.55)');
-        break;
+        return `<g stroke="${dark}" stroke-width="5"><rect x="81" y="91" width="35" height="27" rx="9" fill="#293248"/><rect x="124" y="91" width="35" height="27" rx="9" fill="#293248"/><path d="M115 101L125 101" fill="none"/><path d="M88 96L101 96M131 96L145 96" stroke="#8de9f5" stroke-width="3" stroke-linecap="round"/></g>`;
+      case 'bone':
+        return `<path d="M69 78Q74 31 120 31Q166 31 171 78L164 86Q120 70 76 86Z" fill="${c}" stroke="${OUTLINE}" stroke-width="5"/><path d="M118 32Q123 50 121 70" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="5"/><path d="M119 77Q147 69 174 82Q169 96 146 95L119 91Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="4"/>`;
+      case 'headset':
+        return `<path d="M67 104V82Q67 28 120 28Q173 28 173 82V104" fill="none" stroke="${dark}" stroke-width="12" stroke-linecap="round"/><rect x="58" y="86" width="21" height="42" rx="9" fill="${c}" stroke="${OUTLINE}" stroke-width="4"/><rect x="161" y="86" width="21" height="42" rx="9" fill="${c}" stroke="${OUTLINE}" stroke-width="4"/><path d="M166 121Q178 130 162 140" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/>`;
+      case 'orelhas':
+        return `<path d="M78 64Q55 16 48 13Q39 49 69 82ZM162 64Q185 16 192 13Q201 49 171 82Z" fill="${c}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M62 52L53 28L73 60M178 52L187 28L167 60" fill="none" stroke="#f7b3d8" stroke-width="5" stroke-linecap="round"/>`;
+      case 'laco':
+        return `<path d="M147 66Q130 43 117 55Q106 70 129 82L147 73L165 82Q188 69 176 55Q162 42 147 66Z" fill="${c}" stroke="${OUTLINE}" stroke-width="4"/><circle cx="147" cy="70" r="7" fill="${dark}" stroke="${OUTLINE}" stroke-width="3"/>`;
       case 'microfone':
-        cv.rect(19, 18, 2, 3, sombra);
-        cv.rect(19, 19, 2, 1, brilho);
-        cv.rect(20, 21, 1, 5, cor);
-        cv.rect(19, 26, 3, 1, sombra);
-        cv.rect(18, 27, 5, 1, cor);
-        cv.set(20, 18, '#fff');
-        break;
+        return `<g class="px-mic"><path d="M160 225L179 204L190 215L171 239Z" fill="#343044" stroke="${OUTLINE}" stroke-width="4"/><rect x="174" y="184" width="19" height="32" rx="9" transform="rotate(42 183 200)" fill="${c}" stroke="${OUTLINE}" stroke-width="4"/><path d="M178 187L192 200" stroke="#fff" stroke-opacity=".55" stroke-width="3"/></g>`;
       case 'gatinho':
-        cv.rect(4, 5, 1, 2, cor);
-        cv.rect(5, 3, 2, 4, cor);
-        cv.rect(7, 5, 1, 2, cor);
-        cv.rect(5, 5, 1, 1, '#ff9ecb');
-        cv.rect(19, 5, 1, 2, cor);
-        cv.rect(17, 3, 2, 4, cor);
-        cv.rect(16, 5, 1, 2, cor);
-        cv.rect(18, 5, 1, 1, '#ff9ecb');
-        cv.set(8, 16, '#ff9ecb');
-        cv.set(15, 16, '#ff9ecb');
-        cv.set(11, 15, cor);
-        cv.set(12, 15, cor);
-        break;
+        return `<g class="px-pet"><path d="M177 269Q174 248 189 242Q205 244 207 262L204 284L179 284Z" fill="#e6e0ed" stroke="${OUTLINE}" stroke-width="4"/><path d="M179 251L179 239L189 247M197 246L207 238L205 253" fill="#e6e0ed" stroke="${OUTLINE}" stroke-width="4" stroke-linejoin="round"/><circle cx="187" cy="261" r="2.7" fill="#332744"/><circle cx="198" cy="261" r="2.7" fill="#332744"/><path d="M191 267L194 269L197 267" fill="none" stroke="#c46d88" stroke-width="2.5"/></g>`;
+      case 'halo':
+        return `<ellipse cx="120" cy="18" rx="35" ry="9" fill="none" stroke="${c}" stroke-width="6"/><ellipse cx="120" cy="18" rx="35" ry="9" fill="none" stroke="#fff" stroke-opacity=".58" stroke-width="2"/>`;
+      case 'coroa':
+        return `<path d="M83 55L88 25L108 42L120 17L133 42L153 25L158 57Z" fill="${c}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M89 58H153L149 69H93Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="4"/><circle cx="120" cy="43" r="5" fill="#f8f2ff"/>`;
+      default: return '';
     }
-
-    cv.outline();
-    return cv;
   }
 
-  function camadaEfeito(boneco){
-    const fundo = canvas();
-    const frente = canvas();
-    const efeito = boneco.efeito;
-
-    if (efeito === 'brilho') {
-      fundo.rect(4, 8, 1, 18, 'rgba(192,132,252,.18)');
-      fundo.rect(19, 8, 1, 18, 'rgba(192,132,252,.18)');
-      fundo.rect(8, 3, 8, 1, 'rgba(255,255,255,.12)');
-      fundo.rect(6, 30, 12, 1, 'rgba(192,132,252,.22)');
-      frente.set(4, 7, 'rgba(255,255,255,.75)');
-      frente.set(21, 13, 'rgba(255,255,255,.55)');
-      frente.set(3, 25, 'rgba(192,132,252,.8)');
+  function effect(b, id){
+    id = id || b.efeito;
+    if (!id || id === 'nenhum') return '';
+    if (id === 'brilho' || id === 'aura_roxa' || id === 'aura_neon') {
+      const c = id === 'aura_neon' ? '#62dff2' : '#b78aff';
+      return `<ellipse class="px-aura" cx="120" cy="190" rx="91" ry="148" fill="${c}" opacity=".08"/><ellipse cx="120" cy="190" rx="83" ry="140" fill="none" stroke="${c}" stroke-opacity=".34" stroke-width="2" stroke-dasharray="5 11"/>`;
     }
-
-    if (efeito === 'faiscas') {
-      miniEstrela(frente, 3, 5, '#7dd3fc');
-      miniEstrela(frente, 21, 8, '#ff6ec7');
-      miniEstrela(frente, 3, 24, '#ffd166');
-      miniEstrela(frente, 20, 27, '#c084fc');
-      miniEstrela(frente, 13, 2, '#ffffff');
-    }
-
-    if (efeito === 'glitch') {
-      fundo.rect(0, 10, 4, 1, 'rgba(34,211,238,.5)');
-      fundo.rect(20, 14, 4, 1, 'rgba(255,110,199,.5)');
-      fundo.rect(0, 22, 3, 1, 'rgba(255,110,199,.45)');
-      fundo.rect(21, 28, 3, 1, 'rgba(34,211,238,.45)');
-      frente.rect(1, 8, 3, 1, 'rgba(34,211,238,.8)');
-      frente.rect(19, 17, 4, 1, 'rgba(255,110,199,.8)');
-      frente.rect(2, 30, 3, 1, 'rgba(255,255,255,.6)');
-    }
-
-    if (efeito === 'aura_roxa' || efeito === 'aura_neon') {
-      const a = efeito === 'aura_roxa' ? 'rgba(192,132,252,' : 'rgba(34,211,238,';
-      const b = efeito === 'aura_roxa' ? 'rgba(124,58,237,' : 'rgba(255,110,199,';
-      for (let y = 7; y <= 30; y++) {
-        if (y % 3 !== 0) fundo.set(2, y, a + '.28)');
-        if (y % 4 !== 0) fundo.set(21, y, b + '.24)');
-      }
-      fundo.rect(4, 32, 16, 1, a + '.2)');
-      fundo.rect(6, 4, 12, 1, b + '.18)');
-      frente.set(2, 9, a + '.8)');
-      frente.set(21, 20, b + '.8)');
-    }
-
-    if (efeito === 'chamas') {
-      const fogo = ['#dc2626', '#f97316', '#fbbf24'];
-      for (let x = 4; x <= 19; x += 2) {
-        const altura = 3 + (x % 4);
-        fundo.rect(x, 32 - altura, 2, altura, fogo[x % 3]);
-        fundo.set(x, 32 - altura, '#fef08a');
-      }
-      fundo.rect(3, 32, 18, 2, '#dc2626');
-      fundo.rect(5, 31, 14, 1, '#f97316');
-      frente.set(7, 30, '#fbbf24');
-      frente.set(16, 29, '#fef08a');
-    }
-
-    if (efeito === 'estrelas') {
-      miniEstrela(frente, 4, 6, '#ffd166');
-      miniEstrela(frente, 20, 10, '#7dd3fc');
-      miniEstrela(frente, 6, 19, '#ff6ec7');
-      miniEstrela(frente, 18, 24, '#ffffff');
-      miniEstrela(frente, 11, 1, '#c084fc');
-      frente.set(2, 14, '#ffd166');
-      frente.set(21, 30, '#7dd3fc');
-      frente.set(16, 4, '#ffffff');
-    }
-
-    if (efeito === 'confete') {
-      const cores = ['#ff6ec7', '#ffd166', '#7dd3fc', '#4ade80', '#c084fc'];
-      const pontos = [
-        [3, 4], [6, 8], [18, 5], [21, 9], [2, 16], [5, 21],
-        [20, 17], [22, 23], [4, 28], [17, 30], [19, 26], [8, 3]
-      ];
-      pontos.forEach(([x, y], indice) => {
-        frente.set(x, y, cores[indice % cores.length]);
-        frente.set(x + (indice % 2 ? 1 : 0), y + 1, cores[(indice + 2) % cores.length]);
-      });
-    }
-
-    return { fundo, frente };
+    const points = [[35,115],[202,124],[40,226],[195,235],[58,48],[183,54],[45,302],[195,300]];
+    const colors = id === 'glitch' ? ['#67e8f9','#f472b6','#c4b5fd'] : ['#f9d78c','#d9b9ff','#8de4ee'];
+    return `<g class="px-particles">${points.map((p,i) => `<path d="M${p[0]} ${p[1]-6}L${p[0]+2} ${p[1]-2}L${p[0]+7} ${p[1]}L${p[0]+2} ${p[1]+2}L${p[0]} ${p[1]+7}L${p[0]-2} ${p[1]+2}L${p[0]-7} ${p[1]}L${p[0]-2} ${p[1]-2}Z" fill="${colors[i%colors.length]}" opacity=".85"/>`).join('')}</g>`;
   }
 
-  function camadaMoldura(boneco){
-    const cv = canvas();
-    const desenho = boneco.moldura;
-    if (desenho === 'nenhuma') return cv;
-
-    if (desenho === 'simples') {
-      cv.rect(1, 1, 22, 1, '#8b5cf6');
-      cv.rect(1, 34, 22, 1, '#8b5cf6');
-      cv.rect(1, 1, 1, 34, '#8b5cf6');
-      cv.rect(22, 1, 1, 34, '#8b5cf6');
-      cv.rect(1, 1, 1, 1, '#c084fc');
-      cv.rect(22, 1, 1, 1, '#c084fc');
-      cv.rect(1, 34, 1, 1, '#c084fc');
-      cv.rect(22, 34, 1, 1, '#c084fc');
-    }
-
-    if (desenho === 'roxa') {
-      cv.rect(0, 2, 2, 32, '#6d28d9');
-      cv.rect(22, 2, 2, 32, '#6d28d9');
-      cv.rect(2, 0, 20, 2, '#7c3aed');
-      cv.rect(2, 34, 20, 2, '#7c3aed');
-      cv.rect(0, 2, 1, 6, '#c084fc');
-      cv.rect(23, 27, 1, 7, '#c084fc');
-      cv.rect(2, 0, 6, 1, '#c084fc');
-      cv.rect(16, 35, 6, 1, '#c084fc');
-    }
-
-    if (desenho === 'ciano') {
-      cv.rect(0, 1, 24, 1, '#22d3ee');
-      cv.rect(0, 34, 24, 1, '#22d3ee');
-      cv.rect(0, 1, 1, 34, '#22d3ee');
-      cv.rect(23, 1, 1, 34, '#22d3ee');
-      cv.rect(1, 2, 2, 1, '#a5f3fc');
-      cv.rect(21, 2, 2, 1, '#a5f3fc');
-      cv.rect(1, 33, 2, 1, '#a5f3fc');
-      cv.rect(21, 33, 2, 1, '#a5f3fc');
-    }
-
-    if (desenho === 'dourada') {
-      cv.rect(1, 1, 22, 1, '#b45309');
-      cv.rect(1, 34, 22, 1, '#b45309');
-      cv.rect(1, 1, 1, 34, '#b45309');
-      cv.rect(22, 1, 1, 34, '#b45309');
-      cv.rect(2, 2, 3, 1, '#ffd166');
-      cv.rect(19, 2, 3, 1, '#ffd166');
-      cv.rect(2, 33, 3, 1, '#ffd166');
-      cv.rect(19, 33, 3, 1, '#ffd166');
-      cv.rect(11, 0, 2, 2, '#ffd166');
-      cv.rect(11, 34, 2, 2, '#ffd166');
-    }
-
-    if (desenho === 'holo') {
-      const cores = ['#22d3ee', '#ff6ec7', '#ffffff', '#c084fc'];
-      for (let x = 0; x < W; x++) {
-        cv.set(x, 0, cores[x % cores.length]);
-        cv.set(x, 35, cores[(x + 2) % cores.length]);
-      }
-      for (let y = 0; y < H; y++) {
-        cv.set(0, y, cores[(y + 1) % cores.length]);
-        cv.set(23, y, cores[(y + 3) % cores.length]);
-      }
-      cv.rect(2, 2, 3, 1, 'rgba(255,255,255,.85)');
-      cv.rect(19, 33, 3, 1, 'rgba(255,255,255,.65)');
-    }
-
-    if (desenho === 'evento1') {
-      cv.rect(0, 1, 24, 1, '#ff4fd8');
-      cv.rect(0, 34, 24, 1, '#ff4fd8');
-      cv.rect(0, 1, 1, 34, '#ff4fd8');
-      cv.rect(23, 1, 1, 34, '#ff4fd8');
-      cv.rect(3, 3, 2, 2, '#ffd166');
-      cv.rect(19, 3, 2, 2, '#ffd166');
-      cv.rect(3, 31, 2, 2, '#ffd166');
-      cv.rect(19, 31, 2, 2, '#ffd166');
-      cv.rect(10, 0, 4, 1, '#ffd166');
-      cv.rect(10, 35, 4, 1, '#ffd166');
-    }
-
-    return cv;
+  function frame(b){
+    if (b.moldura === 'nenhuma' || b.moldura === 'simples') return '';
+    const c = b.moldura === 'ciano' ? '#59d9eb' : b.moldura === 'dourada' ? '#e9bd62' : b.moldura === 'evento1' ? '#f28acb' : '#a879f2';
+    return `<rect class="px-frame" x="8" y="8" width="224" height="344" rx="28" fill="none" stroke="${c}" stroke-opacity=".52" stroke-width="2" stroke-dasharray="8 12"/>`;
   }
 
-  const CACHE = new Map();
+  function renderSVG(input, options = {}){
+    const b = normalizar(input);
+    const mini = options.mini === true;
+    const animate = options.animar !== false && !mini;
+    const n = ++instance;
+    const id = key => `av${n}-${key}`;
+    const skin = id('skin'), hair = id('hair'), cloth = id('cloth'), pants = id('pants'), shoes = id('shoes');
+    const skinColor = palette('pele', b.pele);
+    const hairColor = palette('cabeloCor', b.cabeloCor);
+    const clothColor = palette('roupaCor', b.roupaCor);
+    const shoeColor = palette('calcadoCor', b.calcadoCor);
+    const pantsColor = '#333449';
+    const faceMood = b.rosto;
 
-  function svgDe(cv, classe){
-    const porCor = new Map();
-    cv.pixels().forEach(({ x, y, cor }) => {
-      const caminho = porCor.get(cor) || '';
-      porCor.set(cor, caminho + 'M' + x + ' ' + y + 'h1v1h-1z');
-    });
-    if (!porCor.size) return '';
-    const partes = [...porCor.entries()].map(([cor, caminho]) =>
-      '<path fill="' + cor + '" d="' + caminho + '"/>'
-    );
-    return '<g' + (classe ? ' class="' + classe + '"' : '') + '>' + partes.join('') + '</g>';
+    const hairBackSvg = hairBack(b, hair);
+    const hairFrontSvg = hairFront(b, hair);
+    const clothesSvg = clothing(b, cloth);
+    const accessorySvg = accessory(b);
+    const effectsSvg = mini ? '' : effect(b);
+    const framesSvg = mini ? '' : frame(b);
+
+    let eyes = '';
+    if (faceMood === 'serio') {
+      eyes = `<path d="M91 99L107 102M133 102L149 99" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><path d="M95 108L105 108M135 108L145 108" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>`;
+    } else if (faceMood === 'piscada') {
+      eyes = `<path d="M91 108Q99 102 107 108M135 108Q143 101 151 106" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><ellipse cx="100" cy="101" rx="4" ry="5" fill="#fff"/><path d="M91 97L86 93" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
+    } else if (faceMood === 'sono') {
+      eyes = `<path d="M91 108Q99 112 107 108M135 108Q143 112 151 108" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`;
+    } else if (faceMood === 'estrela') {
+      eyes = `<path d="M99 94L103 102L112 103L105 109L107 118L99 113L91 118L93 109L86 103L95 102Z M141 94L145 102L154 103L147 109L149 118L141 113L133 118L135 109L128 103L137 102Z" fill="#f5c86a" stroke="#9f6b3b" stroke-width="2"/>`;
+    } else if (faceMood === 'neon') {
+      eyes = `<path d="M90 101Q99 94 108 101L106 112Q99 118 92 112ZM132 101Q141 94 150 101L148 112Q141 118 134 112Z" fill="#54ddec" stroke="#286f90" stroke-width="3"/><circle cx="99" cy="104" r="3" fill="#fff"/><circle cx="141" cy="104" r="3" fill="#fff"/>`;
+    } else {
+      eyes = `<ellipse cx="99" cy="106" rx="5.2" ry="7" fill="${INK}"/><ellipse cx="141" cy="106" rx="5.2" ry="7" fill="${INK}"/><circle cx="101" cy="103" r="2" fill="#fff"/><circle cx="143" cy="103" r="2" fill="#fff"/>`;
+    }
+
+    let mouth = '<path d="M111 132Q120 140 129 132" fill="none" stroke="#9a5260" stroke-width="4" stroke-linecap="round"/>';
+    if (faceMood === 'serio') mouth = '<path d="M113 135H127" stroke="#9a5260" stroke-width="4" stroke-linecap="round"/>';
+    if (faceMood === 'sono') mouth = '<ellipse cx="120" cy="135" rx="4" ry="5" fill="#9a5260"/>';
+    if (faceMood === 'neon') mouth = '<path d="M112 133Q120 139 128 133" fill="none" stroke="#4bd9ed" stroke-width="3.5" stroke-linecap="round"/>';
+
+    const bodyTransform = b.base === 'fem'
+      ? 'translate(120 0) scale(.93 1) translate(-120 0)'
+      : '';
+
+    const bodySvg = `
+      <g class="px-body px-breath" transform="${bodyTransform}">
+        <path d="M105 144L104 169Q120 181 136 169L135 144Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
+        <path d="M84 171Q68 179 66 199L57 236Q54 251 68 255Q81 258 87 242L101 197Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M156 171Q172 179 174 199L183 236Q186 251 172 255Q159 258 153 242L139 197Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M62 241Q70 247 80 242M160 242Q170 247 178 241" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="3" stroke-linecap="round"/>
+        <path d="M91 164Q120 153 149 164L169 250Q120 269 71 250Z" fill="#29263b" opacity=".14"/>
+        ${clothesSvg}
+        <path d="M69 247Q76 254 83 248M157 248Q164 254 171 247" fill="none" stroke="${OUTLINE}" stroke-width="3"/>
+        <path d="M68 244Q71 252 80 251Q86 250 87 243M153 243Q154 250 160 251Q169 252 172 244" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
+      </g>`;
+
+    const legsSvg = `
+      <g class="px-legs">
+        <path d="M84 250Q101 258 117 256L115 316Q111 326 96 326Q83 325 83 315Z" fill="url(#${pants})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M123 256Q140 258 156 250L157 315Q157 326 143 326Q128 326 125 316Z" fill="url(#${pants})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M101 264L98 310M143 264L145 310" stroke="#ffffff" stroke-opacity=".13" stroke-width="4" stroke-linecap="round"/>
+        <path d="M119 264L120 317" stroke="#181625" stroke-opacity=".55" stroke-width="4"/>
+      </g>`;
+
+    let shoesSvg = '';
+    let shoesExtra = '';
+    if (b.calcado === 'chinelo') {
+      shoesSvg = `<g class="px-shoes">
+        <path d="M88 311Q98 316 111 312L114 332Q110 340 95 340Q81 339 80 330Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
+        <path d="M129 312Q142 316 152 311L160 330Q159 339 145 340Q130 340 126 332Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
+        <path d="M78 331Q95 336 114 331M126 331Q145 336 164 331" fill="none" stroke="${shoeColor}" stroke-width="7" stroke-linecap="round"/>
+        <path d="M91 315L98 331L105 316M137 316L144 331L151 315" fill="none" stroke="${OUTLINE}" stroke-width="4" stroke-linecap="round"/>
+      </g>`;
+    } else if (b.calcado === 'botas' || b.calcado === 'botas_cyber') {
+      shoesSvg = `<g class="px-shoes">
+        <path d="M84 292Q100 297 115 292L117 328Q113 342 95 342H76Q70 337 75 326Z" fill="url(#${shoes})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M125 292Q140 297 156 292L165 326Q170 337 164 342H145Q127 342 123 328Z" fill="url(#${shoes})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M84 301H112M130 301H158" stroke="${mix(shoeColor,'#ffffff',.45)}" stroke-width="4" stroke-linecap="round"/>
+        <path d="M78 332Q96 337 114 331M129 331Q147 337 165 332" fill="none" stroke="#fff" stroke-opacity=".82" stroke-width="4" stroke-linecap="round"/>
+      </g>`;
+    } else {
+      shoesSvg = `<g class="px-shoes">
+        <path d="M84 311Q96 316 114 311L116 331Q113 342 94 342H76Q70 338 75 329Z" fill="url(#${shoes})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M125 311Q144 316 156 311L165 329Q170 338 164 342H146Q127 342 124 331Z" fill="url(#${shoes})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M78 332Q96 337 114 331M129 331Q147 337 165 332" fill="none" stroke="#fff" stroke-opacity=".82" stroke-width="4" stroke-linecap="round"/>
+        <path d="M91 319L105 319M137 319L151 319" stroke="${mix(shoeColor,'#ffffff',.5)}" stroke-width="3" stroke-linecap="round"/>
+      </g>`;
+    }
+    if (b.calcado === 'tenis_neon' || b.calcado === 'botas_cyber') shoesExtra = `<path d="M78 333Q96 338 113 332M128 332Q146 338 164 333" fill="none" stroke="#55ddec" stroke-width="3" stroke-linecap="round"/>`;
+
+    const face = `
+      <g class="px-head">
+        <path d="M76 78Q67 70 63 83Q59 101 76 111M164 78Q173 70 177 83Q181 101 164 111" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
+        <path d="M76 69Q76 35 120 31Q164 35 164 69L161 116Q158 150 120 158Q82 150 79 116Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M83 118Q88 141 120 148Q151 141 157 118" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="91" cy="123" rx="10" ry="5" fill="#e98e93" opacity=".19"/><ellipse cx="149" cy="123" rx="10" ry="5" fill="#e98e93" opacity=".19"/>
+        <path d="M119 112Q116 122 121 124" fill="none" stroke="${mix(skinColor,'#7c4d42',.36)}" stroke-width="3" stroke-linecap="round"/>
+        <g class="px-eyes">${eyes}</g>
+        ${mouth}
+      </g>`;
+
+    const classNames = ['px-svg', 'px-avatar-25d'];
+    if (mini) classNames.push('px-mini', 'px-static');
+    if (!animate) classNames.push('px-static');
+    if (animate) classNames.push('px-anim-' + b.animacao);
+
+    const defs = `<defs>
+      ${gradient(skin, skinColor, .22, .20)}
+      ${gradient(hair, hairColor, .38, .24)}
+      ${gradient(cloth, clothColor, .34, .25)}
+      ${gradient(pants, pantsColor, .28, .18)}
+      ${gradient(shoes, shoeColor, .28, .24)}
+      <radialGradient id="${id('floor')}" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#080611" stop-opacity=".65"/><stop offset="1" stop-color="#080611" stop-opacity="0"/></radialGradient>
+      <filter id="${id('shadow')}" x="-30%" y="-20%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
+    </defs>`;
+
+    const haloPet = b.acessorio === 'gatinho' ? accessorySvg : '';
+    const headAccessory = b.acessorio === 'gatinho' ? '' : accessorySvg;
+    const aria = options.label || 'Avatar 2.5D personalizável';
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="${classNames.join(' ')}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax meet" role="img" aria-label="${esc(aria)}" shape-rendering="geometricPrecision" data-animacao="${b.animacao}" data-efeito="${b.efeito}" data-moldura="${b.moldura}">
+      ${defs}
+      <g class="px-stage-art">
+        ${effectsSvg}
+        <ellipse cx="120" cy="342" rx="66" ry="10" fill="#080611" opacity=".38" filter="url(#${id('shadow')})"/>
+        ${hairBackSvg}
+        ${legsSvg}
+        ${shoesSvg}
+        ${shoesExtra}
+        ${bodySvg}
+        <g class="px-head-group">
+          ${face}
+          ${hairFrontSvg}
+          ${headAccessory}
+        </g>
+        ${haloPet}
+        ${framesSvg}
+      </g>
+    </svg>`;
   }
 
-  function grupo(nome, boneco, dependencias, desenhar, classe){
-    const chave = nome + ':' + dependencias.map(slot => boneco[slot]).join('|');
-    if (CACHE.has(chave)) return CACHE.get(chave);
-    const grupoSvg = svgDe(desenhar(boneco), classe);
-    CACHE.set(chave, grupoSvg);
-    if (CACHE.size > 240) CACHE.delete(CACHE.keys().next().value);
-    return grupoSvg;
+  function render(input, options){
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = renderSVG(input, options);
+    return wrapper.firstElementChild;
   }
 
-  function atributo(texto){
-    return String(texto == null ? '' : texto).replace(/[&<>"']/g, caractere => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    })[caractere]);
-  }
-
-  function renderSVG(entrada, opcoes = {}){
-    const boneco = normalizar(entrada);
-    const mini = opcoes.mini === true;
-    const animar = opcoes.animar !== false && !mini;
-    const label = opcoes.label || 'Boneco pixel art';
-
-    const classes = ['px-svg'];
-    if (mini) classes.push('px-mini');
-    if (animar) classes.push('px-anim-' + boneco.animacao);
-
-    return '<svg xmlns="http://www.w3.org/2000/svg" class="' + classes.join(' ') + '" ' +
-      'viewBox="0 0 ' + W + ' ' + H + '" ' +
-      'role="img" aria-label="' + atributo(label) + '" shape-rendering="crispEdges" ' +
-      'data-animacao="' + boneco.animacao + '" data-efeito="' + boneco.efeito + '" data-moldura="' + boneco.moldura + '">' +
-      (mini ? '' : grupo('fx-fundo', boneco, ['efeito'], b => camadaEfeito(b).fundo, 'px-fx px-fx-fundo')) +
-      grupo('cabelo-tras', boneco, ['cabelo', 'cabeloCor'], camadaCabeloTras, 'px-cabelo-tras') +
-      grupo('corpo', boneco, ['base', 'pele', 'cabelo'], camadaCorpo, 'px-corpo') +
-      grupo('roupa', boneco, ['base', 'roupa', 'roupaCor'], camadaRoupa, 'px-roupa') +
-      grupo('calcado', boneco, ['base', 'calcado', 'calcadoCor', 'pele'], camadaCalcado, 'px-calcado') +
-      grupo('olhos', boneco, ['rosto', 'pele'], camadaOlhos, 'px-olhos') +
-      grupo('boca', boneco, ['rosto'], camadaBoca, 'px-boca') +
-      grupo('cabelo', boneco, ['cabelo', 'cabeloCor'], camadaCabelo, 'px-cabelo') +
-      grupo('acessorio', boneco, ['acessorio', 'acessorioCor', 'cabelo'], camadaAcessorio, 'px-acessorio') +
-      (mini ? '' : grupo('fx-frente', boneco, ['efeito'], b => camadaEfeito(b).frente, 'px-fx px-fx-frente')) +
-      (mini ? '' : grupo('moldura', boneco, ['moldura'], camadaMoldura, 'px-moldura')) +
-      '</svg>';
-  }
-
-  function render(entrada, opcoes){
-    const caixa = document.createElement('div');
-    caixa.innerHTML = renderSVG(entrada, opcoes);
-    return caixa.firstElementChild;
-  }
-
-  window.PixelAvatar = {
-    W,
-    H,
-    SLOTS,
-    PADRAO,
-    normalizar,
-    render,
-    renderSVG
-  };
+  window.PixelAvatar = { W, H, SLOTS, PADRAO, normalizar, render, renderSVG };
 })();

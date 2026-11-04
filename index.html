@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="css/arcade.css">
 <link rel="stylesheet" href="css/arcade-dashboard.css">
 <link rel="stylesheet" href="css/profile.css">
+<link rel="stylesheet" href="css/avatar-2-5d.css?v=1">
 </head>
 <body>
 
@@ -744,7 +745,7 @@
             <div class="pf-avatar-stage-large" id="pfAvatarStageLarge">
               <span class="pf-avatar-stage-label">SEU PERSONAGEM</span>
               <div class="pf-avatar-wrap-large">
-                <div class="pf-avatar-large" id="pfAvatarLarge" role="img" aria-label="Prévia do seu boneco em pixel art"></div>
+                <div class="pf-avatar-large" id="pfAvatarLarge" role="img" aria-label="Prévia do seu avatar 2.5D"></div>
               </div>
               <span class="pf-avatar-stage-floor" aria-hidden="true"></span>
             </div>
@@ -833,16 +834,16 @@
     <div class="pf-panel" data-pf-panel="boneco" hidden>
       <div class="pf-creator">
         <div class="pf-avatar-stage" id="pfAvatarStage">
-          <div class="pf-stage-top"><span class="pf-avatar-tag">Prévia ao vivo</span><span class="pf-save-state" id="pfSaveState" data-estado="carregando" role="status" aria-live="polite">Carregando</span></div>
+          <div class="pf-stage-top"><span class="pf-avatar-tag">Avatar Studio · 2.5D</span><span class="pf-save-state" id="pfSaveState" data-estado="carregando" role="status" aria-live="polite">Carregando</span></div>
           <div class="pf-ground" aria-hidden="true"></div><div class="pf-shade" aria-hidden="true"></div>
-          <div class="pf-avatar-wrap"><div class="pf-avatar" id="pfAvatar" role="img" aria-label="Prévia do seu boneco em pixel art"></div></div>
+          <div class="pf-avatar-wrap"><div class="pf-avatar" id="pfAvatar" role="img" aria-label="Prévia do seu avatar 2.5D"></div></div>
           <p class="pf-stage-caption" id="pfStageCaption">Seu visual aparece aqui.</p>
         </div>
         <div class="pf-options" id="pfOptions">
-          <div class="pf-options-top"><div class="pf-options-intro"><span class="pf-options-kicker">GUARDA-ROUPA PIXEL</span><h2>Monte seu personagem</h2><p id="pfCatalogStatus" role="status">Conectando sua conta…</p></div>
+          <div class="pf-options-top"><div class="pf-options-intro"><span class="pf-options-kicker">GUARDA-ROUPA PIXEL · AVATAR STUDIO</span><h2>Monte seu personagem</h2><p id="pfCatalogStatus" role="status">Conectando sua conta…</p></div>
             <div class="pf-options-actions"><button type="button" class="pf-btn" id="pfRandom" disabled>🎲 Surpreenda-me</button><button type="button" class="pf-btn pf-btn-reset" id="pfReset" disabled>↺ Padrão</button><button type="button" class="pf-btn pf-btn-primary" id="pfSave" disabled>💾 Salvar boneco</button></div>
           </div>
-          <div class="pf-access-row"><span class="pf-access" id="pfAccess">Visitante</span><span class="pf-save-msg" id="pfSaveMsg" role="status" aria-live="polite"></span></div>
+          <div class="pf-access-row"><span class="pf-access" id="pfAccess">Visitante</span><span class="pf-save-msg" id="pfSaveMsg" role="status" aria-live="polite"></span><button type="button" class="pf-demo-retry" id="pfDemoRetry" hidden>↻ Tentar conexão</button></div>
           <p class="pf-lock-note" id="pfLockNote" role="status" aria-live="polite"></p>
           <div class="pf-wardrobe" id="pfWardrobe" hidden><div class="pf-wardrobe-tabs" id="pfWardrobeTabs" role="tablist" aria-label="Categorias do boneco"></div><div class="pf-wardrobe-panel" id="pfWardrobePanel" role="tabpanel"></div></div>
           <div class="pf-creator-gate" id="pfCreatorGate" hidden><span class="pf-gate-ic" aria-hidden="true">🔒</span><h3>Entre para montar seu boneco</h3><p>Seu guarda-roupa, itens liberados e conquistas ficam salvos na sua conta do Arcade.</p><button type="button" class="pf-btn pf-btn-primary" id="pfCreatorLogin">Entrar no Arcade</button></div>
@@ -971,7 +972,7 @@
 <script src="js/api/client.js"></script>
 <script src="js/api/game-client.js"></script>
 <script src="js/game-state.js"></script>
-<script src="js/pixel-engine.js"></script>
+<script src="js/pixel-engine.js?v=2.5d-1"></script>
 <script src="js/auth-ui.js"></script>
 <script src="js/navbar.js"></script>
 <script src="js/twitch/twitch.js"></script>

@@ -79,6 +79,49 @@
     }
   ];
 
+  function criarCatalogoDemo(pixelAvatar){
+    const definicoes = {
+      base: [['masc','Clássico'],['fem','Clássico alternativo']],
+      pele: [['media','Média','#d99a6c'],['clara','Clara','#f5d6bd']],
+      rosto: [['feliz','Sorridente'],['serio','Confiante'],['piscada','Piscadinha']],
+      cabelo: [['curto','Curto'],['longo','Longo'],['coques','Coques']],
+      cabeloCor: [['roxo','Roxo','#8b5cf6'],['preto','Preto','#30283e'],['loiro','Loiro','#e9bd55']],
+      roupa: [['moletom','Moletom'],['camiseta','Camiseta gamer'],['jaqueta','Jaqueta']],
+      roupaCor: [['roxo','Roxo','#7950c9'],['grafite','Grafite','#4b4c62'],['ciano','Ciano','#218eaa']],
+      calcado: [['tenis','Tênis'],['chinelo','Chinelo'],['botas','Botas']],
+      calcadoCor: [['branco','Branco','#ece9f2'],['preto','Preto','#282538'],['ciano','Ciano','#208ca3']],
+      acessorio: [['oculos','Óculos'],['headset','Headset gamer'],['nenhum','Sem acessório'],['orelhas','Orelhas de gato'],['laco','Laço']],
+      acessorioCor: [['dourado','Dourado','#e8b956'],['lilas','Lilás','#bb91ef'],['rosa','Rosa','#eb83bf']],
+      efeito: [['nenhum','Sem efeito'],['brilho','Brilho suave'],['aura_roxa','Aura roxa']],
+      animacao: [['respirar','Respiração'],['acenar','Gesto suave'],['pular','Pular']],
+      moldura: [['nenhuma','Sem moldura'],['simples','Moldura suave'],['ciano','Neon ciano']]
+    };
+    const catalogo = {};
+    const liberados = {};
+    Object.entries(definicoes).forEach(([slot, itens]) => {
+      catalogo[slot] = itens.map(([id, nome, cor]) => ({
+        id, nome, r: 'comum', cor: cor || null, regra: { t: 'free' },
+        regraTxt: 'Disponível no teste local', preco: 0
+      }));
+      liberados[slot] = itens.map(item => item[0]);
+    });
+    return {
+      dados: {
+        padrao: { ...pixelAvatar.PADRAO },
+        catalogo,
+        raridades: {
+          comum: { nome: 'Teste', cor: '#a78bfa' },
+          incomum: { nome: 'Teste', cor: '#7dd3a8' },
+          raro: { nome: 'Teste', cor: '#7dd3fc' },
+          epico: { nome: 'Teste', cor: '#d8b4fe' },
+          lendario: { nome: 'Teste', cor: '#fbbf24' },
+          limitado: { nome: 'Teste', cor: '#f9a8d4' }
+        }
+      },
+      liberados
+    };
+  }
+
   const $ = (seletor, raiz = document) => raiz.querySelector(seletor);
   const $$ = (seletor, raiz = document) => [...raiz.querySelectorAll(seletor)];
 
@@ -116,7 +159,8 @@
       gateLogin: $('#pfCreatorLogin'),
       error: $('#pfCreatorError'),
       errorText: $('#pfErrorText'),
-      retry: $('#pfCreatorRetry')
+      retry: $('#pfCreatorRetry'),
+      demoRetry: $('#pfDemoRetry')
     };
 
     if (!refs.avatar || !refs.save) return;
@@ -137,6 +181,7 @@
     let carregando = false;
     let carregamentoAtual = null;
     let salvando = false;
+    let modoDemo = false;
     let requisicao = 0;
     let avisoTimer = null;
     let mensagemTimer = null;
@@ -147,9 +192,16 @@
       return catalogo.catalogo[slot].find(item => item.id === id) || null;
     }
 
+    function nomeExibidoItem(slot, item){
+      if (!item) return '';
+      // A animação atual é um pequeno gesto de cabeça, não um aceno de braço.
+      if (slot === 'animacao' && item.id === 'acenar') return 'Gesto suave';
+      return item.nome;
+    }
+
     function nomeItem(slot){
       const item = itemDe(slot, boneco[slot]);
-      return item ? item.nome : boneco[slot];
+      return item ? nomeExibidoItem(slot, item) : boneco[slot];
     }
 
     function raridadeDe(item){
@@ -256,9 +308,9 @@
         refs.access.classList.add('is-online');
         refs.access.dataset.nivel = 'online';
       } else {
-        refs.access.textContent = 'Visitante';
+        refs.access.textContent = modoDemo ? 'Modo demonstração' : 'Visitante';
         refs.access.classList.remove('is-online');
-        refs.access.dataset.nivel = '0';
+        refs.access.dataset.nivel = modoDemo ? 'demo' : '0';
       }
     }
 
@@ -288,12 +340,14 @@
 
       if (refs.save) {
         refs.save.disabled = !carregado || salvando || !sujo;
-        refs.save.textContent = salvando ? '💾 Salvando…' : '💾 Salvar boneco';
+        refs.save.textContent = salvando ? '💾 Salvando…' : (modoDemo && sujo ? (getUsuario() ? '↻ Tentar conexão' : '🔒 Entrar para salvar') : '💾 Salvar boneco');
       }
       if (refs.random) refs.random.disabled = !carregado || salvando;
       if (refs.reset) refs.reset.disabled = !carregado || salvando;
+      if (refs.demoRetry) refs.demoRetry.hidden = !modoDemo;
 
       if (salvando) setPalco('salvando', 'Salvando…');
+      else if (modoDemo) setPalco('demo', 'Prévia local');
       else if (carregado && sujo) setPalco('sujo', 'Alterações não salvas');
       else if (carregado) setPalco('salvo', 'Tudo salvo');
       else if (perfil) setPalco('erro', 'Sem conexão');
@@ -301,6 +355,7 @@
     }
 
     function criarItem(slot, item, tipo){
+      const nomeExibido = nomeExibidoItem(slot, item);
       const liberado = podeUsar(slot, item.id);
       const raridade = raridadeDe(item);
       const botao = document.createElement('button');
@@ -316,8 +371,8 @@
       if (boneco[slot] === item.id) botao.classList.add('on');
 
       const complemento = item.regraTxt || (liberado ? 'Liberado' : 'Bloqueado');
-      botao.title = item.nome + ' — ' + complemento;
-      botao.setAttribute('aria-label', item.nome + (liberado ? '' : ' (bloqueado: ' + complemento + ')'));
+      botao.title = nomeExibido + ' — ' + complemento;
+      botao.setAttribute('aria-label', nomeExibido + (liberado ? '' : ' (bloqueado: ' + complemento + ')'));
 
       if (tipo === 'cores') {
         botao.className = botao.className ? 'pf-swatch ' + botao.className : 'pf-swatch';
@@ -330,7 +385,7 @@
 
       botao.className = botao.className ? 'pf-style ' + botao.className : 'pf-style';
       const topo = criar('span', 'pf-style-top');
-      topo.append(criar('span', 'pf-style-name', item.nome));
+      topo.append(criar('span', 'pf-style-name', nomeExibido));
       const cadeado = criar('i', 'pf-lock', '🔒');
       cadeado.setAttribute('aria-hidden', 'true');
       topo.append(cadeado);
@@ -338,7 +393,7 @@
       if (window.PixelAvatar && typeof window.PixelAvatar.render === 'function') {
         const previewBoneco = { ...window.PixelAvatar.PADRAO, ...(boneco || {}), [slot]: item.id };
         const miniSvg = window.PixelAvatar.render(previewBoneco, {
-          mini: true, animar: false, label: 'Prévia de ' + item.nome
+          mini: true, animar: false, label: 'Prévia de ' + nomeExibido
         });
         if (miniSvg) miniatura.appendChild(miniSvg);
       }
@@ -434,7 +489,7 @@
       });
       const item = itemDe(slot, id);
       $$('[data-pf-selected="' + slot + '"]', refs.panel).forEach(rotulo => {
-        rotulo.textContent = item ? item.nome : id;
+        rotulo.textContent = item ? nomeExibidoItem(slot, item) : id;
       });
     }
 
@@ -451,7 +506,7 @@
         void botao.offsetWidth;
         botao.classList.add('nope');
         setTimeout(() => botao.classList.remove('nope'), 380);
-        avisar('🔒 “' + item.nome + '” ainda está bloqueado: ' + (item.regraTxt || 'requisito não atendido') + '.');
+        avisar('🔒 “' + nomeExibidoItem(slot, item) + '” ainda está bloqueado: ' + (item.regraTxt || 'requisito não atendido') + '.');
         return;
       }
 
@@ -499,6 +554,12 @@
 
     async function salvar(){
       if (!carregado || salvando) return;
+      if (modoDemo) {
+        if (!getUsuario() && window.AuthUI) window.AuthUI.open('entrar');
+        else carregarTudo({ forcarPerfil: true, forcarCatalogo: true });
+        mensagem('Este é um teste local. Conecte o Arcade para salvar seu visual.', 'erro');
+        return;
+      }
       if (!getUsuario() && !perfil) {
         if (window.AuthUI) window.AuthUI.open('entrar');
         return;
@@ -569,41 +630,45 @@
       }
     }
 
+    function ativarModoDemo(texto = 'Modo demonstração: experimente as peças; entre no Arcade para salvar.'){
+      const demo = criarCatalogoDemo(window.PixelAvatar);
+      modoDemo = true;
+      carregando = false;
+      carregado = true;
+      perfil = null;
+      catalogo = demo.dados;
+      liberados = demo.liberados;
+      boneco = window.PixelAvatar.normalizar(window.PixelAvatar.PADRAO);
+      salvo = { ...boneco };
+      categorias = [];
+      categoriaAtiva = 'base';
+      if (refs.gate) refs.gate.hidden = true;
+      if (refs.error) refs.error.hidden = true;
+      if (refs.lockNote) {
+        refs.lockNote.textContent = 'Prévia de demonstração: as alterações não são enviadas nem salvas no servidor.';
+        refs.lockNote.classList.add('on');
+      }
+      if (window.__pfAtualizarNomeBanner) window.__pfAtualizarNomeBanner(null);
+      atualizarAcesso();
+      renderCategorias();
+      renderPreview();
+      atualizarEstadoSalvar();
+      statusCatalogo(texto);
+      mensagem('Você está experimentando o novo avatar 2.5D em modo local.', 'ok');
+    }
+
     function mostrarVisitante(){
       requisicao++;
       carregando = false;
       carregamentoAtual = null;
-      carregado = false;
-      perfil = null;
-      catalogo = catalogo || null;
-      liberados = {};
-      boneco = window.PixelAvatar.normalizar(window.PixelAvatar.PADRAO);
-      salvo = { ...boneco };
-      categorias = [];
-      if (refs.tabs) refs.tabs.replaceChildren();
-      if (refs.panel) refs.panel.replaceChildren();
-      if (refs.wardrobe) refs.wardrobe.hidden = true;
-      if (refs.gate) refs.gate.hidden = false;
-      if (refs.error) refs.error.hidden = true;
-      if (refs.lockNote) { refs.lockNote.classList.remove('on'); refs.lockNote.textContent = ''; }
-      if (window.__pfAtualizarNomeBanner) window.__pfAtualizarNomeBanner(null);
-      atualizarAcesso();
-      renderPreview();
-      atualizarEstadoSalvar();
-      statusCatalogo('Entre para liberar o guarda-roupa e salvar seu visual.');
-      mensagem('', '');
+      modoDemo = false;
+      ativarModoDemo('Prévia livre: experimente algumas peças. Entre no Arcade para salvar seu personagem.');
     }
 
     function mostrarErro(texto){
-      carregado = false;
-      carregando = false;
-      if (refs.wardrobe) refs.wardrobe.hidden = true;
-      if (refs.gate) refs.gate.hidden = true;
-      if (refs.error) refs.error.hidden = false;
-      if (refs.errorText) refs.errorText.textContent = texto;
-      atualizarAcesso();
-      atualizarEstadoSalvar();
-      statusCatalogo('Guarda-roupa indisponível.');
+      modoDemo = false;
+      if (refs.error) refs.error.hidden = true;
+      ativarModoDemo('API indisponível no momento · modo de teste local ativo. ' + (texto || ''));
     }
 
     function iniciarComPerfil(dadosPerfil, dadosCatalogo){
@@ -611,6 +676,7 @@
         throw new Error('Dados incompletos');
       }
 
+      modoDemo = false;
       perfil = dadosPerfil;
       catalogo = dadosCatalogo;
       liberados = dadosPerfil.liberados || {};
@@ -651,6 +717,7 @@
       }
 
       const token = ++requisicao;
+      modoDemo = false;
       carregando = true;
       if (refs.gate) refs.gate.hidden = true;
       if (refs.error) refs.error.hidden = true;
@@ -730,7 +797,8 @@
       renderCategorias();
       renderPreview();
       atualizarEstadoSalvar();
-      mensagem('Prévia de “' + item.nome + '” aplicada. Salve quando gostar do resultado.', 'ok');
+      const nomeExibido = nomeExibidoItem(slot, item);
+      mensagem('Prévia de “' + nomeExibido + '” aplicada. Salve quando gostar do resultado.', 'ok');
       return true;
     }
 
@@ -746,6 +814,7 @@
         salvo = { ...boneco };
       }
 
+      modoDemo = false;
       perfil = dadosPerfil;
       liberados = dadosPerfil.liberados || {};
       if (window.__pfAtualizarNomeBanner) window.__pfAtualizarNomeBanner(perfil);
@@ -777,19 +846,17 @@
       });
     }
 
-    if (refs.retry) {
-      refs.retry.addEventListener('click', async () => {
-        refs.retry.disabled = true;
-        refs.retry.textContent = 'Tentando novamente…';
-        try {
-          await window.checarLogin?.();
-          await carregarTudo({ forcarPerfil: true, forcarCatalogo: true });
-        } finally {
-          refs.retry.disabled = false;
-          refs.retry.textContent = 'Tentar novamente';
-        }
-      });
+    async function tentarConexao(botao){
+      if (botao) { botao.disabled = true; botao.textContent = 'Conectando…'; }
+      try {
+        await window.checarLogin?.();
+        await carregarTudo({ forcarPerfil: true, forcarCatalogo: true });
+      } finally {
+        if (botao) { botao.disabled = false; botao.textContent = botao.id === 'pfDemoRetry' ? '↻ Tentar conexão' : 'Tentar novamente'; }
+      }
     }
+    if (refs.retry) refs.retry.addEventListener('click', () => tentarConexao(refs.retry));
+    if (refs.demoRetry) refs.demoRetry.addEventListener('click', () => tentarConexao(refs.demoRetry));
 
     if (refs.panel) {
       refs.panel.addEventListener('click', evento => {
