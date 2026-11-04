@@ -156,6 +156,24 @@
   50%{opacity:.16;transform:scale(1.035)}
 }
 
+
+/* ============================================================
+   VIDA EXTRA (motor cel-shading): a cabeça acompanha a respiração
+   e o cabelo balança com leve atraso (movimento secundário).
+   ============================================================ */
+.px-svg.px-anim-respirar .px-head-group,
+.px-svg.px-anim-meditar .px-head-group{animation:avatar25dBreatheHead 3.8s ease-in-out infinite}
+.px-svg:not(.px-static) .px-hair-back{transform-box:fill-box;transform-origin:50% 6%;animation:avatar25dHairSway 3.8s ease-in-out .32s infinite}
+.px-svg.px-anim-meditar .px-hair-back{animation-duration:6s}
+@keyframes avatar25dBreatheHead{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-2px)}
+}
+@keyframes avatar25dHairSway{
+  0%,100%{transform:rotate(0)}
+  50%{transform:rotate(.9deg)}
+}
+
 #sec-perfil .pf-stage-caption{
   z-index:6;
   bottom:11px;

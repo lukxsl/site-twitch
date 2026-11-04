@@ -63,7 +63,7 @@
   };
 
   const OUTLINE = '#332744';
-  const INK = '#34283f';
+  const INK = '#2a1a3a';
   const WHITE = '#fffaf6';
 
   function esc(text){
@@ -96,94 +96,382 @@
   function palette(slot, id){
     return (PALETAS[slot] && PALETAS[slot][id]) || '#7950c9';
   }
+  /* ============================================================
+     MOTOR DE CEL-SHADING
+     Cada peça = sombra de borda dura (luz vindo de cima-esquerda)
+     + faixa de luz + contorno COLORIDO (nunca preto chapado).
+     Técnica: a forma é recortada (clipPath) e sobreposta a ela mesma
+     deslocada, o que gera crescentes de sombra/luz nítidos para
+     qualquer path, sem precisar desenhar sombras à mão.
+     ============================================================ */
 
-  function gradient(id, color, dark = 0.32, light = 0.24){
-    return `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="${mix(color, '#ffffff', light)}"/>
-      <stop offset=".48" stop-color="${color}"/>
-      <stop offset="1" stop-color="${mix(color, '#171323', dark)}"/>
-    </linearGradient>`;
+
+  function tone(color, kind){
+    if (kind === 'skin') return {
+      base: color, light: mix(color, '#fff4ea', .36),
+      shade: mix(mix(color, '#c4476f', .24), '#3a1f4d', .12),
+      deep: mix(color, '#4a2236', .45), line: mix(color, '#2a1426', .74)
+    };
+    if (kind === 'hair') return {
+      base: color, light: mix(color, '#ffffff', .32),
+      shade: mix(color, '#2a1252', .40),
+      deep: mix(color, '#160a2a', .55), line: mix(color, '#10081f', .80)
+    };
+    return {
+      base: color, light: mix(color, '#ffffff', .27),
+      shade: mix(color, '#2c1858', .34),
+      deep: mix(color, '#190c30', .52), line: mix(color, '#140a26', .76)
+    };
   }
 
-  function hairBack(b, hair){
-    const fill = `url(#${hair})`;
-    if (b.cabelo === 'longo') return `<path d="M76 77Q67 64 65 99L59 190Q73 205 86 181L87 119L153 119L154 181Q168 204 181 190L175 98Q171 62 160 77Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M68 112L66 174M172 112L174 174" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="5" stroke-linecap="round"/>`;
-    if (b.cabelo === 'rabo') return `<path d="M156 72Q178 77 179 102L183 148Q192 163 185 180Q172 187 163 173L165 125Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M172 106Q180 137 177 166" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"/>`;
-    if (b.cabelo === 'coques') return `<g fill="${fill}" stroke="${OUTLINE}" stroke-width="5"><circle cx="69" cy="54" r="20"/><circle cx="171" cy="54" r="20"/></g><path d="M59 54Q67 43 78 50M161 50Q173 42 182 54" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="4" stroke-linecap="round"/>`;
-    return '';
+  /* espelha um path absoluto (M L Q C Z) no eixo central x=120 */
+  function mir(d){
+    const tk = d.match(/[MLQCZHV]|-?\d*\.?\d+/g) || [];
+    let n = 0, cmd = '';
+    return tk.map(t => {
+      if (/[MLQCZHV]/.test(t)) { cmd = t; n = 0; return t; }
+      const v = parseFloat(t);
+      if (cmd === 'V') return t;
+      if (cmd === 'H') return String(+(240 - v).toFixed(2));
+      return (n++ % 2 === 0) ? String(+(240 - v).toFixed(2)) : t;
+    }).join(' ');
   }
 
-  function hairFront(b, hair){
-    const fill = `url(#${hair})`;
-    const shine = mix(palette('cabeloCor', b.cabeloCor), '#ffffff', .42);
-    switch (b.cabelo) {
-      case 'careca': return '';
-      case 'moicano':
-        return `<path d="M91 57Q96 24 107 31L113 18Q121 12 127 31Q141 19 147 36L151 61L142 72L98 72Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M112 34L119 22L124 42M133 38L141 31" fill="none" stroke="${shine}" stroke-width="5" stroke-linecap="round"/>`;
-      case 'espetado':
-        return `<path d="M72 82Q64 51 83 43L77 24L100 38Q108 10 122 31L137 16L140 42Q164 31 169 54L164 91L151 100L88 100Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M87 49L102 57M122 39L131 51M145 55L156 60" stroke="${shine}" stroke-width="5" stroke-linecap="round"/>`;
-      case 'longo':
-        return `<path d="M73 91Q67 42 103 32Q141 18 163 53Q175 73 164 111L155 100L151 75Q132 83 111 74Q94 67 84 85L83 110L74 124Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M91 51Q111 31 139 42" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/><path d="M77 102Q73 133 81 151M161 103Q166 127 157 148" fill="none" stroke="${fill}" stroke-width="13" stroke-linecap="round"/>`;
-      case 'rabo':
-        return `<path d="M72 88Q68 42 104 32Q144 20 164 56Q172 76 163 109L151 96L149 71Q126 83 107 73Q92 67 83 86L82 111L73 121Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M92 52Q114 30 141 45" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/>`;
-      case 'coques':
-        return `<path d="M75 86Q72 43 105 33Q143 21 164 58L163 103L151 94Q140 79 120 79Q99 79 85 96L80 111Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M95 52Q115 34 140 46" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/>`;
-      default:
-        return `<path d="M72 91Q65 45 103 32Q143 19 164 55Q174 74 164 108L151 96L149 72Q132 82 111 73Q94 67 84 86L82 111L73 119Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M91 51Q111 30 140 43" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/><path d="M85 78Q101 86 117 78" fill="none" stroke="${mix(palette('cabeloCor', b.cabeloCor),'#171323',.18)}" stroke-width="4" stroke-linecap="round"/>`;
+  function makeCtx(n){
+    const defs = [];
+    let k = 0;
+    const id = key => `av${n}-${key}${++k}`;
+    function cel(d, color, o = {}){
+      const t = o.tone || tone(color, o.kind);
+      const sx = o.sh == null ? 4.2 : o.sh;
+      const sy = o.shy == null ? sx * 1.2 : o.shy;
+      const lx = o.lt == null ? 2.4 : o.lt;
+      const a = id('c'), b = id('c');
+      defs.push(`<clipPath id="${a}"><path d="${d}"/></clipPath>`);
+      let inner;
+      if (o.light === false) {
+        inner = `<path d="${d}" fill="${t.base}" transform="translate(${-sx} ${-sy})"/>`;
+      } else {
+        defs.push(`<clipPath id="${b}"><path d="${d}" transform="translate(${-sx} ${-sy})"/></clipPath>`);
+        inner = `<g clip-path="url(#${b})"><rect x="-30" y="-30" width="300" height="420" fill="${t.light}"/><path d="${d}" fill="${t.base}" transform="translate(${lx} ${(lx * 1.2).toFixed(2)})"/></g>`;
+      }
+      const sw = o.sw == null ? 3 : o.sw;
+      const stroke = sw ? `<path d="${d}" fill="none" stroke="${o.line || t.line}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"/>` : '';
+      return `<g clip-path="url(#${a})"><rect x="-30" y="-30" width="300" height="420" fill="${t.shade}"/>${inner}</g>${stroke}`;
     }
+    function clip(d, inner, extra){
+      const a = id('k');
+      defs.push(`<clipPath id="${a}"><path d="${d}"${extra || ''}/></clipPath>`);
+      return `<g clip-path="url(#${a})">${inner}</g>`;
+    }
+    return { defs, id, cel, clip };
   }
 
-  function clothing(b, cloth){
-    const fill = `url(#${cloth})`;
-    const accent = mix(palette('roupaCor', b.roupaCor), '#ffffff', .46);
-    const dark = mix(palette('roupaCor', b.roupaCor), '#171323', .38);
-    const base = `<path d="M88 164Q101 155 120 155Q139 155 152 164L169 184L161 257Q120 271 79 257L71 184Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>`;
-    const sleeves = `<path d="M88 167Q74 171 68 185L56 235Q56 249 69 252Q81 254 86 240L100 195Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M152 167Q166 171 172 185L184 235Q184 249 171 252Q159 254 154 240L140 195Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>`;
-    const hem = `<path d="M79 249Q120 260 161 249" fill="none" stroke="${dark}" stroke-width="5" stroke-linecap="round"/>`;
+  const EYE_COLOR = {
+    preto: '#5f7fe6', roxo: '#a45cf2', loiro: '#e39a2b', ruivo: '#d4692f',
+    prata: '#5fb2dc', rosa: '#e5509f', ciano: '#25b4c9'
+  };
+
+  const HEAD = 'M72 94C70 56 92 33 120 33C148 33 170 56 168 94C167 124 149 153 120 156C91 153 73 124 72 94Z';
+  const NECK = 'M107 140L106 172Q120 183 134 172L133 140Z';
+  const EAR_L = 'M76 92C66 88 61 102 69 114C72 117 76 115 77 111Z';
+
+  /* ---------------- CABELO ---------------- */
+  function hairParts(b, ctx){
+    const color = palette('cabeloCor', b.cabeloCor);
+    const t = tone(color, 'hair');
+    const shineC = mix(color, '#ffffff', .72);
+    const deepC = mix(color, '#2a1252', .22);
+    const H = (d, col, o) => ctx.cel(d, col || color, Object.assign({ kind: 'hair', sw: 3 }, o || {}));
+    const strand = (d, op) => `<path d="${d}" fill="none" stroke="${t.deep}" stroke-width="1.7" stroke-linecap="round" opacity="${op || .5}"/>`;
+    const ring = d => `<path d="${d}" fill="none" stroke="${shineC}" stroke-width="6.5" stroke-linecap="round" opacity=".78"/><path d="${d}" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".85" transform="translate(1.5 -.6)"/>`;
+
+    const capBack = 'M69 104C62 62 90 31 122 31C154 31 182 62 175 104L171 124L71 124Z';
+    const frontCurto =
+      'M66 110C57 60 86 24 122 23C160 22 185 58 175 110L168 128C167 112 165 98 160 86C154 90 150 84 146 76C142 86 136 88 130 74C126 84 118 88 112 72C108 82 100 86 96 74C92 84 88 94 84 104C80 108 78 118 76 128Z';
+    const strCurto = strand('M122 26C104 38 97 58 101 80') + strand('M124 26C142 38 149 58 145 80') +
+      strand('M97 38C85 54 83 78 85 96', .4) + strand('M150 36C164 50 169 74 167 100', .4);
+    const ringCurto = ring('M86 58C93 40 112 32 138 38');
+
+    const out = { back: '', front: '', shadowD: '' };
+    switch (b.cabelo) {
+      case 'careca':
+        out.front = `<path d="M92 52C100 40 118 36 134 40" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".28"/>`;
+        return out;
+      case 'moicano': {
+        const sideL = 'M73 96C69 64 83 44 101 36L108 62C95 68 89 84 87 108Z';
+        const sideShade = `<path d="${sideL}" fill="${t.shade}" opacity=".5"/><path d="${mir(sideL)}" fill="${t.shade}" opacity=".5"/>`;
+        const mo = 'M97 74C90 58 96 42 102 30C106 38 108 34 111 18C116 30 119 24 123 4C127 22 131 26 135 12C140 28 141 34 148 28C147 46 148 62 143 76C130 68 110 68 97 74Z';
+        out.front = sideShade + H(mo) + strand('M112 24C108 40 108 56 110 70') + strand('M128 20C131 38 130 56 128 70') + ring('M107 52C109 38 114 28 119 20');
+        return out;
+      }
+      case 'espetado': {
+        const f = 'M70 106C60 72 68 54 74 42L88 54L88 26L105 44L117 12L129 42L147 16L149 46L167 32L167 58C178 72 178 92 172 108L168 128C166 112 163 100 157 92L150 100L145 84L136 98L127 82L118 98L108 82L99 96L92 86L86 100C80 106 78 118 76 128Z';
+        out.back = H(capBack, mix(color, '#2a1252', .22), { sw: 3 });
+        out.front = H(f) + strand('M117 18C112 38 112 58 116 80') + strand('M147 22C146 40 150 60 147 82') + strand('M88 32C86 50 88 70 90 90', .4) + ring('M92 56C98 40 114 34 134 40');
+        out.shadowD = f;
+        return out;
+      }
+      default: break;
+    }
+    out.back = H(capBack, deepC, { sw: 3, light: false });
+    out.front = H(frontCurto) + strCurto + ringCurto;
+    out.shadowD = frontCurto;
+
+    if (b.cabelo === 'longo') {
+      out.back = H('M70 96C57 138 54 182 64 204Q80 214 93 192L101 142L139 142L147 192Q160 214 176 204C186 182 183 138 170 96Z', deepC, { sw: 3 }) +
+        strand('M72 130C68 160 70 182 74 198', .4) + strand('M168 130C172 160 170 182 166 198', .4);
+      const lock = 'M72 98C65 132 67 164 78 188C89 172 93 142 90 112L82 98Z';
+      out.front = H(lock) + H(mir(lock)) + out.front +
+        `<path d="M76 130C72 148 73 162 77 172" fill="none" stroke="${shineC}" stroke-width="3.6" stroke-linecap="round" opacity=".7"/>`;
+    } else if (b.cabelo === 'rabo') {
+      const pony = 'M158 62C192 54 208 86 200 120C197 142 206 162 192 188C180 180 175 162 178 142C168 130 160 104 156 92Z';
+      out.back = H(pony) + strand('M176 80C190 96 192 124 186 150', .45) +
+        H('M152 66C158 60 168 62 170 70C168 78 158 80 152 76Z', mix(palette('acessorioCor', b.acessorioCor), '#ffffff', 0), { kind: 'acc', sw: 2.4 });
+      out.back = H(capBack, deepC, { sw: 3, light: false }) + out.back;
+    } else if (b.cabelo === 'coques') {
+      const bun = (cx) => H(`M${cx - 19} 52C${cx - 19} 34 ${cx - 6} 30 ${cx} 30C${cx + 6} 30 ${cx + 19} 34 ${cx + 19} 52C${cx + 19} 70 ${cx + 6} 74 ${cx} 74C${cx - 6} 74 ${cx - 19} 70 ${cx - 19} 52Z`) +
+        `<path d="M${cx - 10} 44C${cx - 2} 38 ${cx + 8} 42 ${cx + 10} 52" fill="none" stroke="${t.deep}" stroke-width="1.7" stroke-linecap="round" opacity=".5"/>` +
+        `<path d="M${cx - 12} 40C${cx - 6} 33 ${cx + 2} 32 ${cx + 8} 35" fill="none" stroke="${shineC}" stroke-width="4.5" stroke-linecap="round" opacity=".8"/>`;
+      out.back = bun(66) + bun(174) + out.back;
+    }
+    return out;
+  }
+
+  /* ---------------- ROSTO ---------------- */
+  function eyeOpen(ctx, cx, cy, o, iris, opt){
+    opt = opt || {};
+    const rx = 11.2, ry = 13.6;
+    const ig = ctx.id('ig');
+    const deep = mix(iris, '#140a2a', .62), light = mix(iris, '#ffffff', .5);
+    ctx.defs.push(`<linearGradient id="${ig}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${deep}"/><stop offset=".5" stop-color="${iris}"/><stop offset="1" stop-color="${light}"/></linearGradient>`);
+    const eyeD = `M${cx - rx} ${cy}A${rx} ${ry} 0 1 0 ${cx + rx} ${cy}A${rx} ${ry} 0 1 0 ${cx - rx} ${cy}Z`;
+    let inner = `<rect x="${cx - 14}" y="${cy - 16}" width="28" height="32" fill="#fffaf8"/>` +
+      `<ellipse cx="${cx}" cy="${cy + 1}" rx="9.2" ry="12.6" fill="url(#${ig})"/>` +
+      `<ellipse cx="${cx}" cy="${cy + 2}" rx="4.6" ry="6.6" fill="${deep}"/>`;
+    if (opt.star) {
+      const pts = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 3.4 : 8; pts.push((cx + Math.cos(a) * r).toFixed(1) + ' ' + (cy + 2 + Math.sin(a) * r).toFixed(1)); }
+      inner += `<polygon points="${pts.join(' ')}" fill="#fff3b8" stroke="#c9791f" stroke-width="1"/>`;
+    }
+    if (opt.neon) {
+      inner += `<ellipse cx="${cx}" cy="${cy + 1}" rx="7" ry="10" fill="none" stroke="#d9ffff" stroke-width="1.4" opacity=".9"/>` +
+        `<path d="M${cx - 9} ${cy - 3}H${cx + 9}M${cx - 9} ${cy + 3}H${cx + 9}M${cx - 8} ${cy + 9}H${cx + 8}" stroke="#d9ffff" stroke-width=".8" opacity=".45"/>`;
+    }
+    inner += `<ellipse cx="${cx}" cy="${cy - 13}" rx="13" ry="6.6" fill="#1a0f2e" opacity=".34"/>` +
+      `<ellipse cx="${cx - 3.2}" cy="${cy - 4.6}" rx="3.9" ry="4.6" fill="#fff"/>` +
+      `<circle cx="${cx + 3.6}" cy="${cy + 6.2}" r="1.9" fill="#fff" opacity=".95"/>` +
+      `<path d="M${cx - 6} ${cy + 10}Q${cx} ${cy + 13.4} ${cx + 6} ${cy + 10}" fill="none" stroke="#fff" stroke-width="1.2" opacity=".4"/>`;
+    let lidLine = '';
+    if (opt.lid != null) {
+      const yR = cy + opt.lid + (o === -1 ? 2 : -2), yL = cy + opt.lid + (o === -1 ? -2 : 2);
+      inner += `<path d="M${cx - 14} ${cy - 17}H${cx + 14}V${yR}L${cx - 14} ${yL}Z" fill="${opt.skin}"/>`;
+      lidLine = `<path d="M${cx - 12} ${yL}L${cx + 12} ${yR}" stroke="${INK}" stroke-width="3.2" stroke-linecap="round"/>`;
+    }
+    const glow = opt.neon ? `<ellipse cx="${cx}" cy="${cy}" rx="14" ry="17" fill="#4bf0ff" opacity=".4" filter="url(#${opt.blur})"/>` : '';
+    const lashW = opt.fem ? 4 : 3.4;
+    const L = (x, y) => (cx + o * x).toFixed(1) + ' ' + (cy + y).toFixed(1);
+    const lash = `<path d="M${L(12, -4)}Q${L(8, -15)} ${L(-2, -15)}Q${L(-10, -14.4)} ${L(-12.4, -5)}" fill="none" stroke="${INK}" stroke-width="${lashW}" stroke-linecap="round" stroke-linejoin="round"/>` +
+      `<path d="M${L(12, -4)}L${L(16, -7.5)}" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>` +
+      (opt.fem ? `<path d="M${L(10, -9)}L${L(14.6, -12)}M${L(5.5, -12.6)}L${L(8.5, -16.6)}" stroke="${INK}" stroke-width="1.8" stroke-linecap="round"/>` : '');
+    return `<g transform="translate(${cx} ${cy}) scale(1.13) translate(${-cx} ${-cy})">${glow}${ctx.clip(eyeD, inner)}${lidLine}${opt.lid != null ? '' : lash}</g>`;
+  }
+
+  function eyeClosed(cx, cy, o, shape, fem){
+    const L = (x, y) => (cx + o * x).toFixed(1) + ' ' + (cy + y).toFixed(1);
+    const w = fem ? 4 : 3.6;
+    const wrap = x => `<g transform="translate(${cx} ${cy}) scale(1.13) translate(${-cx} ${-cy})">${x}</g>`;
+    if (shape === 'up') return wrap(`<path d="M${L(-10, 4)}Q${cx} ${cy - 9} ${L(10, 4)}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round"/><path d="M${L(10, 4)}L${L(13.5, 1)}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`);
+    return wrap(`<path d="M${L(-10, -1)}Q${cx} ${cy + 8} ${L(10, -1)}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-linecap="round"/><path d="M${L(10, -1)}L${L(13.5, 2)}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>`);
+  }
+
+  function faceParts(b, ctx, skinT, hairColor){
+    const mood = b.rosto, fem = b.base === 'fem';
+    const iris = mood === 'estrela' ? '#f2b53c' : mood === 'neon' ? '#33dcef' : (EYE_COLOR[b.cabeloCor] || '#7a5cf0');
+    const blur = ctx.id('bl');
+    if (mood === 'neon') ctx.defs.push(`<filter id="${blur}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.4"/></filter>`);
+    const brow = mix(hairColor, '#1d1030', .45);
+    const browP = (d, w) => `<path d="${d}" fill="none" stroke="${brow}" stroke-width="${w || 2.8}" stroke-linecap="round"/>`;
+    const lx = 98, rx = 142, cy = 108;
+    const O = { fem, blur, skin: skinT.base };
+    let eyes = '', brows = '', mouth = '', extra = '';
+
+    if (mood === 'serio') {
+      eyes = eyeOpen(ctx, lx, cy, -1, iris, Object.assign({ lid: -2 }, O)) + eyeOpen(ctx, rx, cy, 1, iris, Object.assign({ lid: -2 }, O));
+      brows = browP(`M${lx - 10} ${cy - 20}L${lx + 9} ${cy - 14}`) + browP(`M${rx - 9} ${cy - 14}L${rx + 10} ${cy - 20}`);
+      mouth = `<path d="M113 137Q120 135 127 137" fill="none" stroke="#8c3d57" stroke-width="3" stroke-linecap="round"/>`;
+    } else if (mood === 'piscada') {
+      eyes = eyeOpen(ctx, lx, cy, -1, iris, O) + eyeClosed(rx, cy + 2, 1, 'up', fem);
+      brows = browP(`M${lx - 9} ${cy - 18}Q${lx} ${cy - 23} ${lx + 9} ${cy - 19}`) + browP(`M${rx - 9} ${cy - 17}Q${rx} ${cy - 20} ${rx + 9} ${cy - 17}`);
+      extra = `<path d="M160 90L162 96L168 98L162 100L160 106L158 100L152 98L158 96Z" fill="#fff" opacity=".95"/>`;
+      mouth = `<path d="M110 133Q120 143 130 133" fill="none" stroke="#8c3d57" stroke-width="3" stroke-linecap="round"/><path d="M119 139Q122 149 127 139Z" fill="#f58fa4" stroke="#9c3d58" stroke-width="1.6" stroke-linejoin="round"/>`;
+    } else if (mood === 'sono') {
+      eyes = eyeClosed(lx, cy + 1, -1, 'down', fem) + eyeClosed(rx, cy + 1, 1, 'down', fem);
+      brows = browP(`M${lx - 9} ${cy - 15}Q${lx} ${cy - 18} ${lx + 9} ${cy - 15}`, 2.4) + browP(`M${rx - 9} ${cy - 15}Q${rx} ${cy - 18} ${rx + 9} ${cy - 15}`, 2.4);
+      mouth = `<ellipse cx="120" cy="136" rx="3.6" ry="4.4" fill="#8a3350" stroke="#5e2038" stroke-width="1.6"/>`;
+      extra = `<circle cx="133" cy="129" r="5" fill="#d8f2ff" fill-opacity=".55" stroke="#9ed6f2" stroke-width="1.4"/><path d="M170 62h9l-9 10h9M182 48h6l-6 7h6" fill="none" stroke="#e9dcff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    } else {
+      const op = { star: mood === 'estrela', neon: mood === 'neon' };
+      eyes = eyeOpen(ctx, lx, cy, -1, iris, Object.assign(op, O)) + eyeOpen(ctx, rx, cy, 1, iris, Object.assign({}, op, O));
+      brows = browP(`M${lx - 9} ${cy - 18}Q${lx} ${cy - 23} ${lx + 9} ${cy - 19}`) + browP(`M${rx - 9} ${cy - 19}Q${rx} ${cy - 23} ${rx + 9} ${cy - 18}`);
+      if (mood === 'neon') {
+        mouth = `<path d="M111 134Q120 143 129 134" fill="none" stroke="#4bf0ff" stroke-width="3.2" stroke-linecap="round"/><path d="M111 134Q120 143 129 134" fill="none" stroke="#4bf0ff" stroke-width="7" stroke-linecap="round" opacity=".25"/>`;
+      } else {
+        const m = 'M109 131Q120 149 131 131Q120 136 109 131Z';
+        mouth = ctx.clip(m, `<rect x="100" y="125" width="40" height="30" fill="#7a2a46"/><ellipse cx="120" cy="143" rx="6" ry="4.4" fill="#f58fa4"/><path d="M109 131Q120 136 131 131L131 128L109 128Z" fill="#fffaf6"/>`) +
+          `<path d="${m}" fill="none" stroke="#5e2038" stroke-width="2.2" stroke-linejoin="round"/>`;
+      }
+    }
+
+    const blushC = mood === 'neon' ? '#7be9f5' : '#ff7fa0';
+    const blush = (cx) => `<ellipse cx="${cx}" cy="127" rx="9.4" ry="5" fill="${blushC}" opacity=".42"/>` +
+      `<path d="M${cx - 5} 124.4l-2.4 5M${cx} 124l-2.4 5.4M${cx + 5} 124.4l-2.4 5" stroke="${blushC}" stroke-width="1.3" stroke-linecap="round" opacity=".7"/>`;
+    const nose = `<path d="M120 120Q118.4 124.4 122 125" fill="none" stroke="${skinT.deep}" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>`;
+    return { eyes, rest: blush(86) + blush(154) + nose + brows + mouth + extra };
+  }
+
+  /* ---------------- ROUPAS ---------------- */
+  function clothing(b, ctx){
+    const c = palette('roupaCor', b.roupaCor);
+    const t = tone(c);
+    const accent = mix(c, '#ffffff', .52);
+    const dark = mix(c, '#1b1030', .42);
+    const C = (d, col, o) => ctx.cel(d, col || c, o || {});
+    const fold = (d, op) => `<path d="${d}" fill="none" stroke="${t.deep}" stroke-width="2.2" stroke-linecap="round" opacity="${op || .38}"/>`;
+    const body = 'M88 164Q101 155 120 155Q139 155 152 164L169 184L161 257Q120 271 79 257L71 184Z';
+    const slvL = 'M88 167Q74 171 68 185L56 235Q56 249 69 252Q81 254 86 240L100 195Z';
+    const slvS = 'M88 167Q74 171 68 185L60 214Q76 223 94 209L100 195Z';
+    const both = d => C(d) + C(mir(d));
+    const hem = C('M77 246Q120 259 163 246L161 259Q120 272 79 259Z', dark, { sw: 2.4, sh: 2.5 });
+    const cuffsW = C('M57 230Q55 248 69 252Q81 254 86 240L83 231Q71 238 57 230Z', '#ffffff', { sw: 2.4, sh: 2 }) + C(mir('M57 230Q55 248 69 252Q81 254 86 240L83 231Q71 238 57 230Z'), '#ffffff', { sw: 2.4, sh: 2 });
+    const cuffs = C('M57 230Q55 248 69 252Q81 254 86 240L83 231Q71 238 57 230Z', dark, { sw: 2.4, sh: 2 }) + C(mir('M57 230Q55 248 69 252Q81 254 86 240L83 231Q71 238 57 230Z'), dark, { sw: 2.4, sh: 2 });
 
     if (b.roupa === 'camiseta') {
-      return `${base}${sleeves}<path d="M105 160Q120 177 135 160" fill="none" stroke="${dark}" stroke-width="7" stroke-linecap="round"/><path d="M120 194L125 202L133 204L125 210L123 219L117 212L108 210L115 204Z" fill="${accent}" opacity=".95"/><path d="M98 232Q120 238 142 232" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"/>${hem}`;
+      return both(slvS) + C(body) +
+        C('M104 160Q120 180 136 160L132 158Q120 170 108 158Z', dark, { sw: 2.4, sh: 2 }) +
+        `<path d="M120 192L125 201L134 203L127 209L128 218L120 213L112 218L113 209L106 203L115 201Z" fill="${accent}" stroke="${t.line}" stroke-width="1.6" stroke-linejoin="round"/>` +
+        fold('M96 214Q104 226 100 244') + fold('M144 214Q136 226 140 244') +
+        C('M60 212Q76 221 94 209L92 203Q76 214 62 205Z', dark, { sw: 2, sh: 1.4, light: false }) + C(mir('M60 212Q76 221 94 209L92 203Q76 214 62 205Z'), dark, { sw: 2, sh: 1.4, light: false }) +
+        hem;
     }
     if (b.roupa === 'social') {
-      return `${base}${sleeves}<path d="M103 159L120 181L137 159L130 194L120 202L110 194Z" fill="#f5eee8" stroke="${OUTLINE}" stroke-width="3"/><path d="M117 181L123 181L127 211L120 220L113 211Z" fill="#b94c61" stroke="#743346" stroke-width="2"/><path d="M120 188L124 212" stroke="#f9c3ce" stroke-width="2"/><circle cx="120" cy="231" r="3" fill="${accent}"/>${hem}`;
+      const white = mix(c, '#ffffff', .8);
+      return C(slvL, white) + C(mir(slvL), white) + C(body, white) + cuffsW +
+        C('M100 158L120 184L140 158L134 198L120 206L106 198Z', '#ffffff', { sw: 2.4, sh: 3 }) +
+        C('M116 183L124 183L128 213L120 223L112 213Z', mix(c, '#1b1030', .12), { sw: 1.8, sh: 2.4 }) +
+        `<path d="M112 190L128 194M112 199L128 203" stroke="${accent}" stroke-width="1.6" opacity=".7"/>` +
+        `<circle cx="120" cy="238" r="2.6" fill="${accent}" stroke="${t.line}" stroke-width="1"/><circle cx="120" cy="226" r="2.6" fill="${accent}" stroke="${t.line}" stroke-width="1"/>` +
+        fold('M92 216Q100 230 96 246', .25) + fold('M148 216Q140 230 144 246', .25);
     }
     if (b.roupa === 'vestido') {
-      return `<path d="M91 164Q105 155 120 155Q135 155 149 164L159 208Q171 230 178 265Q120 285 62 265Q69 230 81 208Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M103 159Q120 178 137 159" fill="none" stroke="${dark}" stroke-width="7" stroke-linecap="round"/><path d="M83 231Q120 246 157 231M76 253Q120 270 164 253" fill="none" stroke="${accent}" stroke-opacity=".6" stroke-width="4" stroke-linecap="round"/><path d="M120 188L126 196L120 204L114 196Z" fill="${accent}"/>`;
+      const dress = 'M91 164Q105 155 120 155Q135 155 149 164L159 208Q171 230 178 265Q120 287 62 265Q69 230 81 208Z';
+      return C(dress) +
+        C('M103 158Q120 182 137 158L132 156Q120 172 108 156Z', dark, { sw: 2.2, sh: 2 }) +
+        C('M85 214Q120 230 155 214L158 226Q120 244 82 226Z', accent, { sw: 2.2, sh: 2.4 }) +
+        `<path d="M70 262Q120 282 170 262" fill="none" stroke="${accent}" stroke-width="3.4" stroke-linecap="round" opacity=".7"/>` +
+        C('M120 186L126 194L120 202L114 194Z', accent, { sw: 1.8, sh: 1.4 }) +
+        fold('M100 232Q96 250 90 266') + fold('M140 232Q144 250 150 266') + fold('M120 236L120 270', .25);
     }
     if (b.roupa === 'jaqueta') {
-      return `<path d="M91 164Q120 154 149 164L165 249Q120 265 75 249Z" fill="#282638" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M88 166Q73 172 67 188L56 234Q56 250 70 252Q81 252 87 240L99 194Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5"/><path d="M152 166Q167 172 173 188L184 234Q184 250 170 252Q159 252 153 240L141 194Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="5"/><path d="M91 166L105 171L116 254L91 250Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="4"/><path d="M149 166L135 171L124 254L149 250Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="4"/><path d="M120 174L120 249" stroke="${accent}" stroke-width="3" stroke-linecap="round"/><path d="M82 208L96 211M158 208L144 211" stroke="${accent}" stroke-width="4" stroke-linecap="round"/><path d="M90 232L102 235M150 232L138 235" stroke="#ffffff" stroke-opacity=".32" stroke-width="3"/>`;
+      const inner = '#2a2840';
+      return C('M91 164Q120 154 149 164L165 249Q120 265 75 249Z', inner, { sw: 3 }) +
+        C(slvL) + C(mir(slvL)) +
+        C('M91 166L105 171L116 254L91 250Z') + C(mir('M91 166L105 171L116 254L91 250Z')) +
+        C('M95 160L108 176L100 174Z M145 160L132 176L140 174Z', accent, { sw: 2, sh: 1.2 }) +
+        `<path d="M120 176L120 252" stroke="${accent}" stroke-width="2.6" stroke-linecap="round"/><path d="M118 176h4v6h-4z" fill="#fff" stroke="${t.line}" stroke-width="1"/>` +
+        `<path d="M82 207L97 211M158 207L143 211" stroke="${accent}" stroke-width="3.4" stroke-linecap="round"/>` +
+        C('M57 230Q55 248 69 252Q81 254 86 240L83 231Q71 238 57 230Z', inner, { sw: 2.4, sh: 2 }) + C(mir('M57 230Q55 248 69 252Q81 254 86 240L83 231Q71 238 57 230Z'), inner, { sw: 2.4, sh: 2 }) +
+        fold('M99 216Q96 232 102 246') + fold('M141 216Q144 232 138 246');
     }
     if (b.roupa === 'armadura') {
-      return `<path d="M92 164Q120 151 148 164L167 250Q120 269 73 250Z" fill="${fill}" stroke="${OUTLINE}" stroke-width="6" stroke-linejoin="round"/><path d="M88 171L69 178L58 203L82 212L101 188ZM152 171L171 178L182 203L158 212L139 188Z" fill="${accent}" stroke="${OUTLINE}" stroke-width="5"/><path d="M120 178L143 195L135 235L120 248L105 235L97 195Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="4"/><path d="M120 190L132 202L120 219L108 202Z" fill="#6be0ef" stroke="#e6fbff" stroke-width="3"/><path d="M87 228L105 236M153 228L135 236" stroke="${accent}" stroke-width="5" stroke-linecap="round"/><path d="M94 251L146 251" stroke="#ffffff" stroke-opacity=".28" stroke-width="4"/>`;
+      const metal = c;
+      return C('M92 164Q120 151 148 164L167 250Q120 269 73 250Z', mix(c, '#2a2840', .45), { sw: 3.4 }) +
+        C('M88 171L69 178L58 203L82 212L101 188Z', metal, { sw: 3 }) + C(mir('M88 171L69 178L58 203L82 212L101 188Z'), metal, { sw: 3 }) +
+        C('M120 178L143 195L135 235L120 248L105 235L97 195Z', dark, { sw: 2.6 }) +
+        `<path d="M120 190L132 202L120 219L108 202Z" fill="#6be0ef" stroke="#e6fbff" stroke-width="2"/><path d="M120 190L132 202L120 219L108 202Z" fill="#6be0ef" opacity=".5" filter="url(#${ctx.glow})"/>` +
+        `<path d="M114 198L119 195" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".9"/>` +
+        C('M85 226L105 236L101 244L82 236Z', accent, { sw: 2, sh: 1.6 }) + C(mir('M85 226L105 236L101 244L82 236Z'), accent, { sw: 2, sh: 1.6 }) +
+        `<path d="M94 251L146 251" stroke="${accent}" stroke-width="3" opacity=".6"/>`;
     }
-    // Moletom: capuz, bolso canguru e cordões dão leitura própria sem ficar chapado.
-    return `${sleeves}${base}<path d="M99 163Q120 194 141 163L136 185Q120 199 104 185Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="3"/><path d="M104 184L101 198M136 184L139 198" stroke="#f4d9ff" stroke-width="3" stroke-linecap="round"/><path d="M91 220Q120 211 149 220L145 244Q120 252 95 244Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="3"/><path d="M99 224Q120 218 141 224" fill="none" stroke="${accent}" stroke-width="3" stroke-linecap="round"/><path d="M90 174Q79 184 76 202M150 174Q161 184 164 202" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="4" stroke-linecap="round"/>${hem}`;
+    /* moletom */
+    return both(slvL) + C(body) +
+      C('M99 163Q120 196 141 163L136 186Q120 200 104 186Z', dark, { sw: 2.4, sh: 2.4 }) +
+      `<path d="M107 188L103 206M133 188L137 206" stroke="#f6e6ff" stroke-width="2.6" stroke-linecap="round"/><circle cx="103" cy="207" r="2" fill="#f6e6ff"/><circle cx="137" cy="207" r="2" fill="#f6e6ff"/>` +
+      C('M91 222Q120 212 149 222L146 246Q120 254 94 246Z', mix(c, '#1b1030', .16), { sw: 2.4, sh: 2.6 }) +
+      `<path d="M97 226Q120 219 143 226" fill="none" stroke="${accent}" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>` +
+      cuffs + hem + fold('M96 190Q86 210 92 224') + fold('M144 190Q154 210 148 224') + fold('M70 205Q64 222 66 232', .3) + fold('M170 205Q176 222 174 232', .3);
   }
 
-  function accessory(b, accessory){
+  /* ---------------- ACESSÓRIOS ---------------- */
+  function accessory(b, ctx){
     const c = palette('acessorioCor', b.acessorioCor);
-    const dark = mix(c, '#171323', .35);
+    const t = tone(c);
+    const dark = t.line;
+    const A = (d, col, o) => ctx.cel(d, col || c, Object.assign({ sw: 2.8 }, o || {}));
     switch (b.acessorio) {
-      case 'oculos':
-        return `<g class="px-glasses" fill="none" stroke="${dark}" stroke-width="5"><rect x="82" y="91" width="33" height="25" rx="10" fill="#f9e4ac" fill-opacity=".24"/><rect x="125" y="91" width="33" height="25" rx="10" fill="#f9e4ac" fill-opacity=".24"/><path d="M115 101Q120 97 125 101"/><path d="M88 96L103 96M130 96L145 96" stroke="#fff" stroke-opacity=".5" stroke-width="2"/></g>`;
-      case 'oculos_sol':
-        return `<g stroke="${dark}" stroke-width="5"><rect x="81" y="91" width="35" height="27" rx="9" fill="#293248"/><rect x="124" y="91" width="35" height="27" rx="9" fill="#293248"/><path d="M115 101L125 101" fill="none"/><path d="M88 96L101 96M131 96L145 96" stroke="#8de9f5" stroke-width="3" stroke-linecap="round"/></g>`;
+      case 'oculos': {
+        const l = 'M84 99Q84 91 94 91H106Q116 91 116 99V110Q116 121 106 121H94Q84 121 84 110Z';
+        const lens = d => `<path d="${d}" fill="#dff4ff" fill-opacity=".10"/>`;
+        return `<g class="px-glasses">${lens(l)}${lens(mir(l))}` +
+          `<path d="M90 96L100 93M92 104L106 98" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".6"/><path d="${mir('M90 96L100 93M92 104L106 98')}" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".6"/>` +
+          `<path d="${l}" fill="none" stroke="${c}" stroke-width="2.6"/><path d="${mir(l)}" fill="none" stroke="${c}" stroke-width="2.6"/>` +
+          `<path d="${l}" fill="none" stroke="${dark}" stroke-width="1.2" opacity=".7"/><path d="${mir(l)}" fill="none" stroke="${dark}" stroke-width="1.2" opacity=".7"/>` +
+          `<path d="M117 99Q120 95 123 99" fill="none" stroke="${c}" stroke-width="3"/><path d="M83 100L74 96M157 100L166 96" stroke="${c}" stroke-width="3" stroke-linecap="round"/></g>`;
+      }
+      case 'oculos_sol': {
+        const l = 'M82 95Q82 90 90 90H108Q117 90 117 97V108Q117 120 106 120H93Q82 120 82 108Z';
+        const lens = d => `<path d="${d}" fill="#222a44" stroke="${dark}" stroke-width="3.4" stroke-linejoin="round"/>`;
+        return `<g>${lens(l)}${lens(mir(l))}<path d="M117 98L123 98" stroke="${dark}" stroke-width="3.4"/>` +
+          `<path d="M89 97L101 94M91 104L99 101" stroke="#8de9f5" stroke-width="2.6" stroke-linecap="round" opacity=".85"/><path d="${mir('M89 97L101 94M91 104L99 101')}" stroke="#8de9f5" stroke-width="2.6" stroke-linecap="round" opacity=".85"/>` +
+          `<path d="M82 98L74 96M158 98L166 96" stroke="${dark}" stroke-width="3" stroke-linecap="round"/></g>`;
+      }
       case 'bone':
-        return `<path d="M69 78Q74 31 120 31Q166 31 171 78L164 86Q120 70 76 86Z" fill="${c}" stroke="${OUTLINE}" stroke-width="5"/><path d="M118 32Q123 50 121 70" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="5"/><path d="M119 77Q147 69 174 82Q169 96 146 95L119 91Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="4"/>`;
-      case 'headset':
-        return `<path d="M67 104V82Q67 28 120 28Q173 28 173 82V104" fill="none" stroke="${dark}" stroke-width="12" stroke-linecap="round"/><rect x="58" y="86" width="21" height="42" rx="9" fill="${c}" stroke="${OUTLINE}" stroke-width="4"/><rect x="161" y="86" width="21" height="42" rx="9" fill="${c}" stroke="${OUTLINE}" stroke-width="4"/><path d="M166 121Q178 130 162 140" fill="none" stroke="${c}" stroke-width="5" stroke-linecap="round"/>`;
-      case 'orelhas':
-        return `<path d="M78 64Q55 16 48 13Q39 49 69 82ZM162 64Q185 16 192 13Q201 49 171 82Z" fill="${c}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M62 52L53 28L73 60M178 52L187 28L167 60" fill="none" stroke="#f7b3d8" stroke-width="5" stroke-linecap="round"/>`;
-      case 'laco':
-        return `<path d="M147 66Q130 43 117 55Q106 70 129 82L147 73L165 82Q188 69 176 55Q162 42 147 66Z" fill="${c}" stroke="${OUTLINE}" stroke-width="4"/><circle cx="147" cy="70" r="7" fill="${dark}" stroke="${OUTLINE}" stroke-width="3"/>`;
+        return A('M67 84C64 40 92 24 120 24C148 24 176 40 173 84Q120 70 67 84Z') +
+          `<path d="M104 28Q110 50 108 74M136 28Q130 50 132 74" fill="none" stroke="${t.deep}" stroke-width="1.8" opacity=".4"/>` +
+          `<circle cx="120" cy="25" r="4" fill="${t.light}" stroke="${dark}" stroke-width="2"/>` +
+          A('M118 78Q150 68 182 84Q176 100 148 99L118 91Z', mix(c, '#1b1030', .22), { sw: 2.8 }) +
+          `<path d="M92 50Q100 40 114 37" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".5"/>`;
+      case 'headset': {
+        const pad = 'M58 88Q58 82 66 82H72Q79 82 79 90V120Q79 128 72 128H66Q58 128 58 120Z';
+        return `<path d="M68 104V82Q68 28 120 28Q172 28 172 82V104" fill="none" stroke="${dark}" stroke-width="12.5" stroke-linecap="round"/>` +
+          `<path d="M68 104V82Q68 28 120 28Q172 28 172 82V104" fill="none" stroke="${mix(c, '#2a2840', .5)}" stroke-width="8.5" stroke-linecap="round"/>` +
+          `<path d="M76 70Q82 40 112 33" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".45"/>` +
+          A(pad) + A(mir(pad)) +
+          `<path d="M63 92V116M177 92V116" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".5"/>` +
+          `<path d="M172 124Q178 138 156 142" fill="none" stroke="${dark}" stroke-width="5.4" stroke-linecap="round"/><path d="M172 124Q178 138 156 142" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/>` +
+          `<ellipse cx="154" cy="142" rx="5.6" ry="4" fill="${c}" stroke="${dark}" stroke-width="2.2"/>`;
+      }
+      case 'orelhas': {
+        const ear = 'M76 70C66 50 66 30 72 14C88 20 102 34 110 54Z';
+        const inn = 'M80 58C75 46 75 34 78 26C87 31 95 39 100 50Z';
+        return A(ear) + A(mir(ear)) +
+          `<path d="${inn}" fill="#f7a9d0" stroke="${dark}" stroke-width="1.6" stroke-linejoin="round"/><path d="${mir(inn)}" fill="#f7a9d0" stroke="${dark}" stroke-width="1.6" stroke-linejoin="round"/>`;
+      }
+      case 'laco': {
+        const loop = 'M146 70C132 46 114 52 114 68C114 80 132 84 146 74Z';
+        const loopR = 'M146 70C160 46 178 52 178 68C178 80 160 84 146 74Z';
+        return A(loop) + A(loopR) +
+          `<circle cx="146" cy="72" r="7" fill="${t.light}" stroke="${dark}" stroke-width="2.4"/>`;
+      }
       case 'microfone':
-        return `<g class="px-mic"><path d="M160 225L179 204L190 215L171 239Z" fill="#343044" stroke="${OUTLINE}" stroke-width="4"/><rect x="174" y="184" width="19" height="32" rx="9" transform="rotate(42 183 200)" fill="${c}" stroke="${OUTLINE}" stroke-width="4"/><path d="M178 187L192 200" stroke="#fff" stroke-opacity=".55" stroke-width="3"/></g>`;
+        return `<g class="px-mic" transform="rotate(24 180 220)">` +
+          A('M175 214H185L187 246Q180 250 173 246Z', '#3a3550', { sw: 2.8, sh: 2.4 }) +
+          `<circle cx="180" cy="204" r="12.5" fill="#222030" stroke="${dark}" stroke-width="3"/>` +
+          A('M168 204A12 12 0 0 1 192 204A12 12 0 0 1 168 204Z', c, { sw: 3, sh: 3.6 }) +
+          `<path d="M170 200Q180 195 190 200M169.5 205Q180 201 190.5 205M171 210Q180 207 189 210" fill="none" stroke="${dark}" stroke-width="1.2" opacity=".55"/>` +
+          `<path d="M174 198Q177 194 182 193" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".7"/>` +
+          `<rect x="174" y="213" width="12" height="4" rx="1.5" fill="${t.light}" stroke="${dark}" stroke-width="1.6"/></g>`;
       case 'gatinho':
-        return `<g class="px-pet"><path d="M177 269Q174 248 189 242Q205 244 207 262L204 284L179 284Z" fill="#e6e0ed" stroke="${OUTLINE}" stroke-width="4"/><path d="M179 251L179 239L189 247M197 246L207 238L205 253" fill="#e6e0ed" stroke="${OUTLINE}" stroke-width="4" stroke-linejoin="round"/><circle cx="187" cy="261" r="2.7" fill="#332744"/><circle cx="198" cy="261" r="2.7" fill="#332744"/><path d="M191 267L194 269L197 267" fill="none" stroke="#c46d88" stroke-width="2.5"/></g>`;
+        return `<g class="px-pet">` + A('M177 269Q174 247 189 241Q206 243 208 262L205 285L178 285Z', '#ece6f2', { sw: 2.8 }) +
+          A('M179 251L178 237L190 246ZM197 246L208 237L206 253Z', '#ece6f2', { sw: 2.4, sh: 1.5 }) +
+          `<circle cx="187" cy="261" r="2.8" fill="${INK}"/><circle cx="198" cy="261" r="2.8" fill="${INK}"/><circle cx="188" cy="260" r="1" fill="#fff"/><circle cx="199" cy="260" r="1" fill="#fff"/>` +
+          `<path d="M191 267L193.5 269.4L196 267" fill="none" stroke="#c46d88" stroke-width="2.2" stroke-linecap="round"/></g>`;
       case 'halo':
-        return `<ellipse cx="120" cy="18" rx="35" ry="9" fill="none" stroke="${c}" stroke-width="6"/><ellipse cx="120" cy="18" rx="35" ry="9" fill="none" stroke="#fff" stroke-opacity=".58" stroke-width="2"/>`;
+        return `<ellipse cx="120" cy="18" rx="35" ry="9" fill="none" stroke="${c}" stroke-opacity=".3" stroke-width="12" filter="url(#${ctx.glow})"/>` +
+          `<ellipse cx="120" cy="18" rx="35" ry="9" fill="none" stroke="${dark}" stroke-width="8"/><ellipse cx="120" cy="18" rx="35" ry="9" fill="none" stroke="${c}" stroke-width="5.4"/><ellipse cx="120" cy="18" rx="35" ry="9" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.8" transform="translate(0 -1)"/>`;
       case 'coroa':
-        return `<path d="M83 55L88 25L108 42L120 17L133 42L153 25L158 57Z" fill="${c}" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/><path d="M89 58H153L149 69H93Z" fill="${dark}" stroke="${OUTLINE}" stroke-width="4"/><circle cx="120" cy="43" r="5" fill="#f8f2ff"/>`;
+        return A('M83 56L87 24L108 42L120 15L133 42L153 24L157 58Z') +
+          A('M88 58H152L149 70H91Z', mix(c, '#1b1030', .25), { sw: 2.6, sh: 2.4 }) +
+          `<circle cx="120" cy="45" r="5" fill="#f8f2ff" stroke="${dark}" stroke-width="2"/><circle cx="98" cy="64" r="2.6" fill="#7be9f5"/><circle cx="142" cy="64" r="2.6" fill="#ff8fc8"/><circle cx="120" cy="64" r="2.6" fill="#f8f2ff"/>`;
       default: return '';
     }
   }
@@ -206,106 +494,85 @@
     return `<rect class="px-frame" x="8" y="8" width="224" height="344" rx="28" fill="none" stroke="${c}" stroke-opacity=".52" stroke-width="2" stroke-dasharray="8 12"/>`;
   }
 
+  /* ---------------- MONTAGEM ---------------- */
   function renderSVG(input, options = {}){
     const b = normalizar(input);
     const mini = options.mini === true;
     const animate = options.animar !== false && !mini;
     const n = ++instance;
+    const ctx = makeCtx(n);
+    ctx.glow = ctx.id('gl');
     const id = key => `av${n}-${key}`;
-    const skin = id('skin'), hair = id('hair'), cloth = id('cloth'), pants = id('pants'), shoes = id('shoes');
+
     const skinColor = palette('pele', b.pele);
     const hairColor = palette('cabeloCor', b.cabeloCor);
-    const clothColor = palette('roupaCor', b.roupaCor);
     const shoeColor = palette('calcadoCor', b.calcadoCor);
-    const pantsColor = '#333449';
-    const faceMood = b.rosto;
+    const skinT = tone(skinColor, 'skin');
+    const S = (d, o) => ctx.cel(d, skinColor, Object.assign({ kind: 'skin', sw: 3 }, o || {}));
 
-    const hairBackSvg = hairBack(b, hair);
-    const hairFrontSvg = hairFront(b, hair);
-    const clothesSvg = clothing(b, cloth);
-    const accessorySvg = accessory(b);
+    const hair = hairParts(b, ctx);
+    const face = faceParts(b, ctx, skinT, hairColor);
+    const clothesSvg = clothing(b, ctx);
+    const accessorySvg = accessory(b, ctx);
     const effectsSvg = mini ? '' : effect(b);
     const framesSvg = mini ? '' : frame(b);
 
-    let eyes = '';
-    if (faceMood === 'serio') {
-      eyes = `<path d="M91 99L107 102M133 102L149 99" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><path d="M95 108L105 108M135 108L145 108" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>`;
-    } else if (faceMood === 'piscada') {
-      eyes = `<path d="M91 108Q99 102 107 108M135 108Q143 101 151 106" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/><ellipse cx="100" cy="101" rx="4" ry="5" fill="#fff"/><path d="M91 97L86 93" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
-    } else if (faceMood === 'sono') {
-      eyes = `<path d="M91 108Q99 112 107 108M135 108Q143 112 151 108" fill="none" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`;
-    } else if (faceMood === 'estrela') {
-      eyes = `<path d="M99 94L103 102L112 103L105 109L107 118L99 113L91 118L93 109L86 103L95 102Z M141 94L145 102L154 103L147 109L149 118L141 113L133 118L135 109L128 103L137 102Z" fill="#f5c86a" stroke="#9f6b3b" stroke-width="2"/>`;
-    } else if (faceMood === 'neon') {
-      eyes = `<path d="M90 101Q99 94 108 101L106 112Q99 118 92 112ZM132 101Q141 94 150 101L148 112Q141 118 134 112Z" fill="#54ddec" stroke="#286f90" stroke-width="3"/><circle cx="99" cy="104" r="3" fill="#fff"/><circle cx="141" cy="104" r="3" fill="#fff"/>`;
-    } else {
-      eyes = `<ellipse cx="99" cy="106" rx="5.2" ry="7" fill="${INK}"/><ellipse cx="141" cy="106" rx="5.2" ry="7" fill="${INK}"/><circle cx="101" cy="103" r="2" fill="#fff"/><circle cx="143" cy="103" r="2" fill="#fff"/>`;
-    }
-
-    let mouth = '<path d="M111 132Q120 140 129 132" fill="none" stroke="#9a5260" stroke-width="4" stroke-linecap="round"/>';
-    if (faceMood === 'serio') mouth = '<path d="M113 135H127" stroke="#9a5260" stroke-width="4" stroke-linecap="round"/>';
-    if (faceMood === 'sono') mouth = '<ellipse cx="120" cy="135" rx="4" ry="5" fill="#9a5260"/>';
-    if (faceMood === 'neon') mouth = '<path d="M112 133Q120 139 128 133" fill="none" stroke="#4bd9ed" stroke-width="3.5" stroke-linecap="round"/>';
-
-    const bodyTransform = b.base === 'fem'
-      ? 'translate(120 0) scale(.93 1) translate(-120 0)'
-      : '';
-
+    /* ---- corpo ---- */
+    const armL = 'M84 171Q68 179 66 199L57 236Q54 251 68 255Q81 258 87 242L101 197Z';
+    const handL = 'M62 243C57 252 60 262 70 262C80 262 87 254 87 244C82 238 70 236 62 243Z';
+    const hands = S(handL, { sw: 2.6, sh: 2.6 }) + S(mir(handL), { sw: 2.6, sh: 2.6 }) +
+      `<path d="M66 255L69 259M72 256L74 260" stroke="${skinT.deep}" stroke-width="1.2" stroke-linecap="round" opacity=".6"/><path d="${mir('M66 255L69 259M72 256L74 260')}" stroke="${skinT.deep}" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>`;
+    const bodyTransform = b.base === 'fem' ? 'translate(120 0) scale(.93 1) translate(-120 0)' : '';
+    const neckShadow = `<ellipse cx="120" cy="148" rx="19" ry="13" fill="${skinT.deep}" opacity=".55"/>`;
     const bodySvg = `
       <g class="px-body px-breath" transform="${bodyTransform}">
-        <path d="M105 144L104 169Q120 181 136 169L135 144Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
-        <path d="M84 171Q68 179 66 199L57 236Q54 251 68 255Q81 258 87 242L101 197Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M156 171Q172 179 174 199L183 236Q186 251 172 255Q159 258 153 242L139 197Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M62 241Q70 247 80 242M160 242Q170 247 178 241" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="3" stroke-linecap="round"/>
-        <path d="M91 164Q120 153 149 164L169 250Q120 269 71 250Z" fill="#29263b" opacity=".14"/>
+        ${S(NECK, { sw: 2.8 })}
+        ${ctx.clip(NECK, neckShadow)}
+        ${S(armL)}${S(mir(armL))}
         ${clothesSvg}
-        <path d="M69 247Q76 254 83 248M157 248Q164 254 171 247" fill="none" stroke="${OUTLINE}" stroke-width="3"/>
-        <path d="M68 244Q71 252 80 251Q86 250 87 243M153 243Q154 250 160 251Q169 252 172 244" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
+        ${hands}
       </g>`;
 
-    const legsSvg = `
-      <g class="px-legs">
-        <path d="M84 250Q101 258 117 256L115 316Q111 326 96 326Q83 325 83 315Z" fill="url(#${pants})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M123 256Q140 258 156 250L157 315Q157 326 143 326Q128 326 125 316Z" fill="url(#${pants})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M101 264L98 310M143 264L145 310" stroke="#ffffff" stroke-opacity=".13" stroke-width="4" stroke-linecap="round"/>
-        <path d="M119 264L120 317" stroke="#181625" stroke-opacity=".55" stroke-width="4"/>
-      </g>`;
+    /* ---- pernas e calçados ---- */
+    const pantsC = '#3a3a55';
+    const legL = 'M84 250Q101 258 117 256L115 316Q111 326 96 326Q83 325 83 315Z';
+    const legsSvg = `<g class="px-legs">${ctx.cel(legL, pantsC, { sw: 3 })}${ctx.cel(mir(legL), pantsC, { sw: 3 })}
+        <path d="M100 268L98 308" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".12"/><path d="M143 268L145 308" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".12"/></g>`;
 
+    const sole = '#fff8f2';
+    const SH = (d, col, o) => ctx.cel(d, col, Object.assign({ sw: 2.8, sh: 3 }, o || {}));
     let shoesSvg = '';
-    let shoesExtra = '';
     if (b.calcado === 'chinelo') {
-      shoesSvg = `<g class="px-shoes">
-        <path d="M88 311Q98 316 111 312L114 332Q110 340 95 340Q81 339 80 330Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
-        <path d="M129 312Q142 316 152 311L160 330Q159 339 145 340Q130 340 126 332Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
-        <path d="M78 331Q95 336 114 331M126 331Q145 336 164 331" fill="none" stroke="${shoeColor}" stroke-width="7" stroke-linecap="round"/>
-        <path d="M91 315L98 331L105 316M137 316L144 331L151 315" fill="none" stroke="${OUTLINE}" stroke-width="4" stroke-linecap="round"/>
-      </g>`;
+      const foot = 'M88 311Q98 316 111 312L114 332Q110 341 95 341Q81 340 80 330Z';
+      shoesSvg = `<g class="px-shoes">${S(foot, { sw: 2.8 })}${S(mir(foot), { sw: 2.8 })}
+        <path d="M78 332Q95 337 114 332M126 332Q145 337 164 332" fill="none" stroke="${mix(shoeColor,'#1b1030',.35)}" stroke-width="9" stroke-linecap="round"/>
+        <path d="M78 332Q95 337 114 332M126 332Q145 337 164 332" fill="none" stroke="${shoeColor}" stroke-width="6" stroke-linecap="round"/>
+        <path d="M91 315L98 331L105 316M137 316L144 331L151 315" fill="none" stroke="${mix(shoeColor,'#1b1030',.35)}" stroke-width="3.6" stroke-linecap="round"/>
+        <path d="M91 315L98 331L105 316M137 316L144 331L151 315" fill="none" stroke="${shoeColor}" stroke-width="1.8" stroke-linecap="round"/></g>`;
     } else if (b.calcado === 'botas' || b.calcado === 'botas_cyber') {
-      shoesSvg = `<g class="px-shoes">
-        <path d="M84 292Q100 297 115 292L117 328Q113 342 95 342H76Q70 337 75 326Z" fill="url(#${shoes})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M125 292Q140 297 156 292L165 326Q170 337 164 342H145Q127 342 123 328Z" fill="url(#${shoes})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M84 301H112M130 301H158" stroke="${mix(shoeColor,'#ffffff',.45)}" stroke-width="4" stroke-linecap="round"/>
-        <path d="M78 332Q96 337 114 331M129 331Q147 337 165 332" fill="none" stroke="#fff" stroke-opacity=".82" stroke-width="4" stroke-linecap="round"/>
-      </g>`;
+      const bt = 'M84 292Q100 297 115 292L117 328Q113 342 95 342H76Q70 337 75 326Z';
+      shoesSvg = `<g class="px-shoes">${SH(bt, shoeColor)}${SH(mir(bt), shoeColor)}
+        <path d="M84 302H112M128 302H156" stroke="${mix(shoeColor,'#ffffff',.5)}" stroke-width="4" stroke-linecap="round"/>
+        ${SH('M74 331Q96 336 116 330L117 336Q113 343 95 343H76Q70 339 74 331Z', sole, { sh: 1.6 })}${SH(mir('M74 331Q96 336 116 330L117 336Q113 343 95 343H76Q70 339 74 331Z'), sole, { sh: 1.6 })}</g>`;
     } else {
-      shoesSvg = `<g class="px-shoes">
-        <path d="M84 311Q96 316 114 311L116 331Q113 342 94 342H76Q70 338 75 329Z" fill="url(#${shoes})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M125 311Q144 316 156 311L165 329Q170 338 164 342H146Q127 342 124 331Z" fill="url(#${shoes})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M78 332Q96 337 114 331M129 331Q147 337 165 332" fill="none" stroke="#fff" stroke-opacity=".82" stroke-width="4" stroke-linecap="round"/>
-        <path d="M91 319L105 319M137 319L151 319" stroke="${mix(shoeColor,'#ffffff',.5)}" stroke-width="3" stroke-linecap="round"/>
-      </g>`;
+      const sn = 'M84 311Q96 316 114 311L116 331Q113 342 94 342H76Q70 338 75 329Z';
+      shoesSvg = `<g class="px-shoes">${SH(sn, shoeColor)}${SH(mir(sn), shoeColor)}
+        ${SH('M75 332Q96 337 116 331L116 335Q113 343 94 343H76Q70 339 75 332Z', sole, { sh: 1.6 })}${SH(mir('M75 332Q96 337 116 331L116 335Q113 343 94 343H76Q70 339 75 332Z'), sole, { sh: 1.6 })}
+        <path d="M90 319L106 319M96 324L109 323M134 319L150 319M131 323L144 324" stroke="${mix(shoeColor,'#ffffff',.55)}" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M80 325Q76 331 82 335" fill="none" stroke="${mix(shoeColor,'#1b1030',.3)}" stroke-width="2" opacity=".5"/></g>`;
     }
-    if (b.calcado === 'tenis_neon' || b.calcado === 'botas_cyber') shoesExtra = `<path d="M78 333Q96 338 113 332M128 332Q146 338 164 333" fill="none" stroke="#55ddec" stroke-width="3" stroke-linecap="round"/>`;
+    const shoesExtra = (b.calcado === 'tenis_neon' || b.calcado === 'botas_cyber')
+      ? `<path d="M76 335Q96 340 115 334M125 334Q145 340 165 335" fill="none" stroke="#55ddec" stroke-width="3" stroke-linecap="round" filter="url(#${ctx.glow})"/><path d="M76 335Q96 340 115 334M125 334Q145 340 165 335" fill="none" stroke="#c9fbff" stroke-width="1.6" stroke-linecap="round"/>` : '';
 
-    const face = `
+    /* ---- cabeça ---- */
+    const foreheadShadow = hair.shadowD ? ctx.clip(HEAD, `<path d="${hair.shadowD}" transform="translate(1 7)" fill="${skinT.deep}" opacity=".5"/>`) : '';
+    const headSvg = `
       <g class="px-head">
-        <path d="M76 78Q67 70 63 83Q59 101 76 111M164 78Q173 70 177 83Q181 101 164 111" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="4"/>
-        <path d="M76 69Q76 35 120 31Q164 35 164 69L161 116Q158 150 120 158Q82 150 79 116Z" fill="url(#${skin})" stroke="${OUTLINE}" stroke-width="5" stroke-linejoin="round"/>
-        <path d="M83 118Q88 141 120 148Q151 141 157 118" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="4" stroke-linecap="round"/>
-        <ellipse cx="91" cy="123" rx="10" ry="5" fill="#e98e93" opacity=".19"/><ellipse cx="149" cy="123" rx="10" ry="5" fill="#e98e93" opacity=".19"/>
-        <path d="M119 112Q116 122 121 124" fill="none" stroke="${mix(skinColor,'#7c4d42',.36)}" stroke-width="3" stroke-linecap="round"/>
-        <g class="px-eyes">${eyes}</g>
-        ${mouth}
+        ${S(EAR_L, { sw: 2.6, sh: 2 })}${S(mir(EAR_L), { sw: 2.6, sh: 2 })}
+        ${S(HEAD, { sw: 3.2, sh: 5.4, lt: 2.8 })}
+        ${foreheadShadow}
+        ${face.rest}
+        <g class="px-eyes">${face.eyes}</g>
       </g>`;
 
     const classNames = ['px-svg', 'px-avatar-25d'];
@@ -313,33 +580,28 @@
     if (!animate) classNames.push('px-static');
     if (animate) classNames.push('px-anim-' + b.animacao);
 
-    const defs = `<defs>
-      ${gradient(skin, skinColor, .22, .20)}
-      ${gradient(hair, hairColor, .38, .24)}
-      ${gradient(cloth, clothColor, .34, .25)}
-      ${gradient(pants, pantsColor, .28, .18)}
-      ${gradient(shoes, shoeColor, .28, .24)}
+    const defsStatic = `
       <radialGradient id="${id('floor')}" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#080611" stop-opacity=".65"/><stop offset="1" stop-color="#080611" stop-opacity="0"/></radialGradient>
       <filter id="${id('shadow')}" x="-30%" y="-20%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
-    </defs>`;
+      <filter id="${ctx.glow}" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3"/></filter>`;
 
     const haloPet = b.acessorio === 'gatinho' ? accessorySvg : '';
     const headAccessory = b.acessorio === 'gatinho' ? '' : accessorySvg;
     const aria = options.label || 'Avatar 2.5D personalizável';
 
     return `<svg xmlns="http://www.w3.org/2000/svg" class="${classNames.join(' ')}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax meet" role="img" aria-label="${esc(aria)}" shape-rendering="geometricPrecision" data-animacao="${b.animacao}" data-efeito="${b.efeito}" data-moldura="${b.moldura}">
-      ${defs}
+      <defs>${defsStatic}${ctx.defs.join('')}</defs>
       <g class="px-stage-art">
         ${effectsSvg}
         <ellipse cx="120" cy="342" rx="66" ry="10" fill="#080611" opacity=".38" filter="url(#${id('shadow')})"/>
-        ${hairBackSvg}
+        <g class="px-hair-back">${hair.back}</g>
         ${legsSvg}
         ${shoesSvg}
         ${shoesExtra}
         ${bodySvg}
         <g class="px-head-group">
-          ${face}
-          ${hairFrontSvg}
+          ${headSvg}
+          ${hair.front}
           ${headAccessory}
         </g>
         ${haloPet}
