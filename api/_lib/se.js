@@ -148,13 +148,20 @@ export async function rankingPontos(tipo = 'top', limit = 100, offset = 0) {
 
 // ---------- chat (mensagens, emotes, comandos) ----------
 export async function statsChat(limit = 100) {
-  const id = await canalId();
-  const d = await seGet(`/chatstats/${encodeURIComponent(id)}/stats`, { publico: true, query: { limit: Math.min(100, limit) } });
+  let d = null, ultimo = null;
+  const candidatos = [CANAL_LOGIN];
+  try { candidatos.push(await canalId()); } catch (e) { ultimo = e; }
+  for (const c of candidatos) {
+    try { d = await seGet(`/chatstats/${encodeURIComponent(c)}/stats`, { publico: true, query: { limit: Math.min(100, limit) } }); if (d) break; }
+    catch (e) { ultimo = e; }
+  }
+  if (!d) throw ultimo || erro('Não foi possível ler as estatísticas do chat.', 502, 'se_chat');
   const chatters = Array.isArray(d?.chatters) ? d.chatters : [];
+  const emotes = d?.twitchEmotes || d?.emotes || [];
   return {
     total: numero(d?.totalMessages),
     lista: chatters.map((c, i) => ({ pos: i + 1, nome: String(c.name || c.username || 'Anônimo').slice(0, 40), valor: numero(c.amount ?? c.count) })),
-    emotes: (Array.isArray(d?.twitchEmotes) ? d.twitchEmotes : []).slice(0, 10).map(e => ({ nome: String(e.emote || e.name || ''), usos: numero(e.amount) }))
+    emotes: (Array.isArray(emotes) ? emotes : []).slice(0, 10).map(e => ({ nome: String(e.emote || e.name || ''), usos: numero(e.amount) }))
   };
 }
 
@@ -174,8 +181,32 @@ async function todasGorjetas(paginas = 10) {
   return out;
 }
 
+async function doadoresPorLeaderboard() {
+  const id = await canalId();
+  let ultimo = null;
+  for (const rota of [`/tips/${encodeURIComponent(id)}/leaderboard`, `/leaderboard/${encodeURIComponent(id)}/tips`]) {
+    try {
+      const d = await seGet(rota, { publico: true, query: { limit: 100 } });
+      const rows = linhas(d);
+      if (!rows.length) continue;
+      const lista = rows.map(r => ({ nome: nomeDe(r), valor: numero(r.amount ?? r.total ?? r.tips ?? r.value ?? r.donation?.amount), doacoes: numero(r.count ?? r.donations) || 1 }))
+        .filter(x => x.valor > 0 && !NOMES_ANONIMOS.has(x.nome.toLowerCase())).sort((a, b) => b.valor - a.valor)
+        .map((x, i) => ({ pos: i + 1, nome: x.nome, valor: Math.round(x.valor * 100) / 100, doacoes: x.doacoes, maior: 0, ultima: null }));
+      if (lista.length) return { lista, totalMes: 0, totalGeral: Math.round(lista.reduce((t, x) => t + x.valor, 0) * 100) / 100, apoiadores: lista.length, doacoes: lista.length, ultimo: null, moeda: 'BRL' };
+    } catch (e) { ultimo = e; }
+  }
+  throw ultimo || erro('Sem dados de doadores no StreamElements.', 502, 'se_tips');
+}
+
 export async function rankingDoadores() {
-  const tips = await todasGorjetas();
+  let tips;
+  try { tips = await todasGorjetas(); }
+  catch (e) {
+    if (e.code === 'se_auth' || e.code === 'se_404') {
+      try { return await doadoresPorLeaderboard(); } catch (_) { /* devolve o erro original */ }
+    }
+    throw e;
+  }
   const ini = new Date(); ini.setDate(1); ini.setHours(0, 0, 0, 0);
   const porPessoa = new Map();
   let totalMes = 0, totalGeral = 0, ultimo = null, qtd = 0;

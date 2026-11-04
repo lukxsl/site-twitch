@@ -1,6 +1,6 @@
 /* ============================================================
-   RANKING UI — XP do Arcade + tudo do StreamElements
-   Abas: xp · horas · pontos · chat · doadores
+   RANKING UI — Tudo vindo do StreamElements
+   Abas: horas · pontos · chat · doadores
    ============================================================ */
 (function () {
   'use strict';
@@ -9,14 +9,13 @@
   const PAGE = 25;
 
   const MODES = {
-    xp:       { titulo: 'XP do Arcade',      desc: 'XP conquistado nas atividades do Arcade.',                 eyebrow: 'PLACAR DA COMUNIDADE', vazio: 'Ninguém pontuou no Arcade ainda.' },
     horas:    { titulo: 'Horas assistidas',  desc: 'Tempo de tela registrado pelo StreamElements.',            eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há tempo assistido registrado.' },
     pontos:   { titulo: 'Pontos do canal',   desc: 'Pontos de fidelidade acumulados no StreamElements.',       eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há pontos registrados.' },
     chat:     { titulo: 'Mais ativos no chat', desc: 'Quem mais conversa no chat do canal.',                   eyebrow: 'CHAT · STREAMELEMENTS', vazio: 'Ainda não há mensagens contabilizadas.' },
     doadores: { titulo: 'Top doadores',      desc: 'Quem mais apoiou o canal. Obrigado por tudo! 💜',          eyebrow: 'APOIADORES · STREAMELEMENTS', vazio: 'Ninguém no pódio ainda. Seja a primeira pessoa a aparecer aqui! 💜' }
   };
 
-  let mode = 'xp';
+  let mode = 'horas';
   let seq = 0;
   let shown = PAGE;
   let query = '';
@@ -48,7 +47,6 @@
 
   function valorTxt(r) {
     switch (mode) {
-      case 'xp': return `${fmt(r.valor)} XP`;
       case 'horas': return minutos(r.valor);
       case 'pontos': return fmt(r.valor);
       case 'chat': return `${fmt(r.valor)} msg`;
@@ -58,7 +56,6 @@
   }
   function subTxt(r) {
     switch (mode) {
-      case 'xp': return `Nível ${r.nivel || 1} · ${r.titulo || 'Novato'}`;
       case 'horas': return r.pos <= 3 ? 'Presença VIP' : 'Tempo de tela';
       case 'pontos': return 'Pontos do canal';
       case 'chat': return 'Mensagens no chat';
@@ -85,13 +82,6 @@
   }
 
   /* ---------- normalização por origem ---------- */
-  function normXP(data) {
-    const lista = data?.lista || [];
-    return {
-      rows: lista.map((r, i) => ({ id: r.id, pos: r.pos || i + 1, nome: r.nome || 'Jogador', avatar: r.avatar, valor: Number(r.xp) || 0, nivel: r.nivel, titulo: r.titulo })),
-      meta: { total: Number(data?.total) || lista.length }
-    };
-  }
   function normSE(data) {
     if (!data || data.ok === false) {
       const e = new Error(data?.erro || 'Falha ao consultar o StreamElements.');
@@ -105,11 +95,6 @@
 
   async function requestMode(m, force) {
     const bust = force ? { _t: Date.now() } : {};
-    if (m === 'xp') {
-      const r = await api(API_GAME, 'ranking', { query: { limite: 100, ...bust } });
-      if (!r.ok) throw new Error(r.data?.error || 'Falha ao consultar o ranking do Arcade.');
-      return normXP(r.data);
-    }
     const q = new URLSearchParams({ action: 'ranking-se', modo: m, limit: '100', ...(force ? { _t: String(Date.now()) } : {}) });
     const res = await fetch('/api/config?' + q.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`Erro ao consultar o servidor (HTTP ${res.status}).`);
@@ -122,7 +107,6 @@
     const acc = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : {};
     return {
       logado: !!p,
-      id: p?.id,
       nomes: [p?.nick, p?.twitch?.login, p?.twitch?.username, p?.twitchLogin, acc.twitch?.login].filter(Boolean).map(norm),
       nick: p?.nick || 'Jogador',
       foto: acc.avatar || acc.picture || acc.google?.picture || acc.foto || p?.avatar || null,
@@ -131,7 +115,7 @@
   }
   function findMe(rows, me) {
     if (!me.logado) return null;
-    return rows.find(r => (mode === 'xp' && me.id && String(r.id) === String(me.id)) || me.nomes.includes(norm(r.nome))) || null;
+    return rows.find(r => me.nomes.includes(norm(r.nome))) || null;
   }
 
   function renderMe(rows) {
@@ -142,33 +126,26 @@
     box.replaceChildren();
 
     if (!me.logado) {
-      box.append(el('h4', 'rk-me-title', 'Sua posição'), el('p', 'rk-me-empty', 'Entre na sua conta para acompanhar seu XP, suas horas e sua posição no ranking.'));
+      box.append(el('h4', 'rk-me-title', 'Sua posição'), el('p', 'rk-me-empty', 'Entre na sua conta para acompanhar sua posição no ranking.'));
       return;
     }
-    const mine = findMe(rows, me);
+    const mine = rows ? findMe(rows, me) : null;
     const head = el('div', 'rk-me-head');
     const info = el('div'); info.style.minWidth = 0;
     info.append(el('div', 'rk-me-name', me.nick));
-    const pos = mode === 'xp' ? (me.p?.ranking?.pos || mine?.pos) : mine?.pos;
-    info.append(el('div', 'rk-me-pos', pos ? `#${pos} · ${MODES[mode].titulo}` : `Fora do top ${rows.length || 100}`));
+    info.append(el('div', 'rk-me-pos', !rows ? MODES[mode].titulo : mine ? `#${mine.pos} · ${MODES[mode].titulo}` : `Fora do top ${rows.length || 100}`));
     head.append(avatar({ nome: me.nick, avatar: me.foto }), info);
     box.append(head);
+    if (!rows) return;
 
     const lines = el('div', 'rk-me-lines');
     const line = (a, b) => { const l = el('div', 'rk-me-line'); l.append(el('span', null, a), el('b', null, b)); lines.append(l); };
-    if (mode === 'xp') {
-      line('Nível', String(me.p?.nivel || 1));
-      line('XP', fmt(me.p?.xp));
-      line('SosoCoins', fmt(me.p?.coins));
-    } else if (mine) {
+    if (mine) {
       line(MODES[mode].titulo, valorTxt(mine));
-      if (rows[0] && mine.pos > 1) {
-        const diff = rows[mine.pos - 2];
-        if (diff) line('Para subir', mode === 'horas' ? minutos(diff.valor - mine.valor) : mode === 'doadores' ? brl(diff.valor - mine.valor) : fmt(diff.valor - mine.valor));
-      }
+      const acima = mine.pos > 1 ? rows[mine.pos - 2] : null;
+      if (acima) line('Para subir', mode === 'horas' ? minutos(acima.valor - mine.valor) : mode === 'doadores' ? brl(acima.valor - mine.valor) : fmt(acima.valor - mine.valor));
     } else {
-      const p = el('p', 'rk-me-empty', 'Não encontramos você nesta categoria. Vincule sua conta da Twitch no perfil para aparecer com o mesmo nick do canal.');
-      box.append(p);
+      box.append(el('p', 'rk-me-empty', 'Não encontramos você nesta categoria. Vincule sua conta da Twitch no perfil para aparecer com o mesmo nick do canal.'));
     }
     if (lines.childElementCount) box.append(lines);
   }
@@ -185,7 +162,7 @@
     e.append(av, el('div', 'rk-pod-name', r ? r.nome : 'Vaga livre'), el('div', 'rk-pod-sub', r ? subTxt(r) : 'pode ser você'), block);
     return e;
   }
-  const isMe = (r, me) => me.logado && ((mode === 'xp' && me.id && String(r.id) === String(me.id)) || me.nomes.includes(norm(r.nome)));
+  const isMe = (r, me) => me.logado && (me.nomes.includes(norm(r.nome)));
 
   function renderStats(meta, rows) {
     const box = $('#rkStats'); if (!box) return;
@@ -280,15 +257,15 @@
     const podium = $('#rankingPodium'); if (podium) { podium.replaceChildren(); podium.hidden = true; }
     const stats = $('#rkStats'); if (stats) stats.hidden = true;
     const st = el('div', 'rk-state is-error');
-    const msg = mode === 'xp'
-      ? 'Não conseguimos carregar o ranking do Arcade agora.'
-      : 'Não conseguimos falar com o StreamElements agora. Tente novamente em instantes.';
+    const msg = 'Não conseguimos falar com o StreamElements agora. Tente novamente em instantes.';
     st.append(el('span', 'rk-ic', '⚠️'), el('div', null, msg));
+    if (err?.message) { const d = el('small', 'rk-sub', err.message); d.style.whiteSpace = 'normal'; st.append(d); }
     const retry = el('button', 'rk-btn', '↻ Tentar de novo'); retry.type = 'button';
     retry.addEventListener('click', () => load(true, mode));
     st.append(retry);
     list.replaceChildren(st);
     const more = $('#rkMore'); if (more) more.hidden = true;
+    renderMe(null);
     console.error('[Ranking]', mode, err?.codigo || '', err?.message || err);
   }
 
@@ -323,8 +300,7 @@
     document.querySelectorAll('[data-ranking-mode]').forEach(b => b.addEventListener('click', () => { if (b.dataset.rankingMode !== mode) load(false, b.dataset.rankingMode); }));
     window.addEventListener('soso:auth', () => { if (cache[mode]) render(); load(true, mode); });
     window.addEventListener('soso:aba', e => { if (e.detail === 'ranking') load(true, mode); });
-    window.GameState?.on?.('perfil', () => { if (cache[mode]) { renderMe(cache[mode].rows); renderList(cache[mode].rows); } });
-    load(false, 'xp');
+    load(false, 'horas');
   }
 
   window.RankingUI = { init, refresh: () => load(true, mode) };

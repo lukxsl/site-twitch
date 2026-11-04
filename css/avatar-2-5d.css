@@ -309,10 +309,8 @@
 #sec-perfil .pf-item-avatar-thumb{height:140px}
 #sec-perfil .pf-item-avatar-thumb svg.pf-item-avatar-art{width:auto;height:138px;max-width:100%;image-rendering:auto !important}
 
-/* Também atualiza os avatares pequenos usados no perfil e no ranking. */
+/* Também atualiza os avatares pequenos usados no perfil e */
 .pf-avatar-large svg,
-.ranking-avatar-art svg,
-.podium-avatar-art svg,
 .nav-mini-avatar svg{
   image-rendering:auto !important;
   shape-rendering:geometricPrecision !important;
