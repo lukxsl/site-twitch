@@ -80,22 +80,28 @@
   ];
 
   function criarCatalogoDemo(pixelAvatar){
-    const definicoes = {
-      base: [['masc','Clássico'],['fem','Clássico alternativo']],
-      pele: [['media','Média','#d99a6c'],['clara','Clara','#f5d6bd']],
-      rosto: [['feliz','Sorridente'],['serio','Confiante'],['piscada','Piscadinha']],
-      cabelo: [['curto','Curto'],['longo','Longo'],['coques','Coques']],
-      cabeloCor: [['roxo','Roxo','#8b5cf6'],['preto','Preto','#30283e'],['loiro','Loiro','#e9bd55']],
-      roupa: [['moletom','Moletom'],['camiseta','Camiseta gamer'],['jaqueta','Jaqueta']],
-      roupaCor: [['roxo','Roxo','#7950c9'],['grafite','Grafite','#4b4c62'],['ciano','Ciano','#218eaa']],
-      calcado: [['tenis','Tênis'],['chinelo','Chinelo'],['botas','Botas']],
-      calcadoCor: [['branco','Branco','#ece9f2'],['preto','Preto','#282538'],['ciano','Ciano','#208ca3']],
-      acessorio: [['oculos','Óculos'],['headset','Headset gamer'],['nenhum','Sem acessório'],['orelhas','Orelhas de gato'],['laco','Laço']],
-      acessorioCor: [['dourado','Dourado','#e8b956'],['lilas','Lilás','#bb91ef'],['rosa','Rosa','#eb83bf']],
-      efeito: [['nenhum','Sem efeito'],['brilho','Brilho suave'],['aura_roxa','Aura roxa']],
-      animacao: [['respirar','Respiração'],['acenar','Gesto suave'],['pular','Pular']],
-      moldura: [['nenhuma','Sem moldura'],['simples','Moldura suave'],['ciano','Neon ciano']]
+    /* Deriva do próprio motor (PixelAvatar.IDS): nunca fica fora de sincronia. */
+    const NOMES = {
+      masc: 'Masculino', fem: 'Feminino', clara: 'Clara', media: 'Média', morena: 'Morena', escura: 'Escura',
+      feliz: 'Feliz', serio: 'Sério', piscada: 'Piscadinha', curto: 'Curto', longo: 'Longo', coques: 'Coques',
+      preto: 'Preto', roxo: 'Roxo', loiro: 'Loiro', ruivo: 'Ruivo', moletom: 'Moletom', camiseta: 'Camiseta',
+      jaqueta: 'Jaqueta', grafite: 'Grafite', vermelho: 'Vermelho', ciano: 'Ciano', tenis: 'Tênis', botas: 'Botas',
+      branco: 'Branco', nenhum: 'Nenhum', oculos: 'Óculos', headset: 'Headset', orelhas: 'Orelhas de Gato',
+      dourado: 'Dourado', lilas: 'Lilás', rosa: 'Rosa', brilho: 'Brilho', aura_roxa: 'Aura Roxa',
+      respirar: 'Respirando', acenar: 'Acenando', pular: 'Pulando', nenhuma: 'Sem moldura',
+      simples: 'Pixel Simples'
     };
+    const CORES = {
+      pele: { clara: '#f6d9c4', media: '#e0a479', morena: '#a8693f', escura: '#6b4030' },
+      cabeloCor: { preto: '#3a3050', roxo: '#8b5cf6', loiro: '#ecc25c', ruivo: '#c4572f' },
+      roupaCor: { roxo: '#7c55d6', grafite: '#4d4e66', vermelho: '#c9475a', ciano: '#1f93b0' },
+      calcadoCor: { branco: '#f1eef7', preto: '#2b2740', vermelho: '#c9475a' },
+      acessorioCor: { dourado: '#eebd55', lilas: '#c096f2', rosa: '#f08ac4' }
+    };
+    const definicoes = {};
+    Object.entries(pixelAvatar.IDS || {}).forEach(([slot, ids]) => {
+      definicoes[slot] = ids.map(id => [id, (slot === 'moldura' && id === 'ciano') ? 'Neon Ciano' : (NOMES[id] || id), CORES[slot] && CORES[slot][id]]);
+    });
     const catalogo = {};
     const liberados = {};
     Object.entries(definicoes).forEach(([slot, itens]) => {

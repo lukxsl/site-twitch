@@ -158,133 +158,82 @@ const L = { t: 'loja' };
 const EV = evento => ({ t: 'evento', evento });
 const I = (id, nome, r, regra, extra = {}) => ({ id, nome, r, regra, ...extra });
 
+/* CATÁLOGO ENXUTO (fase de testes do visual): poucas peças, todas liberadas.
+   Os slots/IDs precisam bater com js/pixel-engine.js (IDS). Para criar uma peça
+   nova, desenhe-a no motor e adicione a linha aqui; para travar, troque F por
+   N(nível), L (loja), C('conquista') ou EV('evento'). */
 export const CATALOGO = {
-  /* ---- Corpo ---- */
   base: [
     I('masc', 'Masculino', 'comum', F),
     I('fem',  'Feminino',  'comum', F)
   ],
   pele: [
-    I('clara',  'Clara',  'comum', F, { cor: '#ffdcc2' }),
-    I('media',  'Média',  'comum', F, { cor: '#f0b98d' }),
-    I('bronze', 'Bronze', 'comum', F, { cor: '#cf9461' }),
-    I('morena', 'Morena', 'comum', F, { cor: '#a56c44' }),
-    I('escura', 'Escura', 'comum', F, { cor: '#6e4429' }),
-    I('alien',  'Alienígena', 'raro', N(15), { cor: '#7be3a0' })
+    I('clara',  'Clara',  'comum', F, { cor: '#f6d9c4' }),
+    I('media',  'Média',  'comum', F, { cor: '#e0a479' }),
+    I('morena', 'Morena', 'comum', F, { cor: '#a8693f' }),
+    I('escura', 'Escura', 'comum', F, { cor: '#6b4030' })
   ],
-  /* ---- Rosto ---- */
   rosto: [
-    I('feliz',   'Feliz',        'comum',   F),
-    I('serio',   'Sério',        'comum',   F),
-    I('piscada', 'Piscadinha',   'incomum', N(3)),
-    I('sono',    'Sonolento',    'incomum', N(5)),
-    I('estrela', 'Olhos de Estrela', 'raro', L),
-    I('neon',    'Olhos Neon',   'epico',   C('streak_12'))
+    I('feliz',   'Feliz',      'comum', F),
+    I('serio',   'Sério',      'comum', F),
+    I('piscada', 'Piscadinha', 'comum', F)
   ],
-  /* ---- Cabelo ---- */
   cabelo: [
-    I('curto',   'Curto',    'comum',   F),
-    I('longo',   'Longo',    'comum',   F),
-    I('careca',  'Careca',   'comum',   F),
-    I('rabo',    'Rabo de Cavalo', 'incomum', N(2)),
-    I('coques',  'Coques',   'incomum', N(4)),
-    I('moicano', 'Moicano',  'incomum', N(6)),
-    I('espetado','Espetado', 'raro',    L)
+    I('curto',  'Curto',  'comum', F),
+    I('longo',  'Longo',  'comum', F),
+    I('coques', 'Coques', 'comum', F)
   ],
   cabeloCor: [
-    I('preto', 'Preto', 'comum', F, { cor: '#2b2540' }),
+    I('preto', 'Preto', 'comum', F, { cor: '#3a3050' }),
     I('roxo',  'Roxo',  'comum', F, { cor: '#8b5cf6' }),
-    I('loiro', 'Loiro', 'comum', F, { cor: '#f2c94c' }),
-    I('ruivo', 'Ruivo', 'comum', F, { cor: '#c2531b' }),
-    I('prata', 'Prata', 'incomum', N(5),  { cor: '#cbd5e1' }),
-    I('rosa',  'Rosa Neon',  'raro', N(10), { cor: '#ff6ec7' }),
-    I('ciano', 'Ciano Neon', 'raro', N(10), { cor: '#22d3ee' })
+    I('loiro', 'Loiro', 'comum', F, { cor: '#ecc25c' }),
+    I('ruivo', 'Ruivo', 'comum', F, { cor: '#c4572f' })
   ],
-  /* ---- Roupa ---- */
   roupa: [
-    I('moletom',  'Moletom',        'comum',   F),
-    I('camiseta', 'Camiseta Gamer', 'comum',   F),
-    I('social',   'Camisa Social',  'incomum', N(3)),
-    I('vestido',  'Vestido Pixel',  'incomum', N(3)),
-    I('jaqueta',  'Jaqueta Neon',   'raro',    L),
-    I('armadura', 'Armadura Gamer', 'epico',   N(20))
+    I('moletom',  'Moletom',  'comum', F),
+    I('camiseta', 'Camiseta', 'comum', F),
+    I('jaqueta',  'Jaqueta',  'comum', F)
   ],
   roupaCor: [
-    I('roxo',    'Roxo',    'comum', F, { cor: '#7c3aed' }),
-    I('grafite', 'Grafite', 'comum', F, { cor: '#454560' }),
-    I('preto',   'Preto',   'comum', F, { cor: '#28233c' }),
-    I('vermelho','Vermelho','comum', F, { cor: '#dc2626' }),
-    I('ciano',   'Ciano',   'incomum', N(5),  { cor: '#06b6d4' }),
-    I('dourado', 'Dourado', 'epico',   N(25), { cor: '#f5b82e' })
+    I('roxo',     'Roxo',     'comum', F, { cor: '#7c55d6' }),
+    I('grafite',  'Grafite',  'comum', F, { cor: '#4d4e66' }),
+    I('vermelho', 'Vermelho', 'comum', F, { cor: '#c9475a' }),
+    I('ciano',    'Ciano',    'comum', F, { cor: '#1f93b0' })
   ],
-  /* ---- Calçados ---- */
   calcado: [
-    I('tenis',   'Tênis',        'comum',   F),
-    I('chinelo', 'Chinelo',      'comum',   F),
-    I('botas',   'Botas',        'incomum', N(4)),
-    I('tenis_neon','Tênis Neon', 'raro',    L),
-    I('botas_cyber','Botas Cyber','epico',  N(30))
+    I('tenis', 'Tênis', 'comum', F),
+    I('botas', 'Botas', 'comum', F)
   ],
   calcadoCor: [
-    I('branco',  'Branco',  'comum', F, { cor: '#f5f3ff' }),
-    I('preto',   'Preto',   'comum', F, { cor: '#1a1330' }),
-    I('vermelho','Vermelho','comum', F, { cor: '#dc2626' }),
-    I('roxo',    'Roxo',    'incomum', N(3), { cor: '#7c3aed' }),
-    I('ciano',   'Ciano',   'raro',    N(12), { cor: '#22d3ee' })
+    I('branco',   'Branco',   'comum', F, { cor: '#f1eef7' }),
+    I('preto',    'Preto',    'comum', F, { cor: '#2b2740' }),
+    I('vermelho', 'Vermelho', 'comum', F, { cor: '#c9475a' })
   ],
-  /* ---- Acessórios ---- */
   acessorio: [
-    I('nenhum',  'Nenhum',        'comum',   F),
-    I('oculos',  'Óculos Redondo','comum',   F),
-    I('bone',    'Boné',          'comum',   F),
-    I('headset', 'Headset Gamer', 'incomum', C('twitch')),
-    I('orelhas', 'Orelhas de Gato','raro',   L),
-    I('laco', 'Laço Pixel', 'incomum', N(6)),
-    I('oculos_sol', 'Óculos Neon', 'raro', L),
-    I('microfone', 'Microfone de Streamer', 'epico', C('twitch')),
-    I('gatinho', 'Mascote Gatinho', 'raro', C('primeira_live')),
-    I('halo',    'Halo',          'epico',   C('horas_50')),
-    I('coroa',   'Coroa',         'lendario',N(50))
+    I('nenhum',  'Nenhum',          'comum', F),
+    I('oculos',  'Óculos',          'comum', F),
+    I('headset', 'Headset',         'comum', F),
+    I('orelhas', 'Orelhas de Gato', 'comum', F)
   ],
   acessorioCor: [
-    I('dourado', 'Dourado', 'comum', F, { cor: '#ffd166' }),
-    I('lilas',   'Lilás',   'comum', F, { cor: '#c084fc' }),
-    I('azul',    'Azul',    'comum', F, { cor: '#7dd3fc' }),
-    I('rosa',    'Rosa',    'comum', F, { cor: '#ff6ec7' }),
-    I('branco',  'Branco',  'comum', F, { cor: '#f5f3ff' })
+    I('dourado', 'Dourado', 'comum', F, { cor: '#eebd55' }),
+    I('lilas',   'Lilás',   'comum', F, { cor: '#c096f2' }),
+    I('rosa',    'Rosa',    'comum', F, { cor: '#f08ac4' })
   ],
-  /* ---- Efeitos ---- */
   efeito: [
-    I('nenhum',   'Nenhum',          'comum',   F),
-    I('brilho',   'Brilho Suave',    'comum',   N(2)),
-    I('faiscas',  'Faíscas',         'incomum', N(8)),
-    I('glitch',   'Glitch',          'raro',    L),
-    I('aura_roxa','Aura Roxa',       'raro',    N(15)),
-    I('aura_neon','Aura Neon',       'epico',   C('horas_200')),
-    I('chamas',   'Chamas Pixel',    'epico',   C('streak_4')),
-    I('estrelas', 'Chuva de Estrelas','lendario', N(40)),
-    I('confete',  'Confete de Aniversário', 'limitado', EV('Aniversário da Soso'))
+    I('nenhum',    'Nenhum',       'comum', F),
+    I('brilho',    'Brilho',       'comum', F),
+    I('aura_roxa', 'Aura Roxa',    'comum', F)
   ],
-  /* ---- Animações (poses no perfil) ---- */
   animacao: [
-    I('respirar', 'Respirando',  'comum',   F),
-    I('acenar',   'Acenando',    'comum',   F),
-    I('pular',    'Pulando',     'incomum', N(3)),
-    I('dancar',   'Dançando',    'incomum', N(7)),
-    I('flutuar',  'Flutuando',   'raro',    L),
-    I('meditar',  'Meditando',   'raro',    C('horas_10')),
-    I('comemorar','Comemorando', 'epico',   C('sug_5')),
-    I('hype', 'Hype do Chat', 'raro', N(12))
+    I('respirar', 'Respirando', 'comum', F),
+    I('acenar',   'Acenando',   'comum', F),
+    I('pular',    'Pulando',    'comum', F)
   ],
-  /* ---- Molduras ---- */
   moldura: [
-    I('nenhuma',   'Sem moldura',     'comum',   F),
-    I('simples',   'Pixel Simples',   'comum',   F),
-    I('roxa',      'Pixel Roxa',      'incomum', N(5)),
-    I('ciano',     'Neon Ciano',      'raro',    L),
-    I('dourada',   'Dourada',         'epico',   N(35)),
-    I('holo',      'Holográfica',     'lendario', C(ID_PLATINA)),
-    I('evento1',   'Moldura do Evento', 'limitado', EV('Evento de Estreia'))
+    I('nenhuma', 'Sem moldura',   'comum', F),
+    I('simples', 'Pixel Simples', 'comum', F),
+    I('ciano',   'Neon Ciano',    'comum', F)
   ]
 };
 export const SLOTS = Object.keys(CATALOGO);
@@ -297,6 +246,19 @@ export const BONECO_PADRAO = {
   acessorio: 'oculos', acessorioCor: 'dourado',
   efeito: 'nenhum', animacao: 'respirar', moldura: 'simples'
 };
+
+/* Metas de "coleção" acompanham o tamanho do catálogo (com o catálogo enxuto, 30 peças
+   seriam impossíveis e travariam a Platina). Com um catálogo grande, volta a 30/20. */
+const SLOTS_COR = ['base', 'pele', 'cabeloCor', 'roupaCor', 'calcadoCor', 'acessorioCor'];
+const TOTAL_COLECAO = SLOTS.reduce((n, sl) => n + (SLOTS_COR.includes(sl) ? 0 : CATALOGO[sl].length), 0);
+{
+  const meta = Math.min(30, TOTAL_COLECAO);
+  const c = CONQUISTAS.find(x => x.id === 'colecionador');
+  if(c){ c.cond = S => S.itens >= meta; c.progresso.meta = meta; c.desc = `Desbloqueie ${meta} peças para ampliar as opções do seu guarda-roupa.`; }
+  const metaT = Math.min(20, TOTAL_COLECAO);
+  const t = TITULOS.find(x => x.id === 'colecionador');
+  if(t){ t.cond = S => S.itens >= metaT; t.regra = `Desbloqueie ${metaT} peças do guarda-roupa.`; }
+}
 
 const ACHA = {};  // índice rápido slot:id → item
 SLOTS.forEach(s => CATALOGO[s].forEach(it => { ACHA[`${s}:${it.id}`] = it; }));

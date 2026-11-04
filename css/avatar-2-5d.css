@@ -114,6 +114,7 @@
 .px-svg.px-anim-respirar .px-breath,
 .px-svg.px-anim-meditar .px-breath{transform-box:fill-box;transform-origin:50% 5%;animation:avatar25dBreathe 3.8s ease-in-out infinite}
 .px-svg.px-anim-acenar .px-head-group{transform-box:fill-box;transform-origin:50% 82%;animation:avatar25dWave 2.8s ease-in-out infinite}
+.px-svg.px-anim-acenar .px-arm-r{transform-box:fill-box;transform-origin:26% 3%;animation:avatar25dArmWave 1.3s ease-in-out infinite}
 .px-svg.px-anim-pular .px-stage-art{transform-box:fill-box;transform-origin:50% 100%;animation:avatar25dHop 1.8s ease-in-out infinite}
 .px-svg.px-anim-flutuar .px-stage-art{animation:avatar25dFloat 4s ease-in-out infinite}
 .px-svg.px-anim-dancar .px-stage-art,
@@ -372,3 +373,14 @@
 #sec-perfil .pf-save-state[data-estado="demo"]{color:#d8b4fe;border-color:rgba(192,132,252,.38);background:rgba(38,23,59,.86)}
 #sec-perfil .px-svg:not(.px-static){animation:avatar25dEnter .28s ease-out both}
 @keyframes avatar25dEnter{from{opacity:.65;transform:translateY(5px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Braço que acena + brilhos que piscam */
+@keyframes avatar25dArmWave{
+  0%,100%{transform:rotate(-102deg)}
+  50%{transform:rotate(-128deg)}
+}
+.px-svg .px-twinkle{transform-box:fill-box;transform-origin:center;animation:avatar25dTwinkle 2.6s ease-in-out infinite}
+@keyframes avatar25dTwinkle{
+  0%,100%{opacity:.25;transform:scale(.6)}
+  50%{opacity:1;transform:scale(1.1)}
+}

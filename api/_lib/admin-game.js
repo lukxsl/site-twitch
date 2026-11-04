@@ -54,7 +54,7 @@ export async function handleAdminGame({ req, res, action, sessao, temPermissao, 
     let valor = 0, item = null;
     if(tipo === 'item'){
       const [slot, id] = String(b.item || '').split(':');
-      if(!SLOTS.includes(slot) || !acharItem(slot, id)){ res.status(400).json({ error: 'Item inexistente (use slot:id, ex.: efeito:confete).' }); return true; }
+      if(!SLOTS.includes(slot) || !acharItem(slot, id)){ res.status(400).json({ error: 'Item inexistente (use slot:id, ex.: efeito:brilho).' }); return true; }
       item = `${slot}:${id}`;
     } else {
       valor = Math.floor(Number(b.valor));
