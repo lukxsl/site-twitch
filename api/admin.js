@@ -9,7 +9,7 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const TMDB_TOKEN = process.env.TMDB_TOKEN;
 const TMDB_KEY = process.env.TMDB_API_KEY;
-const STEAM_KEY = process.env.STEAM_API_KEY || process.env.STEAM;
+const STEAM_KEY = process.env.STEAM_API_KEY;
 const STEAM_ID = '76561199823015081';
 const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 const ENV_DEV_EMAILS = (process.env.GOOGLE_DEV_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);

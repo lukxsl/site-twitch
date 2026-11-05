@@ -431,7 +431,7 @@ async function lastfmTop() {
 
 /* ============ HANDLER ============ */
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=30');
 
   const cached = await getCache();
   if (cached) return res.status(200).json(cached);

@@ -1,6 +1,13 @@
 /* ============================================================
    ADMIN — DASHBOARD & SETUP
    ============================================================ */
+const ADMIN_CARD_ACTIONS = {
+  'resetarVotacao()': () => window.resetarVotacao?.(),
+  'importarSteam()': () => window.importarSteam?.(),
+  "adminIrPara('tierlist')": () => window.adminIrPara?.('tierlist'),
+  'criarBackupManual()': () => window.criarBackupManual?.()
+};
+
 async function renderAdminHome(){
   const area = document.getElementById('adminArea');
   if(!area) return;
@@ -19,6 +26,13 @@ async function renderAdminHome(){
   const podeAdmins = temPerm('ver_admins');
   const podeBanidos = temPerm('ver_banidos');
   const podeSug = temPerm('ver_sugestoes');
+  const streamElementsFalhou = (podeVotos && (!shared.votos || shared.votos.error))
+    || !shared.hall
+    || !!shared.hall.erro
+    || !!shared.hall.motivo
+    || !!shared.hall.aviso
+    || shared.hall.fonte === 'Manual'
+    || !!shared.hall.desatualizado;
 
   const kpis = [];
   if(podeVotos && shared.votos){
@@ -73,6 +87,14 @@ async function renderAdminHome(){
         <span>Quem não é admin vê uma tela de "Estamos em manutenção".</span>
       </div>
       ${podeEditarConfig ? `<button type="button" class="aa-btn" onclick="desligarManutencao()">🔓 Desligar agora</button>` : ''}
+    </div>` : '';
+  const seAlertHTML = streamElementsFalhou ? `
+    <div class="admin-alert admin-alert-warn">
+      <span class="aa-ic">⚠️</span>
+      <div class="aa-tx">
+        <b>A API do StreamElements está fora do ar.</b>
+        <span>Verifique o Token.</span>
+      </div>
     </div>` : '';
 
   const cardsOperacao = [];
@@ -163,7 +185,7 @@ async function renderAdminHome(){
       </div>
     </div>` : '';
 
-  area.innerHTML = crumbs + hero + alertHTML + kpiHTML +
+  area.innerHTML = crumbs + hero + alertHTML + seAlertHTML + kpiHTML +
     secaoHTML('Operação', cardsOperacao) +
     secaoHTML('Sistema', cardsSistema);
 
@@ -179,8 +201,8 @@ async function renderAdminHome(){
       const actionBtn = e.target.closest('.amc-action');
       if(actionBtn){
         e.stopPropagation();
-        const fn = actionBtn.dataset.fn;
-        if(fn){ try { (0, eval)(fn); } catch(err){ console.error(err); } }
+        const action = ADMIN_CARD_ACTIONS[actionBtn.dataset.fn];
+        if(action){ try { action(); } catch(err){ console.error(err); } }
         return;
       }
       const card = e.target.closest('.admin-menu-card2');

@@ -41,7 +41,7 @@ let ADMIN_CONFIG_TAB = 'aviso';
 let ADMIN_SUG_STATUS = 'all';
 let ADMIN_SUG_TIPO = 'all';
 let ADMIN_SHARED = {
-  votos: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null,
+  votos: null, hall: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null,
   fetchedAt: 0
 };
 let _sharedPromise = null;
@@ -140,8 +140,9 @@ async function carregarShared(force = false){
 
   _sharedPromise = (async () => {
     const safeFetch = (url) => fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
-    const [votos, tier, sugestoes, admins, banidos, logs, backup] = await Promise.all([
+    const [votos, hall, tier, sugestoes, admins, banidos, logs, backup] = await Promise.all([
       temPerm('ver_votos')      ? safeFetch('/api/admin?action=votos')          : null,
+      safeFetch('/api/config?action=hall'),
       temPerm('ver_tierlist')   ? safeFetch('/api/admin?action=tierlist-get')   : null,
       temPerm('ver_sugestoes')  ? safeFetch('/api/admin?action=sugestoes-ver')  : null,
       temPerm('ver_admins')     ? safeFetch('/api/admin?action=admins-ver')     : null,
@@ -149,7 +150,7 @@ async function carregarShared(force = false){
       temPerm('ver_logs')       ? safeFetch('/api/admin?action=logs-ver')       : null,
       temPerm('editar_config')  ? safeFetch('/api/backup?action=list')          : null
     ]);
-    ADMIN_SHARED = { votos, tier, sugestoes, admins, banidos, logs, backup, fetchedAt: Date.now() };
+    ADMIN_SHARED = { votos, hall, tier, sugestoes, admins, banidos, logs, backup, fetchedAt: Date.now() };
     _sharedPromise = null;
     return ADMIN_SHARED;
   })();

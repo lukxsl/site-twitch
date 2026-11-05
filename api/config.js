@@ -234,17 +234,6 @@ async function twitchEmotes() {
 }
 
 // ---------- StreamElements: doadores (gorjetas) ----------
-function seRows(payload) {
-  if (Array.isArray(payload)) return payload;
-  for (const key of ['users', 'docs', 'results', 'items', 'data', 'tips', 'top', 'ranking', 'watchtime']) {
-    if (Array.isArray(payload?.[key])) return payload[key];
-  }
-  return [];
-}
-function seUserName(row) {
-  return safeStr(row?.username || row?.data?.username || row?.user?.username || row?.displayName || row?.name || 'Anônimo', 40);
-}
-
 function numeroManual(valor){
   const texto = String(valor || '').replace(/R\$/gi, '').replace(/\s/g, '').replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
   const n = Number(texto);

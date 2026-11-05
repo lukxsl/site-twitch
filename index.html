@@ -181,7 +181,7 @@
         </div>
         <div class="twitch-player">
           <div class="offline-panel" id="offlinePanel">
-            <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+            <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" loading="lazy" onerror="this.style.display='none'">
             <h4>Estamos offline por agora 💜</h4>
             <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
             <div class="offline-info">
@@ -201,7 +201,7 @@
       <div class="bento-stack">
       <article class="card recado-card reveal" id="recadoCard">
         <div class="recado-av">
-          <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+          <img src="img/avatar.png" alt="Soso" loading="lazy" onerror="this.style.display='none'">
           <span aria-hidden="true">💌</span>
         </div>
         <div class="recado-bubble">
@@ -212,7 +212,7 @@
 
       <article class="card jogos-card reveal">
         <div class="jogo-half">
-          <img class="foco-cover skeleton" id="focoCover" alt="">
+          <img class="foco-cover skeleton" id="focoCover" alt="" loading="lazy">
           <div class="foco-info">
             <span class="foco-label" id="focoLabel">🎮 Último jogo jogado</span>
             <h3 id="focoNome">Carregando…</h3>
@@ -230,7 +230,7 @@
           </div>
         </div>
         <div class="jogo-half">
-          <img class="foco-cover" id="proxCover" alt="" style="display:none">
+          <img class="foco-cover" id="proxCover" alt="" loading="lazy" style="display:none">
           <div class="foco-cover prox-cover-fallback" id="proxCoverFallback" aria-hidden="true"><span>🗳️</span><small>PRÓXIMO JOGO</small></div>
           <div class="foco-info">
             <span class="foco-label">🗳️ Próximo na votação</span>
@@ -599,7 +599,7 @@
             <div class="luk-bubble" id="lukBubble" role="status" aria-live="polite"></div>
             <div class="luk-flip">
               <div class="luk-squash">
-                <img src="img/lukzin.png" alt="Lukzin" class="luk-sprite" width="188" height="415" draggable="false" decoding="async">
+                <img src="img/lukzin.png" alt="Lukzin" class="luk-sprite" width="188" height="415" draggable="false" decoding="async" loading="lazy">
               </div>
             </div>
             <div class="luk-shadow"></div>
@@ -614,7 +614,7 @@
       <div class="rpg-dialogue enter" id="setupDialogue">
         <button type="button" class="rpg-close" id="dlgClose" aria-label="Fechar diálogo">✕</button>
         <div class="rpg-avatar">
-          <img src="img/lukzin.png" alt="Lukzin" class="rpg-avatar-img">
+          <img src="img/lukzin.png" alt="Lukzin" class="rpg-avatar-img" loading="lazy">
         </div>
         <div class="rpg-content">
           <div class="rpg-name" id="dlgNameContainer">
@@ -892,7 +892,7 @@
   <div class="wrapper">
     <div class="footer-top">
       <button class="logo-container small" onclick="mudarAba('inicio')" aria-label="Início">
-        <span class="logo-mark"><img src="img/twitch.png" alt="" class="twitch-logo-img"></span>
+        <span class="logo-mark"><img src="img/twitch.png" alt="" class="twitch-logo-img" loading="lazy"></span>
         <span class="logo-text">asemtet<span>0</span></span>
       </button>
       <div class="footer-links">

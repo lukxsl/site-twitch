@@ -1,5 +1,5 @@
 // Vercel serverless: /api/jogos.js
-const STEAM_KEY = process.env.STEAM_API_KEY || process.env.STEAM;
+const STEAM_KEY = process.env.STEAM_API_KEY;
 const STEAM_ID = '76561199823015081';
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
