@@ -23,6 +23,16 @@ const CHANNEL_ID_ENV = String(process.env.STREAMELEMENTS_CHANNEL_ID || '').trim(
 
 export const temJwt = () => !!JWT;
 
+function extrairChannelIdDoToken(jwt) {
+  try {
+    const decoded = JSON.parse(Buffer.from(String(jwt).split('.')[1], 'base64url').toString('utf-8'));
+    return decoded.channel || decoded.channel_id || null;
+  } catch (e) { return null; }
+}
+const CHANNEL_ID_JWT = extrairChannelIdDoToken(JWT);
+// Account ID do canal asemtet0 no StreamElements (usado se nada mais definir o ID)
+const CHANNEL_ID_PADRAO = '67b10de5d2ceb1c2bf122f65';
+
 // Olha o JWT localmente (sem rede) e aponta o problema mais comum.
 function diagnosticoJwt() {
   if (!JWT) return 'STREAMELEMENTS_JWT está vazio na Vercel (confira se foi salvo em Production e faça Redeploy).';
@@ -56,9 +66,7 @@ export async function seGet(path, { publico = false, query = null, timeoutMs = 9
   async function chamar(esquema) {
     const headers = {
       Accept: 'application/json',
-      'User-Agent': 'Mozilla/5.0 (compatible; asemtet0-site/1.0; +https://asemtet0.vercel.app)',
-      Origin: 'https://streamelements.com',
-      Referer: 'https://streamelements.com/'
+      'User-Agent': 'Mozilla/5.0 (compatible; asemtet0-site/1.0)'
     };
     if (esquema) headers.Authorization = `${esquema} ${JWT}`;
     const ctrl = new AbortController();
@@ -112,27 +120,12 @@ export async function canalId() {
       }
     }
 
-    // /channels/me só é usado como verificação adicional; um JWT válido de outro
-    // canal não pode fazer o site exibir o ranking da conta errada.
-    if (JWT) {
-      try {
-        const me = await seGet('/channels/me');
-        const idMe = me?._id || me?.id || me?.channel?._id || null;
-        if (idMe) {
-          if (idPublico && String(idMe) !== String(idPublico)) {
-            throw erro(`O STREAMELEMENTS_JWT pertence a outro canal. Gere o token logada na conta StreamElements vinculada ao canal @${CANAL_LOGIN}.`, 502, 'se_channel');
-          }
-          if (idConfigurado && String(idMe) !== String(idConfigurado)) {
-            throw erro('O STREAMELEMENTS_JWT e STREAMELEMENTS_CHANNEL_ID apontam para canais diferentes. Confira as duas variáveis na Vercel.', 502, 'se_channel');
-          }
-        }
-      } catch (e) {
-        if (e?.code === 'se_channel') throw e;
-        ultimoErro = ultimoErro || e;
-      }
+    // O JWT já traz o ID do canal (campo `channel`): dispensa /channels/me e a env CHANNEL_ID.
+    if (CHANNEL_ID_JWT && idPublico && String(CHANNEL_ID_JWT) !== String(idPublico)) {
+      throw erro(`O STREAMELEMENTS_JWT pertence a outro canal. Gere o token na conta StreamElements vinculada a @${CANAL_LOGIN}.`, 502, 'se_channel');
     }
 
-    const id = idConfigurado || idPublico;
+    const id = idConfigurado || CHANNEL_ID_JWT || CHANNEL_ID_PADRAO || idPublico;
     if (!id) throw ultimoErro || erro('Não foi possível descobrir o ID do canal no StreamElements.', 502, 'se_canal');
     canalCache = { id: String(id), ate: Date.now() + 15 * 60 * 1000 };
     return canalCache.id;
