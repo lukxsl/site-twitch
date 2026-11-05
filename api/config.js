@@ -273,7 +273,7 @@ async function hallManual(){
 }
 let hallErro = null;
 async function hallStreamElements() {
-  if (!temJwt()) { hallErro = 'STREAMELEMENTS_JWT não configurada no servidor.'; const manual = await hallManual(); return manual ? { ...manual, aviso: 'O ranking automático está temporariamente indisponível. Exibindo a lista configurada pela equipe.' } : null; }
+  // Sem JWT ainda tentamos o ranking público; se falhar, cai na lista manual abaixo.
   try {
     const r = await rankingDoadores();
     const fotos = await twitchAvatares(r.lista.slice(0, 100).map(x => x.nome));
@@ -286,9 +286,10 @@ async function hallStreamElements() {
     };
   } catch (error) {
     hallErro = error?.message || 'Falha ao consultar o StreamElements.';
+    if (!temJwt()) hallErro = 'STREAMELEMENTS_JWT não configurada no servidor. ' + hallErro;
     console.error('[Hall] Falha ao consultar doadores no StreamElements:', hallErro);
     const manual = await hallManual();
-    return manual ? { ...manual, aviso: 'Não foi possível atualizar os apoiadores automaticamente. Exibindo a lista configurada pela equipe.' } : null;
+    return manual ? { ...manual, aviso: 'Não foi possível atualizar os apoiadores automaticamente. Exibindo a lista configurada pela equipe.', motivo: hallErro } : null;
   }
 }
 

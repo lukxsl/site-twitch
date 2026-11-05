@@ -339,6 +339,7 @@ async function carregarHall(){
     const r = await fetch('/api/config?action=hall', { cache: 'no-store' });
     const d = await r.json();
     HALL_DADOS = d;
+    if(d && (d.motivo || d.erro)) console.warn('[Hall] Ranking automático indisponível:', d.motivo || d.erro);
   } catch(e){
     if(!HALL_DADOS) HALL_DADOS = null;
   }
@@ -1350,6 +1351,31 @@ async function carregarVotosApi(){
 }
 window.carregarVotosApi = carregarVotosApi;
 
+/* Mini-placar + chips do card "Próximo na votação" (sempre mostra alguma informação) */
+function renderProxExtra({ ord = [], total = 0, fechada = false, countdown = null, estado = 'ok' } = {}){
+  const rank = $('proxRank'), foot = $('proxFoot');
+  if(!rank || !foot) return;
+  const pct = v => total ? Math.round((v || 0) / total * 100) : 0;
+  if(estado === 'sem-login'){
+    rank.innerHTML = '<li class="pr-msg">Entre no site para ver o placar e votar no próximo jogo.</li>';
+  } else if(!ord.length){
+    const msg = estado === 'erro' ? 'Não consegui carregar o placar agora. Tente de novo em instantes.'
+      : estado === 'carregando' ? 'Carregando placar…'
+      : 'Nenhuma opção publicada ainda. Fique de olho, a próxima votação vem aí!';
+    rank.innerHTML = `<li class="pr-msg">${msg}</li>`;
+  } else {
+    rank.innerHTML = ord.slice(0, 3).map((it, i) => {
+      const p = pct(it.votos);
+      return `<li><span class="pr-n">${i + 1}</span><span class="pr-name" title="${esc(it.nome)}">${esc(it.nome)}</span><span class="pr-pct">${total ? p + '%' : 'sem votos'}</span><i style="--p:${p}%"></i></li>`;
+    }).join('');
+  }
+  const chips = [];
+  if(ord.length) chips.push(`🎮 ${ord.length} ${plural(ord.length, 'opção', 'opções')}`);
+  if(total) chips.push(`🗳️ ${total} ${plural(total, 'voto', 'votos')}`);
+  chips.push(countdown ? (fechada ? '🔒 Encerrada' : '⏰ ' + countdown.texto) : '🔓 Sem data de encerramento');
+  foot.innerHTML = chips.map(c => `<span>${c}</span>`).join('');
+}
+
 function renderVotacao(){
   const destBox = $('destaqueBox'), listaBox = $('votoLista');
   if(!destBox || !listaBox) return;
@@ -1395,6 +1421,9 @@ function renderVotacao(){
     if(proxCover) proxCover.style.display = 'none';
     if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
+    $('proxNome').textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
+    $('proxInfo').textContent = 'Escolha o próximo jogo da live.';
+    renderProxExtra({ estado: 'sem-login', fechada, countdown });
     return;
   }
   if(!VOTOS_DADOS.length){
@@ -1406,6 +1435,9 @@ function renderVotacao(){
     if(proxCover) proxCover.style.display = 'none';
     if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
+    $('proxNome').textContent = votoStatus === 'erro' ? 'Placar indisponível' : 'Sem opções ainda';
+    $('proxInfo').textContent = fechada ? 'Aguardando nova votação 💜' : 'A próxima votação ainda não foi aberta.';
+    renderProxExtra({ estado: votoStatus, fechada, countdown });
     return;
   }
 
@@ -1483,6 +1515,8 @@ function renderVotacao(){
     $('proxNome').textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
     $('proxInfo').textContent = fechada ? 'Aguardando nova votação 💜' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
+
+  renderProxExtra({ ord, total, fechada, countdown });
 
   const vistos = getVotosVistos();
   const resto = total > 0 ? ord.slice(1) : ord;

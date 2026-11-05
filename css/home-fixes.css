@@ -1,0 +1,100 @@
+/* ============================================================
+   HOME — correções finais (carregado por último)
+   1) Nada de conteúdo cortado: cada card tem a altura do próprio conteúdo
+   2) O último card de cada coluna estica, então as 3 colunas terminam alinhadas
+   3) Pódio de doadores com colunas iguais e tudo centralizado
+   4) Card da votação com mini-placar (sem espaço vazio embaixo)
+   ============================================================ */
+
+/* ---------- 1 e 2: colunas ---------- */
+.bento{align-items:stretch}
+.bento .bento-col{display:flex;flex-direction:column;gap:16px;height:auto;min-height:0}
+.bento .bento-col > *{flex:0 0 auto;min-height:0;overflow:visible}
+.bento .bento-col > :last-child,
+.bento .bento-col.bento-center > .card.jogos-card:last-child{flex:1 1 auto}
+
+/* ---------- 3: card "Apoie o cantinho" ---------- */
+.bento-right .apoie{display:flex;flex-direction:column;gap:10px;padding:16px;height:auto}
+.bento-right .apoie .hall-head{margin-top:4px}
+.bento-right .apoie #hallLista{
+  flex:0 0 auto;display:flex;flex-direction:column;gap:8px;
+  max-height:none;min-height:0;overflow:visible;padding:0;margin:0;
+}
+.bento-right .apoie .hall-total,
+.bento-right .apoie .hall-updated{flex:0 0 auto;margin:0}
+.bento-right .apoie #donateLink{flex:0 0 auto;margin-top:auto}
+
+/* pódio: 3 colunas iguais, mesma altura, tudo centralizado */
+.bento-right .apoie #hallLista > .podium{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;align-items:stretch;padding-top:0;margin:0;
+}
+.bento-right .apoie #hallLista > .podium > .pod{
+  min-height:0;height:100%;padding:18px 6px 12px;gap:4px;
+  justify-content:flex-start;align-items:center;text-align:center;
+  border-radius:14px;
+}
+.bento-right .apoie #hallLista .pod-av{width:46px;height:46px;border-width:2px;flex:none}
+.bento-right .apoie #hallLista .pod-1 .pod-av{width:46px;height:46px;border-width:2.5px}
+.bento-right .apoie #hallLista .hall-av.ph{font-size:1.05rem}
+.bento-right .apoie #hallLista .pod-1 .hall-av.ph{font-size:1.05rem}
+.bento-right .apoie #hallLista .pod-crown{top:-13px;font-size:1.15rem}
+.bento-right .apoie #hallLista .pod-medal{margin:0;font-size:.9rem;line-height:1}
+.bento-right .apoie #hallLista .pod-name{
+  width:100%;padding:0 2px;font-size:.72rem;line-height:1.25;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.bento-right .apoie #hallLista .pod-val{font-size:.66rem;line-height:1.2;white-space:nowrap}
+.bento-right .apoie #hallLista .pod.vazio{opacity:.55}
+
+/* lista a partir do 4º (se um dia voltar a aparecer) */
+.bento-right .apoie #hallLista .hall-resto{display:flex;flex-direction:column;gap:6px}
+.bento-right .apoie #hallLista .hall-resto .hall-row{margin:0}
+
+/* mensagens de erro/vazio: compactas e centralizadas, nunca por cima do botão */
+.bento-right .apoie #hallLista .hall-cta-vazio{
+  margin:0;padding:0 4px;text-align:center;font-size:.72rem;line-height:1.45;
+}
+.bento-right .apoie #hallLista .hall-aviso{font-size:.64rem;opacity:.8}
+
+/* ---------- 4: card de jogos / votação ---------- */
+.jogos-card{min-height:0}
+.jogos-card .jogo-half{align-items:flex-start;padding:14px;gap:12px}
+.jogos-card .jogo-half .foco-cover{align-self:flex-start}
+.jogos-card .jogo-half .foco-info{align-self:stretch;justify-content:flex-start;gap:7px}
+.jogos-card .jogo-half .foco-btns{margin-top:auto;padding-top:6px}
+.jogos-card .jogo-half #proxInfo{margin:0;font-size:.74rem;color:var(--mute);line-height:1.4}
+.jogos-card .jogo-half .prox-bar{display:none}   /* o placar abaixo já mostra as barras */
+
+.prox-rank{list-style:none;margin:0;padding:0;display:grid;gap:7px;width:100%}
+.prox-rank li{
+  display:grid;grid-template-columns:16px minmax(0,1fr) auto;
+  align-items:center;column-gap:7px;row-gap:3px;font-size:.72rem;color:var(--white);
+}
+.prox-rank .pr-n{
+  width:16px;height:16px;border-radius:50%;display:grid;place-items:center;
+  font-size:.6rem;font-weight:800;color:#fff;background:rgba(168,85,247,.35);
+}
+.prox-rank li:first-child .pr-n{background:linear-gradient(135deg,#ffd166,#f59e0b);color:#2a1a00}
+.prox-rank .pr-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prox-rank .pr-pct{font:700 .66rem 'JetBrains Mono',monospace;color:var(--purple-2);white-space:nowrap}
+.prox-rank li > i{
+  grid-column:2 / 4;height:4px;border-radius:99px;background:rgba(255,255,255,.08);
+  position:relative;overflow:hidden;
+}
+.prox-rank li > i::after{
+  content:'';position:absolute;inset:0 auto 0 0;width:var(--p,0%);border-radius:inherit;
+  background:linear-gradient(90deg,var(--purple-3),var(--pink));
+}
+.prox-rank .pr-msg{display:block;font-size:.72rem;line-height:1.45;color:var(--mute)}
+
+.prox-foot{display:flex;flex-wrap:wrap;gap:5px;width:100%}
+.prox-foot span{
+  font-size:.62rem;font-weight:700;color:var(--mute);padding:3px 8px;border-radius:99px;
+  background:rgba(168,85,247,.1);border:1px solid var(--line);white-space:nowrap;
+}
+
+/* ---------- mobile: 1 coluna, nada de esticar ---------- */
+@media(max-width:1100px){
+  .bento .bento-col > :last-child{flex:0 0 auto}
+}

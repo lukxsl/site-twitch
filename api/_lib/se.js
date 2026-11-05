@@ -199,7 +199,15 @@ async function todasGorjetas(paginas = 10) {
   const id = await canalId();
   const out = [];
   for (let p = 0; p < paginas; p++) {
-    const d = await seGet(`/tips/${encodeURIComponent(id)}`, { query: { limit: 100, offset: p * 100, sort: '-create' } });
+    const rota = `/tips/${encodeURIComponent(id)}`;
+    const base = { limit: 100, offset: p * 100 };
+    let d;
+    try { d = await seGet(rota, { query: { ...base, sort: '-createdAt' } }); }
+    catch (e) {
+      // Token/conexão ruins não melhoram sem o sort; erro de parâmetro sim.
+      if (e?.code === 'se_auth' || e?.code === 'se_offline') throw e;
+      d = await seGet(rota, { query: base });
+    }
     const docs = linhas(d);
     out.push(...docs);
     if (docs.length < 100) break;
