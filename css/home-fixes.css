@@ -100,16 +100,35 @@
 }
 
 /* ============================================================
-   SPOTIFY — "Tocou antes" embaixo do disco
+   SPOTIFY — card flexível: a lista de "mais tocadas" ocupa o que sobrar
+   (não aumenta a coluna; o JS esconde as faixas que não cabem)
    ============================================================ */
-#musicBox .rec-bloco{width:100%;display:flex;flex-direction:column;gap:6px;margin-top:4px;padding-top:10px;border-top:1px solid var(--line)}
-#musicBox .rec-titulo{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--purple-2)}
-#musicBox .rec-bloco .rec-lista{gap:6px}
-#musicBox .rec-bloco .rec-item{padding:6px 8px}
-#musicBox .rec-bloco .rec-capa{width:34px;height:34px;border-radius:8px}
-#musicBox .rec-bloco .rec-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
-#musicBox .rec-bloco .rec-info b{font-size:.76rem;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#musicBox .rec-bloco .rec-info small{font-size:.66rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#musicBox.music-box{display:flex;flex-direction:column;gap:10px;padding:16px;min-height:0;height:auto}
+#musicBox .music-head,#musicBox .music-link-playlist{flex:0 0 auto}
+#musicBox .music-link-playlist{margin-top:0}
+#musicBox .music-panel{flex:1 1 auto;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:12px;min-height:0;padding:0}
+#musicBox .ouvindo-wrap{flex:0 0 auto;width:100%;padding:0;gap:8px}
+#musicBox .music-panel .ouvindo-vazio-wrap{flex:0 0 auto;gap:0}
+#musicBox .top-bloco{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:8px;
+  padding-top:10px;border-top:1px solid var(--line)}
+#musicBox .rec-titulo{flex:0 0 auto;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--purple-2)}
+/* a lista fica dentro de um wrapper com altura mínima e posição absoluta: não empurra a altura do card */
+#musicBox .top-wrap{position:relative;flex:1 1 auto;min-height:118px}
+#musicBox .top-lista{position:absolute;inset:0;margin:0;padding:0;list-style:none;
+  display:flex;flex-direction:column;gap:6px;overflow:hidden}
+#musicBox .top-lista li{flex:1 1 0;min-height:0;max-height:64px;display:flex}
+#musicBox .top-lista li[hidden]{display:none}
+#musicBox .top-lista.calc li{flex:0 0 auto;min-height:52px}
+#musicBox .top-item{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:6px 10px;
+  border-radius:12px;background:rgba(168,85,247,.07);border:1px solid var(--line);transition:.2s}
+#musicBox a.top-item[href]:hover{background:rgba(168,85,247,.16);border-color:var(--purple)}
+#musicBox .top-n{flex:0 0 14px;text-align:center;font:800 .72rem 'JetBrains Mono',monospace;color:var(--purple-2)}
+#musicBox .top-lista li:first-child .top-n{color:#ffd166}
+#musicBox .top-item .rec-capa{width:36px;height:36px;border-radius:8px;flex:none}
+#musicBox .top-item .rec-info{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+#musicBox .top-item .rec-info b{font-size:.76rem;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#musicBox .top-item .rec-info small{font-size:.66rem;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#musicBox .top-item em{font:700 .66rem 'JetBrains Mono',monospace;font-style:normal;color:var(--purple-2);white-space:nowrap;flex:none}
 
 /* ============================================================
    CARD DE JOGOS — detalhes do jogo e info da live
@@ -159,3 +178,18 @@
   background-size:cover;background-position:center;background-repeat:no-repeat;
   filter:blur(20px);opacity:.28;transform:scale(1.05);pointer-events:none;
 }
+
+/* ============================================================
+   CARD DE JOGOS — capa preenche a altura da metade (sem buraco ao lado)
+   ============================================================ */
+.jogos-card .jogo-half{align-items:stretch}
+.jogos-card .jogo-half .foco-cover{
+  align-self:stretch;width:92px;flex:0 0 92px;height:auto;min-height:138px;max-height:210px;aspect-ratio:auto;object-fit:cover;
+}
+.jogos-card .jogo-half .prox-cover-fallback{align-self:stretch}
+
+/* estado vazio dos doadores: motivos para apoiar */
+.hall-vazio .hv-motivos{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px;width:100%;max-width:230px;text-align:left}
+.hall-vazio .hv-motivos li{display:flex;align-items:center;gap:9px;font-size:.72rem;font-weight:600;color:var(--white);
+  padding:6px 10px;border-radius:10px;background:rgba(168,85,247,.09);border:1px solid var(--line)}
+.hall-vazio .hv-motivos li span{font-size:.95rem;line-height:1}

@@ -83,6 +83,8 @@ let sirFiltro = 'all';
 let SIR_ITENS_CACHE = [];
 let _musicaAtual = null;
 let _recentes = [];
+let _top = [];
+let _topPeriodo = 'mes';
 let _musicaPronta = false;
 
 let HALL_DADOS = null;
@@ -411,6 +413,11 @@ function renderHall(){
         <span class="hv-ic" aria-hidden="true">💜</span>
         <b>Ninguém no pódio ainda.</b>
         <p>Seja a primeira pessoa a apoiar o cantinho!</p>
+        <ul class="hv-motivos">
+          <li><span aria-hidden="true">🏆</span>Seu nome no pódio</li>
+          <li><span aria-hidden="true">🎮</span>Ajuda a comprar jogos</li>
+          <li><span aria-hidden="true">🖥️</span>Melhora o setup da live</li>
+        </ul>
         <div class="hv-meta" id="hallMeta" hidden></div>
         ${(d?.aviso || d?.erro) ? '<small class="hv-nota">O ranking automático está indisponível agora.</small>' : ''}
       </div>`;
@@ -516,8 +523,10 @@ function _fmtMs(ms){
 
 function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
+  const top = (Array.isArray(_top) ? _top : []).filter(x => x && x.faixa);
+  const rec = (Array.isArray(_recentes) ? _recentes : []).filter(x => x && x.faixa);
 
-  if(!_musicaPronta && !musicaTocando && !_recentes.length){
+  if(!_musicaPronta && !musicaTocando && !rec.length && !top.length){
     painel.innerHTML = `
       <div class="ouvindo-wrap">
         <div class="disco-fantasma" aria-hidden="true"><span class="df-ic">🎵</span></div>
@@ -527,31 +536,42 @@ function renderOuvindo(){
     return;
   }
 
+  // Lista do card: "mais tocadas" (Last.fm); se não existir, cai para as últimas ouvidas
+  const usaTop = top.length > 0;
+  const lista = (usaTop ? top : rec).slice(0, 6);
+  const tituloLista = usaTop ? (_topPeriodo === 'sempre' ? 'Mais tocadas de sempre' : 'Mais tocadas do mês') : 'Tocou por último';
+  const quando = q => (q && typeof tempoAtras === 'function') ? esc(tempoAtras(q)) : '';
+  const blocoLista = lista.length ? `
+    <div class="top-bloco">
+      <span class="rec-titulo">${tituloLista}</span>
+      <div class="top-wrap">
+        <ol class="top-lista">
+          ${lista.map((x, i) => `
+            <li>
+              <a class="top-item" ${x.url ? `href="${esc(x.url)}" target="_blank" rel="noopener"` : ''}>
+                <span class="top-n">${i + 1}</span>
+                <span class="rec-capa">${x.capa ? `<img src="${esc(x.capa)}" alt="" loading="lazy" onerror="this.remove()">` : '♪'}</span>
+                <span class="rec-info"><b>${esc(x.faixa)}</b><small>${esc(x.artista)}</small></span>
+                <em>${usaTop ? (x.plays ? esc(x.plays) + '×' : '') : quando(x.quando)}</em>
+              </a>
+            </li>`).join('')}
+        </ol>
+      </div>
+    </div>` : '';
+
   if(!musicaTocando){
-    if(_recentes.length){
-      const lista = _recentes.slice(0, 3);
-      const sig = JSON.stringify(lista.map(x => [x.faixa, x.artista, x.quando]));
-      if(painel.dataset.rec === sig) return;
+    if(lista.length){
+      const sig = JSON.stringify([usaTop, lista.map(x => [x.faixa, x.artista, x.plays || x.quando])]);
+      if(painel.dataset.rec === sig){ ajustarListaMusica(); return; }
       painel.dataset.rec = sig;
-      const quando = q => (q && typeof tempoAtras === 'function') ? esc(tempoAtras(q)) : '';
       painel.innerHTML = `
         <div class="ouvindo-wrap ouvindo-vazio-wrap">
           <div class="ouvindo-vazio-top">
             <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="ouvindo-vazio-txt">Nada tocando agora.<br>Últimas que rolaram nas lives 💜</div>
+            <div class="ouvindo-vazio-txt">Nada tocando agora.<br>Enquanto isso, olha o que mais rolou 💜</div>
           </div>
-          <ul class="rec-lista">
-            ${lista.map(x => `
-              <li>
-                <a class="rec-item" ${x.url ? `href="${esc(x.url)}" target="_blank" rel="noopener"` : ''}>
-                  <span class="rec-capa">${x.capa ? `<img src="${esc(x.capa)}" alt="" loading="lazy" onerror="this.remove()">` : '♪'}</span>
-                  <span class="rec-info"><b>${esc(x.faixa)}</b><small>${esc(x.artista)}</small></span>
-                  <em>${quando(x.quando)}</em>
-                </a>
-              </li>`).join('')}
-          </ul>
-        </div>
-      `;
+        </div>${blocoLista}`;
+      ajustarListaMusica();
       return;
     }
     delete painel.dataset.rec;
@@ -595,27 +615,11 @@ function renderOuvindo(){
     ? (d.url.includes('/track/') ? '▶ Ouvir no Spotify' : '🔍 Buscar no Spotify')
     : '';
 
-  const anteriores = (_recentes || []).filter(x => x && x.faixa && !(x.faixa === d.faixa && x.artista === d.artista)).slice(0, 3);
-  const quandoRec = q => (q && typeof tempoAtras === 'function') ? esc(tempoAtras(q)) : '';
-  const recentesHTML = anteriores.length ? `
-      <div class="rec-bloco">
-        <span class="rec-titulo">Tocou antes</span>
-        <ul class="rec-lista">
-          ${anteriores.map(x => `
-            <li>
-              <a class="rec-item" ${x.url ? `href="${esc(x.url)}" target="_blank" rel="noopener"` : ''}>
-                <span class="rec-capa">${x.capa ? `<img src="${esc(x.capa)}" alt="" loading="lazy" onerror="this.remove()">` : '♪'}</span>
-                <span class="rec-info"><b>${esc(x.faixa)}</b><small>${esc(x.artista)}</small></span>
-                <em>${quandoRec(x.quando)}</em>
-              </a>
-            </li>`).join('')}
-        </ul>
-      </div>` : '';
-
   const capaHTML = d.capa
     ? `<img src="${esc(d.capa)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'disco-fallback',textContent:'${iniciais}'}))">`
     : `<div class="disco-fallback">${iniciais}</div>`;
 
+  delete painel.dataset.rec;
   painel.innerHTML = `
     <div class="ouvindo-wrap" id="ouvindoWrap">
       <a class="disco" href="${esc(urlAbrir)}" target="${target}" rel="noopener" title="${d.url ? 'Abrir no Spotify' : d.faixa || ''}">
@@ -633,8 +637,19 @@ function renderOuvindo(){
         ` : ''}
         ${d.url ? `<a class="ouvindo-link" href="${esc(d.url)}" target="_blank" rel="noopener">${linkTexto}</a>` : ''}
       </div>
-      ${recentesHTML}
-    </div>`;
+    </div>${blocoLista}`;
+  ajustarListaMusica();
+}
+
+/* Mostra só as faixas que cabem no card (sem cortar item pela metade); as que sobram somem. */
+function ajustarListaMusica(){
+  const ol = document.querySelector('#musicBox .top-lista');
+  if(!ol) return;
+  const lis = Array.from(ol.children);
+  ol.classList.add('calc');
+  lis.forEach(li => { li.hidden = false; });
+  for(let i = lis.length - 1; i >= 2 && ol.scrollHeight > ol.clientHeight + 1; i--) lis[i].hidden = true;
+  ol.classList.remove('calc');
 }
 
 function pintarOuvindo(d){
@@ -655,6 +670,7 @@ async function carregarOuvindoAgora(){
     _musicaPronta = true;
     if(!r.ok) { musicaTocando = false; renderOuvindo(); return; }
     const d = await r.json();
+    if(d && d.top && Array.isArray(d.top.itens)){ _top = d.top.itens; _topPeriodo = d.top.periodo || 'mes'; }
     if(!d || !d.tocando || !d.faixa){
       musicaTocando = false;
       _musicaAtual = null;
@@ -665,7 +681,6 @@ async function carregarOuvindoAgora(){
     const musicaMudou = !_musicaAtual || _musicaAtual.faixa !== d.faixa || _musicaAtual.artista !== d.artista;
     musicaTocando = true;
     _musicaAtual = d;
-    _recentes = Array.isArray(d.recentes) ? d.recentes : [];
     if(musicaMudou) pintarOuvindo(d);
     else renderOuvindo();
   } catch(e) {
@@ -2087,6 +2102,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupSubShortcuts();
   iniciarHall();
   renderOuvindo();
+  try{
+    const mb = $('musicBox');
+    if(mb && 'ResizeObserver' in window) new ResizeObserver(() => ajustarListaMusica()).observe(mb);
+  }catch(e){}
 
   setupSugForm();
   setupSirFiltros();

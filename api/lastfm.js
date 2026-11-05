@@ -391,6 +391,44 @@ async function enriquecerItens(itens) {
   }));
 }
 
+/* ============ MAIS TOCADAS (Last.fm) — cache de 1h ============ */
+async function lastfmTop() {
+  if (!USER || !KEY) return null;
+  const chave = 'cache:musica_top_v1';
+  try { const [raw] = await redis([['GET', chave]]); if (raw) return JSON.parse(raw); } catch (e) {}
+
+  async function buscar(periodo) {
+    const url = `https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&user=${encodeURIComponent(USER)}&api_key=${KEY}&format=json&period=${periodo}&limit=6`;
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    const d = await r.json();
+    let t = d?.toptracks?.track;
+    if (!t) return [];
+    if (!Array.isArray(t)) t = [t];
+    return t.map(x => ({
+      faixa: safeStr(x.name, 200),
+      artista: safeStr(x.artist?.name || x.artist?.['#text'] || '', 200),
+      plays: Number(x.playcount) || 0,
+      capa: lastfmImg(x, ['large', 'extralarge']),
+      url: null
+    })).filter(x => x.faixa);
+  }
+
+  try {
+    let periodo = 'mes';
+    let itens = await buscar('1month');
+    if (itens.length < 3) {
+      const todas = await buscar('overall');
+      if (todas.length > itens.length) { itens = todas; periodo = 'sempre'; }
+    }
+    if (!itens.length) return null;
+    await enriquecerItens(itens);          // capa + link do Spotify (com cache de 30 dias)
+    const out = { periodo, itens };
+    try { await redis([['SET', chave, JSON.stringify(out), 'EX', '3600']]); } catch (e) {}
+    return out;
+  } catch (e) { return null; }
+}
+
 /* ============ HANDLER ============ */
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -406,24 +444,21 @@ export default async function handler(req, res) {
       const lf = await lastfmDados();
       data = lf.agora;
       recentes = lf.recentes;
-    } else {
-      // Tocando via Spotify: ainda buscamos o histórico para preencher o card.
-      try { recentes = (await lastfmDados()).recentes || []; } catch (_) { recentes = []; }
-      recentes = recentes.filter(r => !(r.faixa === data.faixa && r.artista === data.artista)).slice(0, 4);
     }
 
     const itens = [];
     if (data && data.tocando) itens.push(data);
     recentes.forEach(r => itens.push(r));
     await enriquecerItens(itens);
+    const top = await lastfmTop();
 
     if (!data || !data.tocando) {
-      const vazio = { tocando: false, recentes };
+      const vazio = { tocando: false, recentes, top };
       await setCache(vazio);
       return res.status(200).json(vazio);
     }
 
-    const completo = { ...data, recentes: recentes.filter(r => !(r.faixa === data.faixa && r.artista === data.artista)).slice(0, 4) };
+    const completo = { ...data, recentes, top };
     await setCache(completo);
     return res.status(200).json(completo);
   } catch(e) {
