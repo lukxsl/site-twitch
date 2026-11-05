@@ -4,7 +4,7 @@
 const CONFIG = {
   subs: null,
   donate: 'https://midfielder.tv.br/asemtet0',
-  siteUpdated: '12/10/2026',
+  siteUpdated: fmtDataHora(new Date().toISOString()),
   topDoadores: [],
   atividadeManual: [],
   spotifyPlaylist: 'https://open.spotify.com/playlist/0OV32Qe5e7BJY33rL4tpXk',
@@ -298,8 +298,13 @@ function renderSiteUpdate(){
   const el = $('siteUpdated'); if(!el) return;
   const raw = CONFIG_GERAL && CONFIG_GERAL.updatedAt;
   const d = raw ? new Date(raw) : null;
-  el.textContent = d && !Number.isNaN(d.getTime()) ? fmtDataHora(d.toISOString()) : '—';
-  el.title = 'Data da última alteração nas configurações do site, não a data do deploy.';
+  const valida = d && !Number.isNaN(d.getTime());
+  el.textContent = valida
+    ? fmtDataHora(d.toISOString())
+    : (CONFIG.siteUpdated || fmtDataHora(new Date().toISOString()));
+  el.title = valida
+    ? 'Data da última alteração nas configurações do site.'
+    : 'Data do build/carregamento atual do site.';
 }
 
 function renderHomeExtras(){

@@ -375,3 +375,47 @@
   .bento .twitch-player{max-height:none}
   .bento .bento-stack > .jogos-card{flex:0 0 auto}
 }
+
+/* ============================================================
+   JOGOS — metades alinhadas, capas iguais e botões no rodapé
+   ============================================================ */
+.bento .jogos-card{align-items:stretch}
+.bento .jogos-card .jogo-half{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  justify-content:space-between;
+  align-items:flex-start;
+}
+.jogos-card .jogo-half .foco-cover,
+.jogos-card .jogo-half .prox-cover-fallback{
+  width:100px;
+  height:150px;
+  min-width:100px;
+  max-width:100px;
+  min-height:150px;
+  max-height:150px;
+  flex:0 0 auto;
+  object-fit:cover;
+  border-radius:8px;
+  align-self:center;
+}
+.jogos-card .jogo-half .foco-info{
+  width:100%;
+  flex:1 1 auto;
+  align-self:stretch;
+  justify-content:flex-start;
+}
+.jogos-card .jogo-half .foco-btns{
+  margin-top:auto;
+  width:100%;
+}
+
+.vgrid .vc-poster{
+  width:100%;
+  height:150px;
+  aspect-ratio:auto;
+  object-fit:cover;
+  border-radius:8px;
+}
+.vgrid .vc-poster img{width:100%;height:100%;object-fit:cover}
