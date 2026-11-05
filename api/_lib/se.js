@@ -23,6 +23,18 @@ const CHANNEL_ID_ENV = String(process.env.STREAMELEMENTS_CHANNEL_ID || '').trim(
 
 export const temJwt = () => !!JWT;
 
+// Olha o JWT localmente (sem rede) e aponta o problema mais comum.
+function diagnosticoJwt() {
+  if (!JWT) return 'STREAMELEMENTS_JWT está vazio na Vercel (confira se foi salvo em Production e faça Redeploy).';
+  const partes = JWT.split('.');
+  if (partes.length !== 3) return 'O valor de STREAMELEMENTS_JWT não é um JWT (deve ter 3 partes separadas por ponto). Copie o "JWT Token" em StreamElements → Account → Channels → Show secrets, não o Account ID.';
+  try {
+    const p = JSON.parse(Buffer.from(partes[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    if (p.exp && p.exp * 1000 < Date.now()) return 'O JWT do StreamElements expirou. Gere um novo.';
+  } catch (_) { return 'O STREAMELEMENTS_JWT está corrompido (não decodifica). Cole de novo, inteiro.'; }
+  return null;
+}
+
 function erro(msg, status, code) {
   const e = new Error(msg);
   e.statusCode = status || 502;
@@ -41,9 +53,14 @@ export async function seGet(path, { publico = false, query = null, timeoutMs = 9
   const qs = query ? '?' + new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null)).toString() : '';
   const url = `${BASE}${p}${qs}`;
 
-  async function chamar(comToken) {
-    const headers = { Accept: 'application/json' };
-    if (comToken) headers.Authorization = `Bearer ${JWT}`;
+  async function chamar(esquema) {
+    const headers = {
+      Accept: 'application/json',
+      'User-Agent': 'Mozilla/5.0 (compatible; asemtet0-site/1.0; +https://asemtet0.vercel.app)',
+      Origin: 'https://streamelements.com',
+      Referer: 'https://streamelements.com/'
+    };
+    if (esquema) headers.Authorization = `${esquema} ${JWT}`;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
@@ -52,12 +69,18 @@ export async function seGet(path, { publico = false, query = null, timeoutMs = 9
       throw erro('Não foi possível conectar ao StreamElements.', 502, 'se_offline');
     } finally { clearTimeout(timer); }
   }
+  const negado = (x) => x.status === 401 || x.status === 403;
 
-  let r = await chamar(!!JWT);
-  if ((r.status === 401 || r.status === 403) && publico) r = await chamar(false);
+  let r = await chamar(JWT ? 'Bearer' : null);
+  // Alguns tokens só passam com o esquema "oAuth" (token OAuth2 em vez de JWT)
+  if (JWT && negado(r)) { const r2 = await chamar('oAuth'); if (!negado(r2)) r = r2; }
+  if (negado(r) && publico) r = await chamar(null);
 
-  if (r.status === 401 || r.status === 403) {
-    throw erro(`StreamElements recusou o token (HTTP ${r.status}). Gere um JWT novo e atualize STREAMELEMENTS_JWT na Vercel.`, 502, 'se_auth');
+  if (negado(r)) {
+    let corpo = '';
+    try { corpo = (await r.text()).replace(/\s+/g, ' ').slice(0, 140); } catch (_) {}
+    const dica = diagnosticoJwt() || 'Gere um JWT novo (Show secrets → Regenerate) na conta vinculada ao canal e atualize STREAMELEMENTS_JWT na Vercel + Redeploy.';
+    throw erro(`StreamElements recusou o acesso (HTTP ${r.status}${corpo ? ': ' + corpo : ''}). ${dica}`, 502, 'se_auth');
   }
   if (r.status === 404) throw erro('Recurso não encontrado no StreamElements (HTTP 404).', 502, 'se_404');
   if (!r.ok) throw erro(`Falha na API do StreamElements (HTTP ${r.status}).`, 502, 'se_http');

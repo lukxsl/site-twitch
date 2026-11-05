@@ -301,3 +301,77 @@
 .jogos-card #focoHoras[hidden]{display:none!important}
 .vgrid .vc-poster{height:160px;aspect-ratio:auto}
 .vgrid .vc-poster img{height:100%;object-fit:cover}
+
+
+/* ============================================================
+   HOME v2 — grade em 2 linhas (sem buracos) e cards compactos
+   Linha 1: perfil | player | assinar      Linha 2: música | recado+jogos | apoie
+   ============================================================ */
+.bento .bento-col{display:contents}
+.bento{display:grid;gap:14px;align-items:stretch;
+  grid-template-columns:minmax(0,300px) minmax(0,1fr) minmax(0,330px);
+  grid-template-areas:"profile player sub" "music stack apoie"}
+.bento .profile-card{grid-area:profile}
+.bento .twitch-player-box{grid-area:player}
+.bento .sub-hero-box{grid-area:sub}
+.bento .music-box{grid-area:music}
+.bento .bento-stack{grid-area:stack;display:flex;flex-direction:column;gap:14px;min-width:0}
+.bento .apoie{grid-area:apoie}
+.bento > .card,.bento .bento-stack > .card{margin:0;min-width:0}
+.bento .bento-stack > .jogos-card{flex:1 1 auto}
+.bento .bento-stack > .recado-card{flex:0 0 auto}
+
+/* player menor: nunca passa de 340px de altura */
+.bento .twitch-player{aspect-ratio:16/9;max-height:340px;min-height:0}
+.bento .player-note{padding:8px 14px;font-size:.72rem}
+.bento .offline-panel{gap:6px;padding:14px}
+.bento .offline-panel img{width:52px;height:52px}
+
+/* cards de linha 1 distribuem o conteúdo em vez de deixar vazio */
+.bento .profile-card,.bento .sub-hero-box{justify-content:center}
+.bento .profile-card{padding:18px 16px;gap:8px}
+.bento .sub-hero-box .sub-hero-top{padding:16px 18px 10px}
+.bento .sub-hero-box h3{font-size:1.3rem;margin:8px 0 2px}
+
+/* recado + jogos mais enxutos */
+.bento .recado-card{padding:12px 14px}
+.bento .jogos-card{min-height:0;align-items:center}
+.bento .jogos-card .jogo-half{padding:12px;gap:10px;align-items:center;min-height:0}
+.bento .jogo-half .foco-cover{width:64px;height:96px}
+.bento .jogo-half .foco-info{gap:5px;justify-content:center}
+.bento .jogo-half .foco-info h3{font-size:1rem}
+.bento .jogo-half .foco-btns{padding-top:4px}
+.bento .jogo-half #proxInfo{min-height:0}
+
+/* spotify: lista de recentes cresce pra preencher a altura da linha */
+#musicBox.music-box{padding:14px;gap:8px}
+#musicBox .music-panel{gap:10px}
+#musicBox .music-recentes{flex:1 1 auto;display:flex;flex-direction:column;gap:6px;min-height:0}
+#musicBox .music-recentes-lista{flex:1 1 auto;display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+#musicBox .music-recentes-lista li{flex:1 1 0;min-height:48px;max-height:72px;display:flex}
+#musicBox .music-recentes-lista li > *{flex:1;min-width:0;align-items:center}
+#musicBox .music-link-playlist{margin-top:auto}
+
+/* apoie: estado vazio compacto (motivos viram chips) */
+.bento .apoie{gap:8px;padding:14px}
+.bento .apoie #hallLista{flex:1 1 auto;justify-content:center}
+.hall-vazio{min-height:0;padding:14px 12px;gap:4px;flex:0 1 auto;width:100%}
+.hall-vazio .hv-ic{font-size:2rem}
+.hall-vazio .hv-motivos{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;max-width:none;margin:6px 0 0}
+.hall-vazio .hv-motivos li{padding:4px 9px;border-radius:99px;font-size:.66rem;gap:5px;
+  background:rgba(168,85,247,.1);border:1px solid var(--line)}
+.hall-vazio .hv-motivos li span{font-size:.8rem}
+.bento .apoie #donateLink{margin-top:auto}
+
+/* tablet: player em cima, resto em 2 colunas */
+@media(max-width:1179px){
+  .bento{grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    grid-template-areas:"player player" "profile sub" "music apoie" "stack stack"}
+}
+/* celular: 1 coluna */
+@media(max-width:720px){
+  .bento{grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"player" "profile" "stack" "sub" "music" "apoie"}
+  .bento .twitch-player{max-height:none}
+  .bento .bento-stack > .jogos-card{flex:0 0 auto}
+}
