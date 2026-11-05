@@ -36,6 +36,15 @@ function atualizarFoco(game, isLive){
       : 'Quando a Soso jogar, aparece aqui. 💜';
     if(link) link.style.display = 'none';
     if(bar) bar.style.display = 'none';
+    const s0 = document.getElementById('focoSub'); if(s0) s0.hidden = true;
+    const l0 = document.getElementById('focoLive');
+    if(l0){
+      const st = window.__streamInfo;
+      if(isLive && st){
+        l0.innerHTML = `<span>👀 ${Number(st.viewer_count || 0).toLocaleString('pt-BR')} assistindo</span>` + (st.title ? `<p>${esc(st.title)}</p>` : '');
+        l0.hidden = false;
+      } else { l0.innerHTML = ''; l0.hidden = true; }
+    }
     return;
   }
 
@@ -94,13 +103,35 @@ function atualizarFoco(game, isLive){
     }
   }
 
+  // ---- Detalhes: gêneros · ano ----
+  const sub = document.getElementById('focoSub');
+  if(sub){
+    const partes = [];
+    if(jogoTL && jogoTL.generos && jogoTL.generos.length) partes.push(jogoTL.generos.slice(0, 3).join(', '));
+    if(jogoTL && jogoTL.ano) partes.push(String(jogoTL.ano));
+    sub.textContent = partes.join(' · ');
+    sub.hidden = !partes.length;
+  }
+
+  // ---- Info da live (preenche o card quando o jogo não está na tier list) ----
+  const liveBox = document.getElementById('focoLive');
+  if(liveBox){
+    const st = window.__streamInfo;
+    if(isLive && st){
+      const chips = [`<span>👀 ${Number(st.viewer_count || 0).toLocaleString('pt-BR')} assistindo</span>`];
+      if(st.uptime) chips.push(`<span>⏱ no ar há ${esc(st.uptime)}</span>`);
+      liveBox.innerHTML = chips.join('') + (st.title ? `<p title="${esc(st.title)}">${esc(st.title)}</p>` : '');
+      liveBox.hidden = false;
+    } else { liveBox.innerHTML = ''; liveBox.hidden = true; }
+  }
+
   // ---- Barra de progresso (conquistas) ----
   if(bar && barI && pct){
     if(jogoTL && jogoTL.conquistas && jogoTL.conquistas.total > 0){
       const p = Math.round((jogoTL.conquistas.obtidas / jogoTL.conquistas.total) * 100);
       bar.style.display = '';
       barI.style.width = p + '%';
-      pct.textContent = p + '%';
+      pct.textContent = `${jogoTL.conquistas.obtidas}/${jogoTL.conquistas.total} · ${p}%`;
     } else {
       bar.style.display = 'none';
     }
@@ -306,6 +337,7 @@ async function verificarStatusTwitch() {
       }
     }
 
+    if (panel) panel.classList.remove('is-mature');
     if (data.stream && isMature) {
       assistindoVod = false;
       if(iframe){
@@ -314,7 +346,11 @@ async function verificarStatusTwitch() {
       }
       if(panel){
         panel.style.display = 'flex';
+        panel.classList.add('is-mature');
+        panel.style.backgroundImage = 'linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85))';
+        const fundo18 = data.stream.thumbnail || (data.game && data.game.box_art) || (data.user && data.user.offline_image_url) || (data.user && data.user.profile_image_url) || '';
         panel.innerHTML = `
+          ${fundo18 ? `<div class="mature-bg" aria-hidden="true" style="background-image:url('${esc(fundo18)}')"></div>` : ''}
           <div style="font-size:2.6rem;line-height:1">🔞</div>
           <h4>Conteúdo +18 agora</h4>
           <p>A Soso tá jogando algo com classificação adulta. O Twitch bloqueia o player embutido nesses casos — assista direto no site deles:</p>
@@ -384,6 +420,7 @@ async function verificarStatusTwitch() {
     const fbVod = g('vodFallback');
     if(fbVod) fbVod.style.display = assistindoVod ? '' : 'none';
 
+    window.__streamInfo = data.stream || null;
     atualizarFoco(data.game, !!data.stream);
     if(typeof window.setJogoAoVivo === 'function'){
       window.setJogoAoVivo(data.stream && data.game ? data.game.name : null);

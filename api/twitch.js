@@ -161,6 +161,7 @@ export default async function handler(req, res) {
         uptime,
         uptime_seconds: uptimeSeconds,
         started_at: safeStr(stream.started_at, 40),
+        thumbnail: safeUrl(stream.thumbnail_url ? stream.thumbnail_url.replace('{width}', '1280').replace('{height}', '720') : null),
         is_mature: !!stream.is_mature
       },
       followers: followersTotal,

@@ -403,15 +403,24 @@ function renderHall(){
   // A home mostra apenas o pódio. O ranking completo continua disponível no painel.
   const itens = bruto.slice(0, 3);
 
-  let html = hallPodioHTML(itens);
-  if(itens.length > 3) html += `<div class="hall-resto">${hallRestoHTML(itens.slice(3))}</div>`;
+  let html;
   if(!itens.length){
-    html += (d?.aviso || d?.erro)
-      ? `<p class="hall-cta-vazio hall-erro">Ranking de apoiadores indisponível no momento. Tente novamente em instantes. 💜</p>`
-      : `<p class="hall-cta-vazio">Ninguém no pódio ainda. <b>Seja a primeira pessoa a aparecer aqui!</b> 💜</p>`;
+    // Sem doadores: em vez de 3 vagas vazias, um estado vazio com convite (e a meta real, se existir)
+    html = `
+      <div class="hall-vazio">
+        <span class="hv-ic" aria-hidden="true">💜</span>
+        <b>Ninguém no pódio ainda.</b>
+        <p>Seja a primeira pessoa a apoiar o cantinho!</p>
+        <div class="hv-meta" id="hallMeta" hidden></div>
+        ${(d?.aviso || d?.erro) ? '<small class="hv-nota">O ranking automático está indisponível agora.</small>' : ''}
+      </div>`;
+  } else {
+    html = hallPodioHTML(itens);
+    if(itens.length > 3) html += `<div class="hall-resto">${hallRestoHTML(itens.slice(3))}</div>`;
+    if(d?.aviso) html += `<p class="hall-cta-vazio hall-erro hall-aviso">${esc(d.aviso)}</p>`;
   }
-  if(d?.aviso) html += `<p class="hall-cta-vazio hall-erro hall-aviso">${esc(d.aviso)}</p>`;
   lista.innerHTML = html;
+  if(!itens.length) pintarMetaHall();
 
   if(total){
     const linhas = [];
@@ -427,6 +436,25 @@ function renderHall(){
   } else if(updated){
     updated.style.display = 'none';
   }
+}
+
+let HALL_META;
+async function pintarMetaHall(){
+  if(HALL_META === undefined){
+    try{
+      const r = await fetch('/api/config?action=metas');
+      const m = await r.json();
+      const dd = m && m.doacoes;
+      const meta = Number(dd && dd.meta) || 0;
+      const atual = Number(m && m.valores && m.valores.doacoes) || 0;
+      HALL_META = (dd && dd.ativo && meta > 0) ? { meta, atual } : null;
+    }catch(e){ HALL_META = null; }
+  }
+  const box = $('hallMeta');
+  if(!box || !HALL_META) return;
+  const p = Math.min(100, Math.round(HALL_META.atual / HALL_META.meta * 100));
+  box.innerHTML = `<div class="hv-meta-top"><span>🎯 Meta de doações</span><b>${p}%</b></div><div class="goal-bar"><i style="width:${p}%"></i></div><small>${esc(fmtBRL(HALL_META.atual))} de ${esc(fmtBRL(HALL_META.meta))}</small>`;
+  box.hidden = false;
 }
 
 function atualizarTextoHallUpdated(ts){
@@ -567,6 +595,23 @@ function renderOuvindo(){
     ? (d.url.includes('/track/') ? '▶ Ouvir no Spotify' : '🔍 Buscar no Spotify')
     : '';
 
+  const anteriores = (_recentes || []).filter(x => x && x.faixa && !(x.faixa === d.faixa && x.artista === d.artista)).slice(0, 3);
+  const quandoRec = q => (q && typeof tempoAtras === 'function') ? esc(tempoAtras(q)) : '';
+  const recentesHTML = anteriores.length ? `
+      <div class="rec-bloco">
+        <span class="rec-titulo">Tocou antes</span>
+        <ul class="rec-lista">
+          ${anteriores.map(x => `
+            <li>
+              <a class="rec-item" ${x.url ? `href="${esc(x.url)}" target="_blank" rel="noopener"` : ''}>
+                <span class="rec-capa">${x.capa ? `<img src="${esc(x.capa)}" alt="" loading="lazy" onerror="this.remove()">` : '♪'}</span>
+                <span class="rec-info"><b>${esc(x.faixa)}</b><small>${esc(x.artista)}</small></span>
+                <em>${quandoRec(x.quando)}</em>
+              </a>
+            </li>`).join('')}
+        </ul>
+      </div>` : '';
+
   const capaHTML = d.capa
     ? `<img src="${esc(d.capa)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'disco-fallback',textContent:'${iniciais}'}))">`
     : `<div class="disco-fallback">${iniciais}</div>`;
@@ -588,6 +633,7 @@ function renderOuvindo(){
         ` : ''}
         ${d.url ? `<a class="ouvindo-link" href="${esc(d.url)}" target="_blank" rel="noopener">${linkTexto}</a>` : ''}
       </div>
+      ${recentesHTML}
     </div>`;
 }
 
@@ -619,6 +665,7 @@ async function carregarOuvindoAgora(){
     const musicaMudou = !_musicaAtual || _musicaAtual.faixa !== d.faixa || _musicaAtual.artista !== d.artista;
     musicaTocando = true;
     _musicaAtual = d;
+    _recentes = Array.isArray(d.recentes) ? d.recentes : [];
     if(musicaMudou) pintarOuvindo(d);
     else renderOuvindo();
   } catch(e) {

@@ -406,6 +406,10 @@ export default async function handler(req, res) {
       const lf = await lastfmDados();
       data = lf.agora;
       recentes = lf.recentes;
+    } else {
+      // Tocando via Spotify: ainda buscamos o histórico para preencher o card.
+      try { recentes = (await lastfmDados()).recentes || []; } catch (_) { recentes = []; }
+      recentes = recentes.filter(r => !(r.faixa === data.faixa && r.artista === data.artista)).slice(0, 4);
     }
 
     const itens = [];
@@ -419,8 +423,9 @@ export default async function handler(req, res) {
       return res.status(200).json(vazio);
     }
 
-    await setCache(data);
-    return res.status(200).json(data);
+    const completo = { ...data, recentes: recentes.filter(r => !(r.faixa === data.faixa && r.artista === data.artista)).slice(0, 4) };
+    await setCache(completo);
+    return res.status(200).json(completo);
   } catch(e) {
     console.error('[lastfm] erro:', e);
     return res.status(200).json({ tocando: false });
