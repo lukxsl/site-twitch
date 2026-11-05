@@ -41,7 +41,7 @@ function atualizarFoco(game, isLive){
     if(l0){
       const st = window.__streamInfo;
       if(isLive && st){
-        l0.innerHTML = `<span>👀 ${Number(st.viewer_count || 0).toLocaleString('pt-BR')} assistindo</span>` + (st.title ? `<p>${esc(st.title)}</p>` : '');
+        l0.innerHTML = `<span>👀 ${Number(st.viewer_count || 0).toLocaleString('pt-BR')} assistindo</span>`;
         l0.hidden = false;
       } else { l0.innerHTML = ''; l0.hidden = true; }
     }
@@ -83,20 +83,22 @@ function atualizarFoco(game, isLive){
       if(jogoTL.nota > 0) chips.push(`<span class="foco-chip">⭐ ${n1(jogoTL.nota)}</span>`);
       if(jogoTL.status) chips.push(`<span class="foco-chip">${esc(jogoTL.status)}</span>`);
       if(jogoTL.horas > 0) chips.push(`<span class="foco-chip">⏱ ${fh(jogoTL.horas)}</span>`);
+      if(jogoTL.conquistas && jogoTL.conquistas.total > 0) chips.push(`<span class="foco-chip">🏆 ${jogoTL.conquistas.obtidas}/${jogoTL.conquistas.total}</span>`);
     } else {
       chips.push(`<span class="foco-chip">Novo na biblioteca</span>`);
     }
     meta.innerHTML = chips.join('');
   }
 
-  // ---- Linha de horas/extra ----
+  // ---- Linha de horas/extra (só quando a barra de status não tem esses dados) ----
   if(horas){
-    if(jogoTL && jogoTL.horas > 0){
-      const cq = (jogoTL.conquistas && jogoTL.conquistas.total)
-        ? ` · 🏆 ${jogoTL.conquistas.obtidas}/${jogoTL.conquistas.total}`
-        : (jogoTL.status ? ` · ${jogoTL.status}` : '');
-      horas.textContent = `${fh(jogoTL.horas)} jogadas${cq}`;
+    const temHoras = !!(jogoTL && jogoTL.horas > 0);
+    const temConquistas = !!(jogoTL && jogoTL.conquistas && jogoTL.conquistas.total > 0);
+    if(temHoras || temConquistas){
+      horas.hidden = true;
+      horas.textContent = '';
     } else {
+      horas.hidden = false;
       horas.textContent = isLive
         ? 'Assistindo agora na Twitch 💜'
         : 'Sem dados extras na tier list ainda.';
@@ -120,7 +122,7 @@ function atualizarFoco(game, isLive){
     if(isLive && st){
       const chips = [`<span>👀 ${Number(st.viewer_count || 0).toLocaleString('pt-BR')} assistindo</span>`];
       if(st.uptime) chips.push(`<span>⏱ no ar há ${esc(st.uptime)}</span>`);
-      liveBox.innerHTML = chips.join('') + (st.title ? `<p title="${esc(st.title)}">${esc(st.title)}</p>` : '');
+      liveBox.innerHTML = chips.join('');
       liveBox.hidden = false;
     } else { liveBox.innerHTML = ''; liveBox.hidden = true; }
   }
@@ -131,7 +133,7 @@ function atualizarFoco(game, isLive){
       const p = Math.round((jogoTL.conquistas.obtidas / jogoTL.conquistas.total) * 100);
       bar.style.display = '';
       barI.style.width = p + '%';
-      pct.textContent = `${jogoTL.conquistas.obtidas}/${jogoTL.conquistas.total} · ${p}%`;
+      pct.textContent = `${p}%`;
     } else {
       bar.style.display = 'none';
     }

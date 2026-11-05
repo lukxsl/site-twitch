@@ -521,135 +521,111 @@ function _fmtMs(ms){
   return `${m}:${String(s).padStart(2,'0')}`;
 }
 
+function _capaFaixaHTML(x, classe){
+  const ini = esc(_iniciaisFaixa(x && x.faixa));
+  const img = x && x.capa
+    ? `<img src="${esc(x.capa)}" alt="" loading="lazy" onerror="this.remove()">`
+    : '';
+  return `<span class="${classe}">${img}<span class="mf-ph">${ini}</span></span>`;
+}
+
+function _linkFaixa(x, classe, conteudo){
+  if(x && x.url) return `<a class="${classe}" href="${esc(x.url)}" target="_blank" rel="noopener">${conteudo}</a>`;
+  return `<div class="${classe}">${conteudo}</div>`;
+}
+
+function _destaqueMusicaHTML(){
+  const top = (Array.isArray(_top) ? _top : []).find(x => x && x.faixa);
+  if(!top) return '';
+  const rotulo = _topPeriodo === 'sempre' ? 'Música mais tocada de sempre' : 'Música mais tocada do mês';
+  const plays = top.plays ? `<em>${esc(top.plays)}×</em>` : '';
+  return `
+    <div class="music-destaque">
+      <span class="music-mini-title">👑 ${rotulo}</span>
+      ${_linkFaixa(top, 'music-destaque-card', `
+        ${_capaFaixaHTML(top, 'music-destaque-capa')}
+        <span class="music-destaque-info"><b>${esc(top.faixa)}</b><small>${esc(top.artista || '')}</small></span>
+        ${plays}
+      `)}
+    </div>`;
+}
+
+function _recentesMusicaHTML(rec){
+  const itens = rec.slice(0, 3);
+  if(!itens.length) return '';
+  const quando = q => (q && typeof tempoAtras === 'function') ? tempoAtras(q) : '';
+  return `
+    <div class="music-recentes">
+      <span class="music-mini-title">Tocou por último</span>
+      <ol class="music-recentes-lista">
+        ${itens.map(x => `
+          <li>${_linkFaixa(x, 'music-recente-item', `
+            ${_capaFaixaHTML(x, 'music-recente-capa')}
+            <span class="music-recente-info"><b>${esc(x.faixa)}</b><small>${esc(x.artista || '')}</small></span>
+            ${quando(x.quando) ? `<em>${esc(quando(x.quando))}</em>` : ''}
+          `)}</li>`).join('')}
+      </ol>
+    </div>`;
+}
+
 function renderOuvindo(){
   const painel = $('musicPainelOuvindo'); if(!painel) return;
   const top = (Array.isArray(_top) ? _top : []).filter(x => x && x.faixa);
   const rec = (Array.isArray(_recentes) ? _recentes : []).filter(x => x && x.faixa);
+  const destaque = _destaqueMusicaHTML();
 
   if(!_musicaPronta && !musicaTocando && !rec.length && !top.length){
+    painel.dataset.sig = '';
     painel.innerHTML = `
-      <div class="ouvindo-wrap">
-        <div class="disco-fantasma" aria-hidden="true"><span class="df-ic">🎵</span></div>
-        <div class="ouvindo-vazio-txt">Carregando…</div>
-      </div>
-    `;
+      <div class="music-idle">
+        <div class="music-idle-head">
+          <div class="disco-fantasma" aria-hidden="true"><span class="df-ic">🎵</span></div>
+          <div class="ouvindo-vazio-txt">Carregando…</div>
+        </div>
+      </div>`;
     return;
   }
 
-  // Lista do card: "mais tocadas" (Last.fm); se não existir, cai para as últimas ouvidas
-  const usaTop = top.length > 0;
-  const lista = (usaTop ? top : rec).slice(0, 6);
-  const tituloLista = usaTop ? (_topPeriodo === 'sempre' ? 'Mais tocadas de sempre' : 'Mais tocadas do mês') : 'Tocou por último';
-  const quando = q => (q && typeof tempoAtras === 'function') ? esc(tempoAtras(q)) : '';
-  const blocoLista = lista.length ? `
-    <div class="top-bloco">
-      <span class="rec-titulo">${tituloLista}</span>
-      <div class="top-wrap">
-        <ol class="top-lista">
-          ${lista.map((x, i) => `
-            <li>
-              <a class="top-item" ${x.url ? `href="${esc(x.url)}" target="_blank" rel="noopener"` : ''}>
-                <span class="top-n">${i + 1}</span>
-                <span class="rec-capa">${x.capa ? `<img src="${esc(x.capa)}" alt="" loading="lazy" onerror="this.remove()">` : '♪'}</span>
-                <span class="rec-info"><b>${esc(x.faixa)}</b><small>${esc(x.artista)}</small></span>
-                <em>${usaTop ? (x.plays ? esc(x.plays) + '×' : '') : quando(x.quando)}</em>
-              </a>
-            </li>`).join('')}
-        </ol>
-      </div>
-    </div>` : '';
-
-  if(!musicaTocando){
-    if(lista.length){
-      const sig = JSON.stringify([usaTop, lista.map(x => [x.faixa, x.artista, x.plays || x.quando])]);
-      if(painel.dataset.rec === sig){ ajustarListaMusica(); return; }
-      painel.dataset.rec = sig;
-      painel.innerHTML = `
-        <div class="ouvindo-wrap ouvindo-vazio-wrap">
-          <div class="ouvindo-vazio-top">
-            <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="ouvindo-vazio-txt">Nada tocando agora.<br>Enquanto isso, olha o que mais rolou 💜</div>
-          </div>
-        </div>${blocoLista}`;
-      ajustarListaMusica();
-      return;
-    }
-    delete painel.dataset.rec;
-
-    const mp = (CONFIG.spotifyPlaylist || '').match(/playlist\/([a-zA-Z0-9]+)/);
-    if(mp){
-      if(painel.querySelector('.music-mini-embed')) return;
-      painel.innerHTML = `
-        <div class="ouvindo-wrap ouvindo-vazio-wrap">
-          <div class="ouvindo-vazio-top">
-            <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-            <div class="ouvindo-vazio-txt">Nada tocando agora.<br>Enquanto isso, dá o play na playlist 💜</div>
-          </div>
-          <iframe class="music-mini-embed" src="https://open.spotify.com/embed/playlist/${mp[1]}?theme=0"
-            allowtransparency="true" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy" title="Playlist da Soso no Spotify"></iframe>
-        </div>
-      `;
-      return;
-    }
+  if(musicaTocando && _musicaAtual){
+    const d = _musicaAtual;
+    const sig = ['play', d.faixa, d.artista, d.capa, d.url, destaque].join('|');
+    if(painel.dataset.sig === sig) return;
+    painel.dataset.sig = sig;
+    const capaHTML = d.capa
+      ? `<img src="${esc(d.capa)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'disco-fallback',textContent:'${_iniciaisFaixa(d.faixa)}'}))">`
+      : `<div class="disco-fallback">${_iniciaisFaixa(d.faixa)}</div>`;
     painel.innerHTML = `
-      <div class="ouvindo-wrap">
-        <div class="disco-fantasma" aria-hidden="true">
-          <span class="df-ic">💤</span>
-        </div>
-        <div class="ouvindo-vazio-txt">
-          Nada tocando agora.<br>A playlist completa tá logo abaixo 💜
+      <div class="music-playing">
+        <a class="disco" href="${esc(d.url || '#')}" target="${d.url ? '_blank' : '_self'}" rel="noopener" title="${d.url ? 'Abrir no Spotify' : esc(d.faixa || '')}">
+          <div class="disco-inner">${capaHTML}</div>
+        </a>
+        <div class="music-now-info">
+          <b>${esc(d.faixa || '—')}</b>
+          <span>${esc(d.artista || '')}${d.album ? ' · ' + esc(d.album) : ''}</span>
+          <button type="button" class="music-rank-inline" onclick="abrirRankingMusicas()">🏆 Ver Ranking de Músicas</button>
         </div>
       </div>
-    `;
+      ${destaque}`;
     return;
   }
 
-  const d = _musicaAtual || {};
-  const iniciais = _iniciaisFaixa(d.faixa);
-  const pct = (d.duracao && d.progresso) ? Math.min(100, (d.progresso / d.duracao) * 100) : 0;
-  const urlAbrir = d.url || '#';
-  const target = d.url ? '_blank' : '_self';
+  const sig = ['idle', JSON.stringify(rec.slice(0, 3).map(x => [x.faixa, x.artista, x.quando])), destaque].join('|');
+  if(painel.dataset.sig === sig) return;
+  painel.dataset.sig = sig;
 
-  const linkTexto = d.url
-    ? (d.url.includes('/track/') ? '▶ Ouvir no Spotify' : '🔍 Buscar no Spotify')
-    : '';
+  if(rec.length){
+    painel.innerHTML = `${_recentesMusicaHTML(rec)}${destaque}`;
+    return;
+  }
 
-  const capaHTML = d.capa
-    ? `<img src="${esc(d.capa)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'disco-fallback',textContent:'${iniciais}'}))">`
-    : `<div class="disco-fallback">${iniciais}</div>`;
-
-  delete painel.dataset.rec;
   painel.innerHTML = `
-    <div class="ouvindo-wrap" id="ouvindoWrap">
-      <a class="disco" href="${esc(urlAbrir)}" target="${target}" rel="noopener" title="${d.url ? 'Abrir no Spotify' : d.faixa || ''}">
-        <div class="disco-inner">${capaHTML}</div>
-      </a>
-      <div class="ouvindo-info">
-        <b id="ouvindoFaixa">${esc(d.faixa || '—')}</b>
-        <span id="ouvindoArtista">${esc(d.artista || '')}${d.album ? ' · ' + esc(d.album) : ''}</span>
-        ${d.duracao ? `
-          <div class="ouvindo-progress"><i style="width:${pct}%"></i></div>
-          <div class="ouvindo-times">
-            <span>${_fmtMs(d.progresso || 0)}</span>
-            <span>${_fmtMs(d.duracao)}</span>
-          </div>
-        ` : ''}
-        ${d.url ? `<a class="ouvindo-link" href="${esc(d.url)}" target="_blank" rel="noopener">${linkTexto}</a>` : ''}
+    <div class="music-idle">
+      <div class="music-idle-head">
+        <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="ouvindo-vazio-txt">Nada tocando agora.<br>As últimas músicas aparecem aqui. 💜</div>
       </div>
-    </div>${blocoLista}`;
-  ajustarListaMusica();
-}
-
-/* Mostra só as faixas que cabem no card (sem cortar item pela metade); as que sobram somem. */
-function ajustarListaMusica(){
-  const ol = document.querySelector('#musicBox .top-lista');
-  if(!ol) return;
-  const lis = Array.from(ol.children);
-  ol.classList.add('calc');
-  lis.forEach(li => { li.hidden = false; });
-  for(let i = lis.length - 1; i >= 2 && ol.scrollHeight > ol.clientHeight + 1; i--) lis[i].hidden = true;
-  ol.classList.remove('calc');
+      ${destaque}
+    </div>`;
 }
 
 function pintarOuvindo(d){
@@ -710,6 +686,19 @@ function irParaPlaylist(){
   }, 150);
 }
 window.irParaPlaylist = irParaPlaylist;
+
+function abrirRankingMusicas(){
+  mudarAba('ranking');
+  setTimeout(() => {
+    if(window.RankingUI && typeof window.RankingUI.open === 'function'){
+      window.RankingUI.open('musicas');
+      return;
+    }
+    const tab = document.querySelector('[data-ranking-mode="musicas"]');
+    if(tab) tab.click();
+  }, 260);
+}
+window.abrirRankingMusicas = abrirRankingMusicas;
 
 function setLivePulse(isLive){
   document.querySelectorAll('.live-indicator').forEach(el => el.classList.toggle('live', !!isLive));
@@ -2102,10 +2091,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupSubShortcuts();
   iniciarHall();
   renderOuvindo();
-  try{
-    const mb = $('musicBox');
-    if(mb && 'ResizeObserver' in window) new ResizeObserver(() => ajustarListaMusica()).observe(mb);
-  }catch(e){}
 
   setupSugForm();
   setupSirFiltros();

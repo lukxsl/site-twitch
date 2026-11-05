@@ -8,11 +8,29 @@
   const $ = (s, r = document) => r.querySelector(s);
   const PAGE = 25;
 
+  const capaMock = (sigla, c1, c2) => 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="160" height="160" fill="url(#g)"/><circle cx="80" cy="80" r="38" fill="rgba(0,0,0,.22)"/><text x="80" y="92" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="800" fill="#fff">${sigla}</text></svg>`
+  );
+
+  const MUSICAS_MOCK = [
+    { pos: 1, nome: 'Die With A Smile', artista: 'Lady Gaga, Bruno Mars', tocadas: 148, capa: capaMock('DW', '#1ed760', '#0d4d2b') },
+    { pos: 2, nome: 'Birds of a Feather', artista: 'Billie Eilish', tocadas: 132, capa: capaMock('BF', '#38bdf8', '#1e3a8a') },
+    { pos: 3, nome: 'Si Antes Te Hubiera Conocido', artista: 'Karol G', tocadas: 119, capa: capaMock('KG', '#fb7185', '#7f1d1d') },
+    { pos: 4, nome: 'Tá OK', artista: 'DENNIS, MC Kevin o Chris', tocadas: 104, capa: capaMock('TK', '#f59e0b', '#78350f') },
+    { pos: 5, nome: 'Espresso', artista: 'Sabrina Carpenter', tocadas: 96, capa: capaMock('EC', '#e879f9', '#581c87') },
+    { pos: 6, nome: 'Snooze', artista: 'SZA', tocadas: 88, capa: capaMock('SZ', '#a78bfa', '#312e81') },
+    { pos: 7, nome: 'Seu Astral', artista: 'Jorge & Mateus', tocadas: 74, capa: capaMock('SA', '#fbbf24', '#92400e') },
+    { pos: 8, nome: 'Mal Feito', artista: 'Hugo & Guilherme, Marília Mendonça', tocadas: 69, capa: capaMock('MF', '#22d3ee', '#155e75') },
+    { pos: 9, nome: 'APT.', artista: 'ROSÉ, Bruno Mars', tocadas: 61, capa: capaMock('AP', '#f472b6', '#831843') },
+    { pos: 10, nome: 'Deja Vu', artista: 'Olivia Rodrigo', tocadas: 55, capa: capaMock('DV', '#c084fc', '#4c1d95') }
+  ];
+
   const MODES = {
     horas:    { titulo: 'Horas assistidas',  desc: 'Tempo de tela registrado pelo StreamElements.',            eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há tempo assistido registrado.' },
     pontos:   { titulo: 'Pontos do canal',   desc: 'Pontos de fidelidade acumulados no StreamElements.',       eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há pontos registrados.' },
     chat:     { titulo: 'Mais ativos no chat', desc: 'Quem mais conversa no chat do canal.',                   eyebrow: 'CHAT · STREAMELEMENTS', vazio: 'Ainda não há mensagens contabilizadas.' },
-    doadores: { titulo: 'Top doadores',      desc: 'Quem mais apoiou o canal. Obrigado por tudo! 💜',          eyebrow: 'APOIADORES · STREAMELEMENTS', vazio: 'Ninguém no pódio ainda. Seja a primeira pessoa a aparecer aqui! 💜' }
+    doadores: { titulo: 'Top doadores',      desc: 'Quem mais apoiou o canal. Obrigado por tudo! 💜',          eyebrow: 'APOIADORES · STREAMELEMENTS', vazio: 'Ninguém no pódio ainda. Seja a primeira pessoa a aparecer aqui! 💜' },
+    musicas:  { titulo: 'Músicas mais tocadas', desc: 'As faixas que mais embalaram as lives neste mês.',       eyebrow: 'MÚSICAS · SPOTIFY', vazio: 'Ainda não há músicas registradas neste mês.' }
   };
 
   let mode = 'horas';
@@ -51,6 +69,7 @@
       case 'pontos': return fmt(r.valor);
       case 'chat': return `${fmt(r.valor)} msg`;
       case 'doadores': return brl(r.valor);
+      case 'musicas': return `${fmt(r.valor)}×`;
     }
     return fmt(r.valor);
   }
@@ -60,6 +79,7 @@
       case 'pontos': return 'Pontos do canal';
       case 'chat': return 'Mensagens no chat';
       case 'doadores': return `${r.doacoes || 1} ${(r.doacoes || 1) === 1 ? 'doação' : 'doações'}${r.ultima ? ' · ' + quando(r.ultima) : ''}`;
+      case 'musicas': return r.artista || 'Faixa do mês';
     }
     return '';
   }
@@ -70,8 +90,8 @@
     const w = el('span', 'rk-av');
     w.style.setProperty('--h', hue);
     w.append(el('span', null, (nome.replace(/^@/, '').charAt(0) || '?').toUpperCase()));
-    const url = String(r.avatar || '');
-    if (/^(https:\/\/|\/)/i.test(url)) {
+    const url = String(r.avatar || r.capa || '');
+    if (/^(https:\/\/|\/|data:image\/)/i.test(url)) {
       const img = new Image();
       img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
       img.onerror = () => img.remove();
@@ -93,8 +113,21 @@
     };
   }
 
+  function musicasPayload() {
+    const rows = MUSICAS_MOCK.map(r => ({ ...r, valor: r.tocadas }));
+    const totalTocadas = rows.reduce((a, r) => a + (Number(r.valor) || 0), 0);
+    return {
+      rows,
+      meta: {
+        total: rows.length,
+        resumo: { faixas: rows.length, totalTocadas },
+        at: Date.now()
+      }
+    };
+  }
+
   async function requestMode(m, force) {
-    const bust = force ? { _t: Date.now() } : {};
+    if (m === 'musicas') return musicasPayload();
     const q = new URLSearchParams({ action: 'ranking-se', modo: m, limit: '100', ...(force ? { _t: String(Date.now()) } : {}) });
     const res = await fetch('/api/config?' + q.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`Erro ao consultar o servidor (HTTP ${res.status}).`);
@@ -122,6 +155,17 @@
     const box = $('#rankingYourContent'); if (!box) return;
     const login = $('#rankingLoginBtn');
     const me = meIdentity();
+
+    if (mode === 'musicas') {
+      if (login) login.hidden = true;
+      box.replaceChildren();
+      box.append(el('h4', 'rk-me-title', '🎵 Ranking de músicas'));
+      box.append(el('p', 'rk-me-empty', rows
+        ? `As ${rows.length} faixas mais tocadas neste mês. O pódio mostra o top 3 e a lista traz o restante.`
+        : 'Carregando as músicas mais tocadas do mês…'));
+      return;
+    }
+
     if (login) login.hidden = me.logado;
     box.replaceChildren();
 
@@ -169,6 +213,14 @@
     box.replaceChildren();
     const add = (k, v) => { const s = el('div', 'rk-stat'); const b = el('b'); b.innerHTML = ''; b.textContent = v; s.append(el('small', null, k), b); box.append(s); };
     const total = meta?.total ?? rows.length;
+    if (mode === 'musicas') {
+      add('Faixas no ranking', fmt(total));
+      if (rows[0]) add('Mais tocada', rows[0].nome);
+      if (rows[0]) add('Tocadas do líder', valorTxt(rows[0]));
+      add('Total de plays', fmt(meta?.resumo?.totalTocadas || rows.reduce((a, r) => a + (Number(r.valor) || 0), 0)));
+      box.hidden = false;
+      return;
+    }
     if (mode === 'doadores' && meta?.resumo) {
       const r = meta.resumo;
       add('Apoiadores', fmt(total));
@@ -240,6 +292,8 @@
     const root = $('#rankingContainer'); if (root) root.dataset.mode = mode;
     const t = $('#rkTitle'), d = $('#rkDesc'), e = $('#rkEyebrow');
     if (t) t.textContent = m.titulo; if (d) d.textContent = m.desc; if (e) e.textContent = m.eyebrow;
+    const search = $('#rkSearch');
+    if (search) search.placeholder = mode === 'musicas' ? 'Buscar música…' : 'Buscar nick…';
     document.querySelectorAll('[data-ranking-mode]').forEach(b => {
       const on = b.dataset.rankingMode === mode;
       b.classList.toggle('is-active', on); b.setAttribute('aria-selected', String(on));
@@ -271,6 +325,11 @@
 
   /* ---------- carregamento ---------- */
   async function load(force = false, m = mode) {
+    if (m !== mode) {
+      query = '';
+      const search = $('#rkSearch');
+      if (search) search.value = '';
+    }
     mode = m; shown = PAGE;
     const id = ++seq;
     renderHead();
@@ -303,6 +362,10 @@
     load(false, 'horas');
   }
 
-  window.RankingUI = { init, refresh: () => load(true, mode) };
+  window.RankingUI = {
+    init,
+    refresh: () => load(true, mode),
+    open: (m) => { if (MODES[m]) load(false, m); }
+  };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

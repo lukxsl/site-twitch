@@ -7,6 +7,10 @@
 .rk[data-mode="horas"]{--accent:#7dd3fc}
 .rk[data-mode="pontos"]{--accent:#b7ff00}
 .rk[data-mode="chat"]{--accent:#ffb37a}
+.rk[data-mode="musicas"]{--accent:#1ed760}
+.rk[data-mode="musicas"] .rk-av{border-radius:10px}
+.rk[data-mode="musicas"] .rk-pod-av{border-radius:20px}
+.rk[data-mode="musicas"] .rk-pod-av .rk-av{border-radius:14px}
 
 /* ---------- topo ---------- */
 .rk-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
