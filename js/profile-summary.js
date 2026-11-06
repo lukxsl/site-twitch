@@ -67,9 +67,6 @@
     setText('pfWatchHoursCount', tempo(atividade.minutes));
     setText('pfVotesCount', numero(atividade.votes));
     setText('pfSuggestionsCount', numero(atividade.suggestions));
-    setText('pfApprovedSuggestionsCount', `${numero(atividade.approvedSuggestions)} aprovadas`);
-    setText('pfStreakCurrent', numero(atividade.streak));
-    setText('pfStreakBest', numero(atividade.bestStreak));
     setText('pfSettingsNick', nick);
     setText('pfSettingsEmail', email);
     setText('pfSettingsAccount', methodLabels[method] || method);
@@ -150,21 +147,6 @@
     if(!response.ok){ avisar(response.data?.error || 'Não foi possível gerar o link.', 'erro'); return; }
     if(response.data?.url) location.href = response.data.url;
   }
-  async function limparAntigo(){
-    const ok = typeof window.confirmar === 'function'
-      ? await window.confirmar('Apagar os dados antigos de personagem e minijogo?', 'Esta ação remove XP, moedas, inventário, conquistas, códigos e notificações do sistema antigo. Contas, e-mails, vínculos Twitch, votos, sugestões e métricas migradas serão preservados. Faça um backup completo do Redis antes de continuar. A operação é única e não pode ser desfeita.', '⚠️')
-      : window.confirm('Apagar os dados antigos de personagem e minijogo? Esta operação não pode ser desfeita.');
-    if(!ok) return;
-    const button = $('#pfPurgeLegacy'); if(button) button.disabled = true;
-    setStatus('Migrando métricas e limpando os dados antigos…');
-    const response = await window.api('/api/auth', 'purge-legacy-data', { method: 'POST', body: { confirm: 'LIMPAR_DADOS_LEGADOS' } });
-    if(button) button.disabled = false;
-    if(!response.ok){ setStatus(response.data?.error || 'Não foi possível concluir a limpeza.', true); return; }
-    const result = response.data?.resultado || {};
-    setStatus(`Limpeza concluída. ${numero(result.chavesRemovidas)} chaves removidas; ${numero(result.perfisMigrados)} perfis migrados.`);
-    if(button) button.textContent = 'Limpeza já executada';
-    button && (button.disabled = true);
-  }
   function bind(){
     $$('[data-pf-tab]').forEach(button => button.addEventListener('click', () => selectPanel(button.dataset.pfTab)));
     $('#pfSaveNick')?.addEventListener('click', salvarNick);
@@ -180,7 +162,6 @@
     $('#pfOpenGlobalRanking')?.addEventListener('click', () => window.mudarAba?.('ranking'));
     $('#pfProfileLogin')?.addEventListener('click', () => window.AuthUI?.open());
     $('#pfBroadcasterLink')?.addEventListener('click', gerarLinkBroadcaster);
-    $('#pfPurgeLegacy')?.addEventListener('click', limparAntigo);
     $('#pfReloadProfile')?.addEventListener('click', carregar);
     window.addEventListener('soso:auth', carregar);
     window.addEventListener('soso:login', carregar);

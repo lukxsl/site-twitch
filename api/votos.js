@@ -1,10 +1,8 @@
 // Vercel serverless: /api/votos.js
 // Voto e contagem são atualizados dentro de um único script Redis para
 // evitar contagens negativas ou duplicadas quando duas requisições chegam juntas.
-import { redis, lerSessao, rateLimit, origemOk, safeStr } from './_lib/core.js';
-import { somarAtividade } from './_lib/atividade.js';
+import { redis, validarSessao, rateLimit, origemOk, safeStr } from './_lib/core.js';
 
-const COOKIE_SESSAO = 'sessao_site';
 const OPCOES_PADRAO = [
   { id: 'hollow-knight', nome: 'Hollow Knight', tipo: 'jogo',
     capa: 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/library_600x900.jpg' },
@@ -21,6 +19,12 @@ function safeUrl(value) {
 }
 
 const REGISTRAR_VOTO_LUA = `
+local fechamento = tonumber(ARGV[4]) or 0
+if fechamento > 0 then
+  local agora = redis.call('TIME')
+  local agoraMs = tonumber(agora[1]) * 1000 + math.floor(tonumber(agora[2]) / 1000)
+  if agoraMs >= fechamento then return {-1, 'encerrada'} end
+end
 local raw = redis.call('HGET', KEYS[1], ARGV[1])
 local anterior = nil
 if raw then
@@ -39,6 +43,8 @@ if anterior ~= ARGV[2] then
   end
   redis.call('HINCRBY', KEYS[2], ARGV[2], 1)
   redis.call('HSET', KEYS[1], ARGV[1], ARGV[3])
+  -- A estatística do perfil é atualizada na mesma operação do voto.
+  redis.call('HINCRBY', KEYS[3], 'votes', 1)
   mudou = 1
 end
 return {mudou, anterior or ''}
@@ -86,8 +92,8 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Origem inválida' });
   }
 
-  const sessao = lerSessao(req);
-  if (!sessao?.id) return res.status(401).json({ error: 'Faça login com o Discord para votar' });
+  const sessao = await validarSessao(req);
+  if (!sessao?.id) return res.status(401).json({ error: 'Faça login para votar.' });
 
   try {
     const [banido] = await redis([['HEXISTS', 'banidos', String(sessao.id)]]);
@@ -115,14 +121,24 @@ export default async function handler(req, res) {
         avatar: safeUrl(sessao.avatar),
         ts: Date.now()
       });
+      const [fechamentoRaw] = await redis([['GET', 'config:votosFechamento']]);
+      let fechamentoMs = 0;
+      if (fechamentoRaw) {
+        fechamentoMs = Date.parse(String(fechamentoRaw));
+        if (!Number.isFinite(fechamentoMs)) {
+          return res.status(503).json({ error: 'Não foi possível validar o horário de encerramento da votação.' });
+        }
+      }
       const [resultado] = await redis([[
-        'EVAL', REGISTRAR_VOTO_LUA, '2', keyUsuarios, keyVotos,
-        String(sessao.id), id, payload
+        'EVAL', REGISTRAR_VOTO_LUA, '3', keyUsuarios, keyVotos, `activity:${sessao.id}`,
+        String(sessao.id), id, payload, String(fechamentoMs)
       ]]);
+      if (Number(resultado?.[0]) === -1) {
+        return res.status(403).json({ error: 'A votação já foi encerrada. Obrigado por participar! 💜' });
+      }
       jaVotou = Number(resultado?.[0]) === 0;
 
-      // Conta somente o primeiro voto ou uma troca efetiva de opção neste ciclo.
-      if(Number(resultado?.[0]) === 1) await somarAtividade(String(sessao.id), 'votes', 1);
+      // O contador do perfil já foi atualizado junto com o voto no Redis.
     }
 
     const [flat, meuRaw] = await redis([

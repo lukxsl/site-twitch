@@ -16,8 +16,8 @@
 // Redis: accounts e vínculos permanecem; métricas da comunidade ficam em activity:{id}.
 import { randomBytes } from 'crypto';
 import {
-  ENV, redis, jparse, rateLimit, ipDe, origemOk, criarToken, lerSessao, setSessao, limparSessao,
-  addCookie, pegarCookie, hashSenha, conferirSenha, safeStr, RE_USUARIO, nickValido, cargoDe, SITE, paraObj
+  ENV, redis, jparse, rateLimit, ipDe, origemOk, criarToken, lerSessao, validarSessao, setSessao, limparSessao,
+  addCookie, pegarCookie, hashSenha, conferirSenha, safeStr, RE_USUARIO, nickValido, cargoDe, SITE
 } from './_lib/core.js';
 import { lerAtividade } from './_lib/atividade.js';
 import { urlVinculo, identificarViewer, twitchConfigurada, urlAutorizacaoBroadcaster, concluirAutorizacaoBroadcaster, cronPresenca } from './_lib/twitch.js';
@@ -69,69 +69,6 @@ async function sincronizarPerfil(conta){
   await redis([['HSET', 'user_profiles', conta.id, JSON.stringify({ username: conta.nick, avatar, ts: Date.now() })]]);
 }
 
-async function scanRedisKeys(pattern){
-  let cursor = '0';
-  const keys = [];
-  for(let i = 0; i < 1000; i++){
-    const [resposta] = await redis([['SCAN', cursor, 'MATCH', pattern, 'COUNT', '200']]);
-    if(!Array.isArray(resposta) || resposta.length < 2) break;
-    cursor = String(resposta[0]);
-    if(Array.isArray(resposta[1])) keys.push(...resposta[1].map(String));
-    if(cursor === '0') break;
-  }
-  return [...new Set(keys)];
-}
-
-async function executarEmLotes(comandos, tamanho = 100){
-  for(let i = 0; i < comandos.length; i += tamanho) await redis(comandos.slice(i, i + tamanho));
-}
-
-async function limparDadosLegados(){
-  const [accountsFlat, profilesFlat] = await redis([['HGETALL', 'accounts'], ['HGETALL', 'user_profiles']]);
-  const chavesJogo = await scanRedisKeys('g:*');
-  const ids = [...new Set([...Object.keys(paraObj(accountsFlat)), ...Object.keys(paraObj(profilesFlat)), ...chavesJogo.map(key => key.slice(2)).filter(Boolean)])];
-  let migrados = 0;
-  for(let i = 0; i < ids.length; i += 80){
-    const parte = ids.slice(i, i + 80);
-    const antigos = await redis(parte.map(id => ['HGETALL', `g:${id}`]));
-    const comandos = [];
-    antigos.forEach((flat, index) => {
-      const g = paraObj(flat);
-      if(!Object.keys(g).length) return;
-      const id = parte[index];
-      const mapa = {
-        lives: g.lives,
-        minutes: g.minutos,
-        votes: g.votos,
-        suggestions: g.sugestoes_env,
-        approvedSuggestions: g.sugestoes,
-        streak: g.streak,
-        bestStreak: g.melhorStreak,
-        lastLive: g.ultimaLiveN
-      };
-      const campos = Object.entries(mapa).filter(([, value]) => value !== undefined && value !== null && value !== '');
-      if(campos.length){
-        // Cada campo é aplicado individualmente para não sobrescrever contadores recentes.
-        campos.forEach(([field, value]) => comandos.push(['HSETNX', `activity:${id}`, field, String(Number(value) || 0)]));
-        migrados++;
-      }
-    });
-    await executarEmLotes(comandos, 150);
-  }
-
-  // Remove apenas namespaces conhecidos do sistema antigo; contas, e-mails,
-  // vínculos Twitch, votos, sugestões e perfis permanecem intocados.
-  const padroes = ['g:*', 'ach:*', 'inv:*', 'notif:*', 'xpev:*', 'xpdia:*', 'codes:used:*', 'codes:cnt:*', 'codefail:*'];
-  const apagar = ['rank:xp', 'codes'];
-  for(const pattern of padroes) apagar.push(...await scanRedisKeys(pattern));
-  const unicas = [...new Set(apagar)];
-  const delCommands = [];
-  for(let i = 0; i < unicas.length; i += 100) delCommands.push(['DEL', ...unicas.slice(i, i + 100)]);
-  await executarEmLotes(delCommands, 1);
-  const resultado = { concluido: true, contasVerificadas: ids.length, perfisMigrados: migrados, chavesRemovidas: unicas.length, data: new Date().toISOString() };
-  await redis([['SET', 'legacy:community-cleanup:v1', JSON.stringify(resultado)]]);
-  return resultado;
-}
 /* Retorna a conta da sessão, já checando a "versão de sessão" (logout global ao trocar senha). */
 async function contaDaSessao(req){
   const s = lerSessao(req);
@@ -300,8 +237,8 @@ export default async function handler(req, res){
 
     /* ====================== TWITCH LOGIN ====================== */
     if(action === 'twitch-login' && req.method === 'GET'){
-      if(!twitchConfigurada()) return res.status(503).send('Login Twitch indisponível. Configure TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET na Vercel.');
-      if(!(await rateLimit(`rl:twitch:login:${ipDe(req)}`, 20, 60))) return res.status(429).send('Muitas tentativas. Aguarde um pouco.');
+      if(!twitchConfigurada()){ res.writeHead(302, { Location: `${SITE}/?login=twitch-config#perfil` }); return res.end(); }
+      if(!(await rateLimit(`rl:twitch:login:${ipDe(req)}`, 20, 60))){ res.writeHead(302, { Location: `${SITE}/?login=twitch-erro#perfil` }); return res.end(); }
       const state = randomBytes(24).toString('hex');
       addCookie(res, `twitch_login_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
       res.writeHead(302, { Location: urlVinculo(TWITCH_REDIRECT, state) });
@@ -451,32 +388,18 @@ export default async function handler(req, res){
 
     /* ====================== PERFIL DE ATIVIDADE ====================== */
     if(action === 'activity-profile' && req.method === 'GET'){
-      const sessao = lerSessao(req);
+      const sessao = await validarSessao(req);
       if(!sessao?.id) return res.status(401).json({ error: 'Faça login para ver seu perfil.' });
       let conta = null;
       if(sessao.tipo === 'own'){
         conta = await pegarConta(sessao.id);
-        if(!conta || conta.sv !== sessao.sv) return res.status(401).json({ error: 'Sessão expirada. Entre novamente.' });
+        if(!conta) return res.status(401).json({ error: 'Sessão expirada. Entre novamente.' });
       }
       const stats = await lerAtividade(sessao.id);
       return res.status(200).json({
         usuario: conta ? publico(conta, await cargoDe(conta.id, conta.google?.email || '')) : { logado: true, id: sessao.id, nick: sessao.username, username: sessao.username, avatar: sessao.avatar, tipo: sessao.tipo, cargo: sessao.cargo || null },
         atividade: stats
       });
-    }
-
-    /* ====================== LIMPEZA ÚNICA DOS DADOS LEGADOS ====================== */
-    if(action === 'purge-legacy-data' && req.method === 'POST'){
-      if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida.' });
-      const { conta } = await contaDaSessao(req);
-      if(!conta) return res.status(401).json({ error: 'Entre com sua conta para continuar.' });
-      const cargo = await cargoDe(conta.id, conta.google?.email || '');
-      if(cargo !== 'dev') return res.status(403).json({ error: 'Somente a equipe DEV pode executar esta limpeza.' });
-      if(req.body?.confirm !== 'LIMPAR_DADOS_LEGADOS') return res.status(400).json({ error: 'Confirmação ausente.' });
-      const [feito] = await redis([['GET', 'legacy:community-cleanup:v1']]);
-      if(feito) return res.status(200).json({ ok: true, jaExecutado: true, resultado: jparse(feito, {}) });
-      const resultado = await limparDadosLegados();
-      return res.status(200).json({ ok: true, resultado });
     }
 
     /* ====================== TROCAR SENHA ====================== */
@@ -695,6 +618,7 @@ export default async function handler(req, res){
   } catch(e){
     console.error('[AUTH]', action, e?.message || e);
     if(action === 'google-callback'){ res.writeHead(302, { Location: '/?login=erro-google' }); return res.end(); }
+    if(action === 'twitch-callback'){ res.writeHead(302, { Location: '/?login=twitch-erro#perfil' }); return res.end(); }
     return res.status(500).json({ error: 'Erro interno' });
   }
 }

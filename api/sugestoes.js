@@ -2,7 +2,7 @@
 // O Redis é a fonte oficial das sugestões. O Discord é apenas uma notificação:
 // uma falha no webhook não pode apagar uma sugestão já salva.
 import { createHash, randomUUID } from 'crypto';
-import { redis, lerSessao, rateLimit, origemOk, ipDe, safeStr } from './_lib/core.js';
+import { redis, validarSessao, rateLimit, origemOk, ipDe, safeStr } from './_lib/core.js';
 import { somarAtividade } from './_lib/atividade.js';
 
 const LIST_KEY = 'sugestoes:lista';
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Você já enviou essa mensagem. Aguarde.' });
     }
 
-    const sessao = lerSessao(req);
+    const sessao = await validarSessao(req);
     const userId = sessao?.id ? String(sessao.id) : null;
     const usernameLogado = sessao?.username ? safeStr(sessao.username, 60) : null;
     const avatarLogado = safeUrl(sessao?.avatar);

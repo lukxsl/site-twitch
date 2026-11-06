@@ -6,7 +6,7 @@
 //   2. Um cron (a cada 5 min) pergunta à Twitch: "a live está no ar?" e
 //      "quem está no chat agora?" (Helix: streams + chat/chatters).
 //   3. Quem está na lista E tem Twitch vinculada ganha 5 min de presença.
-//   4. 20 min de presença na mesma live = a live CONTA (streak, lives, bônus).
+//   4. 20 min de presença na mesma live = a live entra na contagem de presenças.
 //   Nada disso passa pelo navegador → não dá pra falsificar pelo console.
 //
 //  Env necessárias:
@@ -394,7 +394,7 @@ export async function cronPresenca(){
   /* quem está no chat E tem Twitch vinculada */
   if(!chatters.length){
     await redis([['SET', chaveTick, 'done', 'EX', '3600']]);
-    return { online: true, live: sess.num, chatters: 0, creditados: 0, contadas: 0, falhas: 0 };
+    return { online: true, live: sess.num, chatters: 0, minutosAtualizados: 0, contadas: 0, falhas: 0 };
   }
   const vinculados = [];
   for(let i = 0; i < chatters.length; i += 500){
@@ -407,9 +407,9 @@ export async function cronPresenca(){
   const presKey = `pres:${sess.streamId}`;
   if(!idsVinculados.length){
     await redis([['EXPIRE', presKey, String(3 * 86400)], ['SET', chaveTick, 'done', 'EX', '3600']]);
-    return { online: true, live: sess.num, chatters: chatters.length, vinculados: 0, creditados: 0, contadas: 0, falhas: 0 };
+    return { online: true, live: sess.num, chatters: chatters.length, vinculados: 0, minutosAtualizados: 0, contadas: 0, falhas: 0 };
   }
-  let creditados = 0, contadas = 0, falhas = 0;
+  let minutosAtualizados = 0, contadas = 0, falhas = 0;
   const processa = async uid => {
     const marker = `pres:tick:${tick}:${uid}`;
     const [resultado] = await redis([[
@@ -418,7 +418,7 @@ export async function cronPresenca(){
     ]]);
     const dados = Array.isArray(resultado) ? resultado.map(Number) : [];
     const minutos = Number(dados[1] || 0);
-    if(dados[0] === 1 && Number(dados[2] || 0) > 0) creditados++;
+    if(dados[0] === 1) minutosAtualizados += Number(dados[2] || 0);
     if(sess.num && minutos >= LIVE.MIN_PRESENCA){
       if(await registrarPresenca(uid, sess.num)) contadas++;
     }
@@ -432,5 +432,5 @@ export async function cronPresenca(){
   await redis([['EXPIRE', presKey, String(3 * 86400)]]);
 
   await redis([['SET', chaveTick, falhas ? 'partial' : 'done', 'EX', '3600']]);
-  return { online: true, live: sess.num, chatters: chatters.length, vinculados: idsVinculados.length, creditados, contadas, falhas };
+  return { online: true, live: sess.num, chatters: chatters.length, vinculados: idsVinculados.length, minutosAtualizados, contadas, falhas };
 }
