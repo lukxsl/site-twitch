@@ -91,6 +91,7 @@ let _musicaPronta = false;
 
 let sortMode = 'nota';
 let generoFiltro = 'all';
+let tlView = 'tiers';
 let _jogoAoVivoNome = null;
 
 /* ============================================================
@@ -170,6 +171,29 @@ window.confirmar = confirmar;
 /* ============================================================
    ANIMAÇÕES
    ============================================================ */
+function soltarConfete(quantidade = 40){
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cores = ['#a855f7','#ec4899','#ffd166','#4ade80','#7dd3fc','#f472b6'];
+  const layer = document.createElement('div');
+  layer.className = 'confete-layer';
+  layer.setAttribute('aria-hidden', 'true');
+  for(let i = 0; i < quantidade; i++){
+    const p = document.createElement('i');
+    p.className = 'confete-piece';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = cores[i % cores.length];
+    p.style.setProperty('--dur', (1.6 + Math.random() * 1.2).toFixed(2) + 's');
+    p.style.setProperty('--del', (Math.random() * 0.4).toFixed(2) + 's');
+    p.style.setProperty('--drift', (Math.random() * 160 - 80).toFixed(0) + 'px');
+    p.style.setProperty('--rot', (Math.random() * 720 - 360).toFixed(0) + 'deg');
+    p.style.width = (5 + Math.random() * 5).toFixed(0) + 'px';
+    p.style.height = (9 + Math.random() * 7).toFixed(0) + 'px';
+    layer.appendChild(p);
+  }
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 3200);
+}
+
 function animarNumero(el, alvo, duracao = 1200){
   if(!el) return;
   const fim = Number(alvo) || 0;
@@ -196,6 +220,18 @@ function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
     return;
   }
   const alvo = marcos.find(m => m > atual) || atual + 1000;
+  if(/^goal/.test(pre)){
+    const batido = marcos.filter(m => atual >= m).pop();
+    if(batido){
+      const chave = 'meta:celebrada:' + pre + ':' + batido;
+      try {
+        if(!localStorage.getItem(chave)){
+          localStorage.setItem(chave, '1');
+          setTimeout(() => soltarConfete(pre === 'goalSeg' ? 46 : 34), 900);
+        }
+      } catch(e){}
+    }
+  }
   if(animar){
     const valorOriginal = atual;
     const t0 = performance.now();
@@ -238,6 +274,12 @@ function renderRecado(){
     } else {
       texto.textContent = '💭 Sem recadinho por hoje. A Soso volta logo com novidades!';
       card.classList.add('vazio');
+    }
+    const dataEl = $('recadoData');
+    if(dataEl){
+      const ts = CONFIG_GERAL.updatedAt || CONFIG_GERAL.atualizadoEm;
+      const quando = ts ? tempoAtras(ts) : '';
+      dataEl.textContent = quando ? `Recado ${quando}` : 'Um oi rapidinho da Sophs 💜';
     }
     card.style.display = '';
   }
@@ -438,6 +480,7 @@ function renderOuvindo(){
       ? `<img src="${esc(d.capa)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'disco-fallback',textContent:'${_iniciaisFaixa(d.faixa)}'}))">`
       : `<div class="disco-fallback">${_iniciaisFaixa(d.faixa)}</div>`;
     painel.innerHTML = `
+      <div class="music-now-label"><span class="music-now-dot" aria-hidden="true"></span> Ouvindo agora</div>
       <div class="music-playing">
         <a class="disco" href="${esc(d.url || '#')}" target="${d.url ? '_blank' : '_self'}" rel="noopener" title="${d.url ? 'Abrir no Spotify' : esc(d.faixa || '')}">
           <div class="disco-inner">${capaHTML}</div>
@@ -557,6 +600,13 @@ function _executarMudarAba(nome){
 
   const adminBtn = $('btn-admin');
   if(adminBtn) adminBtn.classList.toggle('on', nome === 'admin');
+
+  // menu inferior (mobile) — mantém o item ativo em sincronia
+  document.querySelectorAll('.bottom-nav .bn-item').forEach(b => {
+    const ativo = b.dataset.aba === nome;
+    b.classList.toggle('on', ativo);
+    if(ativo) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
 
   // Mantém a última seção do painel Admin ao navegar para outras páginas.
   if(nome === 'admin'){
@@ -735,24 +785,24 @@ function renderGeneroChips(){
   wrap.style.display = '';
   const iconeGenero = g => {
     const t = g.toLowerCase();
-    if(/a[çc][aã]o/.test(t)) return '⚔️';
-    if(/aventura/.test(t)) return '🗺️';
-    if(/rpg/.test(t)) return '🎭';
-    if(/terror|horror/.test(t)) return '👻';
-    if(/fps|shooter|tiro/.test(t)) return '🎯';
-    if(/simula/.test(t)) return '🏡';
-    if(/estrat/.test(t)) return '♟️';
-    if(/esporte/.test(t)) return '⚽';
-    if(/corrida/.test(t)) return '🏎️';
-    if(/puzzle/.test(t)) return '🧩';
-    if(/plataforma/.test(t)) return '🦘';
-    if(/metroidvania/.test(t)) return '🗡️';
-    if(/fic[çc]/.test(t)) return '🚀';
-    if(/anima/.test(t)) return '🎨';
-    if(/com[ée]dia/.test(t)) return '😄';
-    if(/drama/.test(t)) return '🎬';
-    if(/fantasia/.test(t)) return '🧙';
-    return '🎮';
+    if(/a[çc][aã]o/.test(t)) return ico('sword');
+    if(/aventura/.test(t)) return ico('map');
+    if(/rpg/.test(t)) return ico('mask');
+    if(/terror|horror/.test(t)) return ico('ghost');
+    if(/fps|shooter|tiro/.test(t)) return ico('target');
+    if(/simula/.test(t)) return ico('home');
+    if(/estrat/.test(t)) return ico('chess');
+    if(/esporte/.test(t)) return ico('ball');
+    if(/corrida/.test(t)) return ico('flag');
+    if(/puzzle/.test(t)) return ico('puzzle');
+    if(/plataforma/.test(t)) return ico('arrow-up');
+    if(/metroidvania/.test(t)) return ico('sword');
+    if(/fic[çc]/.test(t)) return ico('rocket');
+    if(/anima/.test(t)) return ico('palette');
+    if(/com[ée]dia/.test(t)) return ico('laugh');
+    if(/drama/.test(t)) return ico('film');
+    if(/fantasia/.test(t)) return ico('wand');
+    return ico('gamepad');
   };
   wrap.innerHTML = `
     <button type="button" class="gen-chip ${generoFiltro === 'all' ? 'on' : ''}" data-gen="all">
@@ -845,6 +895,43 @@ async function editarNotaTier(index){
   }catch(e){ item.nota = notaAnterior; desenhar(); window.alert(e.message || 'Falha ao salvar a nota.'); }
 }
 window.editarNotaTier = editarNotaTier;
+
+function abrirDetalheTier(j){
+  if(!j) return;
+  const m = MODOS[modo];
+  const dlg = $('dlg'), title = $('dTitle'), body = $('dBody');
+  if(!dlg || !title || !body) return;
+  $('dTitle').textContent = j.nome;
+  let terceiro = '';
+  if (modo === 'jogos') {
+    if (j.conquistas && j.conquistas.total) terceiro = `<div><b>${j.conquistas.obtidas}/${j.conquistas.total}</b><span>conquistas</span></div>`;
+  } else {
+    if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
+  }
+  const generosHTML = (j.generos && j.generos.length)
+    ? `<div class="badges">${j.generos.map(g => `<span class="bd">${esc(g)}</span>`).join('')}</div>`
+    : '';
+  body.innerHTML = `
+    <div class="mrow">
+      ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
+      <div class="mside">
+        <div class="badges">
+          <span class="bd">${j.tier === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
+          <span class="bd">${esc(j.status)}</span>
+        </div>
+        ${generosHTML}
+        <div class="kv">
+          <div><b>${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '—')}</b><span>${m.hl}</span></div>
+          <div><b>${j.nota > 0 ? '⭐ ' + n1(j.nota) : '—'}</b><span>nota</span></div>
+          ${terceiro}
+        </div>
+        ${(j.sinopse || j.comentario) ? `<section class="detail-synopsis"><h4>Sinopse</h4><p>${esc(j.sinopse || j.comentario)}</p></section>` : '<section class="detail-synopsis"><h4>Sinopse</h4><p>Sinopse ainda não disponível para este título.</p></section>'}
+      </div>
+    </div>
+  `;
+  dlg.showModal();
+}
+window.abrirDetalheTier = abrirDetalheTier;
 
 function linha(cls, rotulo, lista){
   const L = LISTA();
@@ -1015,6 +1102,15 @@ function desenhar(){
     return;
   }
 
+  if(tlView === 'grid'){
+    el.innerHTML = lista.length
+      ? `<div class="tl-cards-grid">${lista.map(j => cartao(j, LISTA().indexOf(j))).join('')}</div>`
+      : `<div class="estado estado-compacto">${ico('search')}<b>Nada por aqui</b><p>Nenhum item combina com a busca ou os filtros atuais.</p></div>`;
+    setupDragDrop();
+    setTimeout(setupCardTiltTier, 30);
+    return;
+  }
+
   const tiers = TIERS.map(t => linha(t, t, lista.filter(j => j.tier === t)));
   const nr = lista.filter(j => j.tier === 'NR');
   if(nr.length) tiers.push(linha('NR', '?', nr));
@@ -1046,8 +1142,111 @@ function setupTierList(){
       desenhar();
     });
   }
+
+  const viewEl = $('tlView'); if(viewEl && !viewEl.dataset.bound){
+    viewEl.dataset.bound = '1';
+    try {
+      const salvo = localStorage.getItem('tier:view');
+      if(salvo === 'grid' || salvo === 'tiers') tlView = salvo;
+    } catch(e){}
+    const syncView = () => {
+      viewEl.querySelectorAll('button[data-view]').forEach(b => {
+        const on = b.dataset.view === tlView;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', String(on));
+      });
+    };
+    syncView();
+    if(tlView === 'grid') desenhar();
+    viewEl.addEventListener('click', e => {
+      const b = e.target.closest('button[data-view]'); if(!b || b.dataset.view === tlView) return;
+      tlView = b.dataset.view === 'grid' ? 'grid' : 'tiers';
+      syncView();
+      try { localStorage.setItem('tier:view', tlView); } catch(e){}
+      desenhar();
+    });
+  }
 }
 window.setupTierList = setupTierList;
+
+/* ---------- Roleta: sorteia um item dos filtros atuais ---------- */
+let _roletaTimer = null, _roletaGen = 0, _roletaResultado = null;
+
+function _roletaSlotHTML(j){
+  if(j && j.capa){
+    return `<img src="${esc(j.capa)}" alt="" onerror="this.remove()"><span class="tl-roll-slot-name">${esc(j.nome)}</span>`;
+  }
+  const ini = j ? j.nome.split(/\s+/).filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase() : '?';
+  return `<div class="tl-roll-fallback"><span>${esc(ini)}</span><b>${esc(j ? j.nome : '—')}</b></div>`;
+}
+
+function setupRoleta(){
+  const btn = $('btnRoleta');
+  const dlg = $('roletaDlg');
+  if(!btn || !dlg || btn.dataset.bound) return;
+  btn.dataset.bound = '1';
+
+  const slot = $('roletaSlot'), desc = $('roletaDesc'), info = $('roletaInfo');
+  const nome = $('roletaNome'), meta = $('roletaMeta'), ver = $('roletaVer');
+
+  const parar = () => { clearInterval(_roletaTimer); _roletaTimer = null; };
+
+  function girar(){
+    const lista = _aplicarFiltrosOrdenacao();
+    if(!lista.length){
+      toast('Nenhum item combina com os filtros atuais.', 'erro');
+      return;
+    }
+    parar();
+    _roletaResultado = null;
+    const gen = ++_roletaGen;
+    slot.className = 'tl-roll-slot rolling';
+    info.hidden = true;
+    ver.hidden = true;
+    desc.textContent = 'Sorteando…';
+    if(!dlg.open) dlg.showModal();
+
+    let i = 0;
+    const tick = () => {
+      const j = lista[i++ % lista.length];
+      slot.innerHTML = _roletaSlotHTML(j);
+    };
+    tick();
+    _roletaTimer = setInterval(tick, 70);
+
+    setTimeout(() => {
+      if(gen !== _roletaGen) return;
+      parar();
+      const escolhido = lista[Math.floor(Math.random() * lista.length)];
+      _roletaResultado = escolhido;
+      slot.innerHTML = _roletaSlotHTML(escolhido);
+      slot.className = 'tl-roll-slot done';
+      desc.textContent = 'Saiu!';
+      const partes = [];
+      if(escolhido.tier && escolhido.tier !== 'NR') partes.push('Tier ' + escolhido.tier);
+      if(escolhido.nota > 0) partes.push('⭐ ' + n1(escolhido.nota));
+      if(escolhido.horas > 0) partes.push(fh(escolhido.horas));
+      if(escolhido.status) partes.push(escolhido.status);
+      if(nome) nome.textContent = escolhido.nome;
+      if(meta) meta.textContent = partes.join(' · ');
+      info.hidden = false;
+      ver.hidden = false;
+      if(navigator.vibrate){ try { navigator.vibrate(18); } catch(e){} }
+    }, 2100);
+  }
+
+  btn.addEventListener('click', girar);
+  $('roletaNovamente')?.addEventListener('click', girar);
+  $('roletaFechar')?.addEventListener('click', () => dlg.close());
+  ver?.addEventListener('click', () => {
+    const item = _roletaResultado;
+    dlg.close();
+    if(item) setTimeout(() => abrirDetalheTier(item), 140);
+  });
+  dlg.addEventListener('close', () => { _roletaGen++; parar(); });
+  dlg.addEventListener('click', e => { if(e.target === dlg) dlg.close(); });
+}
+window.setupRoleta = setupRoleta;
 
 /* ---------- Jogo ao vivo (chamado pelo twitch.js) ---------- */
 window.setJogoAoVivo = function(nome){
@@ -1843,6 +2042,23 @@ function setupBurger(){
   });
 }
 
+function setupBottomNav(){
+  const nav = document.getElementById('bottomNav');
+  if(!nav) return;
+  nav.querySelectorAll('.bn-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      mudarAba(btn.dataset.aba || 'inicio');
+      if(navigator.vibrate) { try { navigator.vibrate(8); } catch(e){} }
+    });
+  });
+  // a barra inferior some quando o teclado abre (campo de texto focado)
+  const esconder = on => nav.classList.toggle('teclado', on);
+  document.addEventListener('focusin', e => {
+    if(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) esconder(true);
+  });
+  document.addEventListener('focusout', () => setTimeout(() => esconder(false), 120));
+}
+
 function setupFloatingLive(){
   const btn = document.getElementById('floatLiveBtn');
   if(!btn) return;
@@ -1913,7 +2129,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     desenhar();
   });
   const qEl = $('q');
-  if(qEl) qEl.addEventListener('input', desenhar);
+  if(qEl){
+    let buscaT;
+    qEl.addEventListener('input', () => {
+      clearTimeout(buscaT);
+      buscaT = setTimeout(desenhar, 180);
+    });
+  }
 
   try{ const ms = localStorage.getItem('modoTier'); if(ms && ms !== modo) aplicarModo(ms, false); }catch(e){}
 
@@ -1921,38 +2143,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if(tiersEl) tiersEl.addEventListener('click', e => {
     const b = e.target.closest('.g'); if(!b) return;
     if(b.classList.contains('dragging')) return;
-    const m = MODOS[modo];
-    const j = LISTA()[+b.dataset.i];
-    if(!j) return;
-    $('dTitle').textContent = j.nome;
-    let terceiro = '';
-    if (modo === 'jogos') {
-      if (j.conquistas && j.conquistas.total) terceiro = `<div><b>${j.conquistas.obtidas}/${j.conquistas.total}</b><span>conquistas</span></div>`;
-    } else {
-      if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
-    }
-    const generosHTML = (j.generos && j.generos.length)
-      ? `<div class="badges">${j.generos.map(g => `<span class="bd">${esc(g)}</span>`).join('')}</div>`
-      : '';
-    $('dBody').innerHTML = `
-      <div class="mrow">
-        ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
-        <div class="mside">
-          <div class="badges">
-            <span class="bd">${j.tier === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
-            <span class="bd">${esc(j.status)}</span>
-          </div>
-          ${generosHTML}
-          <div class="kv">
-            <div><b>${j.horas ? fh(j.horas) : (j.duracao ? fmtDuracao(j.duracao) : '—')}</b><span>${m.hl}</span></div>
-            <div><b>${j.nota > 0 ? '⭐ ' + n1(j.nota) : '—'}</b><span>nota</span></div>
-            ${terceiro}
-          </div>
-          ${(j.sinopse || j.comentario) ? `<section class="detail-synopsis"><h4>Sinopse</h4><p>${esc(j.sinopse || j.comentario)}</p></section>` : '<section class="detail-synopsis"><h4>Sinopse</h4><p>Sinopse ainda não disponível para este título.</p></section>'}
-        </div>
-      </div>
-    `;
-    $('dlg').showModal();
+    abrirDetalheTier(LISTA()[+b.dataset.i]);
   });
 
   const dlgEl = $('dlg');
@@ -1964,6 +2155,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupReveal();
   setupRoomParallax();
   setupBurger();
+  setupBottomNav();
   setupFloatingLive();
 
   await carregarConfigPublica();
@@ -1973,6 +2165,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => { if(!document.hidden) carregarOuvindoAgora(); }, 15000);
   carregarBiblioteca();
   setupTierList();
+  setupRoleta();
   carregarVotosApi();
 
   setInterval(() => { if(VOTOS_FECHAMENTO) renderVotacao(); }, 60000);

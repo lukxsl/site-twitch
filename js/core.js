@@ -9,6 +9,13 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
 const n1 = n => Number(n).toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
 
+/* ---------- Ícones (sprite SVG em index.html) ---------- */
+function ico(nome, classe = ''){
+  const id = 'i-' + String(nome || '').replace(/^i-/, '');
+  return `<svg class="ico${classe ? ' ' + classe : ''}" aria-hidden="true" focusable="false"><use href="#${id}"></use></svg>`;
+}
+window.ico = ico;
+
 /* ---------- Formatação ---------- */
 function fmtBRL(v){
   if(!v && v !== 0) return 'R$ 0';

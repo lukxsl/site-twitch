@@ -29,10 +29,26 @@
   --line-2:rgba(168,85,247,.28);
 
   --r-xl:24px; --r-lg:18px; --r:14px; --r-sm:10px; --r-xs:8px;
+  --r-pill:99px;
+
+  /* espaçamentos (escala 4px) */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
+  --sp-6:24px; --sp-7:32px; --sp-8:40px; --sp-9:56px;
+
+  /* tipografia */
+  --f-display:'Bricolage Grotesque','DM Sans',sans-serif;
+  --f-body:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --t-xs:.72rem; --t-sm:.82rem; --t-base:.94rem; --t-lg:1.08rem;
+
+  /* estados */
+  --ok:#4ade80; --warn:#fbbf24; --err:#fb7185;
+  --ok-bg:rgba(74,222,128,.12); --warn-bg:rgba(251,191,36,.12); --err-bg:rgba(251,113,133,.12);
 
   --sh-floor:0 30px 60px -40px rgba(0,0,0,.9), 0 12px 24px -16px rgba(0,0,0,.6);
   --sh:0 8px 24px -12px rgba(0,0,0,.5);
   --sh-lg:0 20px 44px -20px rgba(168,85,247,.18), 0 6px 18px rgba(0,0,0,.4);
+  --sh-glow:0 0 0 1px rgba(168,85,247,.28), 0 10px 30px -12px rgba(168,85,247,.45);
 
   --ease:cubic-bezier(.22,.61,.36,1);
   --spring:cubic-bezier(.34,1.56,.64,1);
@@ -542,4 +558,98 @@ body.login-lock{overflow:hidden}
   .login-stars{animation:none!important;opacity:.55}
   .login-planet{animation:none!important}
   .login-card,.login-page,.login-provider,.login-submit{transition:none!important}
+}
+
+/* ============================================================
+   ÍCONES — conjunto único (sprite SVG em index.html)
+   ============================================================ */
+.ico-sprite{position:absolute;width:0;height:0;overflow:hidden}
+.ico{width:1.05em;height:1.05em;flex:none;display:inline-block;vertical-align:-.15em;
+  fill:none;stroke:currentColor;stroke-width:0;pointer-events:none}
+.ico[data-fill]{fill:currentColor}
+.ico-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.ico-circle{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:rgba(168,85,247,.12);border:1px solid var(--line);color:var(--purple-2)}
+.ico-circle .ico{width:17px;height:17px}
+
+/* ============================================================
+   ESTADOS — skeleton, vazio e erro (padronizados no site todo)
+   ============================================================ */
+.sk{position:relative;overflow:hidden;background:rgba(168,85,247,.09);border-radius:8px;
+  background-image:linear-gradient(100deg,rgba(168,85,247,.07) 30%,rgba(192,132,252,.2) 50%,rgba(168,85,247,.07) 70%);
+  background-size:220% 100%;animation:skSweep 1.5s linear infinite;color:transparent!important;pointer-events:none}
+@keyframes skSweep{from{background-position:180% 0}to{background-position:-80% 0}}
+.sk-line{height:.72em;border-radius:99px;margin:.42em 0}
+.sk-line.w90{width:90%}.sk-line.w70{width:70%}.sk-line.w50{width:50%}.sk-line.w30{width:30%}
+.sk-block{border-radius:var(--r-sm)}
+.sk-avatar{border-radius:50%;aspect-ratio:1}
+.sk-card{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:var(--r);
+  background:var(--surface);border:1px solid var(--line)}
+.sk-card .sk-cover{aspect-ratio:16/9;border-radius:var(--r-sm)}
+.sk-row{display:flex;align-items:center;gap:12px}
+.sk-row .sk-avatar{width:44px;height:44px}
+.sk-row-body{flex:1;min-width:0}
+
+@media (prefers-reduced-motion:reduce){ .sk{animation:none;background-image:none} }
+
+/* vazio */
+.estado{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  text-align:center;padding:var(--sp-7) var(--sp-5);border-radius:var(--r);
+  border:1px dashed rgba(168,85,247,.26);background:rgba(168,85,247,.05);color:var(--mute)}
+.estado .ico{width:30px;height:30px;color:var(--purple-2);opacity:.85;margin-bottom:2px}
+.estado b{font-family:var(--f-display);font-size:1rem;color:var(--ink);font-weight:700}
+.estado p{font-size:.84rem;max-width:44ch;line-height:1.5}
+.estado .btn,.estado .btn-mini{margin-top:6px}
+.estado-compacto{padding:var(--sp-5) var(--sp-4)}
+.estado-compacto .ico{width:24px;height:24px}
+
+/* erro */
+.estado-erro{border-style:solid;border-color:rgba(251,113,133,.32);background:var(--err-bg)}
+.estado-erro .ico{color:var(--err)}
+
+/* aviso inline discreto */
+.nota-inline{display:inline-flex;align-items:center;gap:7px;font-size:.76rem;font-weight:600;
+  color:var(--mute);padding:5px 11px;border-radius:var(--r-pill);background:rgba(255,255,255,.04);
+  border:1px solid var(--line)}
+.nota-inline .ico{width:14px;height:14px}
+.nota-inline.erro{color:var(--err);border-color:rgba(251,113,133,.3);background:var(--err-bg)}
+.nota-inline.ok{color:var(--ok);border-color:rgba(74,222,128,.3);background:var(--ok-bg)}
+
+/* ============================================================
+   MENU INFERIOR (mobile)
+   ============================================================ */
+.bottom-nav{display:none}
+@media (max-width:760px){
+  .bottom-nav{
+    display:grid;grid-template-columns:repeat(5,1fr);align-items:stretch;
+    position:fixed;left:0;right:0;bottom:0;z-index:120;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    background:rgba(9,5,16,.92);backdrop-filter:blur(22px) saturate(160%);
+    -webkit-backdrop-filter:blur(22px) saturate(160%);
+    border-top:1px solid rgba(168,85,247,.2);
+    box-shadow:0 -12px 34px -18px rgba(0,0,0,.9);
+  }
+  .bn-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:none;border:0;color:var(--dim);cursor:pointer;
+    padding:6px 2px;border-radius:12px;transition:color .2s,background .2s,transform .2s;
+    font-family:inherit;min-width:0;
+  }
+  .bn-item .ico{width:21px;height:21px;transition:transform .2s var(--spring)}
+  .bn-item span{font-size:.6rem;font-weight:700;letter-spacing:.01em;line-height:1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .bn-item:active{transform:scale(.94)}
+  .bn-item.on{color:var(--purple-2);background:rgba(168,85,247,.12)}
+  .bn-item.on .ico{transform:translateY(-1px) scale(1.06);filter:drop-shadow(0 0 10px rgba(192,132,252,.7))}
+  .bn-item.on span{color:var(--white)}
+
+  /* espaço pra barra inferior não cobrir conteúdo */
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  footer{margin-bottom:calc(58px + env(safe-area-inset-bottom))}
+  .float-live-btn{bottom:calc(74px + env(safe-area-inset-bottom))}
+  #dlg,#confirmDlg,.item-dialog{margin-bottom:calc(64px + env(safe-area-inset-bottom))}
+}
+@media (max-width:360px){
+  .bn-item span{font-size:.55rem}
+  .bn-item .ico{width:19px;height:19px}
 }

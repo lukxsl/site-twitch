@@ -323,12 +323,19 @@ async function verificarStatusTwitch(){
         panel.style.display = 'flex';
         panel.classList.add('is-mature');
         panel.style.backgroundImage = 'linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85))';
-        const fundo18 = data.stream.thumbnail || (data.game && data.game.box_art) || (data.user && data.user.offline_image_url) || (data.user && data.user.profile_image_url) || '';
+        const st18 = data.stream;
+        const fundo18 = st18.thumbnail || (data.game && data.game.box_art) || (data.user && data.user.offline_image_url) || (data.user && data.user.profile_image_url) || 'img/banner.png';
+        const chips18 = [];
+        if(st18.uptime) chips18.push(`<span>⏱ no ar há ${esc(st18.uptime)}</span>`);
+        chips18.push(`<span>👀 ${Number(st18.viewer_count || 0).toLocaleString('pt-BR')} assistindo</span>`);
+        if(st18.game_name) chips18.push(`<span>🎮 ${esc(st18.game_name)}</span>`);
         panel.innerHTML = `
           ${fundo18 ? `<div class="mature-bg" aria-hidden="true" style="background-image:url('${esc(fundo18)}')"></div>` : ''}
           <div style="font-size:2.6rem;line-height:1">🔞</div>
-          <h4>Conteúdo +18 agora</h4>
+          <span class="offline-badge"><i aria-hidden="true"></i> AO VIVO +18</span>
+          <h4>${esc(st18.title || 'Conteúdo +18 agora')}</h4>
           <p>A Soso tá jogando algo com classificação adulta. O Twitch bloqueia o player embutido nesses casos — assista direto no site deles:</p>
+          <div class="offline-info">${chips18.join('')}</div>
           <div class="offline-actions">
             <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">▶ Assistir na Twitch</a>
           </div>

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /scripts/
+
+Sitemap: https://asemtet0.vercel.app/sitemap.xml

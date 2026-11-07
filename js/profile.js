@@ -28,6 +28,26 @@
     else console.info(mensagem);
   }
   function setText(id, value){ const node = document.getElementById(id); if(node) node.textContent = value ?? '—'; }
+  function mascararEmail(email){
+    const valor = String(email || '').trim();
+    if(!valor || valor === 'Não informado') return valor || '—';
+    const [usuario, dominio] = valor.split('@');
+    if(!dominio) return valor.slice(0, 3) + '••••';
+    return (usuario.slice(0, 2) || '•') + '••••@' + dominio;
+  }
+  function mascararId(id){
+    const valor = String(id || '').trim();
+    if(!valor || valor === '—') return '—';
+    return valor.length <= 6 ? valor.slice(0, 2) + '••••' : valor.slice(0, 4) + '••••' + valor.slice(-2);
+  }
+  function aplicarSegredo(id, valor, mascarado){
+    const node = document.getElementById(id); if(!node) return;
+    node.dataset.real = String(valor ?? '—');
+    node.dataset.masked = mascarado;
+    node.textContent = mascarado;
+    const btn = document.querySelector(`.pf-reveal[data-reveal="${id}"]`);
+    if(btn){ btn.textContent = 'Mostrar'; btn.setAttribute('aria-pressed', 'false'); }
+  }
   function setStatus(message, error = false){
     const el = $('#pfProfileStatus');
     if(el){ el.textContent = message; el.classList.toggle('is-error', !!error); }
@@ -77,9 +97,15 @@
     setText('pfXpCount', `${numero(economia.xp)} XP`);
     setText('pfLevelCount', numero(economia.nivel || 1));
     setText('pfSettingsNick', nick);
-    setText('pfSettingsEmail', email);
+    aplicarSegredo('pfSettingsEmail', email, mascararEmail(email));
     setText('pfSettingsAccount', rotulo);
-    setText('pfSettingsPlayerId', usuario.id || '—');
+    aplicarSegredo('pfSettingsPlayerId', usuario.id || '—', mascararId(usuario.id));
+    [['pfLivesCount', atividade.lives], ['pfWatchHoursCount', atividade.minutes], ['pfVotesCount', atividade.votes],
+     ['pfSuggestionsCount', atividade.suggestions], ['pfCoinsCount', economia.coins], ['pfXpCount', economia.xp]]
+      .forEach(([id, valor]) => {
+        const card = document.getElementById(id)?.closest('.community-stat-card');
+        if(card) card.hidden = !(Number(valor) > 0);
+      });
     const nickInput = $('#pfSettingsNick');
     if(nickInput) nickInput.value = nick;
     const avatarContainer = $('#pfAvatar');
@@ -168,6 +194,14 @@
     $('#pfTwitchLink')?.addEventListener('click', () => { location.href = '/api/auth?action=twitch-link'; });
     $('#pfTwitchUnlink')?.addEventListener('click', desvincularTwitch);
     $('#pfSettingsLogout')?.addEventListener('click', () => window.sair?.());
+    $$('.pf-reveal').forEach(button => button.addEventListener('click', () => {
+      const node = document.getElementById(button.dataset.reveal);
+      if(!node) return;
+      const mostrando = button.getAttribute('aria-pressed') === 'true';
+      node.textContent = mostrando ? (node.dataset.masked || '••••') : (node.dataset.real || '—');
+      button.textContent = mostrando ? 'Mostrar' : 'Ocultar';
+      button.setAttribute('aria-pressed', String(!mostrando));
+    }));
     $('#pfCopyPlayerId')?.addEventListener('click', async () => {
       const id = usuario?.id || '';
       if(!id) return;

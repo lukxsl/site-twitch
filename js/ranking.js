@@ -20,6 +20,9 @@
   let shown = PAGE;
   let query = '';
   const cache = {}; // modo -> { rows, meta, at }
+  const REFRESH_COOLDOWN = 30_000;
+  let refreshUntil = 0;
+  let refreshTick = null;
 
   /* ---------- helpers ---------- */
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
@@ -159,7 +162,7 @@
     const head = el('div', 'rk-me-head');
     const info = el('div'); info.style.minWidth = 0;
     info.append(el('div', 'rk-me-name', me.nick));
-    info.append(el('div', 'rk-me-pos', !rows ? MODES[mode].titulo : mine ? `#${mine.pos} · ${MODES[mode].titulo}` : `Fora do top ${rows.length || 100}`));
+    info.append(el('div', 'rk-me-pos', !rows ? MODES[mode].titulo : mine ? `Você está em #${mine.pos} · ${MODES[mode].titulo}` : `Fora do top ${rows.length || 100}`));
     head.append(avatar({ nome: me.nick, avatar: me.foto }), info);
     box.append(head);
     if (!rows) return;
@@ -336,6 +339,31 @@
   /* ---------- carregamento ---------- */
   let carregando = false;
 
+  function sincronizarBotaoAtualizar(){
+    const btn = $('#rankingRefreshBtn');
+    if (!btn) return;
+    const restante = Math.max(0, Math.ceil((refreshUntil - Date.now()) / 1000));
+    const label = btn.querySelector('.rk-refresh-label');
+    if (restante > 0) {
+      btn.disabled = true;
+      btn.classList.add('is-cooldown');
+      if (label) label.textContent = `Aguarde ${restante}s`;
+      btn.title = `Você poderá atualizar de novo em ${restante}s`;
+      if (!refreshTick) refreshTick = setInterval(sincronizarBotaoAtualizar, 1000);
+    } else {
+      btn.classList.remove('is-cooldown');
+      if (!carregando) btn.disabled = false;
+      if (label) label.textContent = 'Atualizar';
+      btn.title = 'Atualizar o ranking agora';
+      if (refreshTick) { clearInterval(refreshTick); refreshTick = null; }
+    }
+  }
+
+  function iniciarCooldown(){
+    refreshUntil = Date.now() + REFRESH_COOLDOWN;
+    sincronizarBotaoAtualizar();
+  }
+
   async function load(force = false, m = mode, automatico = false) {
     if (automatico && carregando) return;
     if (m !== mode) {
@@ -363,13 +391,18 @@
     } finally {
       carregando = false;
       if (id === seq) { setAtualizando(false); }
-      btn?.classList.remove('is-loading'); if (btn) btn.disabled = false;
+      btn?.classList.remove('is-loading');
+      sincronizarBotaoAtualizar();
     }
   }
 
   function init() {
     if (!$('#rankingContainer')) return;
-    $('#rankingRefreshBtn')?.addEventListener('click', () => load(true, mode));
+    $('#rankingRefreshBtn')?.addEventListener('click', () => {
+      if (Date.now() < refreshUntil) return;
+      load(true, mode);
+      iniciarCooldown();
+    });
     $('#rankingLoginBtn')?.addEventListener('click', () => window.AuthUI?.open());
     $('#rkMore')?.addEventListener('click', () => { shown += PAGE; if (cache[mode]) renderList(cache[mode].rows); });
     let t;
