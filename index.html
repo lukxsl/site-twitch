@@ -552,19 +552,101 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>Conheça os equipamentos que fazem parte do espaço de lives da Soso.</p>
+    <p>Passeie pelo quarto com o Lukzin ou abra o catálogo com as fichas técnicas.</p>
   </header>
-  <div class="setup-catalog-shell reveal">
-    <div class="cat-toolbar">
-      <div class="cat-chips" id="catChips" role="group" aria-label="Filtrar por categoria"></div>
-      <label class="cat-search">
-        <span aria-hidden="true">⌕</span>
-        <input type="search" id="catSearch" placeholder="Buscar equipamento…" autocomplete="off">
-      </label>
+
+  <div class="setup-game-container reveal">
+
+    <!-- Alternador de visualização -->
+    <div class="setup-tabs" role="tablist" aria-label="Modo de visualização do setup" data-view="game">
+      <span class="setup-tabs-glider" aria-hidden="true"></span>
+      <button type="button" class="setup-tab on" role="tab" aria-selected="true"  data-view="game">🎮 Mini-game</button>
+      <button type="button" class="setup-tab"    role="tab" aria-selected="false" data-view="catalog">🗂️ Catálogo</button>
     </div>
-    <div class="cat-stats" id="catStats"></div>
-    <div class="cat-grid" id="catGrid" aria-live="polite"></div>
-    <p class="cat-note">Selecione um equipamento para consultar os detalhes.</p>
+
+    <!-- ============ VISÃO 1: MINI-GAME ============ -->
+    <div class="setup-view" id="viewGame">
+      <div class="setup-controls">
+        <button type="button" id="btnTourSetup" class="btn btn-tour" data-state="idle">
+          <span class="play-icon" aria-hidden="true">▶</span>
+          <span class="btn-tour-label">Iniciar Tour Guiado</span>
+        </button>
+
+        <button type="button" id="btnLukFala" class="btn-icon" title="Chamar o Lukzin" aria-label="Conversar com o Lukzin">💬</button>
+        <button type="button" id="btnMute" class="btn-icon" title="Ligar/Desligar som" aria-label="Ligar/Desligar som">🔊</button>
+
+        <div class="setup-progress" id="setupProgress" hidden>
+          <span id="setupProgressTxt">0 / 0</span>
+          <span class="setup-progress-bar"><i id="setupProgressBar"></i></span>
+        </div>
+      </div>
+
+      <div class="setup-scene-wrap" id="setupScene">
+        <div class="scene-world" id="sceneWorld">
+          <div class="scene-bg"></div>
+
+          <!-- Tela do Stardew encaixada no monitor da imagem -->
+          <div class="monitor-screen" id="stardewScreen" style="background-image: url('img/stardew-screen.png');"></div>
+
+          <!-- Hotspots visíveis são gerados pelo JS -->
+          <div id="sceneHotspots"></div>
+
+          <!-- Hotspot invisível do gato (Easter Egg: 5 cliques) -->
+          <div class="hotspot-invisible" id="catHotspot" style="left: 42.5%; top: 10.5%; width: 19%; height: 20%;" title="Miau?"></div>
+
+          <!-- Lukzin (sprite em pixel art) -->
+          <div class="luk-character" id="lukChar" data-dir="right" style="left: 17%; top: 90%;">
+            <div class="luk-bubble" id="lukBubble" role="status" aria-live="polite"></div>
+            <div class="luk-flip">
+              <div class="luk-squash">
+                <img src="img/lukzin.png" alt="Lukzin" class="luk-sprite" width="188" height="415" draggable="false" decoding="async" loading="lazy">
+              </div>
+            </div>
+            <div class="luk-shadow"></div>
+          </div>
+        </div>
+
+        <div class="scene-overlay"></div>
+        <div class="scene-sparks" id="sceneSparks" aria-hidden="true"></div>
+      </div>
+
+      <!-- Caixa de diálogo RPG -->
+      <div class="rpg-dialogue enter" id="setupDialogue">
+        <button type="button" class="rpg-close" id="dlgClose" aria-label="Fechar diálogo">✕</button>
+        <div class="rpg-avatar">
+          <img src="img/lukzin.png" alt="Lukzin" class="rpg-avatar-img" loading="lazy">
+        </div>
+        <div class="rpg-content">
+          <div class="rpg-name" id="dlgNameContainer">
+            <span class="rpg-name-main">Lukzin</span>
+            <span class="rpg-badge">DEV</span>
+          </div>
+          <div class="rpg-text" id="dlgText">E aí, tudo bão? Clica nos pontinhos roxos pra ver as peças do setup da Soso, ou me chama no Tour ali em cima que fica bão demais! Ah, e pode clicar em mim também. 💜</div>
+          <div class="rpg-chips" id="dlgChips"></div>
+          <div class="rpg-recap" id="dlgRecap" hidden></div>
+          <div class="rpg-actions" id="dlgActions" hidden>
+            <button type="button" class="btn-mini" id="dlgFicha">📋 Ver ficha completa</button>
+          </div>
+        </div>
+        <div class="rpg-continue" aria-hidden="true">▼</div>
+      </div>
+    </div>
+
+    <!-- ============ VISÃO 2: CATÁLOGO ============ -->
+    <div class="setup-view" id="viewCatalog" hidden>
+      <div class="cat-toolbar">
+        <div class="cat-chips" id="catChips" role="group" aria-label="Filtrar por categoria"></div>
+        <label class="cat-search">
+          <span aria-hidden="true">🔎</span>
+          <input type="search" id="catSearch" placeholder="Buscar peça…" autocomplete="off">
+        </label>
+      </div>
+      <div class="cat-stats" id="catStats"></div>
+      <div class="cat-grid" id="catGrid"></div>
+      <p class="cat-note">Clique para ver as especificações técnicas e onde encontrar os componentes.</p>
+    </div>
+
+    <!-- Ficha do item (modal) -->
     <dialog id="itemDialog" class="item-dialog" aria-labelledby="itemDlgTitle"></dialog>
   </div>
 </section>
@@ -849,6 +931,7 @@
 
 <script src="js/utils/dom.js"></script>
 <script src="js/utils/format.js"></script>
+<script src="js/utils/audio.js"></script>
 <script src="js/api/client.js"></script>
 <script src="js/auth-ui.js"></script>
 <script src="js/navbar.js"></script>
