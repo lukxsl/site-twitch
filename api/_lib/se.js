@@ -58,7 +58,7 @@ function erro(msg, status, code) {
  *  - se der 401/403 e o endpoint puder ser público (pontos, horas, chat, canal),
  *    tenta de novo SEM token — esses endpoints não exigem autenticação.
  */
-export async function seGet(path, { publico = false, query = null, timeoutMs = 9000 } = {}) {
+export async function seGet(path, { publico = false, query = null, timeoutMs = 10000 } = {}) {
   const p = String(path).startsWith('/') ? path : `/${path}`;
   const qs = query ? '?' + new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null)).toString() : '';
   const url = `${BASE}${p}${qs}`;
@@ -163,6 +163,24 @@ export function nomeDe(row) {
 
 export const numero = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
+// ---------- filtro de bots ----------
+// O StreamElements registra contas de bot, do próprio canal e nomes genéricos
+// no ranking de pontos/horas. Elas não são pessoas da comunidade e ficavam
+// ocupando o pódio, então saem da lista antes de ela ser montada.
+const NOMES_BOT = new Set([
+  'bot', 'bots', 'stream', 'streamer', 'streaming', 'nightbot', 'streamelements',
+  'streamlabs', 'sery_bot', 'serybot', 'fossabot', 'moobot', 'wizebot', 'chatbot',
+  'owner', 'channel', 'canal', 'admin', 'mod', 'system', 'anonymous_bot'
+]);
+const RE_BOT = /(^|[\s_.\-])(bot|b0t|nightbot|streamelements|streamlabs|sery_?bot|fossabot|moobot|wizebot|chatbot)([\s_.\-]|$)/i;
+
+export function ehBot(nome) {
+  const n = String(nome || '').trim().replace(/^@/, '').toLowerCase();
+  if (!n) return true;
+  if (NOMES_BOT.has(n)) return true;
+  return RE_BOT.test(n);
+}
+
 // ---------- rankings de fidelidade ----------
 // /points/{id}/top  e  /points/{id}/watchtime  e  /points/{id}/alltime
 export async function rankingPontos(tipo = 'top', limit = 100, offset = 0) {
@@ -170,22 +188,27 @@ export async function rankingPontos(tipo = 'top', limit = 100, offset = 0) {
   const rota = tipo === 'horas' ? 'watchtime' : tipo === 'acumulados' ? 'alltime' : 'top';
   const payload = await seGet(`/points/${encodeURIComponent(id)}/${rota}`, { publico: true, query: { limit, offset } });
   const rows = linhas(payload);
-  return {
-    total: totalDe(payload) ?? rows.length,
-    lista: rows.map((r, i) => {
+  const comNome = rows
+    .map((r, i) => {
       const nome = nomeDe(r);
       const pontos = numero(r.points ?? r.current ?? r.data?.points ?? r.amount ?? r.value);
       const minutos = numero(r.minutes ?? r.watchtime ?? r.data?.watchtime ?? r.watchTime ?? r.time ?? r.hours * 60);
+      const acumulado = numero(r.alltime ?? r.total);
       return {
         pos: offset + i + 1,
         nome,
-        valor: tipo === 'horas' ? minutos : pontos,
+        valor: tipo === 'horas' ? minutos : tipo === 'acumulados' ? (acumulado || pontos) : pontos,
         pontos,
         minutos,
-        acumulado: numero(r.alltime ?? r.total)
+        acumulado
       };
     })
-  };
+    .filter(x => !ehBot(x.nome));
+  // Contas com 0 pontos/minutos saem do ranking — mas só quando a API realmente
+  // devolveu valores (se todos vierem zerados é falha de formato, não ranking vazio).
+  const temValor = comNome.some(x => x.valor > 0);
+  const lista = (temValor ? comNome.filter(x => x.valor > 0) : comNome).map((x, i) => ({ ...x, pos: i + 1 }));
+  return { total: totalDe(payload) ?? lista.length, lista };
 }
 
 // ---------- chat (mensagens, emotes, comandos) ----------
@@ -200,9 +223,14 @@ export async function statsChat(limit = 100) {
   if (!d) throw ultimo || erro('Não foi possível ler as estatísticas do chat.', 502, 'se_chat');
   const chatters = Array.isArray(d?.chatters) ? d.chatters : [];
   const emotes = d?.twitchEmotes || d?.emotes || [];
+  const comNome = chatters
+    .map((c, i) => ({ pos: i + 1, nome: String(c.name || c.username || 'Anônimo').slice(0, 40), valor: numero(c.amount ?? c.count) }))
+    .filter(x => !ehBot(x.nome));
+  const temValor = comNome.some(x => x.valor > 0);
+  const lista = (temValor ? comNome.filter(x => x.valor > 0) : comNome).map((x, i) => ({ ...x, pos: i + 1 }));
   return {
     total: numero(d?.totalMessages),
-    lista: chatters.map((c, i) => ({ pos: i + 1, nome: String(c.name || c.username || 'Anônimo').slice(0, 40), valor: numero(c.amount ?? c.count) })),
+    lista,
     emotes: (Array.isArray(emotes) ? emotes : []).slice(0, 10).map(e => ({ nome: String(e.emote || e.name || ''), usos: numero(e.amount) }))
   };
 }
@@ -212,19 +240,24 @@ const STATUS_RUINS = new Set(['failed', 'rejected', 'refunded', 'chargeback', 'c
 const NOMES_ANONIMOS = new Set(['anonimo', 'anônimo', 'anonymous', 'anon', '']);
 
 // O pódio precisa só do topo: 2 páginas (200 gorjetas) cobrem qualquer canal
-// com folga e mantêm a função bem abaixo do limite de tempo da Vercel.
-async function todasGorjetas(paginas = 2) {
+// com folga. O prazo total mantém a rota bem abaixo do limite de tempo da Vercel.
+const PRAZO_DOADORES_MS = 15000;
+
+async function todasGorjetas(paginas = 2, prazoMs = PRAZO_DOADORES_MS) {
   const id = await canalId();
+  const limite = Date.now() + prazoMs;
   const out = [];
   for (let p = 0; p < paginas; p++) {
+    const restante = limite - Date.now();
+    if (restante < 1500) break;
     const rota = `/tips/${encodeURIComponent(id)}`;
     const base = { limit: 100, offset: p * 100 };
     let d;
-    try { d = await seGet(rota, { query: { ...base, sort: '-createdAt' }, timeoutMs: 6000 }); }
+    try { d = await seGet(rota, { query: { ...base, sort: '-createdAt' }, timeoutMs: Math.min(10000, restante) }); }
     catch (e) {
       // Token/conexão ruins não melhoram sem o sort; erro de parâmetro sim.
       if (e?.code === 'se_auth' || e?.code === 'se_offline') throw e;
-      d = await seGet(rota, { query: base, timeoutMs: 6000 });
+      d = await seGet(rota, { query: base, timeoutMs: Math.min(10000, Math.max(1500, limite - Date.now())) });
     }
     const docs = linhas(d);
     out.push(...docs);
@@ -245,7 +278,7 @@ async function doadoresPorLeaderboard() {
   ];
   for (const rota of rotas) {
     try {
-      const d = await seGet(rota, { publico: true, query: { limit: 100 }, timeoutMs: 6000 });
+      const d = await seGet(rota, { publico: true, query: { limit: 100 }, timeoutMs: 8000 });
       const rows = linhas(d);
       if (!rows.length) continue;
       const lista = rows.map(r => ({
@@ -253,7 +286,7 @@ async function doadoresPorLeaderboard() {
         valor: numero(r.amount ?? r.total ?? r.totalAmount ?? r.totalTipAmount ?? r.tips ?? r.value ?? r.donation?.amount),
         doacoes: numero(r.count ?? r.donationsCount ?? (typeof r.donations === 'number' ? r.donations : 0)) || 1
       }))
-        .filter(x => x.valor > 0 && !NOMES_ANONIMOS.has(x.nome.toLowerCase()))
+        .filter(x => x.valor > 0 && !NOMES_ANONIMOS.has(x.nome.toLowerCase()) && !ehBot(x.nome))
         .sort((a, b) => b.valor - a.valor)
         .map((x, i) => ({ pos: i + 1, nome: x.nome, valor: Math.round(x.valor * 100) / 100, doacoes: x.doacoes, maior: 0, ultima: null }));
       if (lista.length) return {
@@ -269,7 +302,7 @@ async function doadoresPorLeaderboard() {
 
 export async function rankingDoadores() {
   let tips;
-  try { tips = await todasGorjetas(); }
+  try { tips = await todasGorjetas(2, PRAZO_DOADORES_MS - 6000); }
   catch (e) {
     try { return await doadoresPorLeaderboard(); }
     catch (_) { throw e; }
@@ -299,7 +332,7 @@ export async function rankingDoadores() {
     if (quando >= ini.getTime()) totalMes += valor;
     if (!ultimo || quando > ultimo.em) ultimo = { nome, valor: Math.round(valor * 100) / 100, em: quando };
     const chave = nome.toLowerCase();
-    if (NOMES_ANONIMOS.has(chave)) continue; // soma nos totais, mas fora do pódio
+    if (NOMES_ANONIMOS.has(chave) || ehBot(nome)) continue; // soma nos totais, mas fora do pódio
     const x = porPessoa.get(chave) || { nome, total: 0, doacoes: 0, ultima: 0, maior: 0 };
     x.total += valor; x.doacoes += 1; x.ultima = Math.max(x.ultima, quando); x.maior = Math.max(x.maior, valor);
     porPessoa.set(chave, x);

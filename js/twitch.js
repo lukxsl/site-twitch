@@ -254,6 +254,24 @@ function _atualizarBanner(data){
   }
 }
 
+/* Barra do card do player: título da live, uptime e viewers.
+   Deixa o card útil quando a Soso está ao vivo (antes só tinha o iframe). */
+function _atualizarLiveNow(data){
+  const box = document.getElementById('liveNow');
+  if(!box) return;
+  const st = data && data.stream;
+  if(!st){ box.hidden = true; return; }
+  box.hidden = false;
+  const titulo = document.getElementById('liveNowTitle');
+  if(titulo) titulo.textContent = st.title || 'Ao vivo agora';
+  const viewers = document.getElementById('liveNowViewers');
+  if(viewers) viewers.textContent = Number(st.viewer_count || 0).toLocaleString('pt-BR');
+  const uptime = document.getElementById('liveNowUptime');
+  if(uptime) uptime.textContent = st.uptime || 'agora';
+  const jogo = document.getElementById('liveNowGame');
+  if(jogo) jogo.textContent = st.game_name || 'Sem categoria';
+}
+
 async function verificarStatusTwitch(){
   const g = id => document.getElementById(id);
   const iframe = g('twitchIframe'), panel = g('offlinePanel');
@@ -270,6 +288,7 @@ async function verificarStatusTwitch(){
     _atualizarPlayerHeader(live);
     _atualizarProfileStatus(live, data);
     _atualizarBanner(data);
+    _atualizarLiveNow(data);
 
     const isMature = !!(data.stream && (data.stream.is_mature || data.canal_mature));
 
@@ -291,7 +310,7 @@ async function verificarStatusTwitch(){
         if(av) av.src = data.user.profile_image_url;
       }
       if(data.user.offline_image_url && panel && !live){
-        panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
+        panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85)),url(${data.user.offline_image_url})`;
       }
     }
 
@@ -331,7 +350,7 @@ async function verificarStatusTwitch(){
       }
       const vc = g('viewerCountStatus'); if(vc) vc.textContent = `${data.stream.viewer_count} assistindo`;
       const noteEl = g('playerNoteText');
-      if(noteEl && !noteEl.classList.contains('recado')) noteEl.textContent = `Transmitindo: ${data.stream.title}`;
+      if(noteEl && !noteEl.classList.contains('recado')) noteEl.innerHTML = '💬 O chat rola na Twitch — <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">abrir o canal ↗</a>';
     } else {
       const vc = g('viewerCountStatus'); if(vc) vc.textContent = '@asemtet0';
       if(!assistindoVod){
@@ -340,8 +359,9 @@ async function verificarStatusTwitch(){
           panel.style.display = 'flex';
           panel.innerHTML = `
             <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
-            <h4>Estamos offline por agora 💜</h4>
-            <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
+            <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
+            <h4>O cantinho tá descansando 💜</h4>
+            <p>Siga o canal pra ser avisada(o) quando a Soso entrar ao vivo!</p>
             <div class="offline-info">
               <span>📅 Lives toda semana</span>
               <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
@@ -351,7 +371,8 @@ async function verificarStatusTwitch(){
               <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live${canalMature ? ' ↗' : ''}</button>
             </div>
           `;
-          if(data.user && data.user.offline_image_url) panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
+          if(data.user && data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85)),url(${data.user.offline_image_url})`;
+          else panel.style.backgroundImage = ''; // volta a arte de fundo (espaço) do CSS
           const btnVodEl = g('btnVod');
           if(btnVodEl) btnVodEl.style.display = vodAtual ? '' : 'none';
         }
@@ -380,6 +401,7 @@ async function verificarStatusTwitch(){
     setLivePulse(false);
     _atualizarPlayerHeader(false);
     _atualizarProfileStatus(false, null);
+    _atualizarLiveNow(null);
     const overlay = document.getElementById('bannerOverlay'); if(overlay) overlay.style.display = 'none';
     const badge = document.getElementById('bannerLiveBadge'); if(badge) badge.style.display = 'none';
   }

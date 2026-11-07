@@ -9,6 +9,7 @@
 
   const ICONE_GOOGLE = `<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16"><path fill="currentColor" d="M21.6 12.2c0-.7-.1-1.3-.2-1.9H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.5Z"/><path fill="currentColor" d="M12 22c2.7 0 4.9-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1a5.9 5.9 0 0 1-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22Z" opacity=".75"/><path fill="currentColor" d="M6.4 14a6 6 0 0 1 0-3.8V7.6H3.1a10 10 0 0 0 0 8.9L6.4 14Z" opacity=".55"/><path fill="currentColor" d="M12 6.1c1.5 0 2.8.5 3.9 1.5l2.9-2.9A10 10 0 0 0 3.1 7.6L6.4 10A5.9 5.9 0 0 1 12 6.1Z" opacity=".9"/></svg>`;
   const ICONE_TWITCH = `<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16"><path fill="currentColor" d="M4.3 2 2 6.2v13.6h4.7V22h2.6l2.3-2.2h3.7L21 15V2H4.3Zm14.6 12.2-2.8 2.7h-4.2l-2 2v-2H6.7V4.2h12.2v10ZM11.9 7h1.9v5.2h-1.9V7Zm5 0H19v5.2h-2.1V7Z"/></svg>`;
+  const ICONE_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5c-5 0-9.1 4.1-10.6 6.4a1.1 1.1 0 0 0 0 1.2C2.9 14.9 7 19 12 19s9.1-4.1 10.6-6.4a1.1 1.1 0 0 0 0-1.2C21.1 9.1 17 5 12 5Zm0 11.8a4.8 4.8 0 1 1 0-9.6 4.8 4.8 0 0 1 0 9.6Zm0-2.3a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/></svg>`;
 
   const focaveis = root => Array.from(root.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el => !el.hidden && el.offsetParent !== null);
 
@@ -64,6 +65,18 @@
   }
 
   /* ================== modal de acesso ================== */
+  // Mostra/oculta a senha (botão "Mostrar" dentro do input)
+  function mostrarSenha(visivel){
+    const campo = $('#authPassword', dialog);
+    const botao = $('#authPassToggle', dialog);
+    if(!campo || !botao) return;
+    campo.type = visivel ? 'text' : 'password';
+    botao.setAttribute('aria-pressed', String(!!visivel));
+    botao.setAttribute('aria-label', visivel ? 'Ocultar senha' : 'Mostrar senha');
+    const texto = botao.querySelector('span');
+    if(texto) texto.textContent = visivel ? 'Ocultar' : 'Mostrar';
+  }
+
   function setMode(next){
     mode = next === 'register' ? 'register' : 'login';
     if(!dialog) return;
@@ -79,24 +92,29 @@
     const title = $('#authTitle', dialog);
     const subtitle = $('#authSubtitle', dialog);
     const submit = $('#authSubmitLabel', dialog);
-    const note = $('#authModeNote', dialog);
     const password = $('#authPassword', dialog);
+    const trocar = $('#authSwitchBtn', dialog);
+    const trocarNota = $('#authSwitchNote', dialog);
     if(nickField) nickField.hidden = !isRegister;
-    if(identifierLabel) identifierLabel.textContent = isRegister ? 'Seu e-mail' : 'E-mail';
+    if(identifierLabel) identifierLabel.textContent = 'E-mail';
     if(identifier){
       identifier.placeholder = 'voce@email.com';
       identifier.autocomplete = isRegister ? 'email' : 'username';
       identifier.type = 'email';
     }
     if(password) password.autocomplete = isRegister ? 'new-password' : 'current-password';
-    if(title) title.textContent = isRegister ? 'Crie sua conta' : 'Entre no cantinho';
+    if(title) title.textContent = isRegister ? 'Criar conta' : 'Entrar';
     if(subtitle) subtitle.textContent = isRegister
-      ? 'Escolha um nome, informe seu e-mail e crie uma senha para participar da comunidade.'
-      : 'Acesse seu perfil, participe das votações e acompanhe as lives.';
-    if(submit) submit.textContent = isRegister ? 'Criar minha conta' : 'Entrar com e-mail';
-    if(note) note.textContent = isRegister
-      ? 'A senha deve ter de 8 a 72 caracteres. Guarde-a em um local seguro.'
-      : 'Sua sessão fica salva por 30 dias neste navegador.';
+      ? 'Escolha um nome, seu e-mail e uma senha para participar da comunidade.'
+      : 'Acesse seu perfil para votar e interagir.';
+    if(submit) submit.textContent = isRegister ? 'Criar minha conta' : 'Entrar';
+    if(trocar){
+      trocar.dataset.authMode = isRegister ? 'login' : 'register';
+      trocar.textContent = isRegister ? 'Já tenho conta' : 'Criar conta';
+      trocar.setAttribute('aria-pressed', 'false');
+    }
+    if(trocarNota) trocarNota.textContent = isRegister ? 'Já tem uma conta?' : 'Primeira vez por aqui?';
+    mostrarSenha(false);
     const alerta = $('#authAlert', dialog);
     if(alerta) alerta.textContent = '';
   }
@@ -109,12 +127,12 @@
     dialog.setAttribute('aria-labelledby', 'authTitle');
     dialog.innerHTML = `
       <div class="auth-shell">
+        <span class="auth-aurora" aria-hidden="true"></span>
         <button type="button" class="auth-close" data-close aria-label="Fechar">×</button>
         <div class="auth-brandline"><span class="auth-brand-symbol">S</span><span>ASEMTET0 <i>·</i> COMUNIDADE</span></div>
         <div class="auth-content">
-          <span class="auth-eyebrow">SEU ESPAÇO NA COMUNIDADE</span>
-          <h2 id="authTitle">Entre no cantinho</h2>
-          <p class="auth-intro" id="authSubtitle">Acesse seu perfil, participe das votações e acompanhe as lives.</p>
+          <h2 id="authTitle">Entrar</h2>
+          <p class="auth-intro" id="authSubtitle">Acesse seu perfil para votar e interagir.</p>
 
           <div class="auth-providers">
             <a class="auth-provider google" href="/api/auth?action=google-login">
@@ -125,34 +143,33 @@
             </a>
           </div>
 
-          <div class="auth-sep"><span>ou use seu e-mail</span></div>
+          <div class="auth-sep"><span>ou</span></div>
 
-          <div class="auth-email-panel" id="authEmailPanel">
-            <div class="auth-mode-tabs" role="group" aria-label="Tipo de acesso">
-              <button type="button" data-auth-mode="login" class="is-active" aria-pressed="true">Entrar</button>
-              <button type="button" data-auth-mode="register" aria-pressed="false">Criar conta</button>
+          <form id="authEmailForm" class="auth-form" novalidate>
+            <div class="auth-field" id="authNickField" hidden>
+              <label for="authNick">Como quer aparecer?</label>
+              <input id="authNick" name="nick" maxlength="24" autocomplete="nickname" placeholder="Seu nome na comunidade">
             </div>
-            <form id="authEmailForm" class="auth-form" novalidate>
-              <div class="auth-field" id="authNickField" hidden>
-                <label for="authNick">Como quer aparecer?</label>
-                <input id="authNick" name="nick" maxlength="24" autocomplete="nickname" placeholder="Seu nome na comunidade">
-              </div>
-              <div class="auth-field">
-                <label id="authIdentifierLabel" for="authIdentifier">E-mail</label>
-                <input id="authIdentifier" name="identificador" type="email" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="voce@email.com" required>
-              </div>
-              <div class="auth-field">
-                <label for="authPassword">Senha</label>
+            <div class="auth-field">
+              <label id="authIdentifierLabel" for="authIdentifier">E-mail</label>
+              <input id="authIdentifier" name="identificador" type="email" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="voce@email.com" required>
+            </div>
+            <div class="auth-field">
+              <label for="authPassword">Senha</label>
+              <div class="auth-pass">
                 <input id="authPassword" name="senha" type="password" autocomplete="current-password" maxlength="72" placeholder="Sua senha" required>
+                <button type="button" class="auth-pass-btn" id="authPassToggle" aria-controls="authPassword" aria-pressed="false" aria-label="Mostrar senha">
+                  ${ICONE_OLHO}<span>Mostrar</span>
+                </button>
               </div>
-              <p class="auth-alert" id="authAlert" role="alert" aria-live="polite"></p>
-              <button type="submit" class="auth-primary" id="authSubmit"><span id="authSubmitLabel">Entrar com e-mail</span><span class="auth-submit-arrow">→</span></button>
-              <p class="auth-mode-note" id="authModeNote">Sua sessão fica salva por 30 dias neste navegador.</p>
-            </form>
-          </div>
+            </div>
+            <p class="auth-alert" id="authAlert" role="alert" aria-live="polite"></p>
+            <button type="submit" class="auth-primary" id="authSubmit"><span id="authSubmitLabel">Entrar</span><span class="auth-submit-arrow">→</span></button>
+          </form>
+
+          <p class="auth-switch"><span id="authSwitchNote">Primeira vez por aqui?</span> <button type="button" id="authSwitchBtn" data-auth-mode="register" aria-pressed="false">Criar conta</button></p>
           <p class="auth-legal">Ao entrar, você concorda em respeitar as pessoas e as regras desta comunidade. 💜</p>
         </div>
-        <div class="auth-bottom-line"><span>ASEMTET0</span><span>UM CANTINHO FEITO COM 💜</span></div>
       </div>`;
     document.body.appendChild(dialog);
     dialog.querySelector('[data-close]').addEventListener('click', close);
@@ -160,6 +177,7 @@
     dialog.addEventListener('click', event => { if(event.target === dialog) close(); });
     dialog.addEventListener('keydown', trapFocus);
     dialog.querySelectorAll('[data-auth-mode]').forEach(button => button.addEventListener('click', () => setMode(button.dataset.authMode)));
+    $('#authPassToggle', dialog).addEventListener('click', () => mostrarSenha($('#authPassword', dialog)?.type === 'password'));
     $('#authEmailForm', dialog).addEventListener('submit', submitEmail);
     mountWelcome();
     setMode('login');
@@ -198,6 +216,7 @@
     submit.disabled = false;
     if(!result.ok){ if(alerta) alerta.textContent = result.data?.error || 'Não foi possível acessar. Confira os dados e tente novamente.'; return; }
     form.reset();
+    mostrarSenha(false);
     close();
     try { await window.checarLogin?.(); } catch(_) {}
     window.dispatchEvent(new CustomEvent('soso:login', { detail: result.data }));

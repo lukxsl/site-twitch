@@ -187,18 +187,20 @@ body.sou-admin .nav-admin-btn{display:inline-flex}
   gap:16px;
   grid-template-columns:minmax(250px,290px) minmax(0,1fr) minmax(260px,324px);
   grid-template-areas:"profile player sub" "music stack apoie";
-  align-items:stretch;
+  /* Cada card tem a altura natural do seu conteúdo: nada de esticar para
+     preencher a linha (era o que abria os buracos entre os cards). */
+  align-items:flex-start;
 }
-.bento-col{display:contents}
+.bento-col{display:contents;align-items:flex-start}
 .bento .profile-card{grid-area:profile}
 .bento .twitch-player-box{grid-area:player}
 .bento .sub-hero-box{grid-area:sub}
 .bento .music-box{grid-area:music}
 .bento .apoie{grid-area:apoie}
-.bento .bento-stack{grid-area:stack;display:flex;flex-direction:column;gap:16px;min-width:0}
+.bento .bento-stack{grid-area:stack;display:flex;flex-direction:column;gap:16px;min-width:0;align-items:stretch}
 .bento > .card,.bento .bento-stack > .card{margin:0;min-width:0;max-width:100%}
 .bento .bento-stack > .recado-card{flex:0 0 auto}
-.bento .bento-stack > .jogos-card{flex:1 1 auto}
+.bento .bento-stack > .jogos-card{flex:0 0 auto}
 
 @media (max-width:1420px){
   .bento{grid-template-columns:minmax(240px,270px) minmax(0,1fr) minmax(250px,300px);gap:14px}

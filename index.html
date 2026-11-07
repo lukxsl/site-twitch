@@ -175,8 +175,9 @@
         <div class="twitch-player">
           <div class="offline-panel" id="offlinePanel">
             <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" loading="lazy" onerror="this.style.display='none'">
-            <h4>Estamos offline por agora 💜</h4>
-            <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
+            <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
+            <h4>O cantinho tá descansando 💜</h4>
+            <p>Siga o canal pra ser avisada(o) quando a Soso entrar ao vivo!</p>
             <div class="offline-info">
               <span>📅 Lives toda semana</span>
               <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
@@ -187,6 +188,14 @@
             </div>
           </div>
           <iframe id="twitchIframe" style="display:none" src="about:blank" allowfullscreen scrolling="no" title="Live da Soso na Twitch"></iframe>
+        </div>
+        <div class="live-bar" id="liveNow" hidden>
+          <p class="live-bar-title" id="liveNowTitle">Ao vivo agora</p>
+          <div class="live-bar-meta">
+            <span class="lnchip live">👀 <b id="liveNowViewers">0</b> assistindo</span>
+            <span class="lnchip">⏱ no ar há <b id="liveNowUptime">—</b></span>
+            <span class="lnchip">🎮 <b id="liveNowGame">—</b></span>
+          </div>
         </div>
         <div class="player-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</div>
       </article>
@@ -369,6 +378,7 @@
         <p id="rkDesc">Tempo de tela registrado pelo StreamElements.</p>
       </div>
       <div class="rk-hero-actions">
+        <span class="rk-updating" id="rkUpdating" hidden><i aria-hidden="true"></i> Atualizando…</span>
         <span class="rk-updated" id="rkUpdated" hidden></span>
         <button class="rk-btn" type="button" id="rankingRefreshBtn"><span class="rk-spin" aria-hidden="true">↻</span> Atualizar</button>
       </div>

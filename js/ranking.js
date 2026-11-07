@@ -96,7 +96,13 @@
     }
     return {
       rows: (data.lista || []).map((r, i) => ({ ...r, pos: r.pos || i + 1, nome: r.nome || 'Anônimo', valor: Number(r.valor) || 0 })),
-      meta: { total: data.total, resumo: data.resumo || null, at: data.updatedAt }
+      meta: {
+        total: data.total,
+        resumo: data.resumo || null,
+        at: data.updatedAt,
+        desatualizado: !!data.desatualizado,
+        aviso: data.aviso || null
+      }
     };
   }
 
@@ -231,15 +237,17 @@
       if (rows[0]) add('Líder', rows[0].nome);
       if (rows[0]) add('Marca do líder', valorTxt(rows[0]));
     }
+    if (meta?.aviso) box.append(el('p', 'rk-stale-note', '⚠️ ' + meta.aviso));
     box.hidden = !box.childElementCount;
   }
 
-  function renderList(rows) {
+  function renderList(rows, animar = true) {
     const list = $('#rankingList'), more = $('#rkMore'); if (!list) return;
     const me = meIdentity();
     const q = norm(query);
     const filtered = q ? rows.filter(r => norm(r.nome).includes(q)) : rows.slice(3);
     list.replaceChildren();
+    list.classList.toggle('is-refresh', !animar);
 
     if (!filtered.length) {
       const st = el('div', 'rk-state');
@@ -266,19 +274,51 @@
     }
   }
 
+  let assinaturaPodio = '';
+
   function render() {
     const c = cache[mode]; if (!c) return;
     const rows = c.rows, me = meIdentity();
+    const primeira = !c.pintado;
     const podium = $('#rankingPodium');
-    if (podium) {
+    // A atualização automática não deve reanimar o pódio a cada minuto:
+    // só redesenha quando o Top 3 realmente mudou.
+    const assinatura = mode + ':' + rows.slice(0, 3).map(r => `${r.nome}|${r.valor}`).join('~');
+    if (podium && (primeira || assinatura !== assinaturaPodio)) {
+      assinaturaPodio = assinatura;
       podium.hidden = false;
       podium.replaceChildren(podiumSlot(rows[1], 2, me), podiumSlot(rows[0], 1, me), podiumSlot(rows[2], 3, me));
     }
     renderStats(c.meta, rows);
-    renderList(rows);
+    renderList(rows, primeira);
     renderMe(rows);
+    c.pintado = true;
     const up = $('#rkUpdated');
-    if (up) { up.hidden = false; up.textContent = 'Atualizado às ' + new Date(c.meta?.at || c.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
+    if (up) {
+      const at = c.meta?.at || c.at;
+      up.hidden = false;
+      up.textContent = textoAtualizado(at);
+      up.classList.toggle('is-stale', !!c.meta?.desatualizado);
+      up.title = at ? `Dados de ${new Date(at).toLocaleString('pt-BR')}` : '';
+    }
+  }
+
+  // "Atualizado agora / há 5 min / há 2h / há 1 dia"
+  function textoAtualizado(ts) {
+    if (!ts) return '';
+    const seg = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (seg < 60) return 'Atualizado agora';
+    const min = Math.floor(seg / 60);
+    if (min < 60) return `Atualizado há ${min} min`;
+    const horas = Math.floor(min / 60);
+    if (horas < 24) return `Atualizado há ${horas}h`;
+    const dias = Math.floor(horas / 24);
+    return `Atualizado há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+  }
+
+  function setAtualizando(ativo) {
+    const el = $('#rkUpdating');
+    if (el) el.hidden = !ativo;
   }
 
   function renderHead() {
@@ -318,7 +358,10 @@
   }
 
   /* ---------- carregamento ---------- */
-  async function load(force = false, m = mode) {
+  let carregando = false;
+
+  async function load(force = false, m = mode, automatico = false) {
+    if (automatico && carregando) return;
     if (m !== mode) {
       query = '';
       const search = $('#rkSearch');
@@ -328,18 +371,23 @@
     const id = ++seq;
     renderHead();
     const btn = $('#rankingRefreshBtn');
-    if (cache[m] && !force) render(); else { renderLoading(); const p = $('#rankingPodium'); if (p) { p.replaceChildren(); } }
+    // Com dados já na tela, a atualização acontece por baixo: nada de skeleton.
+    if (cache[m]) render(); else { renderLoading(); const p = $('#rankingPodium'); if (p) { p.replaceChildren(); } }
+    carregando = true;
+    setAtualizando(true);
     btn?.classList.add('is-loading'); if (btn) btn.disabled = true;
     try {
       const r = await requestMode(m, force);
       if (id !== seq) return;
-      cache[m] = { ...r, at: Date.now() };
+      cache[m] = { ...r, at: Date.now(), pintado: cache[m]?.pintado };
       render();
     } catch (e) {
       if (id !== seq) return;
       if (cache[m]) render(); else renderError(e);
     } finally {
-      if (id === seq) { btn?.classList.remove('is-loading'); if (btn) btn.disabled = false; }
+      carregando = false;
+      if (id === seq) { setAtualizando(false); }
+      btn?.classList.remove('is-loading'); if (btn) btn.disabled = false;
     }
   }
 
@@ -353,6 +401,20 @@
     document.querySelectorAll('[data-ranking-mode]').forEach(b => b.addEventListener('click', () => { if (b.dataset.rankingMode !== mode) load(false, b.dataset.rankingMode); }));
     window.addEventListener('soso:auth', () => { if (cache[mode]) render(); load(true, mode); });
     window.addEventListener('soso:aba', e => { if (e.detail === 'ranking') load(true, mode); });
+
+    // Tempo real: o ranking se atualiza sozinho a cada 60s enquanto a aba
+    // estiver aberta (sem recarregar a página e sem trocar o que está na tela).
+    setInterval(() => {
+      if (document.hidden) return;
+      if (!$('#sec-ranking')?.classList.contains('ativo')) return;
+      load(true, mode, true);
+    }, 60000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) return;
+      if (!$('#sec-ranking')?.classList.contains('ativo')) return;
+      load(true, mode, true);
+    });
+
     load(false, 'horas');
   }
 

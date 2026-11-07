@@ -327,7 +327,7 @@ async function carregarHall(forcar = false){
     const r = await fetch(url, { cache: 'no-store' });
     const d = await r.json();
     HALL_DADOS = d;
-    if(d && (d.motivo || d.erro)) console.warn('[Hall] Ranking automático indisponível:', d.motivo || d.erro);
+    if(d && (d.motivo || d.erro || d.error)) console.warn('[Hall] Ranking automático indisponível:', d.motivo || d.erro || d.error);
   }catch(e){
     console.warn('[Hall] Falha ao consultar o ranking:', e);
     if(!HALL_DADOS) HALL_DADOS = { erro: 'rede' };
@@ -383,7 +383,7 @@ function renderHall(){
 
   // O ranking só é considerado inválido quando o servidor avisa; doadores vazios
   // com erro NÃO podem ser tratados como "ninguém no pódio ainda".
-  const falhou = !!(d && (d.erro || d.motivo));
+  const falhou = !!(d && (d.erro || d.error || d.motivo));
   const bruto = (!d || d.vazio || !Array.isArray(d.doadores)) ? [] : d.doadores;
   // A home mostra apenas o pódio. O ranking completo continua na página Ranking.
   const itens = bruto.slice(0, 3);
@@ -430,7 +430,7 @@ function renderHall(){
   }
 
   if(updated && d && !falhou && d.updatedAt){
-    atualizarTextoHallUpdated(d.updatedAt);
+    atualizarTextoHallUpdated(d.updatedAt, d.desatualizado);
     updated.style.display = '';
   } else if(updated){
     updated.style.display = 'none';
@@ -456,15 +456,24 @@ async function pintarMetaHall(){
   box.hidden = false;
 }
 
-function atualizarTextoHallUpdated(ts){
+function atualizarTextoHallUpdated(ts, desatualizado){
   const el = $('hallUpdated'); if(!el) return;
   const diffMin = Math.max(0, Math.floor((Date.now() - ts) / 60000));
   let texto;
   if(diffMin < 1) texto = '🔄 Atualizado agora';
   else if(diffMin === 1) texto = '🔄 Atualizado há 1 min';
   else if(diffMin < 60) texto = `🔄 Atualizado há ${diffMin} min`;
-  else texto = `🔄 Atualizado há ${Math.floor(diffMin / 60)}h`;
-  el.textContent = texto;
+  else if(diffMin < 1440) texto = `🔄 Atualizado há ${Math.floor(diffMin / 60)}h`;
+  else {
+    const dias = Math.floor(diffMin / 1440);
+    texto = `🔄 Atualizado há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+  }
+  // Quando o StreamElements falha, o servidor devolve a última resposta salva.
+  el.textContent = desatualizado ? texto + ' · dados salvos' : texto;
+  el.classList.toggle('is-stale', !!desatualizado);
+  el.title = desatualizado
+    ? 'Não foi possível falar com o StreamElements agora. Mostrando a última lista salva.'
+    : 'Horário da última atualização do ranking.';
 }
 
 function iniciarHall(){

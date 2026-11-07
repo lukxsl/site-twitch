@@ -11,6 +11,12 @@ const CANAL = 'asemtet0';
 const HALL_CACHE_KEY = 'cache:hall_v18';
 const HALL_CACHE_TS_KEY = 'cache:hall_at_v18';
 const HALL_CACHE_TTL = 2 * 60;            // doadores: atualiza no máx. a cada 2 min
+const HALL_CACHE_EX = 7 * 24 * 60 * 60;   // mas guarda a última resposta boa por 7 dias
+// Ranking (horas, pontos, chat): mesma ideia — se o StreamElements cair, o site
+// mostra a última resposta boa salva no Redis em vez de uma tela de erro.
+const RANK_CACHE_PREFIX = 'cache:rank_v2:';
+const RANK_CACHE_FRESCO = 30;             // segundos em que a resposta é reaproveitada
+const RANK_CACHE_EX = 7 * 24 * 60 * 60;
 const EMOTES_CACHE_KEY = 'cache:emotes_v1';
 const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
 
@@ -266,6 +272,18 @@ async function hallManual(){
   }
 }
 let hallErro = null;
+
+const AVISO_MANUAL = 'Não foi possível atualizar os apoiadores automaticamente. Exibindo a lista configurada pela equipe.';
+
+async function hallDosManuais(motivo) {
+  const manual = await hallManual();
+  // Sem doadores cadastrados não existe fallback: devolver uma lista vazia
+  // como se fosse resposta válida é o que fazia o site anunciar
+  // "Ninguém no pódio ainda" enquanto o StreamElements falhava.
+  if (!manual || !manual.doadores.length) return null;
+  return { ...manual, vazio: false, aviso: AVISO_MANUAL, motivo };
+}
+
 async function hallStreamElements() {
   // Sem JWT ainda tentamos o ranking público; se falhar, cai na lista manual abaixo.
   try {
@@ -273,6 +291,12 @@ async function hallStreamElements() {
     const fotos = await twitchAvatares(r.lista.slice(0, 100).map(x => x.nome));
     const doadores = r.lista.map(x => ({ ...x, total: x.valor, moeda: x.moeda || r.moeda || 'BRL', avatar: fotos[x.nome.toLowerCase()] || null }));
     hallErro = null;
+    // O StreamElements respondeu, mas sem doadores: tenta a lista manual antes
+    // de assumir que o pódio está vazio.
+    if (!doadores.length) {
+      const manual = await hallDosManuais('O StreamElements não retornou doadores.');
+      if (manual) return manual;
+    }
     return {
       vazio: !doadores.length, doadores, gift: [], fieis: [],
       totalMes: r.totalMes, totalGeral: r.totalGeral, apoiadores: r.apoiadores,
@@ -282,11 +306,7 @@ async function hallStreamElements() {
     hallErro = error?.message || 'Falha ao consultar o StreamElements.';
     if (!temJwt()) hallErro = 'STREAMELEMENTS_JWT não configurada no servidor. ' + hallErro;
     console.error('[Hall] Falha ao consultar doadores no StreamElements:', hallErro);
-    const manual = await hallManual();
-    if (manual && manual.doadores.length) {
-      return { ...manual, aviso: 'Não foi possível atualizar os apoiadores automaticamente. Exibindo a lista configurada pela equipe.', motivo: hallErro };
-    }
-    return null;
+    return hallDosManuais(hallErro);
   }
 }
 
@@ -299,8 +319,8 @@ function cacheavel(dados) {
 async function salvarHallCache(dados) {
   try {
     await redis([
-      ['SET', HALL_CACHE_KEY, JSON.stringify(dados), 'EX', String(60 * 60 * 24)],
-      ['SET', HALL_CACHE_TS_KEY, String(Date.now()), 'EX', String(60 * 60 * 24)]
+      ['SET', HALL_CACHE_KEY, JSON.stringify(dados), 'EX', String(HALL_CACHE_EX)],
+      ['SET', HALL_CACHE_TS_KEY, String(Date.now()), 'EX', String(HALL_CACHE_EX)]
     ]);
   } catch(e) {}
 }
@@ -313,6 +333,47 @@ async function lerHallCache() {
     if (dados && dados.motivo) return null; // entradas antigas de falha não valem mais
     return { dados, ts: Number(ts) || 0 };
   } catch(e) { return null; }
+}
+
+// ---------- cache resiliente do ranking (horas, pontos, chat) ----------
+async function salvarRankCache(modo, payload) {
+  try {
+    await redis([['SET', RANK_CACHE_PREFIX + modo, JSON.stringify({ at: Date.now(), payload }), 'EX', String(RANK_CACHE_EX)]]);
+  } catch (e) {}
+}
+
+async function lerRankCache(modo) {
+  try {
+    const [raw] = await redis([['GET', RANK_CACHE_PREFIX + modo]]);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.payload?.lista) || !d.payload.lista.length) return null;
+    return { payload: d.payload, at: Number(d.at) || 0 };
+  } catch (e) { return null; }
+}
+
+/**
+ * Tenta buscar no StreamElements. Se a resposta vier vazia ou a chamada falhar,
+ * devolve a última resposta boa salva no Redis (até 7 dias) marcada com
+ * `desatualizado: true`, para a tela avisar "Atualizado há X".
+ */
+async function comCacheRank(modo, buscar) {
+  const cache = await lerRankCache(modo);
+  if (cache && (Date.now() - cache.at) / 1000 < RANK_CACHE_FRESCO) {
+    return { ...cache.payload, desatualizado: false, updatedAt: cache.at };
+  }
+  try {
+    const out = await buscar();
+    if (out && Array.isArray(out.lista) && out.lista.length) {
+      await salvarRankCache(modo, out);
+      return { ...out, desatualizado: false, updatedAt: Date.now() };
+    }
+    if (cache) return { ...cache.payload, desatualizado: true, updatedAt: cache.at };
+    return { ...out, desatualizado: false, updatedAt: Date.now() };
+  } catch (e) {
+    if (cache) return { ...cache.payload, desatualizado: true, updatedAt: cache.at };
+    throw e;
+  }
 }
 
 export default async function handler(req, res) {
@@ -388,13 +449,18 @@ export default async function handler(req, res) {
           return res.status(429).json({ error: 'Aguarde um minuto para atualizar novamente.' });
         }
       }
-      if (cache && idade < HALL_CACHE_TTL && !forcar) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
+      if (cache && idade < HALL_CACHE_TTL && !forcar) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: false });
       const dados = await hallStreamElements();
-      if (dados) {
-        if (cacheavel(dados)) await salvarHallCache(dados);
-        return res.status(200).json({ ...dados, updatedAt: Date.now() });
+      // Resposta de verdade do StreamElements: salva e mostra.
+      if (cacheavel(dados)) {
+        await salvarHallCache(dados);
+        return res.status(200).json({ ...dados, updatedAt: Date.now(), desatualizado: false });
       }
+      // Falhou (ou veio vazio): a última resposta boa do Redis vale mais que uma
+      // tela de erro — mesmo que ela tenha alguns dias.
       if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
+      // Sem cache: a lista configurada pela equipe, se existir.
+      if (dados) return res.status(200).json({ ...dados, updatedAt: Date.now(), desatualizado: true });
       return res.status(200).json({
         doadores: [], updatedAt: null, indisponivel: true,
         motivo: hallErro || 'Não foi possível consultar o ranking de doadores no StreamElements.',
@@ -408,42 +474,62 @@ export default async function handler(req, res) {
       const modo = String(req.query?.modo || 'pontos');
       const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || '100', 10) || 100));
       try {
+        // Fotos da Twitch: só de quem ainda não tem (e já ficam salvas no cache).
+        const comFotos = async (lista) => {
+          const semFoto = (lista || []).filter(x => !x.avatar);
+          if (semFoto.length) {
+            const fotos = await twitchAvatares(semFoto.map(x => x.nome));
+            semFoto.forEach(x => { if (!x.avatar) x.avatar = fotos[String(x.nome).toLowerCase()] || null; });
+          }
+          return lista;
+        };
+
         let out;
         if (modo === 'doadores') {
           const cache = await lerHallCache();
-          let d = (cache && (Date.now() - cache.ts) / 1000 < HALL_CACHE_TTL) ? cache.dados : null;
-          // O cache é livre para leitura; somente uma consulta que precisa falar
-          // com o StreamElements consome o limite por IP.
-          if (!d && !(await rateLimit(`ratelimit:se-doadores:${ipDe(req)}`, 12, 60, true))) {
-            if (cache) d = cache.dados;
-            else return res.status(429).json({ ok: false, modo, lista: [], total: 0, erro: 'Muitas consultas ao ranking de doadores. Aguarde um minuto.' });
-          }
-          if (!d) {
-            d = await hallStreamElements();
-            if (d && cacheavel(d)) await salvarHallCache(d);
-            else if (cache) d = cache.dados;
+          const idade = cache ? (Date.now() - cache.ts) / 1000 : Infinity;
+          let d = null, ts = null, desatualizado = false;
+          if (cache && idade < HALL_CACHE_TTL) {
+            d = cache.dados; ts = cache.ts;
+          } else if (!(await rateLimit(`ratelimit:se-doadores:${ipDe(req)}`, 12, 60, true))) {
+            // Limite por IP: o cache é livre para leitura.
+            if (!cache) return res.status(429).json({ ok: false, modo, lista: [], total: 0, erro: 'Muitas consultas ao ranking de doadores. Aguarde um minuto.' });
+            d = cache.dados; ts = cache.ts; desatualizado = true;
+          } else {
+            const novo = await hallStreamElements();
+            if (novo && cacheavel(novo)) { await salvarHallCache(novo); d = novo; }
+            else if (cache) { d = cache.dados; ts = cache.ts; desatualizado = true; }
+            else d = novo; // fallback manual, quando existir
           }
           if (!d) throw Object.assign(new Error(hallErro || 'Não foi possível consultar os doadores.'), { statusCode: 502 });
-          out = { modo, fonte: d.fonte || 'StreamElements', total: d.apoiadores, lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, moeda: x.moeda || d.moeda || 'BRL', valorLabel: x.valorTexto || null, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
-                  resumo: { totalMes: d.totalMes, totalGeral: d.totalGeral, doacoes: d.doacoes, moeda: d.moeda, ultimo: d.ultimo } };
+          out = {
+            modo,
+            fonte: d.fonte || 'StreamElements',
+            desatualizado,
+            aviso: d.aviso || null,
+            updatedAt: ts || Date.now(),
+            total: d.apoiadores,
+            lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, moeda: x.moeda || d.moeda || 'BRL', valorLabel: x.valorTexto || null, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
+            resumo: { totalMes: d.totalMes, totalGeral: d.totalGeral, doacoes: d.doacoes, moeda: d.moeda, ultimo: d.ultimo }
+          };
         } else if (modo === 'chat') {
-          const c = await statsChat(limit);
-          out = { modo, total: c.lista.length, lista: c.lista, resumo: { mensagens: c.total, emotes: c.emotes } };
+          out = await comCacheRank('chat', async () => {
+            const c = await statsChat(limit);
+            return { modo, total: c.lista.length, lista: await comFotos(c.lista), resumo: { mensagens: c.total, emotes: c.emotes } };
+          });
         } else if (['pontos', 'acumulados', 'horas'].includes(modo)) {
           const offset = Math.min(100000, Math.max(0, parseInt(req.query?.offset || '0', 10) || 0));
-          const r = await rankingPontos(modo, limit, offset);
-          out = { modo, total: r.total, lista: r.lista };
+          out = await comCacheRank(`${modo}:${limit}:${offset}`, async () => {
+            const r = await rankingPontos(modo, limit, offset);
+            return { modo, total: r.total, lista: await comFotos(r.lista) };
+          });
         } else {
           return res.status(400).json({ error: 'Modo inválido.' });
         }
-        // fotos da Twitch (só quem ainda não tem)
-        const semFoto = out.lista.filter(x => !x.avatar);
-        if (semFoto.length) {
-          const fotos = await twitchAvatares(semFoto.map(x => x.nome));
-          semFoto.forEach(x => { x.avatar = fotos[String(x.nome).toLowerCase()] || null; });
-        }
-        res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
-        return res.status(200).json({ ok: true, ...out, updatedAt: Date.now() });
+
+        if (out.desatualizado) res.setHeader('Cache-Control', 'no-store');
+        else res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+        return res.status(200).json({ ok: true, ...out, updatedAt: out.updatedAt || Date.now() });
       } catch (e) {
         console.error('[ranking-se]', modo, e?.message || e);
         res.setHeader('Cache-Control', 'no-store');
