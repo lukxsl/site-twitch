@@ -1,5 +1,7 @@
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, randomUUID } from 'crypto';
 import { validarSessao, origemOk } from './_lib/core.js';
+import { executarDiagnostico } from './_lib/diagnostico.js';
+import { pareceTeste } from './_lib/dados-teste.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -14,7 +16,7 @@ const ENV_ADMINS = (process.env.DISCORD_ADMIN_IDS || '').split(',').map(s => s.t
 const ENV_DEV_EMAILS = (process.env.GOOGLE_DEV_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 const SUG_KEY = 'sugestoes:lista';
 const SUG_STATUS_LUA = `
-local itens = redis.call('LRANGE', KEYS[1], 0, 199)
+local itens = redis.call('LRANGE', KEYS[1], 0, -1)
 for indice, raw in ipairs(itens) do
   local ok, item = pcall(cjson.decode, raw)
   if ok and type(item) == 'table' and tostring(item.id or '') == ARGV[1] then
@@ -32,7 +34,7 @@ end
 return {}
 `;
 const SUG_DELETE_LUA = `
-local itens = redis.call('LRANGE', KEYS[1], 0, 199)
+local itens = redis.call('LRANGE', KEYS[1], 0, -1)
 local mantidos = {}
 local removidos = 0
 for _, raw in ipairs(itens) do
@@ -49,7 +51,7 @@ for _, raw in ipairs(mantidos) do redis.call('RPUSH', KEYS[1], raw) end
 return removidos
 `;
 const SUG_CLEAN_LUA = `
-local itens = redis.call('LRANGE', KEYS[1], 0, 199)
+local itens = redis.call('LRANGE', KEYS[1], 0, -1)
 local mantidos = {}
 local removidos = 0
 local modo = ARGV[1]
@@ -59,6 +61,22 @@ for _, raw in ipairs(itens) do
   local apagar = modo == 'tudo' or (modo == 'concluidas' and status == 'concluido') or (modo == 'recusadas' and status == 'recusada')
   if apagar then removidos = removidos + 1 else table.insert(mantidos, raw) end
 end
+redis.call('DEL', KEYS[1])
+for _, raw in ipairs(mantidos) do redis.call('RPUSH', KEYS[1], raw) end
+return {removidos, #mantidos}
+`;
+const SUG_PURGE_LUA = `
+local alvos = {}
+for i = 1, #ARGV do alvos[tostring(ARGV[i])] = true end
+local itens = redis.call('LRANGE', KEYS[1], 0, -1)
+local mantidos = {}
+local removidos = 0
+for _, raw in ipairs(itens) do
+  local ok, item = pcall(cjson.decode, raw)
+  local id = (ok and type(item) == 'table') and tostring(item.id or '') or ''
+  if alvos[id] then removidos = removidos + 1 else table.insert(mantidos, raw) end
+end
+if removidos == 0 then return {0, #mantidos} end
 redis.call('DEL', KEYS[1])
 for _, raw in ipairs(mantidos) do redis.call('RPUSH', KEYS[1], raw) end
 return {removidos, #mantidos}
@@ -655,8 +673,11 @@ async function notificarStatus(item, novoStatus, motivo, quemMudou){
 }
 
 export default async function handler(req, res){
-  if(!SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
-  if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado' });
+  const requestId = randomUUID().slice(0, 8).toUpperCase();
+  res.setHeader('X-Request-Id', requestId);
+
+  if(!SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado', action: null, requestId });
+  if(!URL_ || !TOKEN) return res.status(500).json({ error: 'Banco não configurado', action: null, requestId });
 
   const action = req.query?.action || '';
 
@@ -710,6 +731,12 @@ export default async function handler(req, res){
   const quem = sessao.username || 'anônimo';
 
   try {
+    if(req.method === 'GET' && action === 'diagnostico'){
+      if(sessao.cargo !== 'dev') return res.status(403).json({ error: 'Somente o dev pode rodar o diagnóstico', action, requestId });
+      const diag = await executarDiagnostico();
+      return res.status(200).json({ ...diag, action, requestId });
+    }
+
     if(req.method === 'GET' && action === 'permissoes-minhas'){
       const perms = await pegarPermissoes();
       return res.status(200).json({ permissoes: perms[sessao.cargo] || [], cargo: sessao.cargo });
@@ -1074,24 +1101,19 @@ export default async function handler(req, res){
 
     if(req.method === 'GET' && action === 'config-get'){
       if(!(await temPermissao(sessao, 'ver_config'))) return res.status(403).json({ error: 'Sem permissão' });
-      const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw, votosFechRaw, metasRaw] = await redis([
-        ['GET', 'config:aviso'],['GET', 'config:donate'],['GET', 'config:manutencao'],
+      const [avisoRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, votosFechRaw, metasRaw] = await redis([
+        ['GET', 'config:aviso'],['GET', 'config:manutencao'],
         ['GET', 'config:recado'],['GET', 'config:horasMes'],['GET', 'config:updatedAt'],
-        ['GET', 'config:top3'],['GET', 'config:hall'],['GET', 'config:votosFechamento'],
-        ['GET', 'config:metas']
+        ['GET', 'config:votosFechamento'],['GET', 'config:metas']
       ]);
-      let aviso = null, top3 = [], hall = [], metas = null;
+      let aviso = null, metas = null;
       try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch(e){}
-      try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch(e){ top3 = []; }
-      try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e){ hall = []; }
       try { metas = metasRaw ? JSON.parse(metasRaw) : null; } catch(e){}
       return res.status(200).json({
-        aviso, donate: donateRaw || null,
+        aviso,
         manutencao: manutRaw === '1',
         recado: recadoRaw || '', horasMes: horasRaw || '',
         updatedAt: updatedRaw || null,
-        top3: Array.isArray(top3) ? top3 : [],
-        hall: Array.isArray(hall) ? hall : [],
         votosFechamento: votosFechRaw || null,
         metas: metas || null
       });
@@ -1099,16 +1121,13 @@ export default async function handler(req, res){
 
     if(req.method === 'POST' && action === 'config-set'){
       if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
-      const { aviso, donate, manutencao, recado, horasMes, top3, hall, votosFechamento, metas } = req.body || {};
+      const { aviso, manutencao, recado, horasMes, votosFechamento, metas } = req.body || {};
       const agora = new Date().toISOString();
       const cmds = [];
       if(aviso !== undefined) cmds.push(['SET', 'config:aviso', JSON.stringify(aviso)]);
-      if(donate !== undefined) cmds.push(['SET', 'config:donate', String(donate || '')]);
       if(manutencao !== undefined) cmds.push(['SET', 'config:manutencao', manutencao ? '1' : '0']);
       if(recado !== undefined) cmds.push(['SET', 'config:recado', String(recado || '')]);
       if(horasMes !== undefined) cmds.push(['SET', 'config:horasMes', String(horasMes || '')]);
-      if(top3 !== undefined) cmds.push(['SET', 'config:top3', JSON.stringify(Array.isArray(top3) ? top3.slice(0,3) : [])]);
-      if(hall !== undefined) cmds.push(['SET', 'config:hall', JSON.stringify(Array.isArray(hall) ? hall.slice(0,5) : [])]);
       if(votosFechamento !== undefined){
         cmds.push(['SET', 'config:votosFechamento', votosFechamento ? String(votosFechamento) : '']);
       }
@@ -1144,11 +1163,17 @@ export default async function handler(req, res){
 
     if(req.method === 'GET' && action === 'sugestoes-ver'){
       if(!(await temPermissao(sessao, 'ver_sugestoes'))) return res.status(403).json({ error: 'Sem permissão' });
-      const [flat] = await redis([['LRANGE', SUG_KEY, '0', '199']]);
+      const offset = Math.max(0, parseInt(req.query?.offset || '0', 10) || 0);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || '50', 10) || 50));
+      const [flat, totalRaw] = await redis([
+        ['LRANGE', SUG_KEY, String(offset), String(offset + limit - 1)],
+        ['LLEN', SUG_KEY]
+      ]);
       const itens = (flat || [])
         .map(x => { try { return JSON.parse(x); } catch { return null; } })
         .filter(Boolean);
-      return res.status(200).json({ itens });
+      const total = Number(totalRaw || 0);
+      return res.status(200).json({ itens, total, offset, limit, hasMore: offset + itens.length < total });
     }
 
     if(req.method === 'POST' && action === 'sugestoes-status'){
@@ -1201,8 +1226,29 @@ export default async function handler(req, res){
       return res.status(200).json({ ok: true, apagados, restantes });
     }
 
-    return res.status(400).json({ error: 'Ação inválida: ' + action });
+    if(req.method === 'POST' && action === 'sugestoes-limpar-testes'){
+      if(!(await temPermissao(sessao, 'editar_config'))) return res.status(403).json({ error: 'Sem permissão' });
+      const [flat] = await redis([['LRANGE', SUG_KEY, '0', '-1']]);
+      const itens = (flat || [])
+        .map(x => { try { return JSON.parse(x); } catch { return null; } })
+        .filter(Boolean);
+      const ids = itens.filter(pareceTeste).map(i => i.id).filter(Boolean);
+      if(!ids.length) return res.status(200).json({ ok: true, apagados: 0, restantes: itens.length });
+      const [resultado] = await redis([['EVAL', SUG_PURGE_LUA, '1', SUG_KEY, ...ids]]);
+      const apagados = Number(resultado?.[0] || 0);
+      const restantes = Number(resultado?.[1] || 0);
+      await logAcao(quem, sessao.cargo, `Limpou ${apagados} sugestões de teste`);
+      return res.status(200).json({ ok: true, apagados, restantes });
+    }
+
+    return res.status(400).json({ error: 'Ação inválida: ' + action, action, requestId });
   } catch(e){
-    return res.status(500).json({ error: 'Erro no admin: ' + e.message });
+    console.error('[admin]', requestId, action, e);
+    const msg = e?.message || 'erro inesperado';
+    return res.status(500).json({
+      error: `Falha ao executar "${action || 'requisição'}": ${msg}`,
+      action,
+      requestId
+    });
   }
 }

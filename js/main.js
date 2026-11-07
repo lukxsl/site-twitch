@@ -1,5 +1,5 @@
 /* ============================================================
-   MAIN — config global, estado, navegação, votação, hall,
+   MAIN — config global, estado, navegação, votação,
    sugestões, tier list e boot do site
    ============================================================ */
 
@@ -8,12 +8,9 @@
    ============================================================ */
 const CONFIG = {
   subs: null,
-  donate: 'https://midfielder.tv.br/asemtet0',
   siteUpdated: fmtDataHora(new Date().toISOString()),
-  topDoadores: [],
   atividadeManual: [],
-  spotifyPlaylist: 'https://open.spotify.com/playlist/0OV32Qe5e7BJY33rL4tpXk',
-  pixKey: 'asemtet0@gmail.com'
+  spotifyPlaylist: 'https://open.spotify.com/playlist/0OV32Qe5e7BJY33rL4tpXk'
 };
 
 const AVISO = { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
@@ -79,7 +76,7 @@ let vodAtual = null, assistindoVod = false;
 let videosTw = [];
 let modo = 'jogos', filtro = 'Todos';
 let CONFIG_GERAL = {
-  aviso: null, donate: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, top3: [], hall: [], votosFechamento: null
+  aviso: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, votosFechamento: null
 };
 let musicaTocando = false;
 let revealObs = null;
@@ -91,9 +88,6 @@ let _recentes = [];
 let _top = [];
 let _topPeriodo = 'mes';
 let _musicaPronta = false;
-
-let HALL_DADOS = null;
-let HALL_TIMER = null;
 
 let sortMode = 'nota';
 let generoFiltro = 'all';
@@ -298,193 +292,50 @@ async function carregarEmotes(){
   }catch(e){ console.warn('[emotes] usando plano B', e); }
 }
 
+let _versaoSitePromessa = null;
+
+function _formatarVersaoSite(data){
+  try {
+    const p = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Maceio',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(data).reduce((acc, parte) => {
+      if(parte.type !== 'literal') acc[parte.type] = parte.value;
+      return acc;
+    }, {});
+    return `${p.day}/${p.month}/${p.year} às ${p.hour}:${p.minute}`;
+  } catch(e){
+    return fmtDataHora(data.toISOString());
+  }
+}
+
+function carregarVersaoSite(){
+  if(_versaoSitePromessa) return _versaoSitePromessa;
+  _versaoSitePromessa = fetch('/version.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .catch(() => null);
+  return _versaoSitePromessa;
+}
+
 function renderSiteUpdate(){
   const el = $('siteUpdated'); if(!el) return;
-  const raw = CONFIG_GERAL && CONFIG_GERAL.updatedAt;
-  const d = raw ? new Date(raw) : null;
-  const valida = d && !Number.isNaN(d.getTime());
-  el.textContent = valida
-    ? fmtDataHora(d.toISOString())
-    : (CONFIG.siteUpdated || fmtDataHora(new Date().toISOString()));
-  el.title = valida
-    ? 'Data da última alteração nas configurações do site.'
-    : 'Data do build/carregamento atual do site.';
+  const fallback = CONFIG.siteUpdated || fmtDataHora(new Date().toISOString());
+  el.textContent = fallback;
+  el.title = 'Data do build/carregamento atual do site.';
+  carregarVersaoSite().then(v => {
+    if(!v || !v.deployedAt) return;
+    const d = new Date(v.deployedAt);
+    if(Number.isNaN(d.getTime())) return;
+    el.textContent = _formatarVersaoSite(d) + (v.commit ? ' · v' + v.commit : '');
+    el.title = v.message
+      ? 'Última publicação: ' + v.message
+      : 'Data da última publicação do site.';
+  });
 }
 
 function renderHomeExtras(){
   renderRecado();
-}
-
-/* ============================================================
-   HALL DA FAMA (pódio de doadores do StreamElements)
-   ============================================================ */
-async function carregarHall(forcar = false){
-  const lista = $('hallLista'); if(!lista) return;
-  try{
-    const url = forcar
-      ? `/api/config?action=hall&_t=${Date.now()}`
-      : '/api/config?action=hall';
-    const r = await fetch(url, { cache: 'no-store' });
-    const d = await r.json();
-    HALL_DADOS = d;
-    if(d && (d.motivo || d.erro || d.error)) console.warn('[Hall] Ranking automático indisponível:', d.motivo || d.erro || d.error);
-  }catch(e){
-    console.warn('[Hall] Falha ao consultar o ranking:', e);
-    if(!HALL_DADOS) HALL_DADOS = { erro: 'rede' };
-  }
-  renderHall();
-}
-
-// Foto da Twitch; se falhar (ou não existir), vira uma bolinha colorida com a inicial
-function hallAvatar(p, cls){
-  const nome = String(p.nome || '?').replace(/^@/, '');
-  let hue = 0; for(const c of nome) hue = (hue * 31 + c.charCodeAt(0)) % 360;
-  const ini = esc((nome.charAt(0) || '?').toUpperCase());
-  if(p.avatar) return `<img class="hall-av ${cls}" src="${esc(p.avatar)}" alt="" loading="lazy" decoding="async" data-ini="${ini}" data-h="${hue}">`;
-  return `<div class="hall-av ${cls} ph" style="--h:${hue}">${ini}</div>`;
-}
-
-function hallPodioHTML(itens){
-  const ordem = [1, 0, 2];
-  const cls = ['pod-1', 'pod-2', 'pod-3'];
-  const medalha = ['🥇', '🥈', '🥉'];
-  return `<div class="podium">` + ordem.map(i => {
-    const p = itens[i];
-    if(!p) return `<div class="pod ${cls[i]} vazio" style="--d:${i * 90}ms"><div class="hall-av pod-av ph">?</div><span class="pod-name">Você?</span><span class="pod-val">vaga livre</span></div>`;
-    return `<div class="pod ${cls[i]}" style="--d:${i * 90}ms">
-      ${i === 0 ? '<span class="pod-crown" aria-hidden="true">👑</span>' : ''}
-      ${hallAvatar(p, 'pod-av')}
-      <span class="pod-medal" aria-hidden="true">${medalha[i]}</span>
-      <span class="pod-name" title="${esc(p.nome || '')}">${esc(p.nome || '—')}</span>
-      <span class="pod-val">${esc(fmtBRL(p.total))}</span>
-    </div>`;
-  }).join('') + `</div>`;
-}
-
-function renderHall(){
-  const lista = $('hallLista');
-  const updated = $('hallUpdated');
-  const total = $('hallTotal');
-  if(!lista) return;
-  const d = HALL_DADOS;
-
-  if(!lista.dataset.errBound){
-    lista.dataset.errBound = '1';
-    lista.addEventListener('error', ev => {
-      const img = ev.target;
-      if(!img || !img.matches || !img.matches('img.hall-av')) return;
-      const ph = document.createElement('div');
-      ph.className = img.className.replace('hall-av', 'hall-av ph');
-      ph.style.setProperty('--h', img.dataset.h || '270');
-      ph.textContent = img.dataset.ini || '?';
-      img.replaceWith(ph);
-    }, true);
-  }
-
-  // O ranking só é considerado inválido quando o servidor avisa; doadores vazios
-  // com erro NÃO podem ser tratados como "ninguém no pódio ainda".
-  const falhou = !!(d && (d.erro || d.error || d.motivo));
-  const bruto = (!d || d.vazio || !Array.isArray(d.doadores)) ? [] : d.doadores;
-  // A home mostra apenas o pódio. O ranking completo continua na página Ranking.
-  const itens = bruto.slice(0, 3);
-
-  let html;
-  if(!itens.length && falhou){
-    html = `
-      <div class="hall-vazio hall-falha">
-        <span class="hv-ic" aria-hidden="true">📡</span>
-        <b>O ranking não carregou agora.</b>
-        <p>O StreamElements não respondeu a tempo. Assim que a conexão voltar, o pódio aparece aqui.</p>
-        <button type="button" class="btn ghost hall-retry" data-hall-retry>↻ Tentar de novo</button>
-      </div>`;
-  } else if(!itens.length){
-    // Sem doadores de verdade: convite em vez de 3 vagas vazias
-    html = `
-      <div class="hall-vazio">
-        <span class="hv-ic" aria-hidden="true">💜</span>
-        <b>Ninguém no pódio ainda.</b>
-        <p>Seja a primeira pessoa a apoiar o cantinho!</p>
-        <ul class="hv-motivos">
-          <li><span aria-hidden="true">🏆</span>Seu nome no pódio</li>
-          <li><span aria-hidden="true">🎮</span>Ajuda a comprar jogos</li>
-          <li><span aria-hidden="true">🖥️</span>Melhora o setup da live</li>
-        </ul>
-        <div class="hv-meta" id="hallMeta" hidden></div>
-      </div>`;
-  } else {
-    html = hallPodioHTML(itens);
-    if(d && d.aviso) html += `<p class="hall-cta-vazio hall-aviso">${esc(d.aviso)}</p>`;
-  }
-  lista.innerHTML = html;
-
-  const retry = lista.querySelector('[data-hall-retry]');
-  if(retry) retry.addEventListener('click', () => { retry.disabled = true; retry.textContent = 'Buscando…'; carregarHall(true); });
-  if(!itens.length && !falhou) pintarMetaHall();
-
-  if(total){
-    const linhas = [];
-    if(d && d.totalMes > 0) linhas.push(`💜 <b>${esc(fmtBRL(d.totalMes))}</b> doados neste mês`);
-    if(d && d.ultimo && d.ultimo.nome) linhas.push(`✨ Última doação: <b>${esc(d.ultimo.nome)}</b> · ${esc(fmtBRL(d.ultimo.valor))}`);
-    total.innerHTML = linhas.join('<br>');
-    total.hidden = !linhas.length;
-  }
-
-  if(updated && d && !falhou && d.updatedAt){
-    atualizarTextoHallUpdated(d.updatedAt, d.desatualizado);
-    updated.style.display = '';
-  } else if(updated){
-    updated.style.display = 'none';
-  }
-}
-
-let HALL_META;
-async function pintarMetaHall(){
-  if(HALL_META === undefined){
-    try{
-      const r = await fetch('/api/config?action=metas');
-      const m = await r.json();
-      const dd = m && m.doacoes;
-      const meta = Number(dd && dd.meta) || 0;
-      const atual = Number(m && m.valores && m.valores.doacoes) || 0;
-      HALL_META = (dd && dd.ativo && meta > 0) ? { meta, atual } : null;
-    }catch(e){ HALL_META = null; }
-  }
-  const box = $('hallMeta');
-  if(!box || !HALL_META) return;
-  const p = Math.min(100, Math.round(HALL_META.atual / HALL_META.meta * 100));
-  box.innerHTML = `<div class="hv-meta-top"><span>🎯 Meta de doações</span><b>${p}%</b></div><div class="goal-bar"><i style="width:${p}%"></i></div><small>${esc(fmtBRL(HALL_META.atual))} de ${esc(fmtBRL(HALL_META.meta))}</small>`;
-  box.hidden = false;
-}
-
-function atualizarTextoHallUpdated(ts, desatualizado){
-  const el = $('hallUpdated'); if(!el) return;
-  const diffMin = Math.max(0, Math.floor((Date.now() - ts) / 60000));
-  let texto;
-  if(diffMin < 1) texto = '🔄 Atualizado agora';
-  else if(diffMin === 1) texto = '🔄 Atualizado há 1 min';
-  else if(diffMin < 60) texto = `🔄 Atualizado há ${diffMin} min`;
-  else if(diffMin < 1440) texto = `🔄 Atualizado há ${Math.floor(diffMin / 60)}h`;
-  else {
-    const dias = Math.floor(diffMin / 1440);
-    texto = `🔄 Atualizado há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
-  }
-  // Quando o StreamElements falha, o servidor devolve a última resposta salva.
-  el.textContent = desatualizado ? texto + ' · dados salvos' : texto;
-  el.classList.toggle('is-stale', !!desatualizado);
-  el.title = desatualizado
-    ? 'Não foi possível falar com o StreamElements agora. Mostrando a última lista salva.'
-    : 'Horário da última atualização do ranking.';
-}
-
-function iniciarHall(){
-  renderHall();
-  carregarHall();
-  if(HALL_TIMER) clearInterval(HALL_TIMER);
-  HALL_TIMER = setInterval(() => {
-    if(document.hidden) return;
-    carregarHall();
-  }, 120000);
-  document.addEventListener('visibilitychange', () => { if(!document.hidden) carregarHall(); });
 }
 
 /* ============================================================
@@ -1481,7 +1332,6 @@ function renderVotacao(){
       <article class="vc ${meu ? 'meu' : ''} ${justId === it.id ? 'just-voted' : ''}" data-id="${esc(it.id)}" style="--i:${i}">
         <div class="vc-poster">
           ${img}
-          ${medalha ? `<span class="vc-rank" title="${posicao}º lugar">${medalha}</span>` : ''}
           ${meu ? '<span class="vc-tag meu">✓ Seu voto</span>' : (novo ? '<span class="vc-tag novo">Novo</span>' : '')}
           <div class="vc-ov">
             <b class="vc-nome">${esc(it.nome)}</b>
@@ -1490,7 +1340,10 @@ function renderVotacao(){
         </div>
         <div class="vc-body">
           <div class="vbar"><i style="--from:${prev(it.id)}%;--to:${p}%"></i></div>
-          <span class="vc-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
+          <div class="vc-meta">
+            ${medalha ? `<span class="vc-rank" title="${posicao}º lugar">${medalha}</span>` : ''}
+            <span class="vc-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
+          </div>
           ${vBtn(it)}
         </div>
       </article>`;
@@ -1629,7 +1482,33 @@ function setupSugTabs(){
 }
 window.setupSugTabs = setupSugTabs;
 
+function atualizarPrefillSugestao(){
+  const nome = $('sugNome');
+  const anon = $('sugAnonimo');
+  const rotuloAnon = anon?.closest('.sug-anon');
+  const logado = !!(USUARIO && (USUARIO.logado || USUARIO.id));
+  if(rotuloAnon) rotuloAnon.hidden = !logado;
+  if(!nome) return;
+  if(logado){
+    nome.readOnly = true;
+    nome.value = USUARIO.nick || USUARIO.username || '';
+    nome.placeholder = 'Você está logado — usa o nome da sua conta';
+  } else {
+    nome.readOnly = false;
+    nome.placeholder = 'Deixe vazio para enviar anônimo';
+    if(anon) anon.checked = false;
+  }
+  if(nome){ nome.disabled = !!(logado && anon?.checked); }
+}
+window.atualizarPrefillSugestao = atualizarPrefillSugestao;
+
 function setupSugForm(){
+  atualizarPrefillSugestao();
+  const anon = $('sugAnonimo');
+  if(anon) anon.addEventListener('change', atualizarPrefillSugestao);
+  window.addEventListener('soso:auth', atualizarPrefillSugestao);
+  window.addEventListener('soso:logout', atualizarPrefillSugestao);
+
   const chips = document.querySelectorAll('#sugTipoChips .st-chip');
   chips.forEach(chip => {
     chip.addEventListener('click', () => {
@@ -1664,6 +1543,7 @@ async function enviarSugestao(){
   const nome = $('sugNome').value.trim();
   const tipo = sugTipoAtual || 'Sugestão / ideia';
   const texto = $('sugTexto').value.trim();
+  const anonimo = !!$('sugAnonimo')?.checked;
   const btn = $('sugBtn');
   const success = $('sugSuccess');
 
@@ -1679,12 +1559,14 @@ async function enviarSugestao(){
   try{
     const res = await fetch('/api/sugestoes', {
       method:'POST', headers:{ 'Content-Type':'application/json' },
-      body:JSON.stringify({ nome, tipo, texto, site:$('sugSite').value })
+      body:JSON.stringify({ nome, tipo, texto, anonimo, site:$('sugSite').value })
     });
     let dados = null;
     try { dados = await res.json(); } catch(e){}
     if(res.ok){
-      $('sugNome').value = ''; $('sugTexto').value = '';
+      if(!(USUARIO && (USUARIO.logado || USUARIO.id))) $('sugNome').value = '';
+      $('sugTexto').value = '';
+      atualizarPrefillSugestao();
       const counter = $('sugCounter');
       if(counter){ counter.textContent = `0 / ${SUG_MAX_CHARS}`; counter.classList.remove('warn','danger'); }
       if(success){ success.hidden = false; setTimeout(() => { success.hidden = true; }, 6000); }
@@ -1980,7 +1862,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderAviso(); renderEmotes(); carregarEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
-  iniciarHall();
   renderOuvindo();
 
   setupSugForm();
@@ -1998,11 +1879,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       catch { b.textContent = 'Erro'; }
       setTimeout(() => { b.textContent = 'Copiar'; b.classList.remove('copiado'); }, 1600);
     });
-  }
-
-  if (CONFIG.donate) {
-    const d = $('donateLink');
-    if(d){ d.href = CONFIG.donate; d.target = '_blank'; d.rel = 'noopener'; }
   }
 
   const modoEl = $('modo');

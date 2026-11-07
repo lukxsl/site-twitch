@@ -104,7 +104,7 @@
     const googleLink = $('#pfGoogleLink');
     if(googleLink) googleLink.hidden = metodo === 'google' || !!usuario.google;
     const devTools = $('#pfDevTools');
-    if(devTools) devTools.hidden = usuario.cargo !== 'dev' && usuario.cargo !== 'DEV' && !usuario.admin;
+    if(devTools) devTools.hidden = String(usuario.cargo || '').toLowerCase() !== 'dev';
     const signedOut = $('#pfSignInPrompt');
     const signedIn = $('#pfSignedInContent');
     if(signedOut) signedOut.hidden = true;

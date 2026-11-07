@@ -26,13 +26,6 @@ async function renderAdminHome(){
   const podeAdmins = temPerm('ver_admins');
   const podeBanidos = temPerm('ver_banidos');
   const podeSug = temPerm('ver_sugestoes');
-  const streamElementsFalhou = (podeVotos && (!shared.votos || shared.votos.error))
-    || !shared.hall
-    || !!shared.hall.erro
-    || !!shared.hall.motivo
-    || !!shared.hall.aviso
-    || shared.hall.fonte === 'Manual'
-    || !!shared.hall.desatualizado;
 
   const kpis = [];
   if(podeVotos && shared.votos){
@@ -49,7 +42,7 @@ async function renderAdminHome(){
     kpis.push({ icon:'🎮', value: total, label:'itens', sub: `${jg} jogos · ${fl} filmes · ${an} animes`, href:'tierlist', accent:'amber', pulse });
   }
   if(podeSug && shared.sugestoes){
-    const total = (shared.sugestoes.itens || []).length;
+    const total = shared.sugestoes.total != null ? Number(shared.sugestoes.total) : (shared.sugestoes.itens || []).length;
     const novas = (shared.sugestoes.itens || []).filter(i => (i.status || 'nova') === 'nova').length;
     const pulse = kpiChanged('sug', total);
     kpis.push({ icon:'💡', value: total, label:'sugestões', sub: novas === 0 ? 'nenhuma nova' : `${novas} nova${novas === 1 ? '' : 's'}`, href:'sugestoes', accent:'amber', pulse });
@@ -88,15 +81,6 @@ async function renderAdminHome(){
       </div>
       ${podeEditarConfig ? `<button type="button" class="aa-btn" onclick="desligarManutencao()">🔓 Desligar agora</button>` : ''}
     </div>` : '';
-  const seAlertHTML = streamElementsFalhou ? `
-    <div class="admin-alert admin-alert-warn">
-      <span class="aa-ic">⚠️</span>
-      <div class="aa-tx">
-        <b>A API do StreamElements está fora do ar.</b>
-        <span>Verifique o Token.</span>
-      </div>
-    </div>` : '';
-
   const cardsOperacao = [];
   if(temPerm('ver_votos')){
     const actions = temPerm('resetar_votos') ? [{ label:'🗑️ Resetar', fn:'resetarVotacao()' }] : [];
@@ -185,7 +169,7 @@ async function renderAdminHome(){
       </div>
     </div>` : '';
 
-  area.innerHTML = crumbs + hero + alertHTML + seAlertHTML + kpiHTML +
+  area.innerHTML = crumbs + hero + alertHTML + kpiHTML +
     secaoHTML('Operação', cardsOperacao) +
     secaoHTML('Sistema', cardsSistema);
 
@@ -223,7 +207,7 @@ async function desligarManutencao(){
   const ok = await confirmar('Desligar manutenção?', 'O site volta ao normal pra todos os visitantes.', '🔓');
   if(!ok) return;
   try{
-    const r = await fetch('/api/admin?action=config-set', {
+    const r = await adminFetch('/api/admin?action=config-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ manutencao: false })
@@ -394,7 +378,7 @@ async function salvarSonhosAPI(){
     idx++;
   }
   try {
-    const r = await fetch('/api/admin?action=setup-set', {
+    const r = await adminFetch('/api/admin?action=setup-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sonhos })

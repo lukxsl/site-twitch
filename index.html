@@ -269,20 +269,6 @@
         <a href="https://www.twitch.tv/subs/asemtet0" target="_blank" rel="noopener" class="btn big block sub-hero-cta">👑 Assinar na Twitch →</a>
         <small class="sub-note">🎁 Gift e Prime também valem 💜</small>
       </article>
-      <article class="card apoie reveal">
-        <div class="apoie-head">
-          <h3>💜 Apoie o cantinho</h3>
-          <p>Ajude a manter o canal ativo, comprar jogos e melhorar o setup.</p>
-        </div>
-        <div class="hall-head">
-          <h3>🏆 Top Doadores</h3>
-          <span class="hall-live" title="Atualiza sozinho"><i></i> ao vivo</span>
-        </div>
-        <div class="hall-lista" id="hallLista" aria-live="polite"></div>
-        <div class="hall-total" id="hallTotal" hidden></div>
-        <p class="hall-updated" id="hallUpdated" style="display:none"></p>
-        <a class="btn big block" id="donateLink" href="#">💜 Fazer uma doação</a>
-      </article>
     </div>
   </div>
 </section>
@@ -367,7 +353,7 @@
   <header class="section-header reveal">
     <span class="section-kicker">🏆 Comunidade</span>
     <h2>Ranking</h2>
-    <p>Quem mais brilha no cantinho: horas assistidas, pontos, chat e apoiadores — tudo direto do StreamElements.</p>
+    <p>Quem mais brilha no cantinho: horas assistidas, pontos, chat e músicas.</p>
   </header>
 
   <div class="rk" id="rankingContainer" data-mode="horas">
@@ -388,7 +374,6 @@
       <button type="button" role="tab" class="is-active" data-ranking-mode="horas" aria-selected="true"><span class="rk-tab-ic">⏱️</span><span>Horas assistidas</span></button>
       <button type="button" role="tab" data-ranking-mode="pontos" aria-selected="false"><span class="rk-tab-ic">💎</span><span>Pontos</span></button>
       <button type="button" role="tab" data-ranking-mode="chat" aria-selected="false"><span class="rk-tab-ic">💬</span><span>Chat</span></button>
-      <button type="button" role="tab" data-ranking-mode="doadores" aria-selected="false"><span class="rk-tab-ic">💜</span><span>Doadores</span></button>
       <button type="button" role="tab" data-ranking-mode="musicas" aria-selected="false"><span class="rk-tab-ic">🎵</span><span>Músicas</span></button>
     </nav>
 
@@ -694,7 +679,11 @@
           <div class="sug-form">
             <div>
               <label for="sugNome">Seu Nome / Apelido</label>
-              <input type="text" id="sugNome" placeholder="Deixe vazio para enviar anônimo" maxlength="40">
+              <input type="text" id="sugNome" placeholder="Deixe vazio para enviar anônimo" maxlength="40" autocomplete="nickname">
+              <label class="sug-anon" for="sugAnonimo" hidden>
+                <input type="checkbox" id="sugAnonimo">
+                Enviar como anônimo (não aparece seu nome)
+              </label>
             </div>
             <div>
               <label>Tipo</label>
@@ -893,7 +882,7 @@
     </div>
     <div class="footer-bottom">
       <p class="footer-credit">© 2026 asemtet0 · Feito com 💜 por <b>lukxsl</b></p>
-      <div class="footer-updated">⚙️ Configurações atualizadas em <b id="siteUpdated">—</b></div>
+      <div class="footer-updated">🚀 Site atualizado em <b id="siteUpdated">—</b></div>
     </div>
   </div>
 </footer>

@@ -1,6 +1,6 @@
 /* ============================================================
    RANKING UI — Tudo vindo do StreamElements
-   Abas: horas · pontos · chat · doadores
+   Abas: horas · pontos · chat · músicas
    ============================================================ */
 (function () {
   'use strict';
@@ -12,7 +12,6 @@
     horas:    { titulo: 'Horas assistidas',  desc: 'Tempo de tela registrado pelo StreamElements.',            eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há tempo assistido registrado.' },
     pontos:   { titulo: 'Pontos do canal',   desc: 'Pontos de fidelidade acumulados no StreamElements.',       eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há pontos registrados.' },
     chat:     { titulo: 'Mais ativos no chat', desc: 'Quem mais conversa no chat do canal.',                   eyebrow: 'CHAT · STREAMELEMENTS', vazio: 'Ainda não há mensagens contabilizadas.' },
-    doadores: { titulo: 'Top doadores',      desc: 'Quem mais apoiou o canal. Obrigado por tudo! 💜',          eyebrow: 'APOIADORES · STREAMELEMENTS', vazio: 'Ninguém no pódio ainda. Seja a primeira pessoa a aparecer aqui! 💜' },
     musicas:  { titulo: 'Músicas mais tocadas', desc: 'Faixas mais tocadas da conta Last.fm vinculada à Soso.', eyebrow: 'MÚSICAS · LAST.FM', vazio: 'Não há dados reais do Last.fm disponíveis no momento.' }
   };
 
@@ -26,11 +25,6 @@
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
   const nf = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
   const fmt = n => nf.format(Number(n) || 0);
-  const brl = (v, currency = 'BRL') => {
-    const code = /^[A-Z]{3}$/.test(String(currency || '')) ? String(currency) : 'BRL';
-    try { return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: code }); }
-    catch (_) { return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  };
   const norm = s => String(s || '').toLowerCase().replace(/^@/, '').trim();
 
   function minutos(m) {
@@ -40,22 +34,11 @@
     if (h >= 100) return `${fmt(h)}h`;
     return r ? `${h}h ${r}min` : `${h}h`;
   }
-  function quando(ts) {
-    if (!ts) return '';
-    const d = Math.floor((Date.now() - ts) / 86400000);
-    if (d <= 0) return 'hoje';
-    if (d === 1) return 'ontem';
-    if (d < 30) return `há ${d} dias`;
-    const mm = Math.floor(d / 30);
-    return mm < 12 ? `há ${mm} ${mm === 1 ? 'mês' : 'meses'}` : `há ${Math.floor(mm / 12)} ano(s)`;
-  }
-
   function valorTxt(r) {
     switch (mode) {
       case 'horas': return minutos(r.valor);
       case 'pontos': return fmt(r.valor);
       case 'chat': return `${fmt(r.valor)} msg`;
-      case 'doadores': return brl(r.valor, r.moeda);
       case 'musicas': return `${fmt(r.valor)}×`;
     }
     return fmt(r.valor);
@@ -65,7 +48,6 @@
       case 'horas': return r.pos <= 3 ? 'Presença VIP' : 'Tempo de tela';
       case 'pontos': return 'Pontos do canal';
       case 'chat': return 'Mensagens no chat';
-      case 'doadores': return `${r.doacoes || 1} ${(r.doacoes || 1) === 1 ? 'doação' : 'doações'}${r.ultima ? ' · ' + quando(r.ultima) : ''}`;
       case 'musicas': return r.artista || 'Faixa do mês';
     }
     return '';
@@ -187,7 +169,7 @@
     if (mine) {
       line(MODES[mode].titulo, valorTxt(mine));
       const acima = mine.pos > 1 ? rows[mine.pos - 2] : null;
-      if (acima) line('Para subir', mode === 'horas' ? minutos(acima.valor - mine.valor) : mode === 'doadores' ? brl(acima.valor - mine.valor, mine.moeda || acima.moeda) : fmt(acima.valor - mine.valor));
+      if (acima) line('Para subir', mode === 'horas' ? minutos(acima.valor - mine.valor) : fmt(acima.valor - mine.valor));
     } else {
       box.append(el('p', 'rk-me-empty', 'Não encontramos você nesta categoria. Vincule sua conta da Twitch no perfil para aparecer com o mesmo nick do canal.'));
     }
@@ -221,13 +203,7 @@
       box.hidden = false;
       return;
     }
-    if (mode === 'doadores' && meta?.resumo) {
-      const r = meta.resumo;
-      add('Apoiadores', fmt(total));
-      add('Arrecadado no mês', brl(r.totalMes, r.moeda));
-      add('Total geral', brl(r.totalGeral, r.moeda));
-      if (r.ultimo?.nome) add('Última doação', `${r.ultimo.nome} · ${brl(r.ultimo.valor, r.moeda)}`);
-    } else if (mode === 'chat' && meta?.resumo) {
+    if (mode === 'chat' && meta?.resumo) {
       add('No ranking', fmt(rows.length));
       if (meta.resumo.mensagens) add('Mensagens no total', fmt(meta.resumo.mensagens));
       const top = meta.resumo.emotes?.[0];

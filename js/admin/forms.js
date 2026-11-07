@@ -6,7 +6,7 @@ async function carregarAdminVotacao(){
   if(!area) return;
   area.innerHTML = adminVoltarHTML('🗳️ Votação') + `<p class="admin-vazio">Carregando dados…</p>`;
   try{
-    const r = await fetch('/api/admin?action=votos');
+    const r = await adminFetch('/api/admin?action=votos');
     if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
     ADMIN_DADOS = await r.json();
   }catch(e){
@@ -200,7 +200,7 @@ async function salvarPrazoVotacao(){
   const val = document.getElementById('cfgVotosFechamento')?.value || '';
   if(!val){ toast('Selecione uma data e hora', 'warn'); return; }
   try{
-    const r = await fetch('/api/admin?action=config-set', {
+    const r = await adminFetch('/api/admin?action=config-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ votosFechamento: new Date(val).toISOString() })
@@ -220,7 +220,7 @@ async function limparPrazoVotacao(){
   const ok = await confirmar('Limpar prazo?', 'A votação fica aberta indefinidamente.', '🧹');
   if(!ok) return;
   try{
-    const r = await fetch('/api/admin?action=config-set', {
+    const r = await adminFetch('/api/admin?action=config-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ votosFechamento: null })
@@ -240,7 +240,7 @@ async function resetarVotacao(){
   const ok = await confirmar('Resetar votação?', 'TODOS os votos serão apagados e a votação começa do zero.', '🗑️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/admin?action=reset', { method:'POST' });
+    const r = await adminFetch('/api/admin?action=reset', { method:'POST' });
     if(!r.ok) throw new Error('Falha ao resetar');
     toast('Votação resetada! ✅', 'ok');
     await carregarAdminVotacao();
@@ -257,7 +257,7 @@ async function removerTodasOpcoes(){
   const ok2 = await confirmar('TEM CERTEZA?', 'Confirma de novo, essa ação tira todas as opções do ar.', '⚠️');
   if(!ok2) return;
   try{
-    const r = await fetch('/api/admin?action=opcoes', {
+    const r = await adminFetch('/api/admin?action=opcoes', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ opcoes: [] })
@@ -355,7 +355,7 @@ async function buscarCapaOpcao(){
   status.textContent = '🔎 Buscando…';
   try{
     const action = tipo === 'filme' ? 'buscar-filme' : 'buscar-jogo';
-    const r = await fetch(`/api/admin?action=${action}&nome=${encodeURIComponent(nome)}`);
+    const r = await adminFetch(`/api/admin?action=${action}&nome=${encodeURIComponent(nome)}`);
     const d = await r.json();
     if(d.erro){ status.textContent = '⚠️ ' + d.erro; return; }
     if(d.capa){
@@ -393,7 +393,7 @@ window.removerOpcao = removerOpcao;
 
 async function salvarOpcoesVotacao(opcoes){
   try{
-    const r = await fetch('/api/admin?action=opcoes', {
+    const r = await adminFetch('/api/admin?action=opcoes', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ opcoes })
@@ -425,11 +425,9 @@ async function renderAdminConfig(){
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<p class="admin-vazio">Carregando…</p>`;
   try {
-    const r = await fetch('/api/admin?action=config-get', { cache:'no-store' });
+    const r = await adminFetch('/api/admin?action=config-get', { cache:'no-store' });
     const d = await r.json();
     const av = d.aviso || { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
-    const top3Txt = (d.top3 || []).map(p => `${p.nome}${p.valor ? ' | ' + p.valor : ''}`).join('\n');
-    const hallTxt = (d.hall || []).map(p => `${p.nome}${p.meta ? ' | ' + p.meta : ''}`).join('\n');
     const podeEditar = temPerm('editar_config');
     const tab = ADMIN_CONFIG_TAB || 'aviso';
 
@@ -469,30 +467,9 @@ async function renderAdminConfig(){
 
       <div class="config-panel ${tab === 'aparencia' ? 'on' : ''}">
         <div class="admin-card">
-          <h3>💜 Link de doação</h3>
-          <div class="admin-form">
-            <div><label>URL</label><input id="cfgDonate" type="text" value="${esc(d.donate || CONFIG.donate || '')}"></div>
-            <div><label>Chave Pix (pra vaquinha)</label><input id="cfgPix" type="text" value="${esc(CONFIG.pixKey || '')}"></div>
-          </div>
-        </div>
-        <div class="admin-card">
           <h3>💬 Recado da Soso</h3>
           <div class="admin-form">
             <div><label>Texto do recado</label><textarea id="cfgRecado" rows="3" placeholder="Ex: Essa semana tem live de terror! 💜">${esc(d.recado || '')}</textarea></div>
-          </div>
-        </div>
-        <div class="admin-card">
-          <h3>🏆 Top 3 apoiadores</h3>
-          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Um por linha, formato: <code>Nome | valor</code>.</p>
-          <div class="admin-form">
-            <div><label>Linhas (até 3)</label><textarea id="cfgTop3" rows="4" placeholder="lukxsl | R$ 250">${esc(top3Txt)}</textarea></div>
-          </div>
-        </div>
-        <div class="admin-card">
-          <h3>👑 Hall da fama</h3>
-          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Um por linha, formato: <code>Nome | tempo</code>.</p>
-          <div class="admin-form">
-            <div><label>Linhas (até 5)</label><textarea id="cfgHall" rows="6" placeholder="gabizinha | 14 meses">${esc(hallTxt)}</textarea></div>
           </div>
         </div>
       </div>
@@ -575,33 +552,18 @@ async function salvarConfig(){
     titulo: (document.getElementById('cfgAvisoTitulo')?.value || '').trim() || 'Aviso',
     texto: (document.getElementById('cfgAvisoTexto')?.value || '').trim()
   };
-  const donate = (document.getElementById('cfgDonate')?.value || '').trim();
-  const pix = (document.getElementById('cfgPix')?.value || '').trim();
   const recado = (document.getElementById('cfgRecado')?.value || '').trim();
   const manutencao = document.getElementById('cfgManutencao')?.checked || false;
 
-  if(pix) CONFIG.pixKey = pix;
-
-  const top3 = ((document.getElementById('cfgTop3')?.value || '')).split('\n').map(l => l.trim()).filter(Boolean).slice(0,3)
-    .map(l => {
-      const [nome, ...resto] = l.split('|').map(s => s.trim());
-      return { nome: nome || '—', valor: resto.join(' ').trim() || null };
-    });
-  const hall = ((document.getElementById('cfgHall')?.value || '')).split('\n').map(l => l.trim()).filter(Boolean).slice(0,5)
-    .map(l => {
-      const [nome, ...resto] = l.split('|').map(s => s.trim());
-      return { nome: nome || '—', meta: resto.join(' ').trim() || null };
-    });
-
   try{
-    const r = await fetch('/api/admin?action=config-set', {
+    const r = await adminFetch('/api/admin?action=config-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ aviso, donate, manutencao, recado, top3, hall })
+      body: JSON.stringify({ aviso, manutencao, recado })
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
-    CONFIG_GERAL = { ...CONFIG_GERAL, aviso, donate, manutencao, recado, top3, hall, updatedAt: d.updatedAt || new Date().toISOString() };
+    CONFIG_GERAL = { ...CONFIG_GERAL, aviso, manutencao, recado, updatedAt: d.updatedAt || new Date().toISOString() };
     Object.assign(AVISO, aviso);
     if(!aviso.ativo || !aviso.texto) AVISO.ativo = false;
     renderAviso();

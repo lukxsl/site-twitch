@@ -5,6 +5,7 @@ import { createHash, randomUUID } from 'crypto';
 import { redis, validarSessao, rateLimit, origemOk, ipDe, safeStr } from './_lib/core.js';
 import { somarAtividade } from './_lib/atividade.js';
 import { evento } from './_lib/game.js';
+import { pareceTeste } from './_lib/dados-teste.js';
 
 const LIST_KEY = 'sugestoes:lista';
 const MAX_ITENS = 200;
@@ -89,10 +90,11 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const [flat] = await redis([['LRANGE', LIST_KEY, '0', String(MAX_ITENS - 1)]]);
+      const [flat] = await redis([['LRANGE', LIST_KEY, '0', '-1']]);
       const itens = (flat || [])
         .map(raw => { try { return JSON.parse(raw); } catch { return null; } })
-        .filter(Boolean);
+        .filter(Boolean)
+        .filter(item => !pareceTeste(item));
       await aplicarAutoTransicao(itens);
       return res.status(200).json({ itens });
     } catch (error) {
@@ -104,7 +106,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
   if (!origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
 
-  const { nome, texto, site, tipo } = req.body || {};
+  const { nome, texto, site, tipo, anonimo } = req.body || {};
   if (site) return res.status(200).json({ ok: true }); // honeypot anti-bot
 
   const msg = safeStr(texto, MAX_TEXTO);
@@ -127,10 +129,11 @@ export default async function handler(req, res) {
     }
 
     const sessao = await validarSessao(req);
-    const userId = sessao?.id ? String(sessao.id) : null;
-    const usernameLogado = sessao?.username ? safeStr(sessao.username, 60) : null;
-    const avatarLogado = safeUrl(sessao?.avatar);
-    const autor = userId ? (safeStr(usernameLogado, 40) || 'Membro') : (safeStr(nome, 40) || 'Anônimo');
+    const enviarAnonimo = anonimo === true || anonimo === 'true';
+    const userId = !enviarAnonimo && sessao?.id ? String(sessao.id) : null;
+    const usernameLogado = userId && sessao?.username ? safeStr(sessao.username, 60) : null;
+    const avatarLogado = userId ? safeUrl(sessao?.avatar) : null;
+    const autor = userId ? (safeStr(usernameLogado, 40) || 'Membro') : (enviarAnonimo ? 'Anônimo' : (safeStr(nome, 40) || 'Anônimo'));
     const categoria = safeStr(tipo, 40) || 'Sugestão / ideia';
 
     const item = {

@@ -1,6 +1,6 @@
 // Vercel serverless: /api/config.js
-import { seGet, canalId, temJwt, rankingPontos, statsChat, rankingDoadores, resumoSubs } from './_lib/se.js';
-import { rateLimit, ipDe, validarSessao, cargoDe } from './_lib/core.js';
+import { seGet, canalId, temJwt, rankingPontos, statsChat, resumoSubs } from './_lib/se.js';
+import { rateLimit, ipDe } from './_lib/core.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -8,10 +8,6 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 
 const CANAL = 'asemtet0';
-const HALL_CACHE_KEY = 'cache:hall_v18';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v18';
-const HALL_CACHE_TTL = 2 * 60;            // doadores: atualiza no máx. a cada 2 min
-const HALL_CACHE_EX = 7 * 24 * 60 * 60;   // mas guarda a última resposta boa por 7 dias
 // Ranking (horas, pontos, chat): mesma ideia — se o StreamElements cair, o site
 // mostra a última resposta boa salva no Redis em vez de uma tela de erro.
 const RANK_CACHE_PREFIX = 'cache:rank_v2:';
@@ -23,7 +19,6 @@ const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
 // ==========================================
 // CONFIGURAÇÕES DA STREAMELEMENTS (NOVAS)
 // ==========================================
-const SE_BASE_URL = 'https://api.streamelements.com/kappa/v2';
 const SUBSCRIBERS_PAGE_SIZE = 100;
 const SUBSCRIBERS_MAX_PAGES = 20; // Até 2.000 registros
 
@@ -136,16 +131,6 @@ function sanitizarAviso(a) {
   return { ativo: !!a.ativo, tipo: a.tipo === 'warn' ? 'warn' : 'info', icone: safeStr(a.icone, 8) || '📢', titulo: safeStr(a.titulo, 120) || 'Aviso', texto: safeStr(a.texto, 1000) };
 }
 
-function sanitizarLista(list, campos, max) {
-  if (!Array.isArray(list)) return [];
-  return list.slice(0, max).map(item => {
-    if (!item || typeof item !== 'object') return null;
-    const safe = {};
-    for (const c of campos) { safe[c] = item[c] != null ? safeStr(item[c], 80) : null; }
-    return safe.nome ? safe : null;
-  }).filter(Boolean);
-}
-
 function calcularTopApoiadores(sonhos) {
   if (!Array.isArray(sonhos)) return [];
   const porPessoa = {};
@@ -190,8 +175,8 @@ async function twitchSeguidores() {
 async function streamElementsBuscar() {
   if (!temJwt()) return null;
   try {
-    const [subs, doa] = await Promise.all([resumoSubs(), rankingDoadores()]);
-    return { totalSubs: subs.total, totalDoacoes: doa.totalMes };
+    const subs = await resumoSubs();
+    return { totalSubs: subs.total };
   } catch (e) { return null; }
 }
 
@@ -238,101 +223,6 @@ async function twitchEmotes() {
       };
     });
   } catch (e) { return []; }
-}
-
-// ---------- StreamElements: doadores (gorjetas) ----------
-function numeroManual(valor){
-  const texto = String(valor || '').replace(/R\$/gi, '').replace(/\s/g, '').replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
-  const n = Number(texto);
-  return Number.isFinite(n) ? n : 0;
-}
-async function hallManual(){
-  try{
-    const [topRaw, hallRaw] = await redis([['GET', 'config:top3'], ['GET', 'config:hall']]);
-    let top = [], listaHall = [];
-    try { top = topRaw ? JSON.parse(topRaw) : []; } catch(e) {}
-    try { listaHall = hallRaw ? JSON.parse(hallRaw) : []; } catch(e) {}
-    const base = Array.isArray(top) && top.length ? top : listaHall;
-    const doadores = (Array.isArray(base) ? base : []).slice(0, 5).map((item, i) => {
-      const nome = safeStr(item?.nome, 40);
-      const rotulo = safeStr(item?.valor || item?.meta, 60) || 'Apoiador';
-      return { pos: i + 1, nome, avatar: null, total: numeroManual(rotulo), valor: numeroManual(rotulo), valorTexto: rotulo, doacoes: 0, maior: 0, ultima: null };
-    }).filter(item => item.nome);
-    // Sem doadores cadastrados não existe fallback: devolver uma lista vazia
-    // como se fosse resposta válida é o que fazia o site anunciar
-    // "Ninguém no pódio ainda" enquanto o StreamElements falhava.
-    if (!doadores.length) return null;
-    return {
-      vazio: false, doadores, gift: [], fieis: [], totalMes: 0, totalGeral: 0,
-      apoiadores: doadores.length, doacoes: 0, moeda: 'BRL', ultimo: null, fonte: 'Manual'
-    };
-  }catch(error){
-    console.warn('[Hall] Não foi possível ler o Top de apoiadores manual:', error?.message || error);
-    return null;
-  }
-}
-let hallErro = null;
-
-const AVISO_MANUAL = 'Não foi possível atualizar os apoiadores automaticamente. Exibindo a lista configurada pela equipe.';
-
-async function hallDosManuais(motivo) {
-  const manual = await hallManual();
-  // Sem doadores cadastrados não existe fallback: devolver uma lista vazia
-  // como se fosse resposta válida é o que fazia o site anunciar
-  // "Ninguém no pódio ainda" enquanto o StreamElements falhava.
-  if (!manual || !manual.doadores.length) return null;
-  return { ...manual, vazio: false, aviso: AVISO_MANUAL, motivo };
-}
-
-async function hallStreamElements() {
-  // Sem JWT ainda tentamos o ranking público; se falhar, cai na lista manual abaixo.
-  try {
-    const r = await rankingDoadores();
-    const fotos = await twitchAvatares(r.lista.slice(0, 100).map(x => x.nome));
-    const doadores = r.lista.map(x => ({ ...x, total: x.valor, moeda: x.moeda || r.moeda || 'BRL', avatar: fotos[x.nome.toLowerCase()] || null }));
-    hallErro = null;
-    // O StreamElements respondeu, mas sem doadores: tenta a lista manual antes
-    // de assumir que o pódio está vazio.
-    if (!doadores.length) {
-      const manual = await hallDosManuais('O StreamElements não retornou doadores.');
-      if (manual) return manual;
-    }
-    return {
-      vazio: !doadores.length, doadores, gift: [], fieis: [],
-      totalMes: r.totalMes, totalGeral: r.totalGeral, apoiadores: r.apoiadores,
-      doacoes: r.doacoes, moeda: r.moeda, ultimo: r.ultimo, fonte: 'StreamElements'
-    };
-  } catch (error) {
-    hallErro = error?.message || 'Falha ao consultar o StreamElements.';
-    if (!temJwt()) hallErro = 'STREAMELEMENTS_JWT não configurada no servidor. ' + hallErro;
-    console.error('[Hall] Falha ao consultar doadores no StreamElements:', hallErro);
-    return hallDosManuais(hallErro);
-  }
-}
-
-// Só vale guardar no cache o que veio de verdade do StreamElements.
-// Falhas e fallbacks nunca entram no cache (antes ficavam 24h envenenando o pódio).
-function cacheavel(dados) {
-  return !!dados && !dados.motivo && Array.isArray(dados.doadores) && dados.doadores.length > 0;
-}
-
-async function salvarHallCache(dados) {
-  try {
-    await redis([
-      ['SET', HALL_CACHE_KEY, JSON.stringify(dados), 'EX', String(HALL_CACHE_EX)],
-      ['SET', HALL_CACHE_TS_KEY, String(Date.now()), 'EX', String(HALL_CACHE_EX)]
-    ]);
-  } catch(e) {}
-}
-
-async function lerHallCache() {
-  try {
-    const [raw, ts] = await redis([['GET', HALL_CACHE_KEY], ['GET', HALL_CACHE_TS_KEY]]);
-    if (!raw) return null;
-    const dados = JSON.parse(raw);
-    if (dados && dados.motivo) return null; // entradas antigas de falha não valem mais
-    return { dados, ts: Number(ts) || 0 };
-  } catch(e) { return null; }
 }
 
 // ---------- cache resiliente do ranking (horas, pontos, chat) ----------
@@ -423,53 +313,16 @@ export default async function handler(req, res) {
       if (metas.seguidores?.ativo) out.valores.seguidores = await twitchSeguidores();
 
       let se = null;
-      if (metas.subs?.plataforma === 'streamelements' || metas.doacoes?.plataforma === 'streamelements') se = await streamElementsBuscar();
+      if (metas.subs?.plataforma === 'streamelements') se = await streamElementsBuscar();
 
       if (metas.subs?.ativo) out.valores.subs = (metas.subs.plataforma === 'streamelements' && se) ? se.totalSubs : (Number(metas.subs.atualManual) || 0);
-      if (metas.doacoes?.ativo) out.valores.doacoes = (metas.doacoes.plataforma === 'streamelements' && se) ? se.totalDoacoes : (Number(metas.doacoes.atualManual) || 0);
+      if (metas.doacoes?.ativo) out.valores.doacoes = Number(metas.doacoes.atualManual) || 0;
 
       return res.status(200).json(out);
     }
 
-    if (action === 'hall') {
-      const cache = await lerHallCache();
-      const idade = cache ? (Date.now() - cache.ts) / 1000 : Infinity;
-      const forcar = req.query?.refresh === '1';
-      const ip = ipDe(req);
-      if (!(await rateLimit(`ratelimit:hall:${ip}`, 20, 60, true))) {
-        if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
-        return res.status(429).json({ error: 'Muitas consultas ao ranking. Aguarde um pouco.' });
-      }
-      if (forcar) {
-        const sessao = await validarSessao(req);
-        const cargo = sessao?.id ? await cargoDe(sessao.id, sessao.email || '') : null;
-        if (!cargo) return res.status(403).json({ error: 'Somente a equipe pode atualizar o ranking manualmente.' });
-        if (!(await rateLimit(`ratelimit:hall-refresh:${sessao.id}`, 1, 60, true))) {
-          if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
-          return res.status(429).json({ error: 'Aguarde um minuto para atualizar novamente.' });
-        }
-      }
-      if (cache && idade < HALL_CACHE_TTL && !forcar) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: false });
-      const dados = await hallStreamElements();
-      // Resposta de verdade do StreamElements: salva e mostra.
-      if (cacheavel(dados)) {
-        await salvarHallCache(dados);
-        return res.status(200).json({ ...dados, updatedAt: Date.now(), desatualizado: false });
-      }
-      // Falhou (ou veio vazio): a última resposta boa do Redis vale mais que uma
-      // tela de erro — mesmo que ela tenha alguns dias.
-      if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
-      // Sem cache: a lista configurada pela equipe, se existir.
-      if (dados) return res.status(200).json({ ...dados, updatedAt: Date.now(), desatualizado: true });
-      return res.status(200).json({
-        doadores: [], updatedAt: null, indisponivel: true,
-        motivo: hallErro || 'Não foi possível consultar o ranking de doadores no StreamElements.',
-        erro: hallErro || 'Ranking de doadores indisponível no momento.'
-      });
-    }
-
     // ===== RANKING UNIFICADO DO STREAMELEMENTS =====
-    // ?action=ranking-se&modo=pontos|acumulados|horas|chat|doadores
+    // ?action=ranking-se&modo=pontos|acumulados|horas|chat
     if (action === 'ranking-se') {
       const modo = String(req.query?.modo || 'pontos');
       const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || '100', 10) || 100));
@@ -485,34 +338,7 @@ export default async function handler(req, res) {
         };
 
         let out;
-        if (modo === 'doadores') {
-          const cache = await lerHallCache();
-          const idade = cache ? (Date.now() - cache.ts) / 1000 : Infinity;
-          let d = null, ts = null, desatualizado = false;
-          if (cache && idade < HALL_CACHE_TTL) {
-            d = cache.dados; ts = cache.ts;
-          } else if (!(await rateLimit(`ratelimit:se-doadores:${ipDe(req)}`, 12, 60, true))) {
-            // Limite por IP: o cache é livre para leitura.
-            if (!cache) return res.status(429).json({ ok: false, modo, lista: [], total: 0, erro: 'Muitas consultas ao ranking de doadores. Aguarde um minuto.' });
-            d = cache.dados; ts = cache.ts; desatualizado = true;
-          } else {
-            const novo = await hallStreamElements();
-            if (novo && cacheavel(novo)) { await salvarHallCache(novo); d = novo; }
-            else if (cache) { d = cache.dados; ts = cache.ts; desatualizado = true; }
-            else d = novo; // fallback manual, quando existir
-          }
-          if (!d) throw Object.assign(new Error(hallErro || 'Não foi possível consultar os doadores.'), { statusCode: 502 });
-          out = {
-            modo,
-            fonte: d.fonte || 'StreamElements',
-            desatualizado,
-            aviso: d.aviso || null,
-            updatedAt: ts || Date.now(),
-            total: d.apoiadores,
-            lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, moeda: x.moeda || d.moeda || 'BRL', valorLabel: x.valorTexto || null, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
-            resumo: { totalMes: d.totalMes, totalGeral: d.totalGeral, doacoes: d.doacoes, moeda: d.moeda, ultimo: d.ultimo }
-          };
-        } else if (modo === 'chat') {
+        if (modo === 'chat') {
           out = await comCacheRank('chat', async () => {
             const c = await statsChat(limit);
             return { modo, total: c.lista.length, lista: await comFotos(c.lista), resumo: { mensagens: c.total, emotes: c.emotes } };
@@ -600,22 +426,19 @@ export default async function handler(req, res) {
     // FIM DAS NOVAS ROTAS
     // ==========================================
 
-    const [avisoRaw, donateRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, top3Raw, hallRaw, votosFechRaw] = await redis([
-      ['GET', 'config:aviso'], ['GET', 'config:donate'], ['GET', 'config:manutencao'], ['GET', 'config:recado'],
-      ['GET', 'config:horasMes'], ['GET', 'config:updatedAt'], ['GET', 'config:top3'], ['GET', 'config:hall'], ['GET', 'config:votosFechamento']
+    const [avisoRaw, manutRaw, recadoRaw, horasRaw, updatedRaw, votosFechRaw] = await redis([
+      ['GET', 'config:aviso'], ['GET', 'config:manutencao'], ['GET', 'config:recado'],
+      ['GET', 'config:horasMes'], ['GET', 'config:updatedAt'], ['GET', 'config:votosFechamento']
     ]);
 
-    let aviso = null, top3 = [], hall = [];
+    let aviso = null;
     try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch (e) {}
-    try { top3 = top3Raw ? JSON.parse(top3Raw) : []; } catch (e) {}
-    try { hall = hallRaw ? JSON.parse(hallRaw) : []; } catch (e) {}
-    const donate = safeStr(donateRaw, 500);
 
     return res.status(200).json({
-      aviso: sanitizarAviso(aviso), donate: /^https?:\/\//i.test(donate) ? donate : null,
+      aviso: sanitizarAviso(aviso),
       manutencao: manutRaw === '1', recado: safeStr(recadoRaw, 500), horasMes: safeStr(horasRaw, 30),
-      updatedAt: safeStr(updatedRaw, 40) || null, top3: sanitizarLista(top3, ['nome', 'valor'], 3),
-      hall: sanitizarLista(hall, ['nome', 'meta'], 5), votosFechamento: safeStr(votosFechRaw, 40) || null
+      updatedAt: safeStr(updatedRaw, 40) || null,
+      votosFechamento: safeStr(votosFechRaw, 40) || null
     });
   } catch (e) {
     const statusCode = Number(e?.statusCode) || 502;

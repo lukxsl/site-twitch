@@ -6,7 +6,7 @@ async function carregarAdminTierList(){
   if(!area) return;
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `<p class="admin-vazio">Carregando…</p>`;
   try{
-    const r = await fetch('/api/admin?action=tierlist-get');
+    const r = await adminFetch('/api/admin?action=tierlist-get');
     if(!r.ok) throw new Error('Falha ao carregar (' + r.status + ')');
     const d = await r.json();
     ADMIN_TIER = { jogos: d.jogos || [], filmes: d.filmes || [], animes: d.animes || [] };
@@ -112,7 +112,7 @@ async function apagarSelecionados(){
   const ok = await confirmar(`Apagar ${ids.length} itens?`, `Vou apagar: ${nomes}${extra}. Essa ação não volta.`, '🗑️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/admin?action=tierlist-delete-many', {
+    const r = await adminFetch('/api/admin?action=tierlist-delete-many', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids, tipo })
@@ -143,7 +143,7 @@ async function importarSteam(){
     while(rodada < 250){
       rodada++;
       if(btn) btn.textContent = `⏳ Importando biblioteca · lote ${rodada}…`;
-      const r = await fetch('/api/admin?action=importar-steam', { method: 'POST', cache: 'no-store' });
+      const r = await adminFetch('/api/admin?action=importar-steam', { method: 'POST', cache: 'no-store' });
       let d = {};
       try { d = await r.json(); } catch(e) { throw new Error('A API retornou uma resposta inválida durante a importação.'); }
       if(!r.ok || d.error) throw new Error(d.error || `Falha na importação (HTTP ${r.status})`);
@@ -177,7 +177,7 @@ async function sincronizarHoras(){
   if(!ok) return;
   if(btn){ btn.disabled = true; btn.textContent = '⏳ Buscando…'; }
   try {
-    const r = await fetch('/api/admin?action=sync-horas', { method: 'POST' });
+    const r = await adminFetch('/api/admin?action=sync-horas', { method: 'POST' });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     const msg = `✅ ${d.atualizados} ${d.atualizados === 1 ? 'jogo atualizado' : 'jogos atualizados'}` + (d.conqAtualizadas ? ` · ${d.conqAtualizadas} conquistas verificadas` : '');
@@ -281,7 +281,7 @@ async function buscarItemAuto(){
   status.textContent = '🔎 Buscando…';
   try{
     const action = tipo === 'jogos' ? 'buscar-jogo' : tipo === 'filmes' ? 'buscar-filme' : 'buscar-anime';
-    const r = await fetch(`/api/admin?action=${action}&nome=${encodeURIComponent(nome)}`);
+    const r = await adminFetch(`/api/admin?action=${action}&nome=${encodeURIComponent(nome)}`);
     const d = await r.json();
     if(d.erro){ status.textContent = '⚠️ ' + d.erro; return; }
     if(d.nome) document.getElementById('itemNome').value = d.nome;
@@ -313,7 +313,7 @@ async function buscarConquistasAuto(appid){
   const btn = document.getElementById('btnConqAuto');
   if(btn){ btn.disabled = true; btn.textContent = '⏳'; }
   try{
-    const r = await fetch(`/api/admin?action=buscar-conquistas&appid=${appid}`);
+    const r = await adminFetch(`/api/admin?action=buscar-conquistas&appid=${appid}`);
     const d = await r.json();
     if(d.erro){ toast('⚠️ ' + d.erro, 'warn'); }
     else if(d.total){
@@ -334,7 +334,7 @@ async function traduzirComentario(){
   const original = ta.value;
   ta.value = '🌐 Traduzindo…';
   try{
-    const r = await fetch('/api/admin?action=traduzir', {
+    const r = await adminFetch('/api/admin?action=traduzir', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ texto })
@@ -403,7 +403,7 @@ window.removerItemTier = removerItemTier;
 
 async function salvarTierList(logAcao){
   try{
-    const r = await fetch('/api/admin?action=tierlist-set', {
+    const r = await adminFetch('/api/admin?action=tierlist-set', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jogos: ADMIN_TIER.jogos, filmes: ADMIN_TIER.filmes, animes: ADMIN_TIER.animes, logAcao })
@@ -448,24 +448,34 @@ function _sugTipoInfo(tipo){
   return { ic: '💡', label: 'Sugestão' };
 }
 
-async function carregarAdminSugestoes(){
+async function carregarAdminSugestoes(offset = 0, acumular = false){
   const area = document.getElementById('adminArea'); if(!area) return;
-  area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<p class="admin-vazio">Carregando…</p>`;
+  if(!acumular) area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<p class="admin-vazio">Carregando…</p>`;
   try{
-    const r = await fetch('/api/admin?action=sugestoes-ver');
+    const r = await adminFetch(`/api/admin?action=sugestoes-ver&offset=${offset}&limit=50`);
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
+    if(acumular && ADMIN_SHARED.sugestoes){
+      const anteriores = ADMIN_SHARED.sugestoes.itens || [];
+      const novos = d.itens || [];
+      const vistos = new Set(anteriores.map(i => i.id));
+      d.itens = anteriores.concat(novos.filter(i => !vistos.has(i.id)));
+      d.offset = offset;
+    }
     ADMIN_SHARED.sugestoes = d;
     renderAdminSugestoes();
   }catch(e){
-    area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+    if(!acumular) area.innerHTML = adminVoltarHTML('💡 Sugestões') + `<div class="admin-vazio"><b>Erro</b>${esc(e.message)}</div>`;
+    else toast('Erro ao carregar mais: ' + e.message, 'erro');
   }
 }
 window.carregarAdminSugestoes = carregarAdminSugestoes;
 
 function renderAdminSugestoes(){
   const area = document.getElementById('adminArea'); if(!area) return;
-  const itens = (ADMIN_SHARED.sugestoes && ADMIN_SHARED.sugestoes.itens) || [];
+  const dados = ADMIN_SHARED.sugestoes || {};
+  const itens = dados.itens || [];
+  const total = dados.total != null ? Number(dados.total) : itens.length;
   const podeEditar = temPerm('editar_config');
 
   const filtrados = itens.filter(i => {
@@ -477,7 +487,7 @@ function renderAdminSugestoes(){
     return true;
   });
 
-  const contagem = { all: itens.length, nova: 0, analise: 0, aceita: 0, recusada: 0, concluido: 0 };
+  const contagem = { all: total, nova: 0, analise: 0, aceita: 0, recusada: 0, concluido: 0 };
   itens.forEach(i => {
     const st = i.status || 'nova';
     if(contagem[st] !== undefined) contagem[st]++;
@@ -548,7 +558,8 @@ function renderAdminSugestoes(){
 
   area.innerHTML = adminVoltarHTML('💡 Sugestões') + `
     <div class="admin-card">
-      <h3>💡 Sugestões <span class="cont">${itens.length}</span></h3>
+      <h3>💡 Sugestões <span class="cont">${total}</span></h3>
+      ${dados.hasMore ? `<p class="admin-sug-more-info">Mostrando ${itens.length} de ${total} — carregue mais para ver as antigas.</p>` : ''}
 
       <div class="admin-sug-filters">
         <div class="admin-sug-filters-row">
@@ -576,7 +587,9 @@ function renderAdminSugestoes(){
 
       <div class="admin-actions">
         <button class="admin-btn ghost" onclick="carregarAdminSugestoes()">🔄 Recarregar</button>
+        ${dados.hasMore ? `<button class="admin-btn ghost" onclick="carregarAdminSugestoes(${Number(dados.offset || 0) + Number(dados.limit || 50)}, true)">⬇️ Mostrar mais (${Math.max(0, total - itens.length)})</button>` : ''}
         ${podeEditar ? `
+          <button class="admin-btn ghost" onclick="limparSugestoesTestes()">🧪 Limpar dados de teste</button>
           <button class="admin-btn ghost" onclick="limparSugestoes('concluidas')">🧹 Limpar concluídas</button>
           <button class="admin-btn ghost" onclick="limparSugestoes('recusadas')">🧹 Limpar recusadas</button>
           <button class="admin-btn perigo" onclick="limparSugestoes('tudo')">🚨 Limpar TUDO</button>
@@ -602,7 +615,7 @@ async function mudarStatusSug(id, novoStatus){
   }
 
   try{
-    const r = await fetch('/api/admin?action=sugestoes-status', {
+    const r = await adminFetch('/api/admin?action=sugestoes-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: novoStatus, motivo, motivoTipo })
@@ -693,7 +706,7 @@ async function excluirSugestao(id){
   const ok = await confirmar('Excluir sugestão?', 'Essa ideia some pra sempre. Não tem como desfazer.', '🗑️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/admin?action=sugestoes-delete', {
+    const r = await adminFetch('/api/admin?action=sugestoes-delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
@@ -724,7 +737,7 @@ async function limparSugestoes(modo){
   }
 
   try{
-    const r = await fetch('/api/admin?action=sugestoes-limpar', {
+    const r = await adminFetch('/api/admin?action=sugestoes-limpar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ modo })
@@ -738,6 +751,24 @@ async function limparSugestoes(modo){
 }
 window.limparSugestoes = limparSugestoes;
 
+async function limparSugestoesTestes(){
+  const ok = await confirmar(
+    'Limpar dados de teste?',
+    'Sugestões com nomes/textos de teste (ex.: "teste", "aaa", "asdf") serão apagadas. Não tem como desfazer.',
+    '🧪'
+  );
+  if(!ok) return;
+  try{
+    const r = await adminFetch('/api/admin?action=sugestoes-limpar-testes', { method: 'POST' });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Falha');
+    toast(d.apagados ? `🧪 ${d.apagados} sugestões de teste apagadas` : 'Nenhum dado de teste encontrado', 'ok');
+    await carregarAdminSugestoes();
+    carregarShared(true).then(() => renderSidebar());
+  }catch(e){ toast('Erro: ' + e.message, 'erro'); }
+}
+window.limparSugestoesTestes = limparSugestoesTestes;
+
 /* ============================================================
    ADMINS
    ============================================================ */
@@ -746,7 +777,7 @@ async function renderAdminAdmins(){
   area.innerHTML = adminVoltarHTML('👥 Admins') + `<p class="admin-vazio">Carregando…</p>`;
   let dados = { admins: [], meuCargo: null };
   try{
-    const r = await fetch('/api/admin?action=admins-ver');
+    const r = await adminFetch('/api/admin?action=admins-ver');
     if(r.ok) dados = await r.json();
   }catch(e){}
   const meCargo = dados.meuCargo || (USUARIO && USUARIO.cargo) || 'moderador';
@@ -819,7 +850,7 @@ async function carregarPermissoes(){
   if(!wrap) return;
   wrap.innerHTML = '<p class="admin-vazio">Carregando…</p>';
   try{
-    const r = await fetch('/api/admin?action=permissoes-get');
+    const r = await adminFetch('/api/admin?action=permissoes-get');
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     PERMS_DADOS = d.permissoes;
@@ -881,7 +912,7 @@ async function salvarPermissoes(){
     if(cb.checked && !novo[c].includes(p)) novo[c].push(p);
   });
   try{
-    const r = await fetch('/api/admin?action=permissoes-set', {
+    const r = await adminFetch('/api/admin?action=permissoes-set', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ permissoes: novo })
@@ -900,10 +931,10 @@ async function restaurarPermissoesPadrao(){
   const ok = await confirmar('Restaurar padrão?', 'As permissões voltam ao padrão de fábrica.', '♻️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/admin?action=permissoes-get');
+    const r = await adminFetch('/api/admin?action=permissoes-get');
     const d = await r.json();
     if(!d.padrao) throw new Error('Padrão indisponível');
-    const r2 = await fetch('/api/admin?action=permissoes-set', {
+    const r2 = await adminFetch('/api/admin?action=permissoes-set', {
       method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ permissoes: d.padrao })
     });
@@ -943,7 +974,7 @@ window.editarAdmin = editarAdmin;
 async function salvarAdmin(id, username, avatar){
   const cargo = document.getElementById('editAdminCargo').value;
   try{
-    const r = await fetch('/api/admin?action=admins-edit', {
+    const r = await adminFetch('/api/admin?action=admins-edit', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: id, cargo, username, avatar })
     });
@@ -982,7 +1013,7 @@ async function salvarNovoAdmin(){
   const cargo = document.getElementById('novoAdminCargo').value;
   if(!userId){ toast('Digite o ID', 'warn'); return; }
   try{
-    const r = await fetch('/api/admin?action=admins-add', {
+    const r = await adminFetch('/api/admin?action=admins-add', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, cargo })
     });
@@ -999,7 +1030,7 @@ async function removerAdmin(id){
   const ok = await confirmar('Remover admin?', 'A pessoa perde acesso ao painel.', '🗑️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/admin?action=admins-remove', {
+    const r = await adminFetch('/api/admin?action=admins-remove', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: id })
     });
@@ -1019,7 +1050,7 @@ async function renderAdminBanidos(){
   area.innerHTML = adminVoltarHTML('🚫 Banidos') + `<p class="admin-vazio">Carregando…</p>`;
   let banidos = [];
   try {
-    const r = await fetch('/api/admin?action=banidos-ver');
+    const r = await adminFetch('/api/admin?action=banidos-ver');
     if(r.ok){ const d = await r.json(); banidos = d.banidos || []; }
   } catch(e){}
   const podeGerenciar = temPerm('editar_banidos');
@@ -1066,7 +1097,7 @@ async function salvarBanido(){
   const motivo = document.getElementById('banirMotivo').value.trim();
   if(!userId){ toast('Digite o ID', 'warn'); return; }
   try{
-    const r = await fetch('/api/admin?action=banidos-add', {
+    const r = await adminFetch('/api/admin?action=banidos-add', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, motivo })
     });
@@ -1083,7 +1114,7 @@ async function removerBanido(id){
   const ok = await confirmar('Desbanir?', 'A pessoa volta a poder votar.', '✅');
   if(!ok) return;
   try{
-    const r = await fetch('/api/admin?action=banidos-remove', {
+    const r = await adminFetch('/api/admin?action=banidos-remove', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: id })
     });
@@ -1154,7 +1185,7 @@ async function renderAdminLogs(){
 
   let logs = [];
   try {
-    const r = await fetch('/api/admin?action=logs-ver');
+    const r = await adminFetch('/api/admin?action=logs-ver');
     const d = await r.json();
     logs = d.logs || [];
   } catch(e){}
@@ -1251,7 +1282,7 @@ async function renderAdminBackup(){
   area.innerHTML = adminVoltarHTML('💾 Backup') + `<p class="admin-vazio">Carregando…</p>`;
   let backups = [];
   try {
-    const r = await fetch('/api/backup?action=list');
+    const r = await adminFetch('/api/backup?action=list');
     if(r.ok){ const d = await r.json(); backups = d.backups || []; }
   } catch(e){}
   const fmtTamanho = b => b < 1024 ? b + ' B' : b < 1024*1024 ? (b/1024).toFixed(1) + ' KB' : (b/1024/1024).toFixed(1) + ' MB';
@@ -1281,7 +1312,7 @@ window.renderAdminBackup = renderAdminBackup;
 async function criarBackupManual(){
   try{
     toast('Criando backup…', 'info');
-    const r = await fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create' }) });
+    const r = await adminFetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create' }) });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     toast('Backup criado! ✅', 'ok');
@@ -1294,7 +1325,7 @@ async function restaurarBackup(id){
   const ok = await confirmar('Restaurar backup?', 'Todos os dados atuais serão substituídos. Essa ação não volta.', '⚠️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'restore', id }) });
+    const r = await adminFetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'restore', id }) });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error || 'Falha');
     toast(`✅ Restaurado (${d.total} chaves)`, 'ok');
@@ -1310,7 +1341,7 @@ async function apagarBackup(id){
   const ok = await confirmar('Apagar backup?', 'O arquivo sai do histórico.', '🗑️');
   if(!ok) return;
   try{
-    const r = await fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
+    const r = await adminFetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id }) });
     if(!r.ok) throw new Error('Falha');
     toast('Backup apagado ✅', 'ok');
     await renderAdminBackup();

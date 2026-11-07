@@ -1,12 +1,20 @@
 {
+  "buildCommand": "node scripts/gen-version.js",
   "crons": [
     { "path": "/api/backup?action=cron", "schedule": "0 3 * * *" },
     { "path": "/api/admin?action=sync-horas-cron", "schedule": "0 4 * * *" }
   ],
   "functions": {
-    "api/config.js": { "maxDuration": 30 }
+    "api/config.js": { "maxDuration": 30 },
+    "api/admin.js": { "maxDuration": 30 }
   },
   "headers": [
+    {
+      "source": "/version.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

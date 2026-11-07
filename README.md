@@ -6,7 +6,7 @@ Site em HTML, CSS e JavaScript simples (sem build), com APIs Node.js na Vercel e
 
 - `index.html` — página única com todas as seções.
 - `css/core.css` — tokens, reset, layout, navbar, rodapé e o grid do bento da Home.
-- `css/components.css` — botões, cards, player, música, hall de doadores, votação, diálogos e toast.
+- `css/components.css` — botões, cards, player, música, votação, diálogos e toast.
 - `css/pages.css` — Tier List, Ranking, Perfil da comunidade e modal de login.
 - `css/setup.css` — mini-game do quarto (Lukzin, tour, gato, catálogo) e seus estilos.
 - `css/admin.css` — painel administrativo (carregado sempre, usado só na aba Admin).
@@ -14,7 +14,7 @@ Site em HTML, CSS e JavaScript simples (sem build), com APIs Node.js na Vercel e
 - `js/auth-ui.js` — modal de login (e-mail, Google e Twitch) e a navbar da comunidade.
 - `js/twitch.js` — status da live, player, banner, foco do jogo e clipes.
 - `js/setup.js` — mini-game do setup + áudio do site.
-- `js/main.js` — config, navegação, votação, hall, música, sugestões, Tier List e boot.
+- `js/main.js` — config, navegação, votação, música, sugestões, Tier List e boot.
 - `js/profile.js` e `js/ranking.js` — página de perfil e página de ranking.
 - `js/admin/*` — carregados sob demanda quando a aba Admin abre.
 
@@ -61,7 +61,7 @@ Ele atualiza somente minutos assistidos e registra uma presença por live.
 
 1. Guarde o ZIP antigo e faça backup do Redis.
 2. Confira as variáveis de ambiente listadas acima.
-3. Em Preview, teste login Google/Twitch/e-mail, logout, troca de senha, perfil, voto antes e depois do encerramento, sugestões, tier list, ranking, doadores e painel administrativo.
+3. Em Preview, teste login Google/Twitch/e-mail, logout, troca de senha, perfil, voto antes e depois do encerramento, sugestões, tier list, ranking e painel administrativo.
 4. Teste a contagem de presença com o cron externo e confirme que uma mesma pessoa não ganha duas presenças na mesma live.
 5. Crie um backup novo e teste a restauração em outro banco/ambiente antes de depender dele.
 

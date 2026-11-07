@@ -1,6 +1,100 @@
 /* ============================================================
    ADMIN — CORE (Rotas, Sidebar, Estado)
    ============================================================ */
+
+/* ---------- erros amigáveis + requestId ---------- */
+function _acaoDeUrl(url){
+  try {
+    const u = new URL(String(url), location.origin);
+    return u.searchParams.get('action') || u.pathname.replace(/^\/api\//, '') || 'requisição';
+  } catch(e){ return String(url); }
+}
+
+function _adminBanner(info){
+  const host = document.getElementById('adminArea') || document.body;
+  let box = document.getElementById('adminErroBanner');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'adminErroBanner';
+    box.className = 'admin-erro-banner';
+    box.setAttribute('role', 'alert');
+  }
+  if(host.id === 'adminArea') host.prepend(box);
+  else if(box.parentElement !== document.body) document.body.prepend(box);
+
+  const detalhes = [
+    'Ação: ' + (info.action || '—'),
+    'Status: ' + (info.status || '—'),
+    'Erro: ' + (info.message || 'erro inesperado'),
+    info.requestId ? 'requestId: ' + info.requestId : 'requestId: (não enviado)',
+    'Quando: ' + new Date().toISOString()
+  ].join('\n');
+
+  box.innerHTML = `
+    <span class="aeb-ic" aria-hidden="true">⚠️</span>
+    <div class="aeb-tx">
+      <b>Não foi possível carregar "${esc(info.action || 'essa parte')}"</b>
+      <small>${esc(info.message || 'Erro inesperado.')}</small>
+      <code>${info.requestId ? 'ID ' + esc(info.requestId) : 'sem ID de requisição'}</code>
+    </div>
+    <div class="aeb-actions">
+      <button type="button" class="admin-btn ghost" data-aeb-retry>Tentar de novo</button>
+      <button type="button" class="admin-btn ghost" data-aeb-copy>Copiar detalhes</button>
+      <button type="button" class="admin-btn ghost" data-aeb-close aria-label="Fechar aviso">✕</button>
+    </div>`;
+
+  box.querySelector('[data-aeb-retry]').onclick = () => {
+    box.remove();
+    if(typeof carregarAdmin === 'function') carregarAdmin();
+  };
+  box.querySelector('[data-aeb-copy]').onclick = async () => {
+    try { await navigator.clipboard.writeText(detalhes); toast('Detalhes copiados ✅', 'ok'); }
+    catch(e){ toast('Não foi possível copiar', 'erro'); }
+  };
+  box.querySelector('[data-aeb-close]').onclick = () => box.remove();
+}
+
+async function adminFetch(url, options){
+  let resp;
+  try {
+    resp = await fetch(url, options);
+  } catch(e){
+    const info = {
+      action: _acaoDeUrl(url),
+      status: 'rede',
+      message: 'Falha de conexão. Confira sua internet e tente de novo.',
+      requestId: null
+    };
+    _adminBanner(info);
+    const erro = new Error(info.message);
+    erro.action = info.action;
+    erro.status = info.status;
+    erro.requestId = null;
+    erro.cause = e;
+    throw erro;
+  }
+  if(!resp.ok){
+    let corpo = null;
+    try { corpo = await resp.clone().json(); } catch(e){}
+    const info = {
+      action: (corpo && corpo.action) || _acaoDeUrl(url),
+      status: resp.status,
+      message: (corpo && (corpo.error || corpo.erro)) || `O servidor respondeu HTTP ${resp.status}.`,
+      requestId: (corpo && corpo.requestId) || resp.headers.get('X-Request-Id') || null
+    };
+    console.error('[adminFetch]', info, url);
+    _adminBanner(info);
+    const erro = new Error(info.message);
+    erro.action = info.action;
+    erro.status = info.status;
+    erro.requestId = info.requestId;
+    erro.response = resp;
+    throw erro;
+  }
+  return resp;
+}
+window.adminFetch = adminFetch;
+
 function adminIrPara(pagina){
   if(pagina === 'votacao') ADMIN_TAB = 'votos';
   if(pagina === 'sugestoes') ADMIN_SUG_STATUS = 'all';
@@ -41,7 +135,7 @@ let ADMIN_CONFIG_TAB = 'aviso';
 let ADMIN_SUG_STATUS = 'all';
 let ADMIN_SUG_TIPO = 'all';
 let ADMIN_SHARED = {
-  votos: null, hall: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null,
+  votos: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null,
   fetchedAt: 0
 };
 let _sharedPromise = null;
@@ -57,14 +151,17 @@ const ADMIN_NAV = [
   { id: 'banidos',   label: 'Banidos',   icon: '🚫', perm: 'ver_banidos',   accent: 'red',    badgeKey: 'banidos'  },
   { id: 'config',    label: 'Config',    icon: '⚙️', perm: 'ver_config',    accent: 'green',  badgeKey: null       },
   { id: 'logs',      label: 'Logs',      icon: '📋', perm: 'ver_logs',      accent: 'pink',   badgeKey: 'logs'     },
-  { id: 'backup',    label: 'Backup',    icon: '💾', perm: 'editar_config', accent: 'cyan',   badgeKey: 'backup'   }
+  { id: 'backup',    label: 'Backup',    icon: '💾', perm: 'editar_config', accent: 'cyan',   badgeKey: 'backup'   },
+  { id: 'diagnostico', label: 'Diagnóstico', icon: '🩺', perm: null, devOnly: true, accent: 'green', badgeKey: null }
 ];
 const VALID_ADMIN_PAGES = ADMIN_NAV.map(it => it.id);
 
 function renderSidebar(){
   const nav = document.getElementById('adminSidebarNav');
   if(!nav) return;
-  const items = ADMIN_NAV.filter(it => !it.perm || temPerm(it.perm));
+  const items = ADMIN_NAV.filter(it =>
+    (!it.perm || temPerm(it.perm)) && (!it.devOnly || (USUARIO && USUARIO.cargo === 'dev'))
+  );
   nav.innerHTML = items.map(it => {
     let badgeHTML = '';
     if(it.badgeKey){
@@ -75,7 +172,9 @@ function renderSidebar(){
       } else if(it.badgeKey === 'tierlist' && ADMIN_SHARED.tier){
         count = (ADMIN_SHARED.tier.jogos||[]).length + (ADMIN_SHARED.tier.filmes||[]).length + (ADMIN_SHARED.tier.animes||[]).length;
       } else if(it.badgeKey === 'sugestoes' && ADMIN_SHARED.sugestoes){
-        count = (ADMIN_SHARED.sugestoes.itens||[]).length;
+        count = ADMIN_SHARED.sugestoes.total != null
+          ? Number(ADMIN_SHARED.sugestoes.total)
+          : (ADMIN_SHARED.sugestoes.itens||[]).length;
       } else if(it.badgeKey === 'admins' && ADMIN_SHARED.admins){
         count = (ADMIN_SHARED.admins.admins||[]).length;
       } else if(it.badgeKey === 'banidos' && ADMIN_SHARED.banidos){
@@ -139,18 +238,25 @@ async function carregarShared(force = false){
   if(!force && _sharedPromise) return _sharedPromise;
 
   _sharedPromise = (async () => {
-    const safeFetch = (url) => fetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
-    const [votos, hall, tier, sugestoes, admins, banidos, logs, backup] = await Promise.all([
-      temPerm('ver_votos')      ? safeFetch('/api/admin?action=votos')          : null,
-      safeFetch('/api/config?action=hall'),
-      temPerm('ver_tierlist')   ? safeFetch('/api/admin?action=tierlist-get')   : null,
-      temPerm('ver_sugestoes')  ? safeFetch('/api/admin?action=sugestoes-ver')  : null,
-      temPerm('ver_admins')     ? safeFetch('/api/admin?action=admins-ver')     : null,
-      temPerm('ver_banidos')    ? safeFetch('/api/admin?action=banidos-ver')    : null,
-      temPerm('ver_logs')       ? safeFetch('/api/admin?action=logs-ver')       : null,
-      temPerm('editar_config')  ? safeFetch('/api/backup?action=list')          : null
-    ]);
-    ADMIN_SHARED = { votos, hall, tier, sugestoes, admins, banidos, logs, backup, fetchedAt: Date.now() };
+    const safeFetch = (url) => adminFetch(url).then(r => r.ok ? r.json() : null).catch(() => null);
+    const jobs = [];
+    const pedir = (chave, url) => jobs.push({ chave, promessa: safeFetch(url) });
+
+    if(temPerm('ver_votos'))     pedir('votos', '/api/admin?action=votos');
+    if(temPerm('ver_tierlist'))  pedir('tier', '/api/admin?action=tierlist-get');
+    if(temPerm('ver_sugestoes')) pedir('sugestoes', '/api/admin?action=sugestoes-ver');
+    if(temPerm('ver_admins'))    pedir('admins', '/api/admin?action=admins-ver');
+    if(temPerm('ver_banidos'))   pedir('banidos', '/api/admin?action=banidos-ver');
+    if(temPerm('ver_logs'))      pedir('logs', '/api/admin?action=logs-ver');
+    if(temPerm('editar_config')) pedir('backup', '/api/backup?action=list');
+
+    const resultados = await Promise.allSettled(jobs.map(j => j.promessa));
+    const next = { votos: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null };
+    resultados.forEach((r, i) => {
+      if(r.status === 'fulfilled') next[jobs[i].chave] = r.value;
+    });
+
+    ADMIN_SHARED = { ...next, fetchedAt: Date.now() };
     _sharedPromise = null;
     return ADMIN_SHARED;
   })();
@@ -241,10 +347,63 @@ async function carregarAdmin(){
   else if(ADMIN_PAGE === 'config') await renderAdminConfig();
   else if(ADMIN_PAGE === 'logs') await renderAdminLogs();
   else if(ADMIN_PAGE === 'backup') await renderAdminBackup();
+  else if(ADMIN_PAGE === 'diagnostico') await renderAdminDiagnostico();
 
   if(token !== _carregarAdminToken) return;
 }
 window.carregarAdmin = carregarAdmin;
+
+async function renderAdminDiagnostico(){
+  const area = document.getElementById('adminArea'); if(!area) return;
+  const crumbs = adminVoltarHTML('🩺 Diagnóstico');
+  area.innerHTML = crumbs + `<p class="admin-vazio">Rodando verificações…</p>`;
+
+  try {
+    const r = await adminFetch('/api/admin?action=diagnostico');
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || `O servidor respondeu HTTP ${r.status}.`);
+
+    const itens = Array.isArray(d.itens) ? d.itens : [];
+    const icone = st => st === 'ok' ? '✅' : st === 'warn' ? '⚠️' : '❌';
+    const rotulo = st => st === 'ok' ? 'OK' : st === 'warn' ? 'Atenção' : 'Falhou';
+    const falhas = itens.filter(i => i.status === 'fail').length;
+    const avisos = itens.filter(i => i.status === 'warn').length;
+    const geral = falhas ? 'fail' : avisos ? 'warn' : 'ok';
+    const geralTxt = falhas
+      ? `${falhas} problema${falhas === 1 ? '' : 's'} crítico${falhas === 1 ? '' : 's'}`
+      : avisos ? `${avisos} aviso${avisos === 1 ? '' : 's'}` : 'Tudo certo';
+
+    const linhas = itens.map(it => `
+      <div class="diag-item" data-st="${esc(it.status)}">
+        <span class="diag-ic" aria-hidden="true">${icone(it.status)}</span>
+        <div class="diag-tx">
+          <b>${esc(it.label || it.id)}</b>
+          <small>${esc(it.detail || '')}</small>
+        </div>
+        <span class="diag-status">${rotulo(it.status)}</span>
+        <span class="diag-ms">${it.ms != null ? esc(String(it.ms)) + ' ms' : '—'}</span>
+      </div>`).join('');
+
+    area.innerHTML = crumbs + `
+      <div class="admin-card diag-card">
+        <div class="diag-head">
+          <div>
+            <h3>🩺 Diagnóstico do site</h3>
+            <small>Verificado em ${esc(d.checkedAt ? fmtDataHora(d.checkedAt) : 'agora')}${d.requestId ? ' · ID ' + esc(d.requestId) : ''}</small>
+          </div>
+          <span class="diag-resumo" data-st="${geral}">${icone(geral)} ${esc(geralTxt)}</span>
+        </div>
+        <p class="diag-hint">Confere banco de dados, APIs externas e variáveis de ambiente. Nenhum segredo é exibido.</p>
+        <div class="diag-list">${linhas || '<p class="admin-vazio">Nenhuma verificação retornou resultado.</p>'}</div>
+        <div class="admin-actions">
+          <button type="button" class="admin-btn ghost" onclick="renderAdminDiagnostico()">↻ Rodar de novo</button>
+        </div>
+      </div>`;
+  } catch(e){
+    area.innerHTML = crumbs + `<div class="admin-vazio"><b>Não foi possível rodar o diagnóstico</b>${esc(e.message)}</div>`;
+  }
+}
+window.renderAdminDiagnostico = renderAdminDiagnostico;
 
 // 🆕 Ouve mudanças de hash pra navegar quando o usuário muda manualmente
 window.addEventListener('hashchange', () => {
