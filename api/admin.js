@@ -1,10 +1,9 @@
-import { createHmac, timingSafeEqual } from 'crypto';
-import { somarAtividade } from './_lib/atividade.js';
+import { timingSafeEqual } from 'crypto';
+import { validarSessao, origemOk } from './_lib/core.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 const SESSION_SECRET = process.env.SESSION_SECRET;
-const COOKIE_NAME = 'sessao_site';
 const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const TMDB_TOKEN = process.env.TMDB_TOKEN;
@@ -95,47 +94,6 @@ const ROTULO_CONCLUIDO = {
 const LABEL_STATUS = {
   nova:'Nova', analise:'Em análise', aceita:'Aceita', recusada:'Recusada', concluido:'Concluído'
 };
-
-function b64urlDecode(str){ return Buffer.from(str, 'base64url').toString(); }
-function assinar(p){ return createHmac('sha256', SESSION_SECRET).update(p).digest('base64url'); }
-function assinarValido(p, sig){
-  const esperado = assinar(p);
-  try {
-    const a = Buffer.from(esperado);
-    const b = Buffer.from(String(sig));
-    if(a.length !== b.length) return false;
-    return timingSafeEqual(a, b);
-  } catch { return false; }
-}
-function lerSessao(req){
-  if(!SESSION_SECRET) return null;
-  const c = req.headers.cookie || '';
-  const m = c.match(new RegExp('(?:^|; )' + COOKIE_NAME + '=([^;]+)'));
-  if(!m) return null;
-  const [payload, sig] = m[1].split('.');
-  if(!payload || !sig || !assinarValido(payload, sig)) return null;
-  try {
-    const d = JSON.parse(b64urlDecode(payload));
-    if(d.exp && Date.now() > d.exp) return null;
-    return d;
-  } catch { return null; }
-}
-
-async function redis(cmds){
-  if(!URL_ || !TOKEN) throw new Error('Redis não configurado: verifique as variáveis UPSTASH_REDIS_REST_URL/TOKEN.');
-  const endpoint = `${URL_.replace(/\/+$/, '')}/pipeline`;
-  const r = await fetch(endpoint, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(cmds)
-  });
-  let data;
-  try { data = await r.json(); } catch { throw new Error(`Resposta inválida do Redis (HTTP ${r.status}).`); }
-  if(!r.ok || !Array.isArray(data)) throw new Error(data?.error || `Redis HTTP ${r.status}`);
-  const falha = data.find(x => x && x.error);
-  if(falha) throw new Error(`Redis: ${falha.error}`);
-  return data.map(x => x.result);
-}
 
 async function pegarPermissoes(){
   try {
@@ -724,7 +682,9 @@ export default async function handler(req, res){
     }
   }
 
-  const sessao = lerSessao(req);
+  if(req.method === 'POST' && !origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
+
+  const sessao = await validarSessao(req);
   if(!sessao) return res.status(401).json({ error: 'Faça login' });
   if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
 
@@ -1210,11 +1170,6 @@ export default async function handler(req, res){
       let item;
       try { item = JSON.parse(retorno[0]); } catch { return res.status(500).json({ error: 'Não foi possível confirmar a atualização da sugestão' }); }
       const statusAnterior = String(retorno[1] || 'nova');
-
-      if(status === 'aceita' && statusAnterior !== 'aceita' && item.userId){
-        try { await somarAtividade(String(item.userId), 'approvedSuggestions', 1); }
-        catch(error) { console.error('[Admin] Sugestão aceita, mas a estatística ficou pendente:', error?.message || error); }
-      }
 
       await notificarStatus(item, status, item.motivo, quem);
       const label = status === 'recusada' ? `recusou (motivo: ${item.motivo})` : `mudou para ${status}`;

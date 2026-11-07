@@ -44,13 +44,21 @@ export function jparse(s, padrao = null){
   try { return s ? JSON.parse(s) : padrao; } catch { return padrao; }
 }
 
-/* ---------------- Rate limit (INCR + EXPIRE) ----------------
-   failClosed=true → se o Redis cair, BLOQUEIA (use em login/registro/códigos). */
+/* ---------------- Rate limit atômico (INCR + EXPIRE) ----------------
+   O contador e o prazo são gravados no mesmo passo. Assim, uma falha entre
+   INCR e EXPIRE não deixa um contador preso para sempre. */
+const RATE_LIMIT_LUA = `
+local atual = redis.call('INCR', KEYS[1])
+if atual == 1 then
+  redis.call('EXPIRE', KEYS[1], math.max(1, tonumber(ARGV[1]) or 60))
+end
+return atual
+`;
+
 export async function rateLimit(chave, limite, janelaSeg, failClosed = true){
   try {
-    const [n] = await redis([['INCR', chave]]);
-    if(Number(n) === 1) await redis([['EXPIRE', chave, String(janelaSeg)]]);
-    return Number(n) <= limite;
+    const [n] = await redis([['EVAL', RATE_LIMIT_LUA, '1', String(chave), String(Math.max(1, Number(janelaSeg) || 60))]]);
+    return Number(n) <= Number(limite);
   } catch {
     return !failClosed;
   }
@@ -104,6 +112,18 @@ export function lerSessao(req){
     if(d.exp && Date.now() > d.exp) return null;
     return d;
   } catch { return null; }
+}
+
+/* Confere também a versão da conta. Ao trocar a senha, sv aumenta e os
+   cookies próprios antigos deixam de funcionar em TODAS as rotas que usam esta função. */
+export async function validarSessao(req){
+  const sessao = lerSessao(req);
+  if(!sessao?.id) return null;
+  if(sessao.tipo !== 'own') return sessao; // compatibilidade com contas Discord antigas
+  const [raw] = await redis([['HGET', 'accounts', String(sessao.id)]]);
+  const conta = jparse(raw, null);
+  if(!conta || String(conta.sv ?? '') !== String(sessao.sv ?? '')) return null;
+  return sessao;
 }
 
 /* Vários Set-Cookie na mesma resposta */

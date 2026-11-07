@@ -67,13 +67,10 @@
     setText('pfWatchHoursCount', tempo(atividade.minutes));
     setText('pfVotesCount', numero(atividade.votes));
     setText('pfSuggestionsCount', numero(atividade.suggestions));
-    setText('pfApprovedSuggestionsCount', `${numero(atividade.approvedSuggestions)} aprovadas`);
     const economia = data.economia || {};
     setText('pfCoinsCount', numero(economia.coins));
     setText('pfXpCount', `${numero(economia.xp)} XP`);
     setText('pfLevelCount', numero(economia.nivel || 1));
-    setText('pfStreakCurrent', numero(atividade.streak));
-    setText('pfStreakBest', numero(atividade.bestStreak));
     setText('pfSettingsNick', nick);
     setText('pfSettingsEmail', email);
     setText('pfSettingsAccount', methodLabels[method] || method);

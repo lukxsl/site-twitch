@@ -539,3 +539,30 @@
 .admin-menu-card2:focus-within .amc-action{opacity:1;transform:none;pointer-events:auto}
 .admin-menu-card2 .amc-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .admin-menu-card2 .amc-action{position:relative;z-index:1}
+
+
+/* Refinamento visual: painel administrativo mais limpo e responsivo */
+.admin-shell{gap:18px;align-items:stretch}
+.admin-sidebar{border:1px solid rgba(192,132,252,.18);border-radius:20px;background:linear-gradient(180deg,rgba(27,17,42,.98),rgba(13,9,21,.98));box-shadow:0 18px 55px rgba(0,0,0,.24)}
+.admin-sidebar-head{padding:20px 18px;border-bottom:1px solid rgba(218,194,255,.1)}
+.admin-sidebar-kicker{color:#d8b4fe;letter-spacing:.12em;font-weight:900}
+.admin-sidebar-nav{gap:5px;padding:12px}
+.admin-sidebar-nav button,.admin-sidebar-nav a{min-height:42px;border-radius:11px;transition:background .18s,border-color .18s,transform .18s}
+.admin-sidebar-nav button:hover,.admin-sidebar-nav a:hover{transform:translateX(2px);background:rgba(168,85,247,.12)}
+.admin-sidebar-nav .active,.admin-sidebar-nav [aria-current="page"]{background:linear-gradient(100deg,rgba(147,51,234,.25),rgba(109,40,217,.1));box-shadow:inset 3px 0 #c084fc}
+.admin-main{min-width:0;border:1px solid rgba(192,132,252,.13);border-radius:20px;background:linear-gradient(145deg,rgba(24,16,36,.88),rgba(12,8,19,.94));box-shadow:0 18px 55px rgba(0,0,0,.2)}
+#adminArea{min-width:0;padding:clamp(15px,2.2vw,26px)}
+#adminArea h1,#adminArea h2,#adminArea h3{letter-spacing:-.025em}
+#adminArea .admin-card,#adminArea .card,#adminArea .admin-box,#adminArea .admin-panel{border-color:rgba(218,194,255,.12);border-radius:16px;background:rgba(255,255,255,.035);box-shadow:0 8px 28px rgba(0,0,0,.12)}
+#adminArea input:not([type="checkbox"]):not([type="radio"]),#adminArea select,#adminArea textarea{max-width:100%;min-height:42px;border:1px solid rgba(218,194,255,.17);border-radius:10px;background:#110b1b;color:#f7f0ff;outline:none}
+#adminArea input:focus,#adminArea select:focus,#adminArea textarea:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.13)}
+#adminArea button{transition:filter .18s,transform .18s,border-color .18s}
+#adminArea button:hover{filter:brightness(1.08)}
+#adminArea button:active{transform:translateY(1px)}
+#adminArea table{width:100%;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid rgba(218,194,255,.12);border-radius:13px}
+#adminArea th{background:rgba(168,85,247,.12);color:#e9d5ff;font-size:.74rem;letter-spacing:.04em}
+#adminArea td,#adminArea th{padding:11px 12px;border-bottom:1px solid rgba(218,194,255,.09);vertical-align:middle}
+#adminArea tr:last-child td{border-bottom:0}
+#adminArea .admin-vazio{padding:28px;color:#a99bb8;text-align:center}
+@media(max-width:900px){.admin-shell{display:block}.admin-sidebar{position:relative;width:100%;margin:0 0 14px}.admin-sidebar-nav{display:flex;gap:7px;overflow-x:auto;white-space:nowrap}.admin-sidebar-nav button,.admin-sidebar-nav a{flex:none}.admin-sidebar-foot{display:none}.admin-main{width:100%}}
+@media(max-width:600px){#adminArea{padding:13px}.admin-main{border-radius:15px}#adminArea table{display:block;overflow-x:auto;white-space:nowrap}#adminArea td,#adminArea th{padding:9px 10px;font-size:.77rem}}

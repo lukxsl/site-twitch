@@ -16,7 +16,7 @@
 // Redis: accounts e vínculos permanecem; métricas da comunidade ficam em activity:{id}.
 import { randomBytes } from 'crypto';
 import {
-  ENV, redis, jparse, rateLimit, ipDe, origemOk, criarToken, lerSessao, setSessao, limparSessao,
+  ENV, redis, jparse, rateLimit, ipDe, origemOk, criarToken, lerSessao, validarSessao, setSessao, limparSessao,
   addCookie, pegarCookie, hashSenha, conferirSenha, safeStr, RE_USUARIO, nickValido, cargoDe, SITE
 } from './_lib/core.js';
 import { lerAtividade } from './_lib/atividade.js';
@@ -237,8 +237,8 @@ export default async function handler(req, res){
 
     /* ====================== TWITCH LOGIN ====================== */
     if(action === 'twitch-login' && req.method === 'GET'){
-      if(!twitchConfigurada()) return res.status(503).send('Login Twitch indisponível. Configure TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET na Vercel.');
-      if(!(await rateLimit(`rl:twitch:login:${ipDe(req)}`, 20, 60))) return res.status(429).send('Muitas tentativas. Aguarde um pouco.');
+      if(!twitchConfigurada()){ res.writeHead(302, { Location: `${SITE}/?login=twitch-config#perfil` }); return res.end(); }
+      if(!(await rateLimit(`rl:twitch:login:${ipDe(req)}`, 20, 60))){ res.writeHead(302, { Location: `${SITE}/?login=twitch-erro#perfil` }); return res.end(); }
       const state = randomBytes(24).toString('hex');
       addCookie(res, `twitch_login_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
       res.writeHead(302, { Location: urlVinculo(TWITCH_REDIRECT, state) });
@@ -388,12 +388,12 @@ export default async function handler(req, res){
 
     /* ====================== PERFIL DE ATIVIDADE ====================== */
     if(action === 'activity-profile' && req.method === 'GET'){
-      const sessao = lerSessao(req);
+      const sessao = await validarSessao(req);
       if(!sessao?.id) return res.status(401).json({ error: 'Faça login para ver seu perfil.' });
       let conta = null;
       if(sessao.tipo === 'own'){
         conta = await pegarConta(sessao.id);
-        if(!conta || conta.sv !== sessao.sv) return res.status(401).json({ error: 'Sessão expirada. Entre novamente.' });
+        if(!conta) return res.status(401).json({ error: 'Sessão expirada. Entre novamente.' });
       }
       const stats = await lerAtividade(sessao.id);
       const economia = await lerStats(sessao.id);
@@ -626,6 +626,7 @@ export default async function handler(req, res){
   } catch(e){
     console.error('[AUTH]', action, e?.message || e);
     if(action === 'google-callback'){ res.writeHead(302, { Location: '/?login=erro-google' }); return res.end(); }
+    if(action === 'twitch-callback'){ res.writeHead(302, { Location: '/?login=twitch-erro#perfil' }); return res.end(); }
     return res.status(500).json({ error: 'Erro interno' });
   }
 }

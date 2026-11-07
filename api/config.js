@@ -1,5 +1,6 @@
 // Vercel serverless: /api/config.js
 import { seGet, canalId, temJwt, rankingPontos, statsChat, rankingDoadores, resumoSubs } from './_lib/se.js';
+import { rateLimit, ipDe, validarSessao, cargoDe } from './_lib/core.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -7,8 +8,8 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 
 const CANAL = 'asemtet0';
-const HALL_CACHE_KEY = 'cache:hall_v16';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v16';
+const HALL_CACHE_KEY = 'cache:hall_v17';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v17';
 const HALL_CACHE_TTL = 2 * 60;            // doadores: atualiza no máx. a cada 2 min
 const EMOTES_CACHE_KEY = 'cache:emotes_v1';
 const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
@@ -266,7 +267,7 @@ async function hallStreamElements() {
   try {
     const r = await rankingDoadores();
     const fotos = await twitchAvatares(r.lista.slice(0, 100).map(x => x.nome));
-    const doadores = r.lista.map(x => ({ ...x, total: x.valor, avatar: fotos[x.nome.toLowerCase()] || null }));
+    const doadores = r.lista.map(x => ({ ...x, total: x.valor, moeda: x.moeda || r.moeda || 'BRL', avatar: fotos[x.nome.toLowerCase()] || null }));
     hallErro = null;
     return {
       vazio: !doadores.length, doadores, gift: [], fieis: [],
@@ -358,9 +359,21 @@ export default async function handler(req, res) {
       const cache = await lerHallCache();
       const idade = cache ? (Date.now() - cache.ts) / 1000 : Infinity;
       const forcar = req.query?.refresh === '1';
-
+      const ip = ipDe(req);
+      if (!(await rateLimit(`ratelimit:hall:${ip}`, 20, 60, true))) {
+        if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
+        return res.status(429).json({ error: 'Muitas consultas ao ranking. Aguarde um pouco.' });
+      }
+      if (forcar) {
+        const sessao = await validarSessao(req);
+        const cargo = sessao?.id ? await cargoDe(sessao.id, sessao.email || '') : null;
+        if (!cargo) return res.status(403).json({ error: 'Somente a equipe pode atualizar o ranking manualmente.' });
+        if (!(await rateLimit(`ratelimit:hall-refresh:${sessao.id}`, 1, 60, true))) {
+          if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
+          return res.status(429).json({ error: 'Aguarde um minuto para atualizar novamente.' });
+        }
+      }
       if (cache && idade < HALL_CACHE_TTL && !forcar) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
-
       const dados = await hallStreamElements();
       if (dados) { await salvarHallCache(dados); return res.status(200).json({ ...dados, updatedAt: Date.now() }); }
       if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
@@ -377,9 +390,15 @@ export default async function handler(req, res) {
         if (modo === 'doadores') {
           const cache = await lerHallCache();
           let d = (cache && (Date.now() - cache.ts) / 1000 < HALL_CACHE_TTL) ? cache.dados : null;
+          // O cache é livre para leitura; somente uma consulta que precisa falar
+          // com o StreamElements consome o limite por IP.
+          if (!d && !(await rateLimit(`ratelimit:se-doadores:${ipDe(req)}`, 12, 60, true))) {
+            if (cache) d = cache.dados;
+            else return res.status(429).json({ ok: false, modo, lista: [], total: 0, erro: 'Muitas consultas ao ranking de doadores. Aguarde um minuto.' });
+          }
           if (!d) { d = await hallStreamElements(); if (d) await salvarHallCache(d); else if (cache) d = cache.dados; }
           if (!d) throw Object.assign(new Error(hallErro || 'Não foi possível consultar os doadores.'), { statusCode: 502 });
-          out = { modo, fonte: d.fonte || 'StreamElements', total: d.apoiadores, lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, valorLabel: x.valorTexto || null, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
+          out = { modo, fonte: d.fonte || 'StreamElements', total: d.apoiadores, lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, moeda: x.moeda || d.moeda || 'BRL', valorLabel: x.valorTexto || null, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
                   resumo: { totalMes: d.totalMes, totalGeral: d.totalGeral, doacoes: d.doacoes, moeda: d.moeda, ultimo: d.ultimo } };
         } else if (modo === 'chat') {
           const c = await statsChat(limit);
@@ -430,8 +449,21 @@ export default async function handler(req, res) {
       const channelId = await getChannelId();
 
       if (action === 'issub') {
+        if (!/^[a-z0-9_]{3,25}$/.test(requestedUsername)) {
+          return res.status(400).json({ error: 'Nome de usuário inválido.' });
+        }
+        if (!(await rateLimit(`ratelimit:issub:${ipDe(req)}`, 20, 60, true))) {
+          return res.status(429).json({ error: 'Muitas consultas. Aguarde um pouco.' });
+        }
+        const cacheKey = `cache:se:issub:${requestedUsername}`;
+        const [cached] = await redis([['GET', cacheKey]]);
+        if (cached) {
+          const subscriber = JSON.parse(cached);
+          return res.status(200).json({ user: requestedUsername, isSub: Boolean(subscriber), active: Boolean(subscriber), subscriber, cached: true });
+        }
         const subscriber = await checkSubscriber(channelId, requestedUsername);
-        return res.status(200).json({ user: requestedUsername, isSub: Boolean(subscriber), active: Boolean(subscriber), subscriber });
+        await redis([['SET', cacheKey, JSON.stringify(subscriber), 'EX', '300']]);
+        return res.status(200).json({ user: requestedUsername, isSub: Boolean(subscriber), active: Boolean(subscriber), subscriber, cached: false });
       }
       if (action === 'ranking-pontos' || action === 'ranking-horas') {
         const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || '100', 10) || 100));

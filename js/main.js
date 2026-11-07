@@ -36,7 +36,8 @@ const STATUS_TOOLTIP = {
   'Dropado': 'Comecei mas não vou continuar', 'Na fila': 'Quero jogar/assistir em breve',
   'Assistindo': 'Estou assistindo agora', 'Assistido': 'Já assisti'
 };
-const SUG_MAX_CHARS = 300;
+const SUG_MAX_CHARS = 200;
+const SUG_MIN_CHARS = 10;
 const STATUS_SUG = {
   nova:     { label: '🟡 Nova',       cor: 'amarelo',   desc: 'Acabou de chegar' },
   analise:  { label: '👀 Em análise', cor: 'azul',      desc: 'A Soso viu e tá pensando' },
@@ -1769,7 +1770,7 @@ function setupSugForm(){
   function atualizarEstadoBtn(){
     if(!btn) return;
     const txt = (ta?.value || '').trim();
-    btn.disabled = txt.length < 3;
+    btn.disabled = txt.length < SUG_MIN_CHARS;
   }
   if(ta){ ta.addEventListener('input', () => { ta.classList.remove('erro'); atualizarContador(); atualizarEstadoBtn(); }); }
   atualizarContador(); atualizarEstadoBtn();
@@ -1783,9 +1784,9 @@ async function enviarSugestao(){
   const success = $('sugSuccess');
 
   if($('sugSite').value) return;
-  if(!texto || texto.length < 3){
+  if(!texto || texto.length < SUG_MIN_CHARS){
     $('sugTexto').classList.add('erro');
-    toast('Escreve algo antes de enviar! 💜', 'warn');
+    toast(`Escreva pelo menos ${SUG_MIN_CHARS} caracteres. 💜`, 'warn');
     return;
   }
   if(texto.length > SUG_MAX_CHARS){ toast(`Máx ${SUG_MAX_CHARS} caracteres.`, 'warn'); return; }
@@ -1806,9 +1807,9 @@ async function enviarSugestao(){
       toast('Ideia enviada! Obrigado 💜', 'ok');
       carregarUltimasIdeias();
     } else if(res.status === 429){ toast('Calma! Aguarde alguns segundos.', 'warn'); }
-    else { toast('Não consegui enviar agora.', 'erro'); }
+    else { toast(dados?.error || 'Não consegui enviar agora.', 'erro'); }
   }catch(e){ toast('Sem conexão com o servidor.', 'erro'); }
-  finally { setTimeout(() => { const txt = ($('sugTexto')?.value || '').trim(); if(btn) btn.disabled = txt.length < 3; }, 100); }
+  finally { setTimeout(() => { const txt = ($('sugTexto')?.value || '').trim(); if(btn) btn.disabled = txt.length < SUG_MIN_CHARS; }, 100); }
 }
 window.enviarSugestao = enviarSugestao;
 
@@ -1901,7 +1902,7 @@ async function carregarUltimasIdeias(){
     renderSirFiltros(SIR_ITENS_CACHE);
     renderSirLista();
   }catch(e){
-    lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Sugestões aparecem aqui após o primeiro envio 💜</small></div>`;
+    lista.innerHTML = `<div class="sir-empty"><span>⚠️</span><small>Não foi possível carregar as sugestões agora. Tente atualizar a página.</small></div>`;
   }
 }
 

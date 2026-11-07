@@ -107,14 +107,19 @@
           <h2 id="authTitle">Entre no cantinho</h2>
           <p class="auth-intro" id="authSubtitle">Acesse seu perfil, participe das votações e acompanhe as lives.</p>
 
-          <a class="auth-twitch-button" href="/api/auth?action=twitch-login">
-            <span class="auth-twitch-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M4.2 2 2.9 5.3v14.1h4.7V22h2.7l2.6-2.6h3.8l4.7-4.7V2H4.2Zm15.5 11.8-2.8 2.8h-4.7l-2.6 2.6v-2.6H5.5V3.9h14.2v9.9ZM16.9 6.7h-1.9v5.7h1.9V6.7Zm-5.1 0H9.9v5.7h1.9V6.7Z"/></svg></span>
-            <span><b>Continuar com Twitch</b><small>Entre com sua conta da Twitch</small></span>
-            <span class="auth-arrow" aria-hidden="true">↗</span>
-          </a>
-
-          <div class="auth-separator"><span>OU USE SEU E-MAIL</span></div>
-          <div class="auth-mode-tabs" role="group" aria-label="Tipo de acesso">
+          <div class="auth-provider-tabs" role="group" aria-label="Escolha como entrar">
+            <a class="auth-provider-tab auth-provider-google" href="/api/auth?action=google-login" aria-label="Entrar com Google">
+              <span class="auth-provider-icon" aria-hidden="true">G</span><span>Google</span><span class="auth-provider-arrow" aria-hidden="true">↗</span>
+            </a>
+            <a class="auth-provider-tab auth-provider-twitch" href="/api/auth?action=twitch-login" aria-label="Entrar com Twitch">
+              <span class="auth-provider-icon" aria-hidden="true">▣</span><span>Twitch</span><span class="auth-provider-arrow" aria-hidden="true">↗</span>
+            </a>
+            <button type="button" class="auth-provider-tab auth-provider-email is-active" data-provider="email" aria-pressed="true">
+              <span class="auth-provider-icon" aria-hidden="true">✉</span><span>E-mail</span><span class="auth-provider-arrow" aria-hidden="true">⌄</span>
+            </button>
+          </div>
+          <div class="auth-email-panel" id="authEmailPanel">
+            <div class="auth-mode-tabs" role="group" aria-label="Tipo de acesso">
             <button type="button" data-auth-mode="login" class="is-active" aria-pressed="true">Entrar</button>
             <button type="button" data-auth-mode="register" aria-pressed="false">Criar conta</button>
           </div>
@@ -135,8 +140,7 @@
             <button type="submit" class="auth-primary" id="authSubmit"><span id="authSubmitLabel">Entrar com e-mail</span><span class="auth-submit-arrow">→</span></button>
             <p class="auth-mode-note" id="authModeNote">Contas antigas também podem entrar usando o usuário e a senha já cadastrados.</p>
           </form>
-
-          <a class="auth-google-link" href="/api/auth?action=google-login">Já usava Google? Continuar com Google</a>
+          </div>
           <p class="auth-legal">Ao entrar, você concorda em respeitar as pessoas e as regras desta comunidade. 💜</p>
         </div>
         <div class="auth-bottom-line"><span>ASEMTET0</span><span>UM CANTINHO FEITO COM 💜</span></div>
@@ -147,6 +151,14 @@
     dialog.addEventListener('click', event => { if(event.target === dialog) close(); });
     dialog.addEventListener('keydown', trapFocus);
     dialog.querySelectorAll('[data-auth-mode]').forEach(button => button.addEventListener('click', () => setMode(button.dataset.authMode)));
+    dialog.querySelector('[data-provider="email"]')?.addEventListener('click', () => {
+      const panel = $('#authEmailPanel', dialog);
+      const button = dialog.querySelector('[data-provider="email"]');
+      if(panel) panel.hidden = false;
+      button?.classList.add('is-active');
+      button?.setAttribute('aria-pressed', 'true');
+      setTimeout(() => $('#authIdentifier', dialog)?.focus(), 40);
+    });
     dialog.querySelector('#authEmailForm').addEventListener('submit', submitEmail);
     mountWelcome();
     setMode('login');

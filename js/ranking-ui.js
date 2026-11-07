@@ -8,29 +8,12 @@
   const $ = (s, r = document) => r.querySelector(s);
   const PAGE = 25;
 
-  const capaMock = (sigla, c1, c2) => 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="160" height="160" fill="url(#g)"/><circle cx="80" cy="80" r="38" fill="rgba(0,0,0,.22)"/><text x="80" y="92" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="800" fill="#fff">${sigla}</text></svg>`
-  );
-
-  const MUSICAS_MOCK = [
-    { pos: 1, nome: 'Die With A Smile', artista: 'Lady Gaga, Bruno Mars', tocadas: 148, capa: capaMock('DW', '#1ed760', '#0d4d2b') },
-    { pos: 2, nome: 'Birds of a Feather', artista: 'Billie Eilish', tocadas: 132, capa: capaMock('BF', '#38bdf8', '#1e3a8a') },
-    { pos: 3, nome: 'Si Antes Te Hubiera Conocido', artista: 'Karol G', tocadas: 119, capa: capaMock('KG', '#fb7185', '#7f1d1d') },
-    { pos: 4, nome: 'Tá OK', artista: 'DENNIS, MC Kevin o Chris', tocadas: 104, capa: capaMock('TK', '#f59e0b', '#78350f') },
-    { pos: 5, nome: 'Espresso', artista: 'Sabrina Carpenter', tocadas: 96, capa: capaMock('EC', '#e879f9', '#581c87') },
-    { pos: 6, nome: 'Snooze', artista: 'SZA', tocadas: 88, capa: capaMock('SZ', '#a78bfa', '#312e81') },
-    { pos: 7, nome: 'Seu Astral', artista: 'Jorge & Mateus', tocadas: 74, capa: capaMock('SA', '#fbbf24', '#92400e') },
-    { pos: 8, nome: 'Mal Feito', artista: 'Hugo & Guilherme, Marília Mendonça', tocadas: 69, capa: capaMock('MF', '#22d3ee', '#155e75') },
-    { pos: 9, nome: 'APT.', artista: 'ROSÉ, Bruno Mars', tocadas: 61, capa: capaMock('AP', '#f472b6', '#831843') },
-    { pos: 10, nome: 'Deja Vu', artista: 'Olivia Rodrigo', tocadas: 55, capa: capaMock('DV', '#c084fc', '#4c1d95') }
-  ];
-
   const MODES = {
     horas:    { titulo: 'Horas assistidas',  desc: 'Tempo de tela registrado pelo StreamElements.',            eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há tempo assistido registrado.' },
     pontos:   { titulo: 'Pontos do canal',   desc: 'Pontos de fidelidade acumulados no StreamElements.',       eyebrow: 'FIDELIDADE · STREAMELEMENTS', vazio: 'Ainda não há pontos registrados.' },
     chat:     { titulo: 'Mais ativos no chat', desc: 'Quem mais conversa no chat do canal.',                   eyebrow: 'CHAT · STREAMELEMENTS', vazio: 'Ainda não há mensagens contabilizadas.' },
     doadores: { titulo: 'Top doadores',      desc: 'Quem mais apoiou o canal. Obrigado por tudo! 💜',          eyebrow: 'APOIADORES · STREAMELEMENTS', vazio: 'Ninguém no pódio ainda. Seja a primeira pessoa a aparecer aqui! 💜' },
-    musicas:  { titulo: 'Músicas mais tocadas', desc: 'As faixas que mais embalaram as lives neste mês.',       eyebrow: 'MÚSICAS · SPOTIFY', vazio: 'Ainda não há músicas registradas neste mês.' }
+    musicas:  { titulo: 'Músicas mais tocadas', desc: 'Faixas mais tocadas da conta Last.fm vinculada à Soso.', eyebrow: 'MÚSICAS · LAST.FM', vazio: 'Não há dados reais do Last.fm disponíveis no momento.' }
   };
 
   let mode = 'horas';
@@ -43,7 +26,11 @@
   const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
   const nf = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
   const fmt = n => nf.format(Number(n) || 0);
-  const brl = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const brl = (v, currency = 'BRL') => {
+    const code = /^[A-Z]{3}$/.test(String(currency || '')) ? String(currency) : 'BRL';
+    try { return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: code }); }
+    catch (_) { return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+  };
   const norm = s => String(s || '').toLowerCase().replace(/^@/, '').trim();
 
   function minutos(m) {
@@ -68,7 +55,7 @@
       case 'horas': return minutos(r.valor);
       case 'pontos': return fmt(r.valor);
       case 'chat': return `${fmt(r.valor)} msg`;
-      case 'doadores': return brl(r.valor);
+      case 'doadores': return brl(r.valor, r.moeda);
       case 'musicas': return `${fmt(r.valor)}×`;
     }
     return fmt(r.valor);
@@ -113,21 +100,29 @@
     };
   }
 
-  function musicasPayload() {
-    const rows = MUSICAS_MOCK.map(r => ({ ...r, valor: r.tocadas }));
-    const totalTocadas = rows.reduce((a, r) => a + (Number(r.valor) || 0), 0);
-    return {
-      rows,
-      meta: {
-        total: rows.length,
-        resumo: { faixas: rows.length, totalTocadas },
-        at: Date.now()
-      }
-    };
-  }
-
   async function requestMode(m, force) {
-    if (m === 'musicas') return musicasPayload();
+    if (m === 'musicas') {
+      const response = await fetch('/api/lastfm' + (force ? `?_t=${Date.now()}` : ''), { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Erro ao consultar o Last.fm (HTTP ${response.status}).`);
+      const data = await response.json();
+      const itens = Array.isArray(data?.top?.itens) ? data.top.itens : [];
+      const rows = itens.map((item, i) => ({
+        pos: i + 1,
+        nome: String(item.faixa || '').trim(),
+        artista: String(item.artista || '').trim(),
+        valor: Math.max(0, Number(item.plays) || 0),
+        capa: item.capa || null,
+        url: item.url || null
+      })).filter(item => item.nome);
+      return {
+        rows,
+        meta: {
+          total: rows.length,
+          resumo: { faixas: rows.length, totalTocadas: rows.reduce((sum, item) => sum + item.valor, 0), periodo: data?.top?.periodo || null },
+          at: data?.updatedAt || Date.now()
+        }
+      };
+    }
     const q = new URLSearchParams({ action: 'ranking-se', modo: m, limit: '100', ...(force ? { _t: String(Date.now()) } : {}) });
     const res = await fetch('/api/config?' + q.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`Erro ao consultar o servidor (HTTP ${res.status}).`);
@@ -136,14 +131,13 @@
 
   /* ---------- sua posição ---------- */
   function meIdentity() {
-    const acc = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : null;
-    const p = window.ProfileSummary?.usuario || acc;
+    const acc = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : {};
     return {
-      logado: !!acc,
-      nomes: [acc?.nick, acc?.username, acc?.twitch?.login, acc?.twitch?.nome].filter(Boolean).map(norm),
-      nick: acc?.nick || acc?.username || 'Jogador',
-      foto: acc?.avatar || acc?.picture || acc?.google?.picture || acc?.foto || null,
-      p
+      logado: !!acc?.logado,
+      nomes: [acc?.nick, acc?.username, acc?.twitch?.login].filter(Boolean).map(norm),
+      nick: acc?.nick || acc?.username || 'Pessoa da comunidade',
+      foto: acc?.avatar || acc?.picture || acc?.google?.picture || null,
+      p: acc
     };
   }
   function findMe(rows, me) {
@@ -161,7 +155,7 @@
       box.replaceChildren();
       box.append(el('h4', 'rk-me-title', '🎵 Ranking de músicas'));
       box.append(el('p', 'rk-me-empty', rows
-        ? `As ${rows.length} faixas mais tocadas neste mês. O pódio mostra o top 3 e a lista traz o restante.`
+        ? `As ${rows.length} faixas reais retornadas pela conta Last.fm da Soso (${MODES.musicas.titulo.toLowerCase()}).`
         : 'Carregando as músicas mais tocadas do mês…'));
       return;
     }
@@ -187,7 +181,7 @@
     if (mine) {
       line(MODES[mode].titulo, valorTxt(mine));
       const acima = mine.pos > 1 ? rows[mine.pos - 2] : null;
-      if (acima) line('Para subir', mode === 'horas' ? minutos(acima.valor - mine.valor) : mode === 'doadores' ? brl(acima.valor - mine.valor) : fmt(acima.valor - mine.valor));
+      if (acima) line('Para subir', mode === 'horas' ? minutos(acima.valor - mine.valor) : mode === 'doadores' ? brl(acima.valor - mine.valor, mine.moeda || acima.moeda) : fmt(acima.valor - mine.valor));
     } else {
       box.append(el('p', 'rk-me-empty', 'Não encontramos você nesta categoria. Vincule sua conta da Twitch no perfil para aparecer com o mesmo nick do canal.'));
     }
@@ -224,9 +218,9 @@
     if (mode === 'doadores' && meta?.resumo) {
       const r = meta.resumo;
       add('Apoiadores', fmt(total));
-      add('Arrecadado no mês', brl(r.totalMes));
-      add('Total geral', brl(r.totalGeral));
-      if (r.ultimo?.nome) add('Última doação', `${r.ultimo.nome} · ${brl(r.ultimo.valor)}`);
+      add('Arrecadado no mês', brl(r.totalMes, r.moeda));
+      add('Total geral', brl(r.totalGeral, r.moeda));
+      if (r.ultimo?.nome) add('Última doação', `${r.ultimo.nome} · ${brl(r.ultimo.valor, r.moeda)}`);
     } else if (mode === 'chat' && meta?.resumo) {
       add('No ranking', fmt(rows.length));
       if (meta.resumo.mensagens) add('Mensagens no total', fmt(meta.resumo.mensagens));
