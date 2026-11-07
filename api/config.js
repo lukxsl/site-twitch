@@ -8,8 +8,8 @@ const TWITCH_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_SECRET = process.env.TWITCH_CLIENT_SECRET;
 
 const CANAL = 'asemtet0';
-const HALL_CACHE_KEY = 'cache:hall_v17';
-const HALL_CACHE_TS_KEY = 'cache:hall_at_v17';
+const HALL_CACHE_KEY = 'cache:hall_v18';
+const HALL_CACHE_TS_KEY = 'cache:hall_at_v18';
 const HALL_CACHE_TTL = 2 * 60;            // doadores: atualiza no máx. a cada 2 min
 const EMOTES_CACHE_KEY = 'cache:emotes_v1';
 const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
@@ -252,8 +252,12 @@ async function hallManual(){
       const rotulo = safeStr(item?.valor || item?.meta, 60) || 'Apoiador';
       return { pos: i + 1, nome, avatar: null, total: numeroManual(rotulo), valor: numeroManual(rotulo), valorTexto: rotulo, doacoes: 0, maior: 0, ultima: null };
     }).filter(item => item.nome);
+    // Sem doadores cadastrados não existe fallback: devolver uma lista vazia
+    // como se fosse resposta válida é o que fazia o site anunciar
+    // "Ninguém no pódio ainda" enquanto o StreamElements falhava.
+    if (!doadores.length) return null;
     return {
-      vazio: !doadores.length, doadores, gift: [], fieis: [], totalMes: 0, totalGeral: 0,
+      vazio: false, doadores, gift: [], fieis: [], totalMes: 0, totalGeral: 0,
       apoiadores: doadores.length, doacoes: 0, moeda: 'BRL', ultimo: null, fonte: 'Manual'
     };
   }catch(error){
@@ -279,8 +283,17 @@ async function hallStreamElements() {
     if (!temJwt()) hallErro = 'STREAMELEMENTS_JWT não configurada no servidor. ' + hallErro;
     console.error('[Hall] Falha ao consultar doadores no StreamElements:', hallErro);
     const manual = await hallManual();
-    return manual ? { ...manual, aviso: 'Não foi possível atualizar os apoiadores automaticamente. Exibindo a lista configurada pela equipe.', motivo: hallErro } : null;
+    if (manual && manual.doadores.length) {
+      return { ...manual, aviso: 'Não foi possível atualizar os apoiadores automaticamente. Exibindo a lista configurada pela equipe.', motivo: hallErro };
+    }
+    return null;
   }
+}
+
+// Só vale guardar no cache o que veio de verdade do StreamElements.
+// Falhas e fallbacks nunca entram no cache (antes ficavam 24h envenenando o pódio).
+function cacheavel(dados) {
+  return !!dados && !dados.motivo && Array.isArray(dados.doadores) && dados.doadores.length > 0;
 }
 
 async function salvarHallCache(dados) {
@@ -296,7 +309,9 @@ async function lerHallCache() {
   try {
     const [raw, ts] = await redis([['GET', HALL_CACHE_KEY], ['GET', HALL_CACHE_TS_KEY]]);
     if (!raw) return null;
-    return { dados: JSON.parse(raw), ts: Number(ts) || 0 };
+    const dados = JSON.parse(raw);
+    if (dados && dados.motivo) return null; // entradas antigas de falha não valem mais
+    return { dados, ts: Number(ts) || 0 };
   } catch(e) { return null; }
 }
 
@@ -375,9 +390,16 @@ export default async function handler(req, res) {
       }
       if (cache && idade < HALL_CACHE_TTL && !forcar) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts });
       const dados = await hallStreamElements();
-      if (dados) { await salvarHallCache(dados); return res.status(200).json({ ...dados, updatedAt: Date.now() }); }
+      if (dados) {
+        if (cacheavel(dados)) await salvarHallCache(dados);
+        return res.status(200).json({ ...dados, updatedAt: Date.now() });
+      }
       if (cache) return res.status(200).json({ ...cache.dados, updatedAt: cache.ts, desatualizado: true });
-      return res.status(200).json({ vazio: true, doadores: [], updatedAt: null, erro: hallErro || 'Não foi possível consultar o ranking de doadores no StreamElements.' });
+      return res.status(200).json({
+        doadores: [], updatedAt: null, indisponivel: true,
+        motivo: hallErro || 'Não foi possível consultar o ranking de doadores no StreamElements.',
+        erro: hallErro || 'Ranking de doadores indisponível no momento.'
+      });
     }
 
     // ===== RANKING UNIFICADO DO STREAMELEMENTS =====
@@ -396,7 +418,11 @@ export default async function handler(req, res) {
             if (cache) d = cache.dados;
             else return res.status(429).json({ ok: false, modo, lista: [], total: 0, erro: 'Muitas consultas ao ranking de doadores. Aguarde um minuto.' });
           }
-          if (!d) { d = await hallStreamElements(); if (d) await salvarHallCache(d); else if (cache) d = cache.dados; }
+          if (!d) {
+            d = await hallStreamElements();
+            if (d && cacheavel(d)) await salvarHallCache(d);
+            else if (cache) d = cache.dados;
+          }
           if (!d) throw Object.assign(new Error(hallErro || 'Não foi possível consultar os doadores.'), { statusCode: 502 });
           out = { modo, fonte: d.fonte || 'StreamElements', total: d.apoiadores, lista: d.doadores.slice(0, limit).map(x => ({ pos: x.pos, nome: x.nome, avatar: x.avatar, valor: x.valor, moeda: x.moeda || d.moeda || 'BRL', valorLabel: x.valorTexto || null, doacoes: x.doacoes, maior: x.maior, ultima: x.ultima })),
                   resumo: { totalMes: d.totalMes, totalGeral: d.totalGeral, doacoes: d.doacoes, moeda: d.moeda, ultimo: d.ultimo } };

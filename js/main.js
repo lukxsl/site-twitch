@@ -1,4 +1,9 @@
 /* ============================================================
+   MAIN — config global, estado, navegação, votação, hall,
+   sugestões, tier list e boot do site
+   ============================================================ */
+
+/* ============================================================
    CONFIG GLOBAL
    ============================================================ */
 const CONFIG = {
@@ -53,7 +58,7 @@ const ROTULO_CONCLUIDO = {
 };
 
 /* ============================================================
-   ESTADO GLOBAL
+   ESTADO GLOBAL (compartilhado com twitch.js, admin/*.js)
    ============================================================ */
 let USUARIO = null;
 let JOGOS = [];
@@ -72,7 +77,6 @@ let ADMIN_TIER = { jogos: [], filmes: [], animes: [] };
 let ADMIN_MULTISEL = { ativo: false, ids: new Set() };
 let vodAtual = null, assistindoVod = false;
 let videosTw = [];
-let inicioLive = null;
 let modo = 'jogos', filtro = 'Todos';
 let CONFIG_GERAL = {
   aviso: null, donate: null, manutencao: false, recado: '', horasMes: '', updatedAt: null, top3: [], hall: [], votosFechamento: null
@@ -89,7 +93,6 @@ let _topPeriodo = 'mes';
 let _musicaPronta = false;
 
 let HALL_DADOS = null;
-let HALL_ABA = 'doadores';
 let HALL_TIMER = null;
 
 let sortMode = 'nota';
@@ -313,43 +316,21 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
-   SUB SHORTCUTS (legado)
+   HALL DA FAMA (pódio de doadores do StreamElements)
    ============================================================ */
-function setupSubShortcuts(){
-  const wrap = document.querySelector('.sub-shortcuts');
-  if(!wrap || wrap.dataset.bound) return;
-  wrap.dataset.bound = '1';
-  wrap.addEventListener('click', e => {
-    const btn = e.target.closest('.sub-shortcut');
-    if(!btn) return;
-    const card = btn.closest('.sub-hero-box');
-    if(!card) return;
-    card.querySelectorAll('.sub-shortcut').forEach(t => t.classList.toggle('on', t === btn));
-    card.querySelectorAll('.sub-shortcut-content').forEach(c =>
-      c.classList.toggle('on', c.dataset.subContent === btn.dataset.subTab)
-    );
-    if(btn.dataset.subTab === 'emotes'){
-      const grid = document.getElementById('emotesGrid');
-      if(grid){
-        grid.classList.add('counter-up');
-        setTimeout(() => grid.classList.remove('counter-up'), 1200);
-      }
-    }
-  });
-}
-
-/* ============================================================
-   HALL DA FAMA
-   ============================================================ */
-async function carregarHall(){
+async function carregarHall(forcar = false){
   const lista = $('hallLista'); if(!lista) return;
   try{
-    const r = await fetch('/api/config?action=hall', { cache: 'no-store' });
+    const url = forcar
+      ? `/api/config?action=hall&_t=${Date.now()}`
+      : '/api/config?action=hall';
+    const r = await fetch(url, { cache: 'no-store' });
     const d = await r.json();
     HALL_DADOS = d;
     if(d && (d.motivo || d.erro)) console.warn('[Hall] Ranking automático indisponível:', d.motivo || d.erro);
-  } catch(e){
-    if(!HALL_DADOS) HALL_DADOS = null;
+  }catch(e){
+    console.warn('[Hall] Falha ao consultar o ranking:', e);
+    if(!HALL_DADOS) HALL_DADOS = { erro: 'rede' };
   }
   renderHall();
 }
@@ -361,12 +342,6 @@ function hallAvatar(p, cls){
   const ini = esc((nome.charAt(0) || '?').toUpperCase());
   if(p.avatar) return `<img class="hall-av ${cls}" src="${esc(p.avatar)}" alt="" loading="lazy" decoding="async" data-ini="${ini}" data-h="${hue}">`;
   return `<div class="hall-av ${cls} ph" style="--h:${hue}">${ini}</div>`;
-}
-
-function hallValor(p){
-  if(HALL_ABA === 'gift') return `${p.total} gift${p.total === 1 ? '' : 's'}`;
-  if(HALL_ABA === 'fieis') return `${p.meses} ${p.meses === 1 ? 'mês' : 'meses'}`;
-  return fmtBRL(p.total);
 }
 
 function hallPodioHTML(itens){
@@ -381,7 +356,7 @@ function hallPodioHTML(itens){
       ${hallAvatar(p, 'pod-av')}
       <span class="pod-medal" aria-hidden="true">${medalha[i]}</span>
       <span class="pod-name" title="${esc(p.nome || '')}">${esc(p.nome || '—')}</span>
-      <span class="pod-val">${esc(hallValor(p))}</span>
+      <span class="pod-val">${esc(fmtBRL(p.total))}</span>
     </div>`;
   }).join('') + `</div>`;
 }
@@ -406,14 +381,24 @@ function renderHall(){
     }, true);
   }
 
-  const bruto = !d || d.vazio ? [] :
-    (HALL_ABA === 'gift' ? (d.gift || []) : HALL_ABA === 'fieis' ? (d.fieis || []) : (d.doadores || []));
-  // A home mostra apenas o pódio. O ranking completo continua disponível no painel.
+  // O ranking só é considerado inválido quando o servidor avisa; doadores vazios
+  // com erro NÃO podem ser tratados como "ninguém no pódio ainda".
+  const falhou = !!(d && (d.erro || d.motivo));
+  const bruto = (!d || d.vazio || !Array.isArray(d.doadores)) ? [] : d.doadores;
+  // A home mostra apenas o pódio. O ranking completo continua na página Ranking.
   const itens = bruto.slice(0, 3);
 
   let html;
-  if(!itens.length){
-    // Sem doadores: em vez de 3 vagas vazias, um estado vazio com convite (e a meta real, se existir)
+  if(!itens.length && falhou){
+    html = `
+      <div class="hall-vazio hall-falha">
+        <span class="hv-ic" aria-hidden="true">📡</span>
+        <b>O ranking não carregou agora.</b>
+        <p>O StreamElements não respondeu a tempo. Assim que a conexão voltar, o pódio aparece aqui.</p>
+        <button type="button" class="btn ghost hall-retry" data-hall-retry>↻ Tentar de novo</button>
+      </div>`;
+  } else if(!itens.length){
+    // Sem doadores de verdade: convite em vez de 3 vagas vazias
     html = `
       <div class="hall-vazio">
         <span class="hv-ic" aria-hidden="true">💜</span>
@@ -425,15 +410,16 @@ function renderHall(){
           <li><span aria-hidden="true">🖥️</span>Melhora o setup da live</li>
         </ul>
         <div class="hv-meta" id="hallMeta" hidden></div>
-        ${(d?.aviso || d?.erro) ? '<small class="hv-nota">O ranking automático está indisponível agora.</small>' : ''}
       </div>`;
   } else {
     html = hallPodioHTML(itens);
-    if(itens.length > 3) html += `<div class="hall-resto">${hallRestoHTML(itens.slice(3))}</div>`;
-    if(d?.aviso) html += `<p class="hall-cta-vazio hall-erro hall-aviso">${esc(d.aviso)}</p>`;
+    if(d && d.aviso) html += `<p class="hall-cta-vazio hall-aviso">${esc(d.aviso)}</p>`;
   }
   lista.innerHTML = html;
-  if(!itens.length) pintarMetaHall();
+
+  const retry = lista.querySelector('[data-hall-retry]');
+  if(retry) retry.addEventListener('click', () => { retry.disabled = true; retry.textContent = 'Buscando…'; carregarHall(true); });
+  if(!itens.length && !falhou) pintarMetaHall();
 
   if(total){
     const linhas = [];
@@ -443,7 +429,7 @@ function renderHall(){
     total.hidden = !linhas.length;
   }
 
-  if(updated && d && d.updatedAt){
+  if(updated && d && !falhou && d.updatedAt){
     atualizarTextoHallUpdated(d.updatedAt);
     updated.style.display = '';
   } else if(updated){
@@ -477,34 +463,18 @@ function atualizarTextoHallUpdated(ts){
   if(diffMin < 1) texto = '🔄 Atualizado agora';
   else if(diffMin === 1) texto = '🔄 Atualizado há 1 min';
   else if(diffMin < 60) texto = `🔄 Atualizado há ${diffMin} min`;
-  else {
-    const horas = Math.floor(diffMin / 60);
-    texto = `🔄 Atualizado há ${horas}h`;
-  }
+  else texto = `🔄 Atualizado há ${Math.floor(diffMin / 60)}h`;
   el.textContent = texto;
 }
 
-function setupHallTabs(){
-  const wrap = $('hallTabs'); if(!wrap || wrap.dataset.bound) return;
-  wrap.dataset.bound = '1';
-  wrap.addEventListener('click', e => {
-    const btn = e.target.closest('.hall-tab');
-    if(!btn) return;
-    wrap.querySelectorAll('.hall-tab').forEach(t => t.classList.toggle('on', t === btn));
-    HALL_ABA = btn.dataset.hall || 'gift';
-    renderHall();
-  });
-}
-
 function iniciarHall(){
-  setupHallTabs();
   renderHall();
   carregarHall();
   if(HALL_TIMER) clearInterval(HALL_TIMER);
   HALL_TIMER = setInterval(() => {
     if(document.hidden) return;
     carregarHall();
-  }, 60000);
+  }, 120000);
   document.addEventListener('visibilitychange', () => { if(!document.hidden) carregarHall(); });
 }
 
@@ -517,14 +487,6 @@ function _iniciaisFaixa(nome){
   if(!palavras.length) return '♪';
   if(palavras.length === 1) return palavras[0].slice(0, 2).toUpperCase();
   return (palavras[0][0] + palavras[1][0]).toUpperCase();
-}
-
-function _fmtMs(ms){
-  if(!ms && ms !== 0) return '--:--';
-  const total = Math.floor(ms / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2,'0')}`;
 }
 
 function _capaFaixaHTML(x, classe){
@@ -559,7 +521,6 @@ function _destaqueMusicaHTML(){
 function _recentesMusicaHTML(rec){
   const itens = rec.slice(0, 3);
   if(!itens.length) return '';
-  const quando = q => (q && typeof tempoAtras === 'function') ? tempoAtras(q) : '';
   return `
     <div class="music-recentes">
       <span class="music-mini-title">Tocou por último</span>
@@ -568,7 +529,7 @@ function _recentesMusicaHTML(rec){
           <li>${_linkFaixa(x, 'music-recente-item', `
             ${_capaFaixaHTML(x, 'music-recente-capa')}
             <span class="music-recente-info"><b>${esc(x.faixa)}</b><small>${esc(x.artista || '')}</small></span>
-            ${quando(x.quando) ? `<em>${esc(quando(x.quando))}</em>` : ''}
+            ${x.quando ? `<em>${esc(tempoAtras(x.quando))}</em>` : ''}
           `)}</li>`).join('')}
       </ol>
     </div>`;
@@ -684,15 +645,6 @@ function renderPlaylistComunidade(){
     loading="lazy" title="Playlist do Spotify"></iframe>`;
 }
 
-function irParaPlaylist(){
-  mudarAba('comunidade');
-  setTimeout(() => {
-    const tab = document.querySelector('.sub-tab[data-tab="playlist"]');
-    if(tab) tab.click();
-  }, 150);
-}
-window.irParaPlaylist = irParaPlaylist;
-
 function abrirRankingMusicas(){
   mudarAba('ranking');
   setTimeout(() => {
@@ -715,12 +667,11 @@ function setLivePulse(isLive){
 /* ============================================================
    NAVEGAÇÃO
    ============================================================ */
-let _ultimaAba = null;
 let _mudarAbaTimer = null;
 let _mudarAbaPendente = null;
 const ABAS_VALIDAS = ['inicio','tierlist','ranking','comunidade','setup','sugestoes','perfil','admin'];
 
-function _executarMudarAba(nome, salvar){
+function _executarMudarAba(nome){
   if(!ABAS_VALIDAS.includes(nome)) nome = 'inicio';
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
   document.querySelectorAll('nav ul button').forEach(b => b.classList.remove('on'));
@@ -739,7 +690,6 @@ function _executarMudarAba(nome, salvar){
       if(typeof VALID_ADMIN_PAGES !== 'undefined' && VALID_ADMIN_PAGES.includes(p)) ADMIN_PAGE = p;
     }
   }
-  _ultimaAba = nome;
   window.dispatchEvent(new CustomEvent('soso:aba', { detail: nome }));
 
   try {
@@ -763,14 +713,14 @@ function _executarMudarAba(nome, salvar){
   setTimeout(() => setupCardTilt(), 100);
 }
 
-function mudarAba(nome, salvar = true){
+function mudarAba(nome){
   if(_mudarAbaPendente === nome) return;
   _mudarAbaPendente = nome;
   if(_mudarAbaTimer) clearTimeout(_mudarAbaTimer);
   _mudarAbaTimer = setTimeout(() => {
     _mudarAbaTimer = null;
     _mudarAbaPendente = null;
-    _executarMudarAba(nome, salvar);
+    _executarMudarAba(nome);
   }, 60);
 }
 window.mudarAba = mudarAba;
@@ -787,7 +737,7 @@ window.abrirSejaSub = abrirSejaSub;
 function setupComunidadeTabs(){
   const wrap = $('comunidadeTabs'); if(!wrap) return;
   const ativarTab = (tab) => {
-    localStorage.setItem('comunidade:tab', tab);
+    try { localStorage.setItem('comunidade:tab', tab); } catch(e){}
     wrap.querySelectorAll('.sub-tab').forEach(x => x.classList.toggle('on', x.dataset.tab === tab));
     document.querySelectorAll('#sec-comunidade .sub-panel').forEach(p => {
       p.classList.toggle('on', p.dataset.panel === tab);
@@ -795,7 +745,8 @@ function setupComunidadeTabs(){
     if(tab === 'playlist') renderPlaylistComunidade();
     setTimeout(() => setupCardTilt(), 100);
   };
-  const salva = localStorage.getItem('comunidade:tab') || 'discord';
+  let salva = 'discord';
+  try { salva = localStorage.getItem('comunidade:tab') || 'discord'; } catch(e){}
   ativarTab(salva);
   wrap.addEventListener('click', e => {
     const b = e.target.closest('.sub-tab'); if(!b) return;
@@ -817,7 +768,7 @@ function renderComandos(filtroTxt = ''){
 }
 
 /* ============================================================
-   TIER LIST V2
+   TIER LIST
    ============================================================ */
 const TIERS = ['S','A','B','C'];
 async function carregarBiblioteca(){
@@ -890,37 +841,7 @@ function desenharStats(){
   if(bEls[0] && !isNaN(Number(dados[0][0]))) animarNumero(bEls[0], Number(dados[0][0]));
   if(bEls[3] && !isNaN(Number(dados[3][0]))) animarNumero(bEls[3], Number(dados[3][0]));
 
-  renderPodium();
   renderGeneroChips();
-}
-
-/* ---------- Pódio Top 3 ---------- */
-function renderPodium(){
-  const wrap = $('podium'); if(!wrap) return;
-  const L = LISTA().filter(j => j.nota > 0);
-  if(L.length < 3){ wrap.style.display = 'none'; return; }
-  const top = [...L].sort((a,b) => (b.nota||0) - (a.nota||0)).slice(0, 3);
-  const medalhas = ['🥇','🥈','🥉'];
-  wrap.style.display = '';
-  wrap.innerHTML = top.map((j, i) => {
-    const pos = i + 1;
-    const chipTier = j.tier && j.tier !== 'NR' ? `<span class="podium-chip tr">Tier ${esc(j.tier)}</span>` : '';
-    const chipNota = j.nota > 0 ? `<span class="podium-chip nota">⭐ ${n1(j.nota)}</span>` : '';
-    const chipMeta = modo === 'jogos' && j.horas > 0
-      ? `<span class="podium-chip">⏱ ${fh(j.horas)}</span>`
-      : (j.duracao > 0 ? `<span class="podium-chip">${fmtDuracao(j.duracao)}</span>` : '');
-    const capaHTML = j.capa
-      ? `<img class="podium-img" src="${esc(j.capa)}" alt="${esc(j.nome)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'podium-img',style:'display:grid;place-items:center;font-size:1.6rem',textContent:'🎮'}))">`
-      : `<div class="podium-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>`;
-    return `
-      <div class="podium-card pos-${pos}">
-        <span class="podium-medal">${medalhas[i]}</span>
-        ${capaHTML}
-        <div class="podium-nome">${esc(j.nome)}</div>
-        <div class="podium-chips">${chipTier}${chipNota}${chipMeta}</div>
-      </div>
-    `;
-  }).join('');
 }
 
 /* ---------- Chips de gênero ---------- */
@@ -971,7 +892,8 @@ function renderGeneroChips(){
 
 /* ---------- Chips de status ---------- */
 function renderChips(){
-  $('chips').innerHTML = MODOS[modo].status.map(s => {
+  const el = $('chips'); if(!el) return;
+  el.innerHTML = MODOS[modo].status.map(s => {
     const tip = STATUS_TOOLTIP[s] || s;
     return `<button class="chip" data-s="${s}" aria-pressed="${s === filtro}" title="${esc(tip)}">${s}</button>`;
   }).join('');
@@ -980,12 +902,13 @@ function renderChips(){
 function aplicarModo(novo, salvar = true){
   if(!MODOS[novo]) novo = 'jogos';
   modo = novo; filtro = 'Todos'; generoFiltro = 'all';
-  $('q').value = '';
+  const q = $('q'); if(q) q.value = '';
   document.querySelectorAll('#modo button').forEach(x => x.classList.toggle('on', x.dataset.m === modo));
   const m = MODOS[modo];
-  $('tlTitulo').textContent = m.titulo;
-  $('tlSub').textContent = m.sub;
-  $('q').placeholder = m.busca;
+  const tlTitulo = $('tlTitulo'), tlSub = $('tlSub');
+  if(tlTitulo) tlTitulo.textContent = m.titulo;
+  if(tlSub) tlSub.textContent = m.sub;
+  if(q) q.placeholder = m.busca;
   renderChips(); desenharStats(); desenhar();
   const note = $('tmdbNote'); if(note) note.style.display = modo === 'filmes' ? '' : 'none';
   if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
@@ -1028,7 +951,6 @@ function cartao(j,i){
     </button>`;
   return podeArrastar ? `<div class="g-admin-wrap">${card}<button type="button" class="g-quick-edit" onclick="editarNotaTier(${i})" title="Editar nota sem abrir o Admin" aria-label="Editar nota de ${esc(j.nome)}">✎</button></div>` : card;
 }
-
 
 async function editarNotaTier(index){
   if(!USUARIO?.admin) return;
@@ -1171,7 +1093,7 @@ function setupDragDrop(){
 /* ---------- Filtros + Ordenação ---------- */
 function _aplicarFiltrosOrdenacao(){
   const q = ($('q')?.value || '').trim().toLowerCase();
-  let lista = LISTA().filter(j => {
+  const lista = LISTA().filter(j => {
     if(filtro !== 'Todos' && j.status !== filtro) return false;
     if(generoFiltro !== 'all'){
       const temGen = (j.generos || []).some(g => String(g).toLowerCase() === generoFiltro.toLowerCase());
@@ -1300,12 +1222,11 @@ function aplicarManutencao(){
     if(!overlay){
       overlay = document.createElement('div');
       overlay.id = 'manutencaoOverlay';
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:radial-gradient(circle at 50% 30%,rgba(168,85,247,.25),#0a0511 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#f5f3ff;font-family:DM Sans,sans-serif';
       overlay.innerHTML = `
-        <div style="font-size:4rem;line-height:1;margin-bottom:20px">🔧</div>
-        <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;margin-bottom:10px">Estamos em manutenção</h1>
-        <p style="max-width:400px;color:#b0a5c9;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
-        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="margin-top:20px;background:#a855f7;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;text-decoration:none">Ir pra Twitch 💜</a>
+        <div class="manutencao-ic">🔧</div>
+        <h1>Estamos em manutenção</h1>
+        <p>Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
+        <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Ir pra Twitch 💜</a>
       `;
       document.body.appendChild(overlay);
     }
@@ -1314,44 +1235,8 @@ function aplicarManutencao(){
 window.aplicarManutencao = aplicarManutencao;
 
 function renderLogin(){
-  if(window.Navbar && typeof window.Navbar.render === 'function'){
-    window.Navbar.render();
-    return;
-  }
-
-  const area = $('navUser'); if(!area) return;
-  area.innerHTML = '';
-  area.hidden = false;
-  area.style.display = 'flex';
-
-  if(!USUARIO){
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'nav-user-deslogado nav-auth-entrar';
-    btn.textContent = 'ENTRAR';
-    btn.setAttribute('aria-label', 'Entrar no site');
-    btn.addEventListener('click', () => {
-      if(window.AuthUI) window.AuthUI.open('entrar');
-    });
-    area.appendChild(btn);
-    return;
-  }
-
-  const pill = document.createElement('div');
-  pill.className = 'nav-user-logado';
-
-  const nick = document.createElement('span');
-  nick.className = 'nick';
-  nick.textContent = USUARIO.nick || USUARIO.username || 'Jogador';
-
-  const sairBtn = document.createElement('button');
-  sairBtn.type = 'button';
-  sairBtn.className = 'nav-user-sair';
-  sairBtn.textContent = 'Sair';
-  sairBtn.addEventListener('click', sair);
-
-  pill.append(nick, sairBtn);
-  area.appendChild(pill);
+  // A navbar é responsabilidade do auth-ui.js (única fonte de verdade).
+  if(window.Navbar && typeof window.Navbar.render === 'function') window.Navbar.render();
 }
 
 async function sair(){
@@ -1360,8 +1245,6 @@ async function sair(){
   document.body.classList.remove('sou-admin');
   const ov = document.getElementById('manutencaoOverlay'); if(ov) ov.remove();
   window.dispatchEvent(new CustomEvent('soso:logout'));
-  renderLogin(); renderVotacao(); desenhar();
-  mudarAba('inicio', false);
   location.reload();
 }
 window.sair = sair;
@@ -1408,7 +1291,7 @@ async function carregarVotosApi(){
 }
 window.carregarVotosApi = carregarVotosApi;
 
-/* Mini-placar + chips do card "Próximo na votação" (sempre mostra alguma informação) */
+/* Mini-placar + chips do card "Próximo na votação" */
 function renderProxExtra({ ord = [], total = 0, fechada = false, countdown = null, estado = 'ok' } = {}){
   const rank = $('proxRank'), foot = $('proxFoot');
   if(!rank || !foot) return;
@@ -1441,21 +1324,17 @@ function renderVotacao(){
   const proxBarWrap = $('proxBarWrap');
   const proxBarI = $('proxBarI');
 
-  const infoTop = $('votoInfoTop');
   const statusEl = $('votoStatus');
   const countdownEl = $('votoCountdown');
+  const proxNome = $('proxNome');
+  const proxInfo = $('proxInfo');
 
   const countdown = tempoRestante(VOTOS_FECHAMENTO);
-  const fechada = countdown && countdown.encerrado;
+  const fechada = !!(countdown && countdown.encerrado);
 
   if(statusEl){
-    if(fechada){
-      statusEl.className = 'vit-item vit-status fechada';
-      statusEl.innerHTML = '<span class="vit-dot"></span> Votação encerrada';
-    } else {
-      statusEl.className = 'vit-item vit-status';
-      statusEl.innerHTML = '<span class="vit-dot"></span> Votação aberta';
-    }
+    statusEl.className = 'vit-item vit-status' + (fechada ? ' fechada' : '');
+    statusEl.innerHTML = `<span class="vit-dot"></span> Votação ${fechada ? 'encerrada' : 'aberta'}`;
   }
   if(countdownEl){
     countdownEl.textContent = countdown
@@ -1464,7 +1343,6 @@ function renderVotacao(){
   }
 
   if(!USUARIO){
-    if(infoTop) infoTop.style.display = 'none';
     destBox.innerHTML = '';
     listaBox.innerHTML = `
       <div class="voto-bloqueado">
@@ -1478,13 +1356,12 @@ function renderVotacao(){
     if(proxCover) proxCover.style.display = 'none';
     if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
-    $('proxNome').textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
-    $('proxInfo').textContent = 'Escolha o próximo jogo da live.';
+    if(proxNome) proxNome.textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
+    if(proxInfo) proxInfo.textContent = 'Escolha o próximo jogo da live.';
     renderProxExtra({ estado: 'sem-login', fechada, countdown });
     return;
   }
   if(!VOTOS_DADOS.length){
-    if(infoTop) infoTop.style.display = 'none';
     destBox.innerHTML = '';
     const mensagem = votoStatus === 'erro' ? 'Não foi possível carregar a votação agora.' : votoStatus === 'carregando' ? 'Carregando votação…' : 'A Soso ainda não adicionou opções nesta votação.';
     const apoio = votoStatus === 'ok' ? 'Quando as opções forem publicadas, você poderá votar por aqui. 💜' : 'Tente novamente em alguns instantes.';
@@ -1492,13 +1369,11 @@ function renderVotacao(){
     if(proxCover) proxCover.style.display = 'none';
     if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
-    $('proxNome').textContent = votoStatus === 'erro' ? 'Placar indisponível' : 'Sem opções ainda';
-    $('proxInfo').textContent = fechada ? 'Aguardando nova votação 💜' : 'A próxima votação ainda não foi aberta.';
+    if(proxNome) proxNome.textContent = votoStatus === 'erro' ? 'Placar indisponível' : 'Sem opções ainda';
+    if(proxInfo) proxInfo.textContent = fechada ? 'Aguardando nova votação 💜' : 'A próxima votação ainda não foi aberta.';
     renderProxExtra({ estado: votoStatus, fechada, countdown });
     return;
   }
-
-  if(infoTop) infoTop.style.display = '';
 
   const total = VOTOS_DADOS.reduce((a, x) => a + (x.votos || 0), 0);
   const ord = [...VOTOS_DADOS].sort((a, b) => (b.votos || 0) - (a.votos || 0));
@@ -1561,16 +1436,16 @@ function renderVotacao(){
       else proxCover.style.display = 'none';
     }
     if(proxCoverFallback) proxCoverFallback.style.display = l.capa ? 'none' : '';
-    $('proxNome').textContent = l.nome;
-    $('proxInfo').textContent = fechada ? `Encerrada com ${p}% dos votos` : `Liderando com ${p}% dos votos`;
+    if(proxNome) proxNome.textContent = l.nome;
+    if(proxInfo) proxInfo.textContent = fechada ? `Encerrada com ${p}% dos votos` : `Liderando com ${p}% dos votos`;
     if(proxBarWrap && proxBarI){ proxBarWrap.style.visibility = 'visible'; proxBarI.style.width = p + '%'; }
   } else {
     destBox.innerHTML = fechada ? '' : `<div class="vhint"><span>🗳️</span><div><b>Ainda ninguém votou</b><small>Seja a primeira pessoa a escolher o próximo jogo!</small></div></div>`;
     if(proxCover) proxCover.style.display = 'none';
     if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
-    $('proxNome').textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
-    $('proxInfo').textContent = fechada ? 'Aguardando nova votação 💜' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';
+    if(proxNome) proxNome.textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
+    if(proxInfo) proxInfo.textContent = fechada ? 'Aguardando nova votação 💜' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
 
   renderProxExtra({ ord, total, fechada, countdown });
@@ -1739,7 +1614,8 @@ function setupSugTabs(){
       }, 180);
     });
   }
-  const salva = localStorage.getItem('sug:tab') || 'votar';
+  let salva = 'votar';
+  try { salva = localStorage.getItem('sug:tab') || 'votar'; } catch(e){}
   sugTabIrPara(salva);
 }
 window.setupSugTabs = setupSugTabs;
@@ -1751,7 +1627,6 @@ function setupSugForm(){
       chips.forEach(c => c.classList.remove('on'));
       chip.classList.add('on');
       sugTipoAtual = chip.dataset.tipo;
-      const sel = $('sugTipo'); if(sel) sel.value = sugTipoAtual;
     });
   });
 
@@ -1953,6 +1828,11 @@ window.carregarConfigPublica = carregarConfigPublica;
    REVEAL + TILT + PARALLAX + BURGER + FLOATING LIVE
    ============================================================ */
 function setupReveal(){
+  if(!('IntersectionObserver' in window)){
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+    setupCardTilt();
+    return;
+  }
   revealObs = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if(e.isIntersecting){
@@ -2038,21 +1918,19 @@ function setupBurger(){
   const burger = document.getElementById('navBurger');
   const navRight = document.getElementById('navRight');
   if(!burger || !navRight) return;
+  const fechar = () => {
+    navRight.classList.remove('open');
+    burger.setAttribute('aria-expanded', 'false');
+  };
   burger.addEventListener('click', () => {
-    const open = navRight.classList.toggle('open');
-    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    const aberto = navRight.classList.toggle('open');
+    burger.setAttribute('aria-expanded', aberto ? 'true' : 'false');
   });
-  navRight.querySelectorAll('.nav-links button').forEach(b => {
-    b.addEventListener('click', () => {
-      navRight.classList.remove('open');
-      burger.setAttribute('aria-expanded', 'false');
-    });
-  });
+  navRight.querySelectorAll('.nav-links button').forEach(b => b.addEventListener('click', fechar));
   document.addEventListener('click', (e) => {
     if(!navRight.classList.contains('open')) return;
     if(navRight.contains(e.target) || burger.contains(e.target)) return;
-    navRight.classList.remove('open');
-    burger.setAttribute('aria-expanded', 'false');
+    fechar();
   });
 }
 
@@ -2088,13 +1966,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   if(!document.getElementById('sec-' + abaInicial)) abaInicial = 'inicio';
 
-  _ultimaAba = null;
-  _executarMudarAba(abaInicial, false);
+  _executarMudarAba(abaInicial);
 
   renderAviso(); renderEmotes(); carregarEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
-  setupSubShortcuts();
   iniciarHall();
   renderOuvindo();
 
@@ -2144,6 +2020,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if(b.classList.contains('dragging')) return;
     const m = MODOS[modo];
     const j = LISTA()[+b.dataset.i];
+    if(!j) return;
     $('dTitle').textContent = j.nome;
     let terceiro = '';
     if (modo === 'jogos') {
@@ -2204,36 +2081,3 @@ window.addEventListener('DOMContentLoaded', async () => {
   setTimeout(() => setupCardTilt(), 800);
   setTimeout(() => setupCardTilt(), 2000);
 });
-
-/* ============================================================
-   BUSCA DE ITEM (KaBuM/Amazon)
-   ============================================================ */
-function abrirBuscaItem(produto){
-  $('dTitle').textContent = produto;
-  $('dBody').innerHTML = `
-    <p style="color:var(--mute);font-size:.85rem;margin-bottom:10px">Ajuste o termo se quiser e escolha a loja:</p>
-    <input id="buscaTermo" type="text" value="${esc(produto)}"
-      style="width:100%;background:#1a102d;border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.9rem;margin-bottom:12px">
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <a class="busca-loja kb" id="lnkKabum" href="#" target="_blank" rel="noopener">🛒 KaBuM!</a>
-      <a class="busca-loja am" id="lnkAmazon" href="#" target="_blank" rel="noopener">🛒 Amazon</a>
-    </div>
-    <button class="busca-copiar" id="btnCopiar" type="button">📋 Copiar nome do produto</button>
-  `;
-  const input = $('buscaTermo');
-  const atualizar = () => {
-    const q = encodeURIComponent(input.value.trim() || produto);
-    $('lnkKabum').href = `https://www.kabum.com.br/busca/${q}`;
-    $('lnkAmazon').href = `https://www.amazon.com.br/s?k=${q}`;
-  };
-  input.addEventListener('input', atualizar);
-  atualizar();
-  $('btnCopiar').addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(input.value); $('btnCopiar').textContent = '✓ Copiado!'; }
-    catch { $('btnCopiar').textContent = 'Erro ao copiar'; }
-    setTimeout(() => { $('btnCopiar').textContent = '📋 Copiar nome do produto'; }, 1600);
-  });
-  input.focus(); input.select();
-  $('dlg').showModal();
-}
-window.abrirBuscaItem = abrirBuscaItem;

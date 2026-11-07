@@ -1,17 +1,18 @@
 // Vercel serverless: /api/auth.js
-// Login PRÓPRIO (usuário + senha, scrypt) em Redis + vínculo Twitch + Discord legado (opcional).
+// Login PRÓPRIO (e-mail + senha, scrypt), Google e Twitch, tudo em Redis.
 //
 // Rotas:
 //   POST /api/auth?action=register          { email, senha, nick }
-//   POST /api/auth?action=login             { usuario, senha }
+//   POST /api/auth?action=login             { email | usuario, senha }
 //   GET|POST /api/auth?action=logout
 //   GET  /api/auth?action=me
+//   GET  /api/auth?action=google-login | google-callback
+//   GET  /api/auth?action=twitch-login | twitch-callback
 //   POST /api/auth?action=change-password   { atual, nova }
 //   POST /api/auth?action=change-nick       { nick }
 //   GET  /api/auth?action=twitch-link       → redireciona para a Twitch
 //   GET  /api/twitch-callback               (retorno da Twitch; compatível também com a rota antiga)
 //   POST /api/auth?action=twitch-unlink
-//   GET  /api/auth?action=discord-login     (legado — mantém votos/admins antigos)
 //
 // Redis: accounts e vínculos permanecem; métricas da comunidade ficam em activity:{id}.
 import { randomBytes } from 'crypto';
@@ -26,9 +27,6 @@ import { urlVinculo, identificarViewer, twitchConfigurada, urlAutorizacaoBroadca
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CRON_SECRET = String(process.env.CRON_SECRET || '').trim();
 
-const DISCORD_ID = process.env.DISCORD_CLIENT_ID;
-const DISCORD_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT = `${SITE}/api/auth`;                     // legado: contas antigas
 const GOOGLE_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT = process.env.GOOGLE_REDIRECT_URI || `${SITE.replace(/\/+$/, '')}/api/auth?action=google-callback`;
@@ -112,7 +110,7 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
 
   const [idGoogle] = await redis([['HGET', 'google_idx', sub]]);
   if(idGoogle){
-    if((sessaoAtual?.tipo === 'own' || sessaoAtual?.tipo === 'discord') && String(sessaoAtual.id) !== String(idGoogle)) throw new Error('Esta conta Google já está vinculada a outro perfil. Saia da conta atual para entrar no perfil correto.');
+    if(sessaoAtual?.tipo === 'own' && String(sessaoAtual.id) !== String(idGoogle)) throw new Error('Esta conta Google já está vinculada a outro perfil. Saia da conta atual para entrar no perfil correto.');
     const conta = await pegarConta(idGoogle);
     if(!conta) throw new Error('Vínculo Google inconsistente. Entre em contato com a Soso.');
     const [donoEmail] = await redis([['HGET', 'google_email_idx', email]]);
@@ -124,40 +122,6 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
     await redis([...(emailAnterior && emailAnterior !== email ? [['HDEL', 'google_email_idx', emailAnterior]] : []), ['HSET', 'google_email_idx', email, conta.id]]);
     await sincronizarPerfil(conta);
     return { conta, novo: false };
-  }
-
-  // Migração segura de uma sessão Discord antiga ainda ativa: reaproveita o mesmo ID e permissões.
-  if(sessaoAtual?.tipo === 'discord'){
-    const idLegado = String(sessaoAtual.id || '');
-    if(!idLegado || !/^\d{5,30}$/.test(idLegado)) throw new Error('A sessão antiga não pôde ser migrada.');
-    const [contaExistente, donoEmail, perfilRaw] = await redis([
-      ['HGET', 'accounts', idLegado], ['HGET', 'google_email_idx', email],
-      ['HGET', 'user_profiles', idLegado]
-    ]);
-    if(contaExistente) throw new Error('Já existe uma conta própria com este identificador. Entre pelo Google normalmente.');
-    if(donoEmail) throw new Error('Este e-mail Google já está associado a outro perfil. Saia da conta atual para entrar no perfil correto.');
-
-    const base = usuarioDoGoogle(email);
-    let usuario = base, reservado = false;
-    for(let i = 0; i < 100; i++){
-      const sufixo = i ? String(i + 1) : '';
-      usuario = (base.slice(0, 20 - sufixo.length) + sufixo).slice(0, 20);
-      const [ok] = await redis([['HSETNX', 'usernames', usuario, idLegado]]);
-      if(Number(ok) === 1){ reservado = true; break; }
-    }
-    if(!reservado) throw new Error('Não foi possível reservar um usuário para a migração.');
-
-    const perfilAntigo = jparse(perfilRaw, {});
-    const nickAntigo = nickValido(String(perfilAntigo.username || '')) ? String(perfilAntigo.username) : nickDoGoogle(me.name, email);
-    const conta = {
-      id: idLegado, usuario, nick: nickAntigo, email,
-      google: { sub, email, name: String(me.name || ''), picture: me.picture || null },
-      sv: 1, criadoEm: Date.now(), nickAlteradoEm: 0, twitch: null
-    };
-    await salvarConta(conta);
-    await redis([['HSET', 'google_idx', sub, idLegado], ['HSET', 'google_email_idx', email, idLegado]]);
-    await sincronizarPerfil(conta);
-    return { conta, novo: false, vinculado: true, migradoDiscord: true };
   }
 
   // Se o usuário já entrou com a conta local e iniciou o Google OAuth, vincula à conta existente.
@@ -372,18 +336,11 @@ export default async function handler(req, res){
     if(action === 'me'){
       const s = lerSessao(req);
       if(!s) return res.status(200).json({ logado: false });
-      if(s.tipo === 'own'){
-        const conta = await pegarConta(s.id);
-        if(!conta || conta.sv !== s.sv){ limparSessao(res); return res.status(200).json({ logado: false }); }
-        const cargo = await cargoDe(conta.id, conta.google?.email || '');     // somente e-mail Google verificado pode conceder cargo DEV
-        return res.status(200).json(publico(conta, cargo));
-      }
-      // sessão Discord legada
-      const cargo = await cargoDe(s.id, s.email);
-      return res.status(200).json({
-        logado: true, id: s.id, username: s.username, nick: s.username, avatar: s.avatar,
-        tipo: 'discord', admin: !!cargo, cargo: cargo || null, twitch: null
-      });
+      if(s.tipo !== 'own'){ limparSessao(res); return res.status(200).json({ logado: false }); }
+      const conta = await pegarConta(s.id);
+      if(!conta || conta.sv !== s.sv){ limparSessao(res); return res.status(200).json({ logado: false }); }
+      const cargo = await cargoDe(conta.id, conta.google?.email || '');     // somente e-mail Google verificado pode conceder cargo DEV
+      return res.status(200).json(publico(conta, cargo));
     }
 
     /* ====================== PERFIL DE ATIVIDADE ====================== */
@@ -588,38 +545,6 @@ export default async function handler(req, res){
       conta.twitch = null;
       await salvarConta(conta);
       return res.status(200).json({ ok: true });
-    }
-
-    /* ====================== DISCORD (legado, opcional) ====================== */
-    if(action === 'discord-login'){
-      if(!DISCORD_ID || !DISCORD_SECRET) return res.status(500).json({ error: 'Discord OAuth não configurado' });
-      if(!(await rateLimit(`rl:dc:login:${ipDe(req)}`, 10, 60))) return res.status(429).json({ error: 'Muitas tentativas.' });
-      const state = randomBytes(16).toString('hex');
-      addCookie(res, `oauth_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
-      const params = new URLSearchParams({ client_id: DISCORD_ID, redirect_uri: DISCORD_REDIRECT, response_type: 'code', scope: 'identify', state });
-      res.writeHead(302, { Location: `https://discord.com/api/oauth2/authorize?${params}` });
-      return res.end();
-    }
-
-    if(action === 'callback' || (!action && req.query && req.query.code)){
-      if(!(await rateLimit(`rl:dc:cb:${ipDe(req)}`, 10, 60))) return res.status(429).json({ error: 'Muitas tentativas.' });
-      const { code, state } = req.query;
-      if(!code || !state || pegarCookie(req, 'oauth_state') !== state) return res.status(400).json({ error: 'State inválido (CSRF?)' });
-      const tok = await fetch('https://discord.com/api/oauth2/token', {
-        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ client_id: DISCORD_ID, client_secret: DISCORD_SECRET, grant_type: 'authorization_code', code, redirect_uri: DISCORD_REDIRECT })
-      }).then(r => r.json());
-      if(!tok.access_token) return res.status(400).json({ error: 'Falha ao obter token' });
-      const me = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${tok.access_token}` } }).then(r => r.json());
-      if(!me.id) return res.status(400).json({ error: 'Falha ao obter usuário' });
-
-      const avatar = me.avatar ? `https://cdn.discordapp.com/avatars/${me.id}/${me.avatar}.png?size=128` : null;
-      const username = safeStr(me.global_name || me.username, 60).replace(/[<>]/g, '') || 'Anônimo';
-      await redis([['HSET', 'user_profiles', String(me.id), JSON.stringify({ username, avatar, ts: Date.now() })]]);
-      const cargo = await cargoDe(me.id);
-      setSessao(res, criarToken({ id: String(me.id), username, avatar, admin: !!cargo, cargo: cargo || null, tipo: 'discord' }));
-      res.writeHead(302, { Location: '/?login=ok' });
-      return res.end();
     }
 
     return res.status(400).json({ error: 'Ação inválida.' });

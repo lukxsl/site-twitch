@@ -1,12 +1,158 @@
 /* ============================================================
-   SETUP — MINI-GAME 2D + CATÁLOGO (TOUR DO LUKZIN)
+   SETUP — MINI-GAME 2D + CATÁLOGO + TOUR DO LUKZIN
+   Áudio (Web Audio) unificado neste arquivo.
+   ============================================================ */
+
+/* ============================================================
+   ÁUDIO — sons suaves do mini-game (o contexto só nasce no 1º gesto)
+   ============================================================ */
+window.GameAudio = (() => {
+  let ctx = null, master = null, tone = null, noiseBuf = null, muted = false, lastType = 0;
+  try { muted = localStorage.getItem('setup_mute') === '1'; } catch (e) { /* ignore */ }
+
+  function init() {
+    try {
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        ctx = new AC({ latencyHint: 'interactive' });
+        master = ctx.createGain();
+        master.gain.value = 0.9;
+        tone = ctx.createBiquadFilter();
+        tone.type = 'lowpass';
+        tone.frequency.value = 3200;
+        tone.Q.value = 0.4;
+        const comp = ctx.createDynamicsCompressor();
+        comp.threshold.value = -18;
+        comp.ratio.value = 4;
+        tone.connect(master);
+        master.connect(comp);
+        comp.connect(ctx.destination);
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+    } catch (e) { ctx = null; }
+    return ctx;
+  }
+
+  const ready = () => !muted && !!init();
+
+  function tom({ freq, to, type = 'sine', dur = 0.1, vol = 0.05, delay = 0, attack = 0.004, out }) {
+    const t0 = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if (to) osc.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g);
+    g.connect(out || tone);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+
+  function ruido() {
+    if (!noiseBuf) {
+      const len = Math.floor(ctx.sampleRate * 0.12);
+      noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
+
+  return {
+    init,
+    toggleMute() {
+      muted = !muted;
+      try { localStorage.setItem('setup_mute', muted ? '1' : '0'); } catch (e) { /* ignore */ }
+      if (!muted) init();
+      return muted;
+    },
+    isMuted() { return muted; },
+    playType() {
+      const now = performance.now();
+      if (now - lastType < 40 || !ready()) return;
+      lastType = now;
+      const f = 330 + Math.random() * 190;
+      tom({ freq: f, to: f * 0.8, type: 'triangle', dur: 0.03, vol: 0.016, attack: 0.002 });
+    },
+    playPop() {
+      if (!ready()) return;
+      tom({ freq: 440, to: 740, type: 'sine', dur: 0.12, vol: 0.07 });
+      tom({ freq: 880, to: 1320, type: 'sine', dur: 0.1, vol: 0.02, delay: 0.025 });
+    },
+    playStep() {
+      if (!ready()) return;
+      tom({ freq: 120, to: 55, type: 'sine', dur: 0.09, vol: 0.09, attack: 0.003 });
+      const src = ctx.createBufferSource();
+      src.buffer = ruido();
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 260;
+      const g = ctx.createGain();
+      const t0 = ctx.currentTime;
+      g.gain.setValueAtTime(0.05, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.06);
+      src.connect(lp); lp.connect(g); g.connect(tone);
+      src.start(t0);
+      src.stop(t0 + 0.08);
+    },
+    playMeow() {
+      if (!ready()) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      const lfo = ctx.createOscillator();
+      const lfoG = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(520, t0);
+      osc.frequency.exponentialRampToValueAtTime(880, t0 + 0.14);
+      osc.frequency.exponentialRampToValueAtTime(480, t0 + 0.45);
+      lfo.frequency.value = 22; lfoG.gain.value = 14;
+      lfo.connect(lfoG); lfoG.connect(osc.frequency);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(0.08, t0 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.47);
+      osc.connect(g); g.connect(tone);
+      osc.start(t0); lfo.start(t0);
+      osc.stop(t0 + 0.5); lfo.stop(t0 + 0.5);
+    },
+    playClick() {
+      if (!ready()) return;
+      tom({ freq: 620, to: 430, type: 'sine', dur: 0.05, vol: 0.05 });
+    },
+    playClose() {
+      if (!ready()) return;
+      tom({ freq: 520, to: 300, type: 'sine', dur: 0.09, vol: 0.05 });
+    },
+    playSuccess() {
+      if (!ready()) return;
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) =>
+        tom({ freq: f, type: 'sine', dur: 0.28, vol: 0.05, delay: i * 0.09 }));
+    }
+  };
+})();
+
+/* destrava o áudio no primeiro gesto em qualquer lugar da página */
+(() => {
+  const destravar = () => {
+    window.GameAudio.init();
+    ['click', 'touchend', 'keydown'].forEach((ev) => document.removeEventListener(ev, destravar, true));
+  };
+  document.addEventListener('click', window.GameAudio.init, { once: true });
+  ['click', 'touchend', 'keydown'].forEach((ev) => document.addEventListener(ev, destravar, true));
+})();
+
+/* ============================================================
+   MINI-GAME
    1. Dados   2. Utils   3. Lukzin   4. Diálogo/Tour/Recap
    5. Easter egg do gato   6. Catálogo   7. Init
    ============================================================ */
 (() => {
 'use strict';
 
-// Evita rodar duas vezes se o script for incluído em dobro
 if (window.__setupLoaded) return;
 window.__setupLoaded = true;
 
@@ -45,7 +191,7 @@ const SETUP_DATA = {
     titulo: 'Monitor AOC 240Hz', emoji: '🖥️', cat: 'perifericos', raridade: 'epico',
     x: 52, y: 45, stand: { x: 52, y: 90 },
     fala: 'Aqui a mágica acontece! Fica bão demais! ✨',
-    texto: 'Tudo bão por aqui? Esse é o palco principal! Um monitor AOC de 240Hz deixa tudo absurdamente fluido, e olha só: a Soso está plantando coisa no Stardew Valley agora. Quem disse que setup gamer não pode ser fazendeiro?',
+    texto: 'Tudo bão por aqui? Esse é o palco principal! Um monitor AOC de 240Hz deixa tudo absurdamente fluido, e olha só: tem sempre um joguinho cozy rodando na tela. Quem disse que setup gamer não pode ser fazendeiro?',
     pecas: [P('Monitor Gamer AOC 240Hz', 'monitor gamer aoc 240hz 1ms', '240Hz, imagem lisinha')]
   },
   webcam: {
@@ -99,7 +245,6 @@ const SETUP_DATA = {
   }
 };
 
-// Rota do tour: um circuito pelo quarto (Itens removidos não estão aqui)
 const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinete', 'microfone', 'cadeira'];
 const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
@@ -148,14 +293,10 @@ const S = {
   tour: false, run: 0, itemAtual: null, walkId: 0,
   typeTimer: null, finish: null, wake: null,
   catClicks: 0, catReset: null, catLastStamp: -1,
-  gatoVisto: false,
   balaoTimer: null, saudou: false, falaIndex: 0, tourOferecido: false
 };
-try { S.gatoVisto = localStorage.getItem('setup_gato') === '1'; } catch (_) { /* ignore */ }
 
-// Gato é filtrado do catálogo e só existe como Easter Egg no mini-game
-const itensVisiveis = () =>
-  Object.entries(SETUP_DATA).filter(([id, it]) => !it.oculto);
+const itensVisiveis = () => Object.entries(SETUP_DATA).filter(([, it]) => !it.oculto);
 
 /* ============================================================
    3. LUKZIN
@@ -225,7 +366,6 @@ function falaTemporaria(texto, ms = 4200) {
   S.balaoTimer = setTimeout(esconderBalao, ms);
 }
 
-// Clique no Lukzin (ou no botão 💬): ele pula e solta um bordão
 function interagir() {
   const el = char();
   if (!el || S.tour || el.classList.contains('walking')) return;
@@ -261,12 +401,10 @@ function ligarLuk() {
   const btn = $('btnLukFala');
   if (btn) btn.addEventListener('click', interagir);
 
-  // posição inicial: em pé na estante
   const el = char();
   el.dataset.x = 17; el.dataset.y = 90;
   el.style.left = '17%'; el.style.top = '90%';
 
-  // cumprimenta uma vez, quando o mini-game aparece na tela
   const cena = $('setupScene');
   if (cena && 'IntersectionObserver' in window) {
     const io = new IntersectionObserver((es) => {
@@ -310,6 +448,7 @@ function sparks() {
 
 function foco(x, y) {
   const wrap = $('setupScene');
+  if (!wrap) return;
   if (x == null) { wrap.classList.remove('focus'); return; }
   $('sceneWorld').style.transformOrigin = `${x}% ${y}%`;
   wrap.classList.add('focus');
@@ -322,7 +461,7 @@ const hotspots = {};
 
 function criarHotspots() {
   const box = $('sceneHotspots');
-  Object.entries(SETUP_DATA).filter(([, it]) => !it.oculto).forEach(([id, it]) => {
+  itensVisiveis().forEach(([id, it]) => {
     const b = h('button', {
       type: 'button', class: 'hotspot', 'data-id': id,
       style: `left:${it.x}%;top:${it.y}%`,
@@ -361,17 +500,14 @@ function digitar(el, texto) {
   });
 }
 
-function prepararDialogo(titulo) {
+function prepararDialogo() {
   const d = $('setupDialogue');
   d.classList.remove('closed', 'is-recap', 'enter');
   void d.offsetWidth;
   d.classList.add('enter');
 
-  // Nome fixo limpo: Lukzin + DEV
   const nameContainer = $('dlgNameContainer');
-  if (nameContainer) {
-    nameContainer.innerHTML = `<span class="rpg-name-main">Lukzin</span> <span class="rpg-badge">DEV</span>`;
-  }
+  if (nameContainer) nameContainer.innerHTML = '<span class="rpg-name-main">Lukzin</span> <span class="rpg-badge">DEV</span>';
 
   $('dlgChips').replaceChildren();
   $('dlgRecap').replaceChildren();
@@ -405,7 +541,7 @@ async function visitar(id, run) {
 
   snd(id === 'gato' ? 'playMeow' : 'playPop');
   mostrarBalao(it.fala, it.stand.x);
-  prepararDialogo(it.titulo);
+  prepararDialogo();
   await digitar($('dlgText'), it.texto);
   if (run !== S.run) return false;
   mostrarChips(it);
@@ -460,7 +596,7 @@ async function iniciarTour() {
   await recapFinal(run);
 }
 
-function pararTour(voltar = true) {
+function pararTour() {
   S.tour = false;
   cancelar();
   setTourUI(false);
@@ -478,7 +614,7 @@ async function recapFinal(run) {
   snd('playSuccess');
   mostrarBalao('Setup completo, tá bão demais! 💜', 50);
   setProgresso(ORDEM_TOUR.length, ORDEM_TOUR.length, 'Concluído! ✅');
-  prepararDialogo('Lukzin · Resumão do Setup');
+  prepararDialogo();
   $('setupDialogue').classList.add('is-recap');
   await digitar($('dlgText'), 'E aí, curtiu o tour? Ficou bão demais, né? Anota aí tudo que a Soso usa:');
   if (run !== S.run) return;
@@ -536,9 +672,6 @@ function ligarGato() {
     }
     S.catClicks = 0;
     clearTimeout(S.catReset);
-    S.gatoVisto = true;
-    try { localStorage.setItem('setup_gato', '1'); } catch (_) { /* ignore */ }
-    // Gato continua sendo um item apenas do mini-game. Ao clicar 5 vezes, chama o diálogo.
     irParaItem('gato');
   });
 }
@@ -568,15 +701,15 @@ function abrirFicha(id) {
         h('strong', { text: p.nome }),
         p.detalhe ? h('span', { text: p.detalhe }) : null));
     if (!p.semLoja) {
-      const pop = h('div', { class: 'loja-popover', hidden: true },
+      const popover = h('div', { class: 'loja-popover', hidden: true },
         LOJAS.map((l) => h('a', { class: `loja-${l.id}`, href: l.url(p.q), target: '_blank', rel: 'noopener noreferrer', text: l.nome })));
       const btn = h('button', { type: 'button', class: 'btn-onde', 'aria-expanded': 'false', text: '🔍 Onde encontrar' });
       btn.addEventListener('click', () => {
-        const abrir = pop.hidden;
+        const abrir = popover.hidden;
         fecharPopovers();
-        if (abrir) { pop.hidden = false; btn.textContent = '✕ Fechar'; btn.setAttribute('aria-expanded', 'true'); }
+        if (abrir) { popover.hidden = false; btn.textContent = '✕ Fechar'; btn.setAttribute('aria-expanded', 'true'); }
       });
-      li.append(btn, pop);
+      li.append(btn, popover);
     }
     return li;
   });
@@ -600,9 +733,9 @@ function abrirFicha(id) {
 
 function renderCatalogo() {
   const grid = $('catGrid');
+  if (!grid) return;
   const q = filtro.busca.trim().toLowerCase();
 
-  // itensVisiveis já filtra o gato (oculto), então ele não aparece aqui.
   const itens = itensVisiveis().filter(([, it]) => {
     if (filtro.cat !== 'todos' && it.cat !== filtro.cat) return false;
     if (!q) return true;

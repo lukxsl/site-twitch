@@ -1,12 +1,11 @@
 /* ============================================================
-   TWITCH
+   TWITCH — status da live, player, banner, foco do jogo e clipes
    ============================================================ */
-const FORCAR_REPRISE_NA_TWITCH = false; // Deixa a Twitch decidir
+const FORCAR_REPRISE_NA_TWITCH = false; // deixa a Twitch decidir
 let canalMature = FORCAR_REPRISE_NA_TWITCH;
 
 /* ============================================================
-   🆕 FOCO — Último jogo / Jogo ao vivo
-   Faz match com JOGOS[] pra puxar capa/nota/tier/horas.
+   FOCO — último jogo / jogo ao vivo (casa com a Tier List)
    ============================================================ */
 function atualizarFoco(game, isLive){
   const cover = document.getElementById('focoCover');
@@ -14,7 +13,6 @@ function atualizarFoco(game, isLive){
   const meta  = document.getElementById('focoMeta');
   const horas = document.getElementById('focoHoras');
   const label = document.getElementById('focoLabel');
-  const link  = document.getElementById('focoTwitchLink');
   const bar   = document.getElementById('focoBar');
   const barI  = document.getElementById('focoBarI');
   const pct   = document.getElementById('focoPct');
@@ -23,7 +21,6 @@ function atualizarFoco(game, isLive){
   ultGame = game || null;
   ultVivo = !!isLive;
 
-  // ---- Sem jogo ----
   if(!game || !game.name){
     cover.classList.remove('skeleton');
     cover.removeAttribute('src');
@@ -31,10 +28,10 @@ function atualizarFoco(game, isLive){
     nome.textContent = isLive ? 'Live sem categoria' : 'Sem jogo recente';
     if(label) label.textContent = isLive ? '🎮 Jogando agora' : '🎮 Último jogo jogado';
     if(meta) meta.innerHTML = '';
-    if(horas) horas.textContent = isLive
-      ? 'Sem categoria definida na Twitch.'
-      : 'Quando a Soso jogar, aparece aqui. 💜';
-    if(link) link.style.display = 'none';
+    if(horas){
+      horas.hidden = false;
+      horas.textContent = isLive ? 'Sem categoria definida na Twitch.' : 'Quando a Soso jogar, aparece aqui. 💜';
+    }
     if(bar) bar.style.display = 'none';
     const s0 = document.getElementById('focoSub'); if(s0) s0.hidden = true;
     const l0 = document.getElementById('focoLive');
@@ -48,7 +45,6 @@ function atualizarFoco(game, isLive){
     return;
   }
 
-  // ---- Match na tier list ----
   const nomeNorm = norm(game.name);
   const lista = (typeof JOGOS !== 'undefined' ? JOGOS : []);
   const jogoTL = lista.find(j => norm(j.nome) === nomeNorm);
@@ -75,7 +71,6 @@ function atualizarFoco(game, isLive){
     cover.style.display = 'block';
   }
 
-  // ---- Chips de meta ----
   if(meta){
     const chips = [];
     if(jogoTL){
@@ -90,22 +85,17 @@ function atualizarFoco(game, isLive){
     meta.innerHTML = chips.join('');
   }
 
-  // ---- Linha de horas/extra (só quando a barra de status não tem esses dados) ----
   if(horas){
-    const temHoras = !!(jogoTL && jogoTL.horas > 0);
-    const temConquistas = !!(jogoTL && jogoTL.conquistas && jogoTL.conquistas.total > 0);
-    if(temHoras || temConquistas){
+    const temDados = !!(jogoTL && (jogoTL.horas > 0 || (jogoTL.conquistas && jogoTL.conquistas.total > 0)));
+    if(temDados){
       horas.hidden = true;
       horas.textContent = '';
     } else {
       horas.hidden = false;
-      horas.textContent = isLive
-        ? 'Assistindo agora na Twitch 💜'
-        : 'Sem dados extras na tier list ainda.';
+      horas.textContent = isLive ? 'Assistindo agora na Twitch 💜' : 'Sem dados extras na tier list ainda.';
     }
   }
 
-  // ---- Detalhes: gêneros · ano ----
   const sub = document.getElementById('focoSub');
   if(sub){
     const partes = [];
@@ -115,7 +105,6 @@ function atualizarFoco(game, isLive){
     sub.hidden = !partes.length;
   }
 
-  // ---- Info da live (preenche o card quando o jogo não está na tier list) ----
   const liveBox = document.getElementById('focoLive');
   if(liveBox){
     const st = window.__streamInfo;
@@ -127,7 +116,6 @@ function atualizarFoco(game, isLive){
     } else { liveBox.innerHTML = ''; liveBox.hidden = true; }
   }
 
-  // ---- Barra de progresso (conquistas) ----
   if(bar && barI && pct){
     if(jogoTL && jogoTL.conquistas && jogoTL.conquistas.total > 0){
       const p = Math.round((jogoTL.conquistas.obtidas / jogoTL.conquistas.total) * 100);
@@ -138,11 +126,6 @@ function atualizarFoco(game, isLive){
       bar.style.display = 'none';
     }
   }
-
-  // ---- Link Twitch ----
-  if(link){
-    link.style.display = 'none'; // Escondido para manter o card alinhado
-  }
 }
 window.atualizarFoco = atualizarFoco;
 
@@ -150,12 +133,12 @@ window.atualizarFoco = atualizarFoco;
    VOD / REPRISE
    ============================================================ */
 function assistirVod(v){
-  v = v || vodAtual; if (!v) return;
+  v = v || vodAtual; if(!v) return;
   vodAtual = v;
   const urlTwitch = `https://www.twitch.tv/videos/${encodeURIComponent(v.id)}`;
-  if (canalMature) {
+  if(canalMature){
     window.open(urlTwitch, '_blank', 'noopener');
-    if (typeof toast === 'function') toast('🔞 Reprise +18: abrindo na Twitch', 'ok');
+    if(typeof toast === 'function') toast('🔞 Reprise +18: abrindo na Twitch', 'ok');
     return;
   }
   assistindoVod = true;
@@ -188,14 +171,6 @@ function assistirVod(v){
 }
 window.assistirVod = assistirVod;
 
-function tickUptime(){
-  const el = $('tmUp'); if(!el) return;
-  if(!inicioLive){ el.textContent = 'Offline'; return; }
-  const m = Math.max(0, Math.floor((Date.now() - inicioLive) / 60000));
-  el.textContent = `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
-}
-setInterval(tickUptime, 30000);
-
 let toastLiveMostrado = false;
 
 function _atualizarPlayerHeader(isLive){
@@ -219,13 +194,10 @@ function _atualizarProfileStatus(isLive, data){
     dyn.textContent = jogo ? `Online agora · jogando ${jogo}` : 'Online agora';
   } else {
     const vod = (data && data.video) ? data.video : vodAtual;
-    if(vod && vod.created_at){
-      dyn.className = 'profile-status-dinamica offline';
-      dyn.textContent = `Offline · última live ${tempoAtras(vod.created_at)}`;
-    } else {
-      dyn.className = 'profile-status-dinamica offline';
-      dyn.textContent = 'Offline · sem lives recentes';
-    }
+    dyn.className = 'profile-status-dinamica offline';
+    dyn.textContent = (vod && vod.created_at)
+      ? `Offline · última live ${tempoAtras(vod.created_at)}`
+      : 'Offline · sem lives recentes';
   }
 }
 
@@ -266,14 +238,10 @@ function _atualizarBanner(data){
   const title = document.getElementById('bannerTitle');
   const liveText = document.getElementById('bannerLiveText');
 
-  const isLive = !!data.stream;
-  if(isLive){
+  if(data.stream){
     const game = data.stream.game_name || 'Jogando';
     const viewers = Number(data.stream.viewer_count || 0);
-    if(badge){
-      badge.style.display = 'flex';
-      badge.classList.add('live');
-    }
+    if(badge){ badge.style.display = 'flex'; badge.classList.add('live'); }
     if(liveText) liveText.textContent = 'AO VIVO AGORA';
     if(overlay){
       overlay.style.display = '';
@@ -281,20 +249,17 @@ function _atualizarBanner(data){
       if(title) title.innerHTML = `Assistindo agora com <em>${viewers.toLocaleString('pt-BR')} ${viewers === 1 ? 'viewer' : 'viewers'}</em>`;
     }
   } else {
-    if(badge){
-      badge.style.display = 'none';
-      badge.classList.remove('live');
-    }
+    if(badge){ badge.style.display = 'none'; badge.classList.remove('live'); }
     if(overlay) overlay.style.display = 'none';
   }
 }
 
-async function verificarStatusTwitch() {
+async function verificarStatusTwitch(){
   const g = id => document.getElementById(id);
   const iframe = g('twitchIframe'), panel = g('offlinePanel');
   try {
     const response = await fetch('/api/twitch');
-    if (!response.ok) throw new Error('api');
+    if(!response.ok) throw new Error('api');
     const data = await response.json();
 
     atualizarMeta('goalSeg', data.followers, MARCOS, true);
@@ -302,50 +267,39 @@ async function verificarStatusTwitch() {
     _atualizarStatsStrip(data);
 
     const live = !!data.stream;
-    inicioLive = live && data.stream.started_at ? new Date(data.stream.started_at) : null;
-    if(data.stream && data.stream.uptime_seconds){
-      window.__uptimeLiveSeg = data.stream.uptime_seconds;
-      window.__uptimeLiveTs = Date.now();
-    } else {
-      window.__uptimeLiveSeg = 0;
-    }
-
     _atualizarPlayerHeader(live);
     _atualizarProfileStatus(live, data);
     _atualizarBanner(data);
 
-    // Força o bloqueio se a API avisar que é adulto OU se o jogo for conhecido como +18
     const isMature = !!(data.stream && (data.stream.is_mature || data.canal_mature));
 
-    if (live && !toastLiveMostrado) {
+    if(live && !toastLiveMostrado){
       toastLiveMostrado = true;
       setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
     }
 
-    if (data.discord && $('dcMembros'))
+    if(data.discord && $('dcMembros'))
       $('dcMembros').textContent = `${data.discord.toLocaleString('pt-BR')} membros · avisos de live, resenha e novidades.`;
 
     canalMature = FORCAR_REPRISE_NA_TWITCH || !!data.canal_mature;
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
 
-    if (data.user) {
-      if (data.user.profile_image_url) {
+    if(data.user){
+      if(data.user.profile_image_url){
         const av = g('offlineAvatarImg');
-        if (av) av.src = data.user.profile_image_url;
+        if(av) av.src = data.user.profile_image_url;
       }
-      if (data.user.offline_image_url && panel) {
+      if(data.user.offline_image_url && panel && !live){
         panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
       }
     }
 
-    if (panel) panel.classList.remove('is-mature');
-    if (data.stream && isMature) {
+    if(panel) panel.classList.remove('is-mature');
+
+    if(data.stream && isMature){
       assistindoVod = false;
-      if(iframe){
-        iframe.style.display = 'none';
-        iframe.src = 'about:blank';
-      }
+      if(iframe){ iframe.style.display = 'none'; iframe.src = 'about:blank'; }
       if(panel){
         panel.style.display = 'flex';
         panel.classList.add('is-mature');
@@ -361,34 +315,27 @@ async function verificarStatusTwitch() {
           </div>
         `;
       }
-      g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
+      const vc = g('viewerCountStatus'); if(vc) vc.textContent = `${data.stream.viewer_count} assistindo`;
       const noteEl = g('playerNoteText');
       if(noteEl){
         noteEl.classList.remove('recado');
-        noteEl.textContent = `🔞 Conteúdo +18 — clique em "Assistir na Twitch" acima.`;
+        noteEl.textContent = '🔞 Conteúdo +18 — clique em "Assistir na Twitch" acima.';
       }
-    } else if (data.stream) {
+    } else if(data.stream){
       assistindoVod = false;
       if(panel) panel.style.display = 'none';
       if(iframe){
         iframe.style.display = 'block';
         const novoSrc = `https://player.twitch.tv/?channel=asemtet0&parent=${HOST}`;
-        if (iframe.src !== novoSrc) iframe.src = novoSrc;
+        if(iframe.src !== novoSrc) iframe.src = novoSrc;
       }
-      g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
+      const vc = g('viewerCountStatus'); if(vc) vc.textContent = `${data.stream.viewer_count} assistindo`;
       const noteEl = g('playerNoteText');
-      if(noteEl){
-        if(!noteEl.classList.contains('recado')){
-          noteEl.textContent = `Transmitindo: ${data.stream.title}`;
-        }
-      }
+      if(noteEl && !noteEl.classList.contains('recado')) noteEl.textContent = `Transmitindo: ${data.stream.title}`;
     } else {
-      g('viewerCountStatus').textContent = '@asemtet0';
-      if (!assistindoVod) {
-        if(iframe){
-          iframe.style.display = 'none';
-          iframe.src = 'about:blank';
-        }
+      const vc = g('viewerCountStatus'); if(vc) vc.textContent = '@asemtet0';
+      if(!assistindoVod){
+        if(iframe){ iframe.style.display = 'none'; iframe.src = 'about:blank'; }
         if(panel){
           panel.style.display = 'flex';
           panel.innerHTML = `
@@ -404,17 +351,13 @@ async function verificarStatusTwitch() {
               <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live${canalMature ? ' ↗' : ''}</button>
             </div>
           `;
-          if(data.user && data.user.offline_image_url){
-            panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
-          }
+          if(data.user && data.user.offline_image_url) panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
           const btnVodEl = g('btnVod');
           if(btnVodEl) btnVodEl.style.display = vodAtual ? '' : 'none';
         }
         const noteEl = g('playerNoteText');
-        if(noteEl){
-          if(!noteEl.classList.contains('recado')){
-            noteEl.textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
-          }
+        if(noteEl && !noteEl.classList.contains('recado')){
+          noteEl.textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
         }
       }
     }
@@ -423,30 +366,28 @@ async function verificarStatusTwitch() {
     if(fbVod) fbVod.style.display = assistindoVod ? '' : 'none';
 
     window.__streamInfo = data.stream || null;
-    atualizarFoco(data.game, !!data.stream);
+    atualizarFoco(data.game, live);
     if(typeof window.setJogoAoVivo === 'function'){
       window.setJogoAoVivo(data.stream && data.game ? data.game.name : null);
     }
     renderClips(data.clips);
     setLivePulse(live);
-  } catch (err) {
+  } catch(err){
     console.error('Erro ao buscar dados da Twitch:', err);
     atualizarFoco(null, false);
     if(typeof window.setJogoAoVivo === 'function') window.setJogoAoVivo(null);
-    ['goalSeg','goalDc'].forEach(p => { const el = $(p+'Num'); if (el && el.textContent === '…') atualizarMeta(p, null); });
+    ['goalSeg','goalDc'].forEach(p => { const el = $(p + 'Num'); if(el && el.textContent === '…') atualizarMeta(p, null); });
     setLivePulse(false);
     _atualizarPlayerHeader(false);
     _atualizarProfileStatus(false, null);
-    const overlay = document.getElementById('bannerOverlay');
-    if(overlay) overlay.style.display = 'none';
-    const badge = document.getElementById('bannerLiveBadge');
-    if(badge) badge.style.display = 'none';
+    const overlay = document.getElementById('bannerOverlay'); if(overlay) overlay.style.display = 'none';
+    const badge = document.getElementById('bannerLiveBadge'); if(badge) badge.style.display = 'none';
   }
 }
 
 document.addEventListener('click', e => {
   const b = e.target.closest('.tm-vod');
-  if (b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]);
+  if(b && videosTw[+b.dataset.i]) assistirVod(videosTw[+b.dataset.i]);
 });
 
 /* ============================================================
@@ -480,7 +421,7 @@ function getDlgClip(){
   if(dlgClip) return dlgClip;
   dlgClip = document.createElement('dialog');
   dlgClip.className = 'clip-modal';
-  dlgClip.innerHTML = `<iframe id="clipIframe" allowfullscreen></iframe><div class="cm-foot"><b id="clipTitle"></b><span id="clipViews"></span></div>`;
+  dlgClip.innerHTML = `<iframe id="clipIframe" allowfullscreen title="Clipe"></iframe><div class="cm-foot"><b id="clipTitle"></b><span id="clipViews"></span></div>`;
   document.body.appendChild(dlgClip);
   dlgClip.addEventListener('click', e => { if(e.target === dlgClip) fecharClip(); });
   return dlgClip;

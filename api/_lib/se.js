@@ -211,18 +211,20 @@ export async function statsChat(limit = 100) {
 const STATUS_RUINS = new Set(['failed', 'rejected', 'refunded', 'chargeback', 'cancelled', 'canceled', 'denied']);
 const NOMES_ANONIMOS = new Set(['anonimo', 'anônimo', 'anonymous', 'anon', '']);
 
-async function todasGorjetas(paginas = 10) {
+// O pódio precisa só do topo: 2 páginas (200 gorjetas) cobrem qualquer canal
+// com folga e mantêm a função bem abaixo do limite de tempo da Vercel.
+async function todasGorjetas(paginas = 2) {
   const id = await canalId();
   const out = [];
   for (let p = 0; p < paginas; p++) {
     const rota = `/tips/${encodeURIComponent(id)}`;
     const base = { limit: 100, offset: p * 100 };
     let d;
-    try { d = await seGet(rota, { query: { ...base, sort: '-createdAt' } }); }
+    try { d = await seGet(rota, { query: { ...base, sort: '-createdAt' }, timeoutMs: 6000 }); }
     catch (e) {
       // Token/conexão ruins não melhoram sem o sort; erro de parâmetro sim.
       if (e?.code === 'se_auth' || e?.code === 'se_offline') throw e;
-      d = await seGet(rota, { query: base });
+      d = await seGet(rota, { query: base, timeoutMs: 6000 });
     }
     const docs = linhas(d);
     out.push(...docs);
@@ -243,7 +245,7 @@ async function doadoresPorLeaderboard() {
   ];
   for (const rota of rotas) {
     try {
-      const d = await seGet(rota, { publico: true, query: { limit: 100 } });
+      const d = await seGet(rota, { publico: true, query: { limit: 100 }, timeoutMs: 6000 });
       const rows = linhas(d);
       if (!rows.length) continue;
       const lista = rows.map(r => ({

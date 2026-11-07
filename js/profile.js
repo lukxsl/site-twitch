@@ -1,5 +1,6 @@
 /* ============================================================
    PERFIL DA COMUNIDADE — identidade, presença e configurações
+   (E-mail, Google ou Twitch — sem contas legadas)
    ============================================================ */
 (function(){
   'use strict';
@@ -8,6 +9,12 @@
   let usuario = null;
   let atividade = null;
   let carregando = false;
+
+  const ROTULO_METODO = {
+    email: 'E-mail e senha',
+    google: 'Google',
+    twitch: 'Twitch'
+  };
 
   function numero(value){ return (Number(value) || 0).toLocaleString('pt-BR'); }
   function tempo(minutos){
@@ -21,17 +28,6 @@
     else console.info(mensagem);
   }
   function setText(id, value){ const node = document.getElementById(id); if(node) node.textContent = value ?? '—'; }
-  function setImage(id, src, nick){
-    const node = document.getElementById(id);
-    if(!node) return;
-    node.replaceChildren();
-    if(src && /^(https:\/\/|\/)/i.test(String(src))){
-      const img = document.createElement('img');
-      img.src = String(src); img.alt = `Foto de ${nick || 'perfil'}`; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer';
-      img.onerror = () => { node.textContent = (nick || '?').trim().charAt(0).toUpperCase(); };
-      node.append(img);
-    } else node.textContent = (nick || '?').trim().charAt(0).toUpperCase();
-  }
   function setStatus(message, error = false){
     const el = $('#pfProfileStatus');
     if(el){ el.textContent = message; el.classList.toggle('is-error', !!error); }
@@ -49,6 +45,15 @@
       panel.classList.toggle('is-active', active);
     });
   }
+
+  function metodoLogin(){
+    if(!usuario) return 'email';
+    if(usuario.metodoLogin && ROTULO_METODO[usuario.metodoLogin]) return usuario.metodoLogin;
+    if(usuario.twitch) return 'twitch';
+    if(usuario.google) return 'google';
+    return 'email';
+  }
+
   function render(data){
     if(!data) return;
     usuario = data.usuario || usuario;
@@ -56,13 +61,13 @@
     if(!usuario) return;
     const nick = String(usuario.nick || usuario.username || 'Pessoa da comunidade');
     const email = usuario.email || 'Não informado';
-    const methodLabels = { twitch: 'Twitch', email: 'E-mail e senha', senha: 'Usuário e senha (legado)', google: 'Google', discord: 'Discord (legado)' };
-    const method = usuario.metodoLogin || (usuario.twitch ? 'twitch' : 'senha');
+    const metodo = metodoLogin();
+    const rotulo = ROTULO_METODO[metodo] || 'E-mail e senha';
     const avatar = usuario.avatar || usuario.google?.picture || '';
     setText('pfBannerNome', `@${nick.replace(/^@/, '')}`);
     setText('pfNickLarge', nick);
     setText('pfBannerStatus', usuario.twitch?.login ? `Twitch conectada · @${usuario.twitch.login}` : 'Bem-vinda(o) ao cantinho da Soso');
-    setText('pfProfileMethod', methodLabels[method] || method);
+    setText('pfProfileMethod', rotulo);
     setText('pfLivesCount', numero(atividade.lives));
     setText('pfWatchHoursCount', tempo(atividade.minutes));
     setText('pfVotesCount', numero(atividade.votes));
@@ -73,7 +78,7 @@
     setText('pfLevelCount', numero(economia.nivel || 1));
     setText('pfSettingsNick', nick);
     setText('pfSettingsEmail', email);
-    setText('pfSettingsAccount', methodLabels[method] || method);
+    setText('pfSettingsAccount', rotulo);
     setText('pfSettingsPlayerId', usuario.id || '—');
     const nickInput = $('#pfSettingsNick');
     if(nickInput) nickInput.value = nick;
@@ -81,8 +86,9 @@
     if(avatarContainer){
       avatarContainer.replaceChildren();
       if(avatar){
-        const image = document.createElement('img'); image.src = avatar; image.alt = `Foto de ${nick}`;
-        image.referrerPolicy = 'no-referrer'; image.onerror = () => { avatarContainer.textContent = nick[0]?.toUpperCase() || '?'; };
+        const image = document.createElement('img');
+        image.src = avatar; image.alt = `Foto de ${nick}`; image.referrerPolicy = 'no-referrer';
+        image.onerror = () => { avatarContainer.textContent = nick[0]?.toUpperCase() || '?'; };
         avatarContainer.append(image);
       } else avatarContainer.textContent = nick[0]?.toUpperCase() || '?';
     }
@@ -96,7 +102,7 @@
     if(link) link.hidden = linked;
     if(unlink) unlink.hidden = !linked;
     const googleLink = $('#pfGoogleLink');
-    if(googleLink) googleLink.hidden = method === 'google' || !!usuario.google;
+    if(googleLink) googleLink.hidden = metodo === 'google' || !!usuario.google;
     const devTools = $('#pfDevTools');
     if(devTools) devTools.hidden = usuario.cargo !== 'dev' && usuario.cargo !== 'DEV' && !usuario.admin;
     const signedOut = $('#pfSignInPrompt');
@@ -105,10 +111,11 @@
     if(signedIn) signedIn.hidden = false;
     setStatus('Dados da conta atualizados.');
   }
+
   async function carregar(){
     if(carregando) return;
-    const current = (typeof USUARIO !== 'undefined') ? USUARIO : null;
-    if(!current){
+    const atual = (typeof USUARIO !== 'undefined') ? USUARIO : null;
+    if(!atual){
       usuario = null; atividade = null;
       const signedOut = $('#pfSignInPrompt'), signedIn = $('#pfSignedInContent');
       if(signedOut) signedOut.hidden = false;
@@ -125,6 +132,7 @@
     } catch(error){ setStatus(error.message || 'Falha ao carregar o perfil.', true); }
     finally { carregando = false; }
   }
+
   async function salvarNick(){
     const input = $('#pfSettingsNick');
     const nick = String(input?.value || '').trim();
@@ -137,6 +145,7 @@
     await window.checarLogin?.();
     await carregar();
   }
+
   async function desvincularTwitch(){
     const ok = typeof window.confirmar === 'function'
       ? await window.confirmar('Desvincular Twitch?', 'Sua conta continuará funcionando, mas a presença e as horas futuras não poderão ser associadas até vincular novamente.', '📺')
@@ -146,11 +155,13 @@
     if(!response.ok){ avisar(response.data?.error || 'Não foi possível desvincular.', 'erro'); return; }
     await window.checarLogin?.(); await carregar(); avisar('Twitch desvinculada.');
   }
+
   async function gerarLinkBroadcaster(){
     const response = await window.api('/api/auth', 'twitch-broadcaster-link', { method: 'POST', body: {} });
     if(!response.ok){ avisar(response.data?.error || 'Não foi possível gerar o link.', 'erro'); return; }
     if(response.data?.url) location.href = response.data.url;
   }
+
   function bind(){
     $$('[data-pf-tab]').forEach(button => button.addEventListener('click', () => selectPanel(button.dataset.pfTab)));
     $('#pfSaveNick')?.addEventListener('click', salvarNick);
@@ -172,6 +183,7 @@
     window.addEventListener('soso:logout', () => { usuario = null; atividade = null; carregar(); });
     window.addEventListener('soso:aba', event => { if(event.detail === 'perfil') carregar(); });
   }
+
   window.ProfileSummary = { carregar, render, get usuario(){ return usuario; }, get atividade(){ return atividade; } };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { bind(); carregar(); });
   else { bind(); carregar(); }

@@ -119,7 +119,9 @@ export function lerSessao(req){
 export async function validarSessao(req){
   const sessao = lerSessao(req);
   if(!sessao?.id) return null;
-  if(sessao.tipo !== 'own') return sessao; // compatibilidade com contas Discord antigas
+  // Só existem sessões próprias (e-mail, Google ou Twitch). Cookies de contas
+  // legadas são recusados e a pessoa entra novamente.
+  if(sessao.tipo !== 'own') return null;
   const [raw] = await redis([['HGET', 'accounts', String(sessao.id)]]);
   const conta = jparse(raw, null);
   if(!conta || String(conta.sv ?? '') !== String(sessao.sv ?? '')) return null;

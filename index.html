@@ -16,18 +16,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/core.css">
 <link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/pages.css">
 <link rel="stylesheet" href="css/setup.css">
 <link rel="stylesheet" href="css/admin.css">
-<link rel="stylesheet" href="css/tierlist.css">
-
-<link rel="stylesheet" href="css/ranking.css">
-<link rel="stylesheet" href="css/auth-new.css">
-<link rel="stylesheet" href="css/profile-clean.css">
-<link rel="stylesheet" href="css/refinements.css">
-<link rel="stylesheet" href="css/home-fixes.css">
 </head>
 <body>
 
@@ -126,13 +119,13 @@
           <img src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
           <span class="av-status" id="profileStatus" title="Carregando..."></span>
         </div>
-        <h2>
+        <h2 class="profile-name">
           asemtet0
           <span class="h2-emoji">💜</span>
-          <span class="badge-verificada" title="Canal verificado no site">✓ Verificada</span>
         </h2>
-        <div class="subloc" id="profileSubloc">📍 Maceió – AL · Streamer desde 2025</div>
-        <div class="profile-status-dinamica" id="profileStatusDinamica">Carregando status…</div>
+        <span class="badge-verificada" title="Canal verificado no site">✓ Verificada</span>
+        <p class="profile-location" id="profileSubloc">📍 Maceió – AL · Streamer desde 2025</p>
+        <p class="profile-status-dinamica" id="profileStatusDinamica">Carregando status…</p>
         <p class="profile-description">
           Oie! Eu sou a Soso, também conhecida como Sophs ou Teto.
           Esse site é o QG do canal: aqui você encontra tier list, setup, votação do próximo jogo e muito mais. 💜
@@ -575,7 +568,7 @@
         <button type="button" id="btnLukFala" class="btn-icon" title="Chamar o Lukzin" aria-label="Conversar com o Lukzin">💬</button>
         <button type="button" id="btnMute" class="btn-icon" title="Ligar/Desligar som" aria-label="Ligar/Desligar som">🔊</button>
 
-        <div class="setup-progress" id="setupProgress" hidden>
+        <div class="setup-progress" id="setupProgress">
           <span id="setupProgressTxt">0 / 0</span>
           <span class="setup-progress-bar"><i id="setupProgressBar"></i></span>
         </div>
@@ -585,8 +578,8 @@
         <div class="scene-world" id="sceneWorld">
           <div class="scene-bg"></div>
 
-          <!-- Tela do Stardew encaixada no monitor da imagem -->
-          <div class="monitor-screen" id="stardewScreen" style="background-image: url('img/stardew-screen.png');"></div>
+          <!-- Tela do monitor: cenário gerado em CSS (sem imagem externa) -->
+          <div class="monitor-screen" id="monitorScreen" aria-hidden="true"></div>
 
           <!-- Hotspots visíveis são gerados pelo JS -->
           <div id="sceneHotspots"></div>
@@ -701,12 +694,6 @@
                 <button type="button" class="st-chip" data-tipo="Feedback">💬 Feedback</button>
                 <button type="button" class="st-chip" data-tipo="Reportar bug do site">🐛 Bug</button>
               </div>
-              <select id="sugTipo" hidden>
-                <option value="Sugestão / ideia">💡 Sugestão / ideia</option>
-                <option value="Sugestão de jogo">🎮 Sugestão de jogo</option>
-                <option value="Feedback">💬 Feedback</option>
-                <option value="Reportar bug do site">🐛 Reportar bug do site</option>
-              </select>
             </div>
             <div>
               <label for="sugTexto">Mensagem</label>
@@ -798,7 +785,7 @@
           <article class="community-stat-card"><span class="community-stat-icon">◷</span><div><strong id="pfWatchHoursCount">0 min</strong><span>Horas assistidas</span></div></article>
           <article class="community-stat-card"><span class="community-stat-icon">▤</span><div><strong id="pfVotesCount">0</strong><span>Votos registrados</span></div></article>
           <article class="community-stat-card"><span class="community-stat-icon">✎</span><div><strong id="pfSuggestionsCount">0</strong><span>Sugestões enviadas</span></div></article>
-          <article class="community-stat-card"><span class="community-stat-icon">🪙</span><div><strong id="pfCoinsCount">0</strong><span>SosoCoins</span></div></article>
+          <article class="community-stat-card"><span class="community-stat-icon"><img src="img/sosocoin.png" alt="" width="28" height="28" loading="lazy" decoding="async"></span><div><strong id="pfCoinsCount">0</strong><span>SosoCoins</span></div></article>
           <article class="community-stat-card"><span class="community-stat-icon">✨</span><div><strong id="pfXpCount">0 XP</strong><span>Nível <b id="pfLevelCount">1</b></span></div></article>
         </div>
 
@@ -901,14 +888,6 @@
   </div>
 </footer>
 
-<dialog id="pcModal" style="background: #1a102d; color: #fff; border: 1px solid #a855f7; border-radius: 16px; padding: 20px; max-width: 400px; width: 90%;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <h3 id="pcModalTitle" style="font-size: 1.2rem; margin: 0; color: #c084fc;">Componente</h3>
-    <button onclick="document.getElementById('pcModal').close()" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
-  </div>
-  <div id="pcModalBody"></div>
-</dialog>
-
 <dialog id="dlg" aria-labelledby="dTitle">
   <div class="dh">
     <h3 id="dTitle"></h3>
@@ -929,17 +908,13 @@
   </div>
 </dialog>
 
-<script src="js/utils/dom.js"></script>
-<script src="js/utils/format.js"></script>
-<script src="js/utils/audio.js"></script>
-<script src="js/api/client.js"></script>
-<script src="js/auth-ui.js"></script>
-<script src="js/navbar.js"></script>
-<script src="js/twitch/twitch.js"></script>
-<script src="js/setup/setup.js"></script>
-<script src="js/main.js"></script>
-<script src="js/profile-summary.js"></script>
-<script src="js/ranking-ui.js"></script>
+<script src="js/core.js" defer></script>
+<script src="js/auth-ui.js" defer></script>
+<script src="js/twitch.js" defer></script>
+<script src="js/setup.js" defer></script>
+<script src="js/main.js" defer></script>
+<script src="js/profile.js" defer></script>
+<script src="js/ranking.js" defer></script>
 
 </body>
 </html>

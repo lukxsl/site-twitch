@@ -3,6 +3,9 @@
     { "path": "/api/backup?action=cron", "schedule": "0 3 * * *" },
     { "path": "/api/admin?action=sync-horas-cron", "schedule": "0 4 * * *" }
   ],
+  "functions": {
+    "api/config.js": { "maxDuration": 30 }
+  },
   "headers": [
     {
       "source": "/(.*)",
