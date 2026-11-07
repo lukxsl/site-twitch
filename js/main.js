@@ -1425,7 +1425,8 @@ function ligarVotos(){
 function votoAssinatura(){ return JSON.stringify(VOTOS_DADOS.map(o => [o.id, o.votos])) + '|' + meuVoto; }
 
 async function votar(id, event){
-  if(!USUARIO || VOTANDO || meuVoto === id) return;
+  if(!USUARIO){ window.AuthUI?.open('login'); return; }
+  if(VOTANDO || meuVoto === id) return;
   VOTANDO = true;
   const btn = event && event.target && event.target.closest ? event.target.closest('button') : null;
   const rect = btn ? btn.getBoundingClientRect() : null;
@@ -1563,6 +1564,7 @@ async function enviarSugestao(){
   const btn = $('sugBtn');
   const success = $('sugSuccess');
 
+  if(!USUARIO && !anonimo){ window.AuthUI?.open('login'); return; }
   if($('sugSite').value) return;
   if(!texto || texto.length < SUG_MIN_CHARS){
     $('sugTexto').classList.add('erro');

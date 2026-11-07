@@ -425,11 +425,17 @@ async function renderAdminConfig(){
   const area = document.getElementById('adminArea'); if(!area) return;
   area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `<p class="admin-vazio">Carregando…</p>`;
   try {
-    const r = await adminFetch('/api/admin?action=config-get', { cache:'no-store' });
+    const midpixPromise = adminFetch('/api/admin?action=midpix-cliques', { cache:'no-store' })
+      .then(res => res.ok ? res.json() : null).catch(() => null);
+    const [r, midpixResp] = await Promise.all([adminFetch('/api/admin?action=config-get', { cache:'no-store' }), midpixPromise]);
     const d = await r.json();
+    const midpix = midpixResp || ADMIN_SHARED.midpix || null;
+    if(midpixResp) ADMIN_SHARED.midpix = midpixResp;
     const av = d.aviso || { ativo: false, tipo: 'info', icone: '📢', titulo: 'Aviso', texto: '' };
     const podeEditar = temPerm('editar_config');
     const tab = ADMIN_CONFIG_TAB || 'aviso';
+    const midpixDesde = midpix?.desde ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(midpix.desde)) : null;
+    const numeros = n => new Intl.NumberFormat('pt-BR').format(Number(n) || 0);
 
     area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `
       <div class="config-tabs">
@@ -486,6 +492,18 @@ async function renderAdminConfig(){
             </div>
             <button type="button" class="admin-btn ghost" id="btnSyncHoras" onclick="sincronizarHoras()">🔄 Sincronizar</button>
           </div>
+        </div>
+        <div class="admin-card">
+          <h3>💜 Cliques no MidPix</h3>
+          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Quantas vezes alguém clicou em “Apoiar via Pix (MidPix)” na home e na aba Comunidade.</p>
+          ${midpix ? `
+            <div class="midpix-stats">
+              <div class="midpix-stat"><span>Total</span><b>${esc(numeros(midpix.total))}</b></div>
+              <div class="midpix-stat"><span>Hoje</span><b>${esc(numeros(midpix.hoje))}</b></div>
+              <div class="midpix-stat"><span>Ontem</span><b>${esc(numeros(midpix.ontem))}</b></div>
+            </div>
+            <p class="midpix-stats-note">${midpixDesde ? `Contando desde ${esc(midpixDesde)}.` : 'O contador começa a partir do primeiro clique.'}</p>
+          ` : `<p class="admin-vazio">Não foi possível carregar os cliques agora.</p>`}
         </div>
         <div class="admin-card">
           <h3>🔧 Modo manutenção</h3>

@@ -136,7 +136,7 @@ let ADMIN_SUG_STATUS = 'all';
 let ADMIN_SUG_TIPO = 'all';
 let ADMIN_SHARED = {
   votos: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null,
-  fetchedAt: 0
+  midpix: null, fetchedAt: 0
 };
 let _sharedPromise = null;
 const _KPI_LAST = {};
@@ -248,10 +248,11 @@ async function carregarShared(force = false){
     if(temPerm('ver_admins'))    pedir('admins', '/api/admin?action=admins-ver');
     if(temPerm('ver_banidos'))   pedir('banidos', '/api/admin?action=banidos-ver');
     if(temPerm('ver_logs'))      pedir('logs', '/api/admin?action=logs-ver');
+    if(temPerm('ver_config'))    pedir('midpix', '/api/admin?action=midpix-cliques');
     if(temPerm('editar_config')) pedir('backup', '/api/backup?action=list');
 
     const resultados = await Promise.allSettled(jobs.map(j => j.promessa));
-    const next = { votos: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null };
+    const next = { votos: null, tier: null, sugestoes: null, admins: null, banidos: null, logs: null, backup: null, midpix: null };
     resultados.forEach((r, i) => {
       if(r.status === 'fulfilled') next[jobs[i].chave] = r.value;
     });

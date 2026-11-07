@@ -7,14 +7,15 @@ Site em HTML, CSS e JavaScript simples (sem build), com APIs Node.js na Vercel e
 - `index.html` — página única com todas as seções.
 - `css/core.css` — tokens, reset, layout, navbar, rodapé e o grid do bento da Home.
 - `css/components.css` — botões, cards, player, música, votação, diálogos e toast.
-- `css/pages.css` — Tier List, Ranking, Perfil da comunidade e modal de login.
+- `css/pages.css` — Tier List, Ranking, Perfil da comunidade e diálogo de boas-vindas.
 - `css/setup.css` — mini-game do quarto (Lukzin, tour, gato, catálogo) e seus estilos.
 - `css/admin.css` — painel administrativo (carregado sempre, usado só na aba Admin).
 - `js/core.js` — helpers de DOM/formatação e o cliente HTTP `api()`.
-- `js/auth-ui.js` — modal de login (e-mail, Google e Twitch) e a navbar da comunidade.
+- `js/auth-ui.js` — página de login em tela cheia (e-mail, Google e Twitch) e a navbar da comunidade.
 - `js/twitch.js` — status da live, player, banner, foco do jogo e clipes.
 - `js/setup.js` — mini-game do setup + áudio do site.
 - `js/main.js` — config, navegação, votação, música, sugestões, Tier List e boot.
+- `js/midpix.js` — card de apoiadores/metas do MidPix na Home e clique dos botões de apoio.
 - `js/profile.js` e `js/ranking.js` — página de perfil e página de ranking.
 - `js/admin/*` — carregados sob demanda quando a aba Admin abre.
 
@@ -42,6 +43,21 @@ O login pelo Discord foi descontinuado. As variáveis `DISCORD_CLIENT_ID` e
 (avisos no servidor) e `DISCORD_ADMIN_IDS` (lista de administradores) continuam em uso.
 
 Use uma chave forte e estável em `BACKUP_ENCRYPTION_KEY`. Se ela não existir, o backup usa `SESSION_SECRET`. **Não troque essa chave sem guardar a antiga**: backups criptografados com uma chave não podem ser restaurados com outra.
+
+## MidPix (apoiadores, meta e cliques)
+
+O site consulta o MidPix **somente no servidor** (`api/_lib/midpix.js`), sem login e sem token:
+`POST https://midfielder.tv.br/UserPanelV2/RefreshRanking/<handle>` e
+`POST https://midfielder.tv.br/UserPanelV2/RefreshMetasDoacao/<handle>` (o domínio `midpix.live`
+redireciona para `midfielder.tv.br`). O handler é `GET /api/config?action=midpix-publico`, com
+resposta guardada no Redis por 2 minutos e a última resposta boa servida se o MidPix cair.
+
+Como a chamada é feita pelo servidor, **nenhum domínio novo precisa ser liberado na CSP**. O handle
+padrão é `asemtet0` e pode ser trocado pela variável `MIDPIX_HANDLE`.
+
+Os cliques em “Apoiar via Pix (MidPix)” são contados em `midpix:cliques:total`, `midpix:cliques:AAAA-MM-DD`
+e `midpix:cliques:desde` (`POST /api/config?action=midpix-clique`, com rate limit por IP) e aparecem no
+painel: KPI na home do admin e card “Cliques no MidPix” na aba **Config → Sistema** (`GET /api/admin?action=midpix-cliques`).
 
 ## Login da Twitch
 

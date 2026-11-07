@@ -24,6 +24,92 @@
 </head>
 <body>
 
+<!-- ==================== LOGIN (tela cheia) ==================== -->
+<div id="login" class="login-page" hidden>
+  <div class="login-space" aria-hidden="true">
+    <div class="login-stars login-stars-a"></div>
+    <div class="login-stars login-stars-b"></div>
+    <div class="login-stars login-stars-c"></div>
+    <div class="login-nebula"></div>
+    <div class="login-planet">
+      <span class="login-planet-ring"></span>
+      <span class="login-planet-shine"></span>
+    </div>
+  </div>
+
+  <button type="button" class="login-back" id="loginClose" aria-label="Voltar ao site">
+    <span aria-hidden="true">←</span> Voltar ao site
+  </button>
+
+  <div class="login-main">
+    <div class="login-card" id="loginCard" role="dialog" aria-modal="true" aria-labelledby="loginTitle" aria-describedby="loginSubtitle">
+      <span class="login-card-glow" aria-hidden="true"></span>
+
+      <div class="login-brand">
+        <span class="login-brand-mark">S</span>
+        <span class="login-brand-copy">ASEMTET0 <i>·</i> COMUNIDADE</span>
+      </div>
+
+      <header class="login-head">
+        <span class="login-eyebrow">BEM-VINDA(O) DE VOLTA</span>
+        <h2 id="loginTitle">Entrar</h2>
+        <p id="loginSubtitle">Acesse seu perfil para votar e interagir.</p>
+      </header>
+
+      <div class="login-providers">
+        <a class="login-provider login-provider-google" href="/api/auth?action=google-login">
+          <span class="login-provider-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.05H12v3.87h5.38a4.6 4.6 0 0 1-2 3.02v2.52h3.24c1.9-1.75 2.98-4.33 2.98-7.36Z"/>
+              <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.06v2.59A10 10 0 0 0 12 22Z"/>
+              <path fill="#FBBC05" d="M6.41 13.91a6.01 6.01 0 0 1 0-3.82V7.5H3.06a10 10 0 0 0 0 9l3.35-2.59Z"/>
+              <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.94 5.5l3.35 2.59C7.2 7.73 9.4 5.97 12 5.97Z"/>
+            </svg>
+          </span>
+          <span>Google</span>
+        </a>
+        <a class="login-provider login-provider-twitch" href="/api/auth?action=twitch-login">
+          <span class="login-provider-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M4.3 2 2 6.2v13.6h4.7V22h2.6l2.3-2.2h3.7L21 15V2H4.3Zm14.6 12.2-2.8 2.7h-4.2l-2 2v-2H6.7V4.2h12.2v10ZM11.9 7h1.9v5.2h-1.9V7Zm5 0H19v5.2h-2.1V7Z"/></svg>
+          </span>
+          <span>Twitch</span>
+        </a>
+      </div>
+
+      <div class="login-sep"><span>ou</span></div>
+
+      <form id="loginEmailForm" class="login-form" novalidate>
+        <div class="login-field" id="loginNickField" hidden>
+          <label for="loginNick">Como quer aparecer?</label>
+          <input id="loginNick" name="nick" maxlength="24" autocomplete="nickname" placeholder="Seu nome na comunidade">
+        </div>
+        <div class="login-field">
+          <label id="loginIdentifierLabel" for="loginEmail">E-mail</label>
+          <input id="loginEmail" name="identificador" type="email" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="voce@email.com" required>
+        </div>
+        <div class="login-field">
+          <label for="loginPassword">Senha</label>
+          <div class="login-pass">
+            <input id="loginPassword" name="senha" type="password" maxlength="72" autocomplete="current-password" placeholder="Sua senha" required>
+            <button type="button" class="login-pass-btn" id="loginPassToggle" aria-controls="loginPassword" aria-pressed="false" aria-label="Mostrar senha">
+              <svg viewBox="0 0 24 24" aria-hidden="true" width="15" height="15"><path fill="currentColor" d="M12 5c-5 0-9.1 4.1-10.6 6.4a1.1 1.1 0 0 0 0 1.2C2.9 14.9 7 19 12 19s9.1-4.1 10.6-6.4a1.1 1.1 0 0 0 0-1.2C21.1 9.1 17 5 12 5Zm0 11.8a4.8 4.8 0 1 1 0-9.6 4.8 4.8 0 0 1 0 9.6Zm0-2.3a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/></svg>
+              <span>Mostrar</span>
+            </button>
+          </div>
+        </div>
+        <p class="login-alert" id="loginAlert" role="alert" aria-live="polite"></p>
+        <button type="submit" class="login-submit" id="loginSubmit">
+          <span id="loginSubmitLabel">Entrar</span>
+          <span class="login-submit-arrow" aria-hidden="true">→</span>
+        </button>
+      </form>
+
+      <p class="login-switch"><span id="loginSwitchNote">Primeira vez por aqui?</span> <button type="button" id="loginSwitchBtn" data-auth-mode="register" aria-pressed="false">Criar conta</button></p>
+      <p class="login-legal">Ao entrar, você concorda em respeitar as pessoas e as regras desta comunidade. 💜</p>
+    </div>
+  </div>
+</div>
+
 <div class="room" aria-hidden="true">
   <div class="room-wall" data-depth="0.3"></div>
   <div class="room-wallpaper"></div>
@@ -271,13 +357,27 @@
           <small class="sub-note">🎁 Gift e Prime também valem 💜</small>
         </article>
 
-        <article class="card midpix-box reveal">
+        <article class="card midpix-box reveal" id="midpixCard">
           <div class="midpix-head">
-            <span class="midpix-kicker">💜 Apoie o cantinho</span>
-            <h3>Mande um Pix</h3>
-            <p>Ajude a manter a live no ar, comprar jogos e melhorar o setup da Soso.</p>
+            <span class="midpix-kicker">💜 Apoiadores</span>
+            <h3>Quem ajuda o cantinho</h3>
+            <p>Os maiores apoiadores do MidPix e a meta da live. Obrigado, gente! 💜</p>
           </div>
-          <a class="btn big block midpix-btn" href="https://midpix.live/asemtet0" target="_blank" rel="noopener">💸 Apoiar via MidPix →</a>
+
+          <div class="midpix-goal" id="midpixGoal" hidden>
+            <div class="midpix-goal-top">
+              <span id="midpixGoalTitle">Meta da live</span>
+              <b id="midpixGoalPct">0%</b>
+            </div>
+            <div class="midpix-goal-bar"><i id="midpixGoalBar"></i></div>
+            <small id="midpixGoalAmount"></small>
+          </div>
+
+          <ol class="midpix-top" id="midpixTop" aria-live="polite">
+            <li class="midpix-loading">Carregando apoiadores…</li>
+          </ol>
+
+          <a class="btn big block midpix-btn" data-midpix href="https://midpix.live/asemtet0" target="_blank" rel="noopener">💸 Apoiar via Pix (MidPix) →</a>
           <small class="midpix-note">Pagamento seguro via Pix · MidPix</small>
         </article>
       </div>
@@ -425,6 +525,16 @@
     <button class="sub-tab" data-tab="sub">👑 Seja Sub</button>
     <button class="sub-tab" data-tab="info">📖 Info</button>
   </div>
+
+  <div class="cm-midpix reveal">
+    <div class="cm-midpix-copy">
+      <span class="cm-midpix-kicker">💸 Apoio via Pix</span>
+      <b>Manda um MidPix pro cantinho</b>
+      <small>Sem assinatura e sem complicação: qualquer valor ajuda a manter a live no ar. 💜</small>
+    </div>
+    <a class="btn big midpix-btn" data-midpix href="https://midpix.live/asemtet0" target="_blank" rel="noopener">💸 Apoiar via Pix (MidPix) →</a>
+  </div>
+
   <div class="sub-panel on" data-panel="discord">
     <div class="cm-hero reveal">
       <span class="cm-orb o1" aria-hidden="true"></span>
@@ -921,6 +1031,7 @@
 
 <script src="js/core.js" defer></script>
 <script src="js/auth-ui.js" defer></script>
+<script src="js/midpix.js" defer></script>
 <script src="js/twitch.js" defer></script>
 <script src="js/setup.js" defer></script>
 <script src="js/main.js" defer></script>

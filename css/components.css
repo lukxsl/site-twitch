@@ -338,18 +338,65 @@ a.music-destaque-card:hover{border-color:rgba(255,209,102,.5);background:linear-
 @media (max-width:400px){ .sub-perks-grid{grid-template-columns:1fr} }
 
 /* ============================================================
-   APOIE COM PIX (card da Home)
+   APOIE COM PIX / APOIADORES (Home) + faixa da Comunidade
    ============================================================ */
-.midpix-box{padding:16px 18px;display:flex;flex-direction:column;gap:12px;border-color:rgba(168,85,247,.35);
+.midpix-box{padding:16px 18px;display:flex;flex-direction:column;gap:11px;border-color:rgba(168,85,247,.35);
   background:radial-gradient(ellipse at 85% 0,rgba(168,85,247,.22),transparent 62%),var(--surface)}
 .midpix-head{display:flex;flex-direction:column;gap:4px}
 .midpix-kicker{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#d8b4fe;
   padding:3px 10px;border-radius:99px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.35);width:fit-content}
 .midpix-box h3{color:var(--white);font-size:1.15rem;margin:4px 0 0}
 .midpix-box p{color:var(--mute);font-size:.8rem;line-height:1.45}
+
+/* lista de apoiadores vinda do MidPix */
+.midpix-top{display:grid;gap:6px;list-style:none;margin:0;padding:0;min-width:0}
+.midpix-top li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:8px;
+  padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(168,85,247,.12);
+  font-size:.76rem;min-width:0}
+.midpix-pos{display:grid;place-items:center;width:22px;height:22px;border-radius:7px;flex:none;
+  background:rgba(168,85,247,.12);color:#d8b4fe;font:800 .68rem 'JetBrains Mono',monospace}
+.midpix-top li:nth-child(1) .midpix-pos{background:linear-gradient(135deg,#ffe08a,#f59e0b);color:#2a1700;box-shadow:0 0 14px -4px rgba(255,209,102,.7)}
+.midpix-top li:nth-child(2) .midpix-pos{background:linear-gradient(135deg,#f1f5f9,#94a3b8);color:#1e293b}
+.midpix-top li:nth-child(3) .midpix-pos{background:linear-gradient(135deg,#fdba74,#b45309);color:#2a1700}
+.midpix-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:#f3e9ff}
+.midpix-value{font:700 .68rem 'JetBrains Mono',monospace;color:#e9d5ff;white-space:nowrap}
+.midpix-loading,.midpix-empty{grid-template-columns:1fr!important;justify-items:center;text-align:center;
+  color:var(--mute);font-size:.72rem;padding:10px 9px}
+.midpix-empty a{color:#d8b4fe;text-decoration:underline;text-underline-offset:3px}
+
+/* meta da live */
+.midpix-goal{display:grid;gap:6px;padding:9px 10px;border-radius:11px;
+  background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.16)}
+.midpix-goal-top{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  color:#e9d5ff;font-size:.68rem;font-weight:700}
+.midpix-goal-top b{font:800 .7rem 'JetBrains Mono',monospace;color:#f0abfc}
+.midpix-goal-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.midpix-goal-bar i{display:block;height:100%;width:0;border-radius:inherit;
+  background:linear-gradient(90deg,#a855f7,#ec4899);box-shadow:0 0 12px rgba(236,72,153,.55);
+  transition:width .7s var(--ease)}
+.midpix-goal small{font-size:.62rem;color:var(--dim)}
+
 .midpix-btn{background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff;box-shadow:0 10px 26px -10px rgba(168,85,247,.8)}
-.midpix-btn:hover{box-shadow:0 14px 32px -10px rgba(236,72,153,.85)}
+.midpix-btn:hover{box-shadow:0 14px 32px -10px rgba(236,72,153,.85);filter:brightness(1.06)}
 .midpix-note{font-size:.64rem;color:var(--dim);text-align:center;font-weight:600}
+
+/* faixa de apoio na aba Comunidade */
+.cm-midpix{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin:0 0 18px;padding:16px 20px;border-radius:18px;border:1px solid rgba(236,72,153,.26);
+  background:
+    radial-gradient(ellipse at 8% 0,rgba(168,85,247,.26),transparent 62%),
+    radial-gradient(ellipse at 96% 100%,rgba(236,72,153,.18),transparent 60%),
+    rgba(16,9,29,.72);
+  box-shadow:0 16px 40px -24px rgba(168,85,247,.55),inset 0 1px 0 rgba(255,255,255,.07)}
+.cm-midpix-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cm-midpix-kicker{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#d8b4fe}
+.cm-midpix b{color:#fff;font-size:1rem;line-height:1.2}
+.cm-midpix small{color:var(--mute);font-size:.76rem;line-height:1.45}
+.cm-midpix .midpix-btn{flex:none;width:auto;padding:12px 20px}
+@media (max-width:700px){
+  .cm-midpix{flex-direction:column;align-items:stretch;padding:15px 16px}
+  .cm-midpix .midpix-btn{width:100%}
+}
 
 /* ============================================================
    RECADO DA SOSO

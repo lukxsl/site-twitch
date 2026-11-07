@@ -1,6 +1,7 @@
 // Vercel serverless: /api/config.js
 import { seGet, canalId, temJwt, rankingPontos, statsChat, resumoSubs } from './_lib/se.js';
-import { rateLimit, ipDe } from './_lib/core.js';
+import { rateLimit, ipDe, hojeBR } from './_lib/core.js';
+import { buscarMidpixPublico } from './_lib/midpix.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -15,6 +16,10 @@ const RANK_CACHE_FRESCO = 30;             // segundos em que a resposta é reapr
 const RANK_CACHE_EX = 7 * 24 * 60 * 60;
 const EMOTES_CACHE_KEY = 'cache:emotes_v1';
 const EMOTES_CACHE_TTL = 6 * 60 * 60;     // emotes quase nunca mudam
+const MIDPIX_CACHE_KEY = 'cache:midpix:publico:v1';
+const MIDPIX_CACHE_FRESCO = 120;          // segundos com resposta reaproveitada
+const MIDPIX_CACHE_EX = 7 * 24 * 60 * 60;
+const MIDPIX_TOTAL_KEY = 'midpix:cliques:total';
 
 // ==========================================
 // CONFIGURAÇÕES DA STREAMELEMENTS (NOVAS)
@@ -268,10 +273,62 @@ async function comCacheRank(modo, buscar) {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido' });
-  if (!URL_ || !TOKEN) return res.status(200).json({});
-
   const action = req.query?.action || '';
+
+  // ===== MIDPIX: clique no botão de apoio (POST) =====
+  if (req.method === 'POST') {
+    if (action !== 'midpix-clique') return res.status(405).json({ error: 'Método não permitido' });
+    if (!URL_ || !TOKEN) return res.status(200).json({ ok: false });
+    try {
+      const pode = await rateLimit(`ratelimit:midpix:${ipDe(req)}`, 30, 60, false);
+      if (!pode) return res.status(200).json({ ok: false });
+      const dia = hojeBR();
+      const chaveDia = `midpix:cliques:${dia}`;
+      const [total, hoje] = await redis([
+        ['INCR', MIDPIX_TOTAL_KEY],
+        ['INCR', chaveDia],
+        ['EXPIRE', chaveDia, String(120 * 24 * 60 * 60)],
+        ['SET', 'midpix:cliques:desde', String(Date.now()), 'NX']
+      ]);
+      return res.status(200).json({ ok: true, total: Number(total) || 0, hoje: Number(hoje) || 0 });
+    } catch (e) {
+      return res.status(200).json({ ok: false });
+    }
+  }
+
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido' });
+
+  // ===== MIDPIX: ranking + meta públicos (com cache resiliente) =====
+  if (action === 'midpix-publico') {
+    res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600');
+    let cache = null;
+    if (URL_ && TOKEN) {
+      try {
+        const [raw] = await redis([['GET', MIDPIX_CACHE_KEY]]);
+        if (raw) cache = JSON.parse(raw);
+      } catch (e) {}
+    }
+    if (cache?.payload && (Date.now() - Number(cache.at || 0)) / 1000 < MIDPIX_CACHE_FRESCO) {
+      return res.status(200).json({ ok: true, ...cache.payload, atualizadoEm: cache.at, cache: true });
+    }
+    try {
+      const dados = await buscarMidpixPublico();
+      if (dados.ranking.length || dados.meta) {
+        if (URL_ && TOKEN) {
+          try { await redis([['SET', MIDPIX_CACHE_KEY, JSON.stringify({ at: Date.now(), payload: dados }), 'EX', String(MIDPIX_CACHE_EX)]]); } catch (e) {}
+        }
+        return res.status(200).json({ ok: true, ...dados, atualizadoEm: Date.now(), cache: false });
+      }
+      if (cache) return res.status(200).json({ ok: true, ...cache.payload, atualizadoEm: cache.at, cache: true });
+      return res.status(200).json({ ok: false, ranking: [], meta: null, error: 'Sem dados do MidPix agora.' });
+    } catch (e) {
+      if (cache) return res.status(200).json({ ok: true, ...cache.payload, atualizadoEm: cache.at, cache: true });
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(502).json({ ok: false, ranking: [], meta: null, error: 'Não foi possível consultar o MidPix agora.' });
+    }
+  }
+
+  if (!URL_ || !TOKEN) return res.status(200).json({});
 
   try {
     // ===== SETUP =====

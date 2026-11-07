@@ -279,3 +279,267 @@ footer{background:rgba(5,3,9,.7);padding:32px 0;border-top:1px solid var(--line)
   .twitch-logo-img{width:28px;height:28px}
   .logo-mark{width:34px;height:34px}
 }
+
+/* ============================================================
+   LOGIN — tela cheia (espaço, planeta e card de vidro)
+   ============================================================ */
+body.login-lock{overflow:hidden}
+
+.login-page{
+  position:fixed;inset:0;z-index:10000;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;min-height:100dvh;
+  background-color:#07060d;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(124,58,237,.22), transparent 70%),
+    radial-gradient(ellipse 55% 45% at 92% 105%, rgba(236,72,153,.12), transparent 70%),
+    linear-gradient(180deg,#07060d 0%,#05040b 55%,#020106 100%);
+  isolation:isolate;
+}
+
+.login-space{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+
+/* estrelas em CSS puro — três camadas com deriva lenta */
+.login-stars{position:absolute;inset:-15%;opacity:.8;will-change:transform}
+.login-stars-a{
+  background-image:
+    radial-gradient(1.6px 1.6px at 22px 34px, rgba(255,255,255,.95), transparent 60%),
+    radial-gradient(1.2px 1.2px at 132px 88px, rgba(255,255,255,.8), transparent 60%),
+    radial-gradient(1px 1px at 76px 168px, rgba(216,180,254,.85), transparent 60%),
+    radial-gradient(1.4px 1.4px at 210px 132px, rgba(255,255,255,.9), transparent 60%),
+    radial-gradient(1px 1px at 250px 236px, rgba(192,132,252,.75), transparent 60%),
+    radial-gradient(.9px .9px at 44px 246px, rgba(255,255,255,.65), transparent 60%);
+  background-size:280px 280px;background-repeat:repeat;
+  animation:loginStarsDriftA 190s linear infinite, loginTwinkle 7s ease-in-out infinite;
+}
+.login-stars-b{
+  background-image:
+    radial-gradient(1.1px 1.1px at 60px 70px, rgba(255,255,255,.8), transparent 60%),
+    radial-gradient(1.8px 1.8px at 190px 40px, rgba(255,255,255,.9), transparent 60%),
+    radial-gradient(.9px .9px at 300px 160px, rgba(233,213,255,.8), transparent 60%),
+    radial-gradient(1.3px 1.3px at 120px 220px, rgba(255,255,255,.7), transparent 60%),
+    radial-gradient(1px 1px at 260px 290px, rgba(255,110,199,.65), transparent 60%);
+  background-size:360px 360px;background-repeat:repeat;opacity:.55;
+  animation:loginStarsDriftB 260s linear infinite, loginTwinkle 9s ease-in-out infinite reverse;
+}
+.login-stars-c{
+  background-image:
+    radial-gradient(2px 2px at 90px 120px, rgba(255,255,255,.9), transparent 62%),
+    radial-gradient(1.2px 1.2px at 330px 60px, rgba(216,180,254,.8), transparent 62%),
+    radial-gradient(1.5px 1.5px at 210px 330px, rgba(255,255,255,.75), transparent 62%);
+  background-size:440px 440px;background-repeat:repeat;opacity:.5;
+  animation:loginStarsDriftC 340s linear infinite, loginTwinkle 11s ease-in-out infinite;
+}
+@keyframes loginStarsDriftA{to{transform:translate3d(-280px,0,0)}}
+@keyframes loginStarsDriftB{to{transform:translate3d(-360px,0,0)}}
+@keyframes loginStarsDriftC{to{transform:translate3d(-440px,0,0)}}
+@keyframes loginTwinkle{0%,100%{opacity:.45}50%{opacity:.95}}
+
+.login-nebula{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 48% 42% at 18% 78%, rgba(124,58,237,.2), transparent 68%),
+    radial-gradient(ellipse 40% 38% at 78% 22%, rgba(236,72,153,.12), transparent 68%),
+    radial-gradient(ellipse 60% 45% at 50% 50%, rgba(88,28,135,.1), transparent 72%);
+  filter:blur(6px);
+}
+
+/* planeta violeta/rosa no canto superior direito */
+.login-planet{
+  position:absolute;top:clamp(-190px,-11vw,-96px);right:clamp(-180px,-9vw,-72px);
+  width:clamp(260px,34vw,540px);aspect-ratio:1;border-radius:50%;
+  background:
+    radial-gradient(circle at 32% 28%, #ffe0f7 0%, #ff9de0 9%, #e879f9 22%, #c084fc 37%, #8b5cf6 55%, #5b21b6 74%, #2e1065 92%, #160a2e 100%);
+  box-shadow:
+    inset -38px -34px 90px rgba(24,8,52,.9),
+    inset 24px 20px 70px rgba(255,255,255,.18),
+    0 0 90px rgba(192,132,252,.42),
+    0 0 220px rgba(236,72,153,.26);
+  opacity:.92;transform-origin:68% 32%;will-change:transform,filter;
+  animation:loginPlanetBreathe 11s ease-in-out infinite;
+}
+@keyframes loginPlanetBreathe{
+  0%,100%{transform:scale(1);filter:brightness(1)}
+  50%{transform:scale(1.028);filter:brightness(1.09)}
+}
+.login-planet::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:
+    radial-gradient(circle at 62% 36%, rgba(88,28,135,.3) 0 8%, transparent 9%),
+    radial-gradient(circle at 44% 62%, rgba(88,28,135,.26) 0 12%, transparent 13%),
+    radial-gradient(circle at 74% 68%, rgba(255,255,255,.14) 0 6%, transparent 7%),
+    radial-gradient(circle at 26% 76%, rgba(88,28,135,.2) 0 9%, transparent 10%);
+  filter:blur(2px);
+}
+.login-planet-ring{
+  position:absolute;left:50%;top:50%;width:152%;height:40%;
+  transform:translate(-50%,-50%) rotate(-22deg);
+  border-radius:50%;border:2px solid rgba(233,213,255,.22);
+  box-shadow:0 0 34px rgba(192,132,252,.28), inset 0 0 34px rgba(192,132,252,.16);
+}
+.login-planet-shine{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 24%, rgba(255,255,255,.4), transparent 32%);
+  box-shadow:inset 0 0 26px 7px rgba(255,214,246,.42), inset 0 0 74px 2px rgba(236,72,153,.3);
+  mix-blend-mode:screen;
+}
+
+/* voltar ao site */
+.login-back{
+  position:absolute;left:clamp(14px,2.4vw,30px);top:clamp(14px,2.4vw,30px);z-index:5;
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 16px;border-radius:99px;
+  border:1px solid rgba(216,180,254,.2);
+  background:rgba(18,10,32,.55);color:#e9defa;
+  font:700 .76rem 'DM Sans',sans-serif;letter-spacing:.02em;cursor:pointer;
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  transition:background .2s,border-color .2s,transform .2s,color .2s;
+}
+.login-back:hover{background:rgba(168,85,247,.2);border-color:rgba(192,132,252,.55);color:#fff;transform:translateY(-1px)}
+.login-back span{font-size:.95rem;line-height:1}
+
+/* card central de vidro */
+.login-main{
+  position:relative;z-index:2;width:100%;
+  display:flex;align-items:center;justify-content:center;
+  padding:clamp(64px,8vh,96px) clamp(16px,4vw,32px) clamp(24px,5vh,56px);
+}
+.login-card{
+  position:relative;width:min(438px,100%);
+  max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);
+  overflow-y:auto;overscroll-behavior:contain;
+  padding:clamp(24px,3.4vw,36px);
+  border-radius:26px;
+  border:1px solid rgba(216,180,254,.22);
+  background:linear-gradient(155deg, rgba(38,24,62,.58), rgba(13,7,25,.7));
+  -webkit-backdrop-filter:blur(26px) saturate(165%);backdrop-filter:blur(26px) saturate(165%);
+  box-shadow:
+    0 34px 90px -22px rgba(0,0,0,.85),
+    0 0 70px -18px rgba(168,85,247,.5),
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -60px 80px -60px rgba(168,85,247,.55);
+  scrollbar-width:thin;scrollbar-color:rgba(168,85,247,.45) transparent;
+}
+.login-card::-webkit-scrollbar{width:6px}
+.login-card::-webkit-scrollbar-thumb{background:rgba(168,85,247,.4);border-radius:99px}
+.login-card-glow{
+  position:absolute;left:50%;top:-150px;width:330px;height:260px;transform:translateX(-50%);
+  background:radial-gradient(closest-side, rgba(139,92,246,.5), transparent 72%);
+  filter:blur(42px);pointer-events:none;
+}
+
+.login-brand{position:relative;display:flex;align-items:center;gap:9px;margin-bottom:22px}
+.login-brand-mark{
+  display:grid;place-items:center;width:31px;height:31px;border-radius:10px;flex:none;
+  background:linear-gradient(135deg,#a855f7,#6d28d9);color:#fff;
+  font:900 .95rem 'Bricolage Grotesque',sans-serif;
+  box-shadow:0 7px 22px rgba(168,85,247,.36);
+}
+.login-brand-copy{color:#c3addf;font-size:.63rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+.login-brand-copy i{font-style:normal;opacity:.5;margin:0 2px}
+
+.login-head{position:relative;margin-bottom:20px}
+.login-eyebrow{display:block;margin-bottom:8px;color:#c084fc;font-size:.64rem;font-weight:900;letter-spacing:.16em}
+.login-head h2{margin:0;color:#fff;font:800 clamp(1.55rem,4.8vw,1.95rem)/1.06 'Bricolage Grotesque',sans-serif;letter-spacing:-.035em}
+.login-head p{margin:9px 0 0;color:#b3a6c4;font-size:.84rem;line-height:1.55;text-wrap:pretty}
+
+/* provedores */
+.login-providers{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.login-provider{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  min-height:48px;padding:9px 12px;min-width:0;
+  border:1px solid rgba(218,194,255,.16);border-radius:13px;
+  background:rgba(255,255,255,.055);color:#eee4f8;
+  font:700 .83rem 'DM Sans',sans-serif;cursor:pointer;
+  transition:transform .2s,border-color .2s,background .2s,box-shadow .2s;
+}
+.login-provider:hover{transform:translateY(-2px);border-color:rgba(192,132,252,.55);background:rgba(168,85,247,.16);box-shadow:0 10px 24px -12px rgba(168,85,247,.85)}
+.login-provider-icon{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;flex:none;background:rgba(255,255,255,.1)}
+.login-provider-google .login-provider-icon{background:#fff}
+.login-provider-twitch .login-provider-icon{background:#9146ff;color:#fff;box-shadow:0 0 16px -3px rgba(145,70,255,.8)}
+.login-provider > span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.login-sep{display:flex;align-items:center;gap:10px;margin:17px 0 15px;color:#7f7290;font-size:.64rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase}
+.login-sep::before,.login-sep::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(218,194,255,.22),transparent)}
+
+/* formulário */
+.login-form{display:grid;gap:12px}
+.login-field{display:grid;gap:6px}
+.login-field[hidden]{display:none!important}
+.login-field label{color:#cfc2e0;font-family:'JetBrains Mono',monospace;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.login-field input{
+  width:100%;min-height:48px;padding:0 15px;
+  border:1px solid rgba(218,194,255,.16);border-radius:12px;outline:none;
+  background:rgba(6,4,12,.62);color:#fff;
+  font:500 .88rem 'DM Sans',sans-serif;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.login-field input::placeholder{color:#6f6284}
+.login-field input:focus{border-color:rgba(192,132,252,.8);box-shadow:0 0 0 3px rgba(168,85,247,.18);background:rgba(8,5,16,.9)}
+
+.login-pass{position:relative;display:block}
+.login-pass input{padding-right:104px}
+.login-pass-btn{
+  position:absolute;right:5px;top:50%;transform:translateY(-50%);
+  display:inline-flex;align-items:center;gap:5px;height:36px;padding:0 10px;
+  border:0;border-radius:9px;background:transparent;color:#a999bd;
+  font:700 .67rem 'DM Sans',sans-serif;cursor:pointer;
+  transition:color .2s,background .2s;
+}
+.login-pass-btn:hover{color:#f0e6ff;background:rgba(168,85,247,.18)}
+.login-pass-btn svg{width:15px;height:15px;flex:none}
+.login-pass-btn[aria-pressed="true"]{color:#c084fc}
+
+.login-alert{min-height:0;margin:0;color:#fda4af;font-size:.77rem;line-height:1.4}
+.login-alert:empty{display:none}
+
+.login-submit{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  width:100%;min-height:49px;padding:12px 18px;
+  border:1px solid rgba(216,180,254,.4);border-radius:12px;
+  background:linear-gradient(110deg,#a855f7,#7c3aed 60%,#6d28d9);color:#fff;
+  font:800 .9rem 'DM Sans',sans-serif;letter-spacing:.01em;cursor:pointer;
+  box-shadow:0 10px 26px rgba(109,40,217,.36);
+  transition:filter .2s,transform .2s,box-shadow .2s;
+}
+.login-submit:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:0 14px 32px rgba(109,40,217,.48)}
+.login-submit:active{transform:translateY(0)}
+.login-submit:disabled{opacity:.58;cursor:wait;transform:none}
+.login-submit-arrow{margin-left:auto;font-size:1.02rem}
+
+.login-switch{margin:15px 0 0;text-align:center;color:#8a7ca0;font-size:.75rem}
+.login-switch button{
+  border:0;background:none;padding:0 0 0 3px;color:#c084fc;
+  font:800 .75rem 'DM Sans',sans-serif;cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;transition:color .2s;
+}
+.login-switch button:hover{color:#e9d5ff}
+.login-legal{margin:15px 0 0;color:#776a89;text-align:center;font-size:.65rem;line-height:1.5}
+
+@media (max-width:600px){
+  .login-page{overflow-y:auto;align-items:stretch}
+  .login-planet{top:clamp(-150px,-24vw,-80px);right:clamp(-150px,-22vw,-70px);width:clamp(230px,64vw,340px);opacity:.8}
+  .login-main{min-height:100vh;min-height:100dvh;padding:0;align-items:stretch}
+  .login-card{
+    width:100%;max-width:none;min-height:100vh;min-height:100dvh;max-height:none;
+    padding:calc(74px + env(safe-area-inset-top)) 20px calc(30px + env(safe-area-inset-bottom));
+    border-radius:0;border-left:0;border-right:0;overflow:visible;
+  }
+  .login-brand{margin-bottom:18px}
+  .login-providers{gap:7px}
+  .login-provider{padding:8px 7px;font-size:.78rem}
+  .login-head h2{font-size:1.55rem}
+  .login-back{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top));padding:8px 13px;font-size:.72rem;z-index:6}
+}
+@media (max-height:640px) and (min-width:601px){
+  .login-main{padding-top:60px}
+  .login-card{padding-top:24px;padding-bottom:22px}
+  .login-brand{margin-bottom:16px}
+  .login-head{margin-bottom:16px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .login-stars{animation:none!important;opacity:.55}
+  .login-planet{animation:none!important}
+  .login-card,.login-page,.login-provider,.login-submit{transition:none!important}
+}

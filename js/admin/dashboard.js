@@ -26,6 +26,7 @@ async function renderAdminHome(){
   const podeAdmins = temPerm('ver_admins');
   const podeBanidos = temPerm('ver_banidos');
   const podeSug = temPerm('ver_sugestoes');
+  const podeConfig = temPerm('ver_config');
 
   const kpis = [];
   if(podeVotos && shared.votos){
@@ -56,6 +57,12 @@ async function renderAdminHome(){
     const n = (shared.banidos.banidos || []).length;
     const pulse = kpiChanged('banidos', n);
     kpis.push({ icon:'🚫', value: n, label:'banidos', sub: n === 0 ? 'ninguém banido' : 'não pode votar', href:'banidos', accent:'red', pulse });
+  }
+  if(podeConfig && shared.midpix){
+    const total = Number(shared.midpix.total) || 0;
+    const hoje = Number(shared.midpix.hoje) || 0;
+    const pulse = kpiChanged('midpix', total);
+    kpis.push({ icon:'💜', value: total, label:'cliques MidPix', sub: `${hoje} hoje`, href:'config', accent:'pink', pulse });
   }
 
   const kpiHTML = kpis.length ? `

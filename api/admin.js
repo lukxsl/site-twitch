@@ -1,5 +1,5 @@
 import { timingSafeEqual, randomUUID } from 'crypto';
-import { redis, validarSessao, origemOk } from './_lib/core.js';
+import { redis, validarSessao, origemOk, hojeBR } from './_lib/core.js';
 import { executarDiagnostico } from './_lib/diagnostico.js';
 import { pareceTeste } from './_lib/dados-teste.js';
 
@@ -743,6 +743,26 @@ export default async function handler(req, res){
       if(sessao.cargo !== 'dev') return res.status(403).json({ error: 'Somente o dev pode rodar o diagnóstico', action, requestId });
       const diag = await executarDiagnostico();
       return res.status(200).json({ ...diag, action, requestId });
+    }
+
+    if(req.method === 'GET' && action === 'midpix-cliques'){
+      if(!(await temPermissao(sessao, 'ver_config'))) return res.status(403).json({ error: 'Sem permissão', action, requestId });
+      const hoje = hojeBR();
+      const ontem = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+      const [totalRaw, hojeRaw, ontemRaw, desdeRaw] = await redis([
+        ['GET', 'midpix:cliques:total'],
+        ['GET', `midpix:cliques:${hoje}`],
+        ['GET', `midpix:cliques:${ontem}`],
+        ['GET', 'midpix:cliques:desde']
+      ]);
+      return res.status(200).json({
+        total: Number(totalRaw) || 0,
+        hoje: Number(hojeRaw) || 0,
+        ontem: Number(ontemRaw) || 0,
+        desde: Number(desdeRaw) || null,
+        action,
+        requestId
+      });
     }
 
     if(req.method === 'GET' && action === 'permissoes-minhas'){
