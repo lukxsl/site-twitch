@@ -1,5 +1,5 @@
 import { timingSafeEqual, randomUUID } from 'crypto';
-import { validarSessao, origemOk } from './_lib/core.js';
+import { redis, validarSessao, origemOk } from './_lib/core.js';
 import { executarDiagnostico } from './_lib/diagnostico.js';
 import { pareceTeste } from './_lib/dados-teste.js';
 
@@ -703,32 +703,40 @@ export default async function handler(req, res){
     }
   }
 
-  if(req.method === 'POST' && !origemOk(req)) return res.status(403).json({ error: 'Origem inválida' });
+  if(req.method === 'POST' && !origemOk(req)) return res.status(403).json({ error: 'Origem inválida', action, requestId });
 
-  const sessao = await validarSessao(req);
-  if(!sessao) return res.status(401).json({ error: 'Faça login' });
-  if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão' });
+  res.setHeader('Cache-Control', 'no-store');
 
-  let cargoAtual = null;
-  if(ENV_ADMINS.includes(String(sessao.id)) || ENV_DEV_EMAILS.includes(String(sessao.email || '').trim().toLowerCase())){
-    cargoAtual = 'dev';
-  } else {
-    try {
+  let sessao, meNivel, quem;
+  try {
+    sessao = await validarSessao(req);
+    if(!sessao) return res.status(401).json({ error: 'Faça login', action, requestId });
+    if(!sessao.admin) return res.status(403).json({ error: 'Sem permissão', action, requestId });
+
+    let cargoAtual = null;
+    if(ENV_ADMINS.includes(String(sessao.id)) || ENV_DEV_EMAILS.includes(String(sessao.email || '').trim().toLowerCase())){
+      cargoAtual = 'dev';
+    } else {
       const [raw] = await redis([['HGET', 'admins', String(sessao.id)]]);
       if(raw){
         const d = JSON.parse(raw);
         if(d && NIVEIS[d.cargo]) cargoAtual = d.cargo;
       }
-    } catch(e){}
+    }
+    if(!cargoAtual){
+      return res.status(403).json({ error: 'Acesso revogado. Faça login de novo.', action, requestId });
+    }
+    sessao.cargo = cargoAtual;
+    meNivel = NIVEIS[sessao.cargo] || 0;
+    quem = sessao.username || 'anônimo';
+  } catch(e){
+    console.error('[admin]', requestId, action, e);
+    return res.status(500).json({
+      error: `Falha ao validar o acesso: ${e?.message || 'erro inesperado'}`,
+      action,
+      requestId
+    });
   }
-  if(!cargoAtual){
-    return res.status(403).json({ error: 'Acesso revogado. Faça login de novo.' });
-  }
-  sessao.cargo = cargoAtual;
-
-  res.setHeader('Cache-Control', 'no-store');
-  const meNivel = NIVEIS[sessao.cargo] || 0;
-  const quem = sessao.username || 'anônimo';
 
   try {
     if(req.method === 'GET' && action === 'diagnostico'){

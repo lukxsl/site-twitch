@@ -195,6 +195,8 @@ body.sou-admin .nav-admin-btn{display:inline-flex}
 .bento .profile-card{grid-area:profile}
 .bento .twitch-player-box{grid-area:player}
 .bento .sub-hero-box{grid-area:sub}
+.bento .bento-right-stack{grid-area:sub;display:flex;flex-direction:column;gap:16px;min-width:0;align-items:stretch}
+.bento .bento-right-stack > .card{margin:0;min-width:0;max-width:100%}
 .bento .music-box{grid-area:music}
 .bento .bento-stack{grid-area:stack;display:flex;flex-direction:column;gap:16px;min-width:0;align-items:stretch}
 .bento > .card,.bento .bento-stack > .card{margin:0;min-width:0;max-width:100%}

@@ -310,19 +310,33 @@ function _formatarVersaoSite(data){
   }
 }
 
-function carregarVersaoSite(){
-  if(_versaoSitePromessa) return _versaoSitePromessa;
-  _versaoSitePromessa = fetch('/version.json', { cache: 'no-store' })
+function _dataDoDocumento(){
+  const d = new Date(document.lastModified || Date.now());
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+function _buscarVersaoSite(){
+  return fetch('/version.json?v=' + Date.now(), { cache: 'no-store' })
     .then(r => r.ok ? r.json() : null)
     .catch(() => null);
+}
+
+function carregarVersaoSite(){
+  if(_versaoSitePromessa) return _versaoSitePromessa;
+  _versaoSitePromessa = _buscarVersaoSite()
+    .then(v => (v && v.deployedAt) ? v : new Promise(resolve => setTimeout(resolve, 800)).then(_buscarVersaoSite))
+    .then(v => {
+      if(!v || !v.deployedAt){ _versaoSitePromessa = null; return null; }
+      return v;
+    });
   return _versaoSitePromessa;
 }
 
 function renderSiteUpdate(){
   const el = $('siteUpdated'); if(!el) return;
-  const fallback = CONFIG.siteUpdated || fmtDataHora(new Date().toISOString());
-  el.textContent = fallback;
-  el.title = 'Data do build/carregamento atual do site.';
+  const fallback = _dataDoDocumento();
+  el.textContent = fmtDataHora(fallback.toISOString());
+  el.title = 'Data do último deploy/carregamento do site.';
   carregarVersaoSite().then(v => {
     if(!v || !v.deployedAt) return;
     const d = new Date(v.deployedAt);
@@ -333,6 +347,8 @@ function renderSiteUpdate(){
       : 'Data da última publicação do site.';
   });
 }
+
+window.addEventListener('pageshow', e => { if(e.persisted) renderSiteUpdate(); });
 
 function renderHomeExtras(){
   renderRecado();
