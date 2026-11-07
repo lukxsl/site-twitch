@@ -3,6 +3,7 @@
 // evitar contagens negativas ou duplicadas quando duas requisições chegam juntas.
 import { redis, lerSessao, rateLimit, origemOk, safeStr } from './_lib/core.js';
 import { somarAtividade } from './_lib/atividade.js';
+import { evento } from './_lib/game.js';
 
 const COOKIE_SESSAO = 'sessao_site';
 const OPCOES_PADRAO = [
@@ -122,7 +123,11 @@ export default async function handler(req, res) {
       jaVotou = Number(resultado?.[0]) === 0;
 
       // Conta somente o primeiro voto ou uma troca efetiva de opção neste ciclo.
-      if(Number(resultado?.[0]) === 1) await somarAtividade(String(sessao.id), 'votes', 1);
+      if(Number(resultado?.[0]) === 1){
+        await somarAtividade(String(sessao.id), 'votes', 1);
+        try { await evento(String(sessao.id), 'voto', ciclo); }
+        catch(error){ console.error('[Votos] XP/moedas do voto não creditados:', error?.message || error); }
+      }
     }
 
     const [flat, meuRaw] = await redis([

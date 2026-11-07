@@ -38,7 +38,7 @@
 .community-profile-secondary:hover{background:rgba(164,101,231,.2);border-color:rgba(207,169,255,.6)}
 .community-profile-danger{border-color:rgba(238,105,137,.25);background:rgba(146,40,72,.12);color:#ffb0bf}
 .community-profile-danger:hover{background:rgba(179,49,87,.2)}
-.community-profile-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:15px}
+.community-profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:15px}
 .community-stat-card{display:flex;align-items:center;gap:14px;min-height:112px;padding:18px;border:1px solid rgba(179,127,222,.17);border-radius:16px;background:linear-gradient(140deg,rgba(29,19,43,.94),rgba(15,10,23,.94));box-shadow:0 12px 35px rgba(0,0,0,.12)}
 .community-stat-icon{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:13px;background:rgba(157,92,218,.14);color:#d0a7fa;font-size:1.2rem}
 .community-stat-card>div{display:grid;gap:4px;min-width:0}

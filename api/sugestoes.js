@@ -4,6 +4,7 @@
 import { createHash, randomUUID } from 'crypto';
 import { redis, lerSessao, rateLimit, origemOk, ipDe, safeStr } from './_lib/core.js';
 import { somarAtividade } from './_lib/atividade.js';
+import { evento } from './_lib/game.js';
 
 const LIST_KEY = 'sugestoes:lista';
 const MAX_ITENS = 200;
@@ -167,7 +168,10 @@ export default async function handler(req, res) {
 
     let estatisticaPendente = false;
     if (userId) {
-      try { await somarAtividade(userId, 'suggestions', 1); }
+      try {
+        await somarAtividade(userId, 'suggestions', 1);
+        await evento(userId, 'sugestao_enviada', item.id);
+      }
       catch (error) { estatisticaPendente = true; console.error('[Sugestões] Sugestão salva, mas a estatística ficou pendente:', error?.message || error); }
     }
 

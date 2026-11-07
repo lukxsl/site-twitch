@@ -136,13 +136,13 @@
 
   /* ---------- sua posição ---------- */
   function meIdentity() {
-    const p = window.GameState?.perfil;
-    const acc = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : {};
+    const acc = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : null;
+    const p = window.ProfileSummary?.usuario || acc;
     return {
-      logado: !!p,
-      nomes: [p?.nick, p?.twitch?.login, p?.twitch?.username, p?.twitchLogin, acc.twitch?.login].filter(Boolean).map(norm),
-      nick: p?.nick || 'Jogador',
-      foto: acc.avatar || acc.picture || acc.google?.picture || acc.foto || p?.avatar || null,
+      logado: !!acc,
+      nomes: [acc?.nick, acc?.username, acc?.twitch?.login, acc?.twitch?.nome].filter(Boolean).map(norm),
+      nick: acc?.nick || acc?.username || 'Jogador',
+      foto: acc?.avatar || acc?.picture || acc?.google?.picture || acc?.foto || null,
       p
     };
   }
