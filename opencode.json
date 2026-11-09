@@ -1,15 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
-    "tokenplus": {
+    "groq": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "TokenPlus",
+      "name": "Groq",
       "options": {
-        "baseURL": "https://api.tokenplus.cn/v1"
+        "baseURL": "https://api.groq.com/openai/v1"
       },
       "models": {
-        "gpt-4o": {},
-        "claude-3-5-sonnet": {}
+        "qwen/qwen3.8-27b": {},
+        "openai/gpt-oss-120b": {}
       }
     }
   }
