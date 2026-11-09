@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "tokenplus": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "TokenPlus",
+      "options": {
+        "baseURL": "https://api.tokenplus.cn/v1"
+      },
+      "models": {
+        "gpt-4o": {},
+        "claude-3-5-sonnet": {}
+      }
+    }
+  }
+}
