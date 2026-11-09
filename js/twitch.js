@@ -231,29 +231,6 @@ function _atualizarStatsStrip(data){
   if(viewers && isLive) viewers.textContent = Number(data.stream.viewer_count).toLocaleString('pt-BR');
 }
 
-function _atualizarBanner(data){
-  const overlay = document.getElementById('bannerOverlay');
-  const badge = document.getElementById('bannerLiveBadge');
-  const kicker = document.getElementById('bannerKicker');
-  const title = document.getElementById('bannerTitle');
-  const liveText = document.getElementById('bannerLiveText');
-
-  if(data.stream){
-    const game = data.stream.game_name || 'Jogando';
-    const viewers = Number(data.stream.viewer_count || 0);
-    if(badge){ badge.style.display = 'flex'; badge.classList.add('live'); }
-    if(liveText) liveText.textContent = 'AO VIVO AGORA';
-    if(overlay){
-      overlay.style.display = '';
-      if(kicker) kicker.textContent = `🎮 Jogando: ${game}`;
-      if(title) title.innerHTML = `Assistindo agora com <em>${viewers.toLocaleString('pt-BR')} ${viewers === 1 ? 'viewer' : 'viewers'}</em>`;
-    }
-  } else {
-    if(badge){ badge.style.display = 'none'; badge.classList.remove('live'); }
-    if(overlay) overlay.style.display = 'none';
-  }
-}
-
 /* Barra do card do player: título da live, uptime e viewers.
    Deixa o card útil quando a Soso está ao vivo (antes só tinha o iframe). */
 function _atualizarLiveNow(data){
@@ -287,7 +264,6 @@ async function verificarStatusTwitch(){
     const live = !!data.stream;
     _atualizarPlayerHeader(live);
     _atualizarProfileStatus(live, data);
-    _atualizarBanner(data);
     _atualizarLiveNow(data);
 
     const isMature = !!(data.stream && (data.stream.is_mature || data.canal_mature));
@@ -409,8 +385,6 @@ async function verificarStatusTwitch(){
     _atualizarPlayerHeader(false);
     _atualizarProfileStatus(false, null);
     _atualizarLiveNow(null);
-    const overlay = document.getElementById('bannerOverlay'); if(overlay) overlay.style.display = 'none';
-    const badge = document.getElementById('bannerLiveBadge'); if(badge) badge.style.display = 'none';
   }
 }
 
