@@ -28,28 +28,10 @@ for _, par in ipairs(pares) do
     redis.call('HSET', KEYS[1], par[1], tostring(math.max(0, tonumber(antigo) or 0)))
   end
 end
-redis.call('DEL', KEYS[2])
+-- Não apague g:{id}: essa chave contém XP, SosoCoins, streak e métricas
+-- da economia. A migração é apenas de leitura/cópia e pode ser repetida.
 return redis.call('HGETALL', KEYS[1])
 `;
-
-const PRESENCA_LUA = `
-local ja = redis.call('HSETNX', KEYS[1], ARGV[1], ARGV[2])
-if ja == 0 then return 0 end
-redis.call('EXPIRE', KEYS[1], 34560000)
-redis.call('HINCRBY', KEYS[2], 'lives', 1)
-return 1
-`;
-
-export async function registrarPresenca(id, numeroLive) {
-  const uid = String(id || '').trim();
-  const num = Math.max(0, Math.floor(Number(numeroLive) || 0));
-  if (!uid || !num) return false;
-  const [resultado] = await redis([[
-    'EVAL', PRESENCA_LUA, '2', `att:${num}`, `activity:${uid}`,
-    uid, String(Date.now())
-  ]]);
-  return Number(resultado) === 1;
-}
 
 export async function lerAtividade(id) {
   const uid = String(id || '').trim();

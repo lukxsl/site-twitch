@@ -1,6 +1,6 @@
 {
   "buildCommand": "node scripts/gen-version.js",
-  "outputDirectory": ".",
+  "outputDirectory": "public",
   "crons": [
     { "path": "/api/backup?action=cron", "schedule": "0 3 * * *" },
     { "path": "/api/admin?action=sync-horas-cron", "schedule": "0 4 * * *" }

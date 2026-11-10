@@ -2,22 +2,24 @@
 
 Site em HTML, CSS e JavaScript simples (sem build), com APIs Node.js na Vercel e Redis/Upstash.
 
+Os arquivos estáticos ficam em `public/` e a Vercel usa `outputDirectory: "public"`. As funções continuam em `api/` na raiz; módulos internos ficam em `api/_lib/`.
+
 ## Estrutura
 
-- `index.html` — página única com todas as seções.
-- `css/core.css` — tokens, reset, layout, navbar, rodapé e o grid do bento da Home.
-- `css/components.css` — botões, cards, player, música, votação, diálogos e toast.
-- `css/pages.css` — Tier List, Ranking, Perfil da comunidade e diálogo de boas-vindas.
-- `css/setup.css` — mini-game do quarto (Lukzin, tour, gato, catálogo) e seus estilos.
-- `css/admin.css` — painel administrativo (carregado sempre, usado só na aba Admin).
-- `js/core.js` — helpers de DOM/formatação e o cliente HTTP `api()`.
-- `js/auth-ui.js` — página de login em tela cheia (e-mail, Google e Twitch) e a navbar da comunidade.
-- `js/twitch.js` — status da live, player, banner, foco do jogo e clipes.
-- `js/setup.js` — mini-game do setup + áudio do site.
-- `js/main.js` — config, navegação, votação, música, sugestões, Tier List e boot.
-- `js/midpix.js` — card de apoiadores/metas do MidPix na Home e clique dos botões de apoio.
-- `js/profile.js` e `js/ranking.js` — página de perfil e página de ranking.
-- `js/admin/*` — carregados sob demanda quando a aba Admin abre.
+- `public/index.html` — página única com todas as seções.
+- `public/css/core.css` — tokens, reset, layout, navbar, rodapé e o grid do bento da Home.
+- `public/css/components.css` — botões, cards, player, música, votação, diálogos e toast.
+- `public/css/pages.css` — Tier List, Ranking, Perfil da comunidade e diálogo de boas-vindas.
+- `public/css/setup.css` — mini-game do quarto (Lukzin, tour, gato, catálogo) e seus estilos.
+- `public/css/admin.css` — painel administrativo (carregado sempre, usado só na aba Admin).
+- `public/js/core.js` — helpers de DOM/formatação e o cliente HTTP `api()`.
+- `public/js/auth-ui.js` — página de login em tela cheia (e-mail, Google e Twitch) e a navbar da comunidade.
+- `public/js/twitch.js` — status da live, player, banner, foco do jogo e clipes.
+- `public/js/setup.js` — mini-game do setup + áudio do site.
+- `public/js/main.js` — config, navegação, votação, música, sugestões, Tier List e boot.
+- `public/js/midpix.js` — card de apoiadores/metas do MidPix na Home e clique dos botões de apoio.
+- `public/js/profile.js` e `public/js/ranking.js` — página de perfil e página de ranking.
+- `public/js/admin/*` — carregados sob demanda quando a aba Admin abre.
 
 ## Mini-game do Setup
 

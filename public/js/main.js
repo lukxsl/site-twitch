@@ -588,7 +588,7 @@ let _mudarAbaTimer = null;
 let _mudarAbaPendente = null;
 const ABAS_VALIDAS = ['inicio','tierlist','ranking','comunidade','setup','sugestoes','perfil','admin'];
 
-function _executarMudarAba(nome){
+function _executarMudarAba(nome, { atualizarHistorico = false, moverFoco = false } = {}){
   if(!ABAS_VALIDAS.includes(nome)) nome = 'inicio';
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
   document.querySelectorAll('.site-nav .nav-links button').forEach(b => {
@@ -599,6 +599,15 @@ function _executarMudarAba(nome){
   const section = $('sec-' + nome), button = $('btn-' + nome);
   if(section) section.classList.add('ativo');
   if(button) button.classList.add('on');
+  const tituloPagina = section?.querySelector('h1')?.textContent?.replace(/\s+/g, ' ').trim();
+  document.title = nome === 'inicio' || !tituloPagina
+    ? 'asemtet0 — Streamer & Comunidade | Soso'
+    : `${tituloPagina} — asemtet0`;
+  if(moverFoco && section){
+    const titulo = section.querySelector('h1') || section;
+    if(!titulo.hasAttribute('tabindex')) titulo.setAttribute('tabindex', '-1');
+    titulo.focus({ preventScroll: true });
+  }
 
   const adminBtn = $('btn-admin');
   if(adminBtn) adminBtn.classList.toggle('on', nome === 'admin');
@@ -620,11 +629,15 @@ function _executarMudarAba(nome){
   }
   window.dispatchEvent(new CustomEvent('soso:aba', { detail: nome }));
 
-  try {
-    if(nome !== 'admin') history.replaceState(null, '', '#' + nome);
-  } catch(e){}
+  if(atualizarHistorico){
+    try {
+      const novoHash = '#' + nome;
+      if(location.hash !== novoHash) history.pushState({ aba: nome }, '', novoHash);
+    } catch(e){}
+  }
 
-  window.scrollTo({ top:0, behavior:'smooth' });
+  const movimentoReduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  window.scrollTo({ top:0, behavior: movimentoReduzido ? 'auto' : 'smooth' });
 
   if(nome === 'admin'){
     garantirAdminCarregado()
@@ -647,10 +660,16 @@ function mudarAba(nome){
   _mudarAbaTimer = setTimeout(() => {
     _mudarAbaTimer = null;
     _mudarAbaPendente = null;
-    _executarMudarAba(nome);
+    _executarMudarAba(nome, { atualizarHistorico: true, moverFoco: true });
   }, 60);
 }
 window.mudarAba = mudarAba;
+
+window.addEventListener('popstate', () => {
+  const hash = String(location.hash || '').replace(/^#/, '');
+  const nome = hash.startsWith('admin/') ? 'admin' : (ABAS_VALIDAS.includes(hash) ? hash : 'inicio');
+  _executarMudarAba(nome, { atualizarHistorico: false, moverFoco: true });
+});
 
 function abrirSejaSub(){
   mudarAba('comunidade');
@@ -906,7 +925,7 @@ function abrirDetalheTier(j){
   if (modo === 'jogos') {
     if (j.conquistas && j.conquistas.total) terceiro = `<div><b>${j.conquistas.obtidas}/${j.conquistas.total}</b><span>conquistas</span></div>`;
   } else {
-    if (j.ano) terceiro = `<div><b>${j.ano}</b><span>ano</span></div>`;
+    if (Number(j.ano) > 0) terceiro = `<div><b>${Number(j.ano)}</b><span>ano</span></div>`;
   }
   const generosHTML = (j.generos && j.generos.length)
     ? `<div class="badges">${j.generos.map(g => `<span class="bd">${esc(g)}</span>`).join('')}</div>`

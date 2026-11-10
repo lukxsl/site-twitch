@@ -15,13 +15,13 @@
 //   POST /api/auth?action=twitch-unlink
 //
 // Redis: accounts e vínculos permanecem; métricas da comunidade ficam em activity:{id}.
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import {
   ENV, redis, jparse, rateLimit, ipDe, origemOk, criarToken, lerSessao, validarSessao, setSessao, limparSessao,
   addCookie, pegarCookie, hashSenha, conferirSenha, safeStr, RE_USUARIO, nickValido, cargoDe, SITE
 } from './_lib/core.js';
 import { lerAtividade } from './_lib/atividade.js';
-import { lerStats, infoNivel, MOEDA } from './_lib/game.js';
+import { lerStats, infoNivel, MOEDA, evento } from './_lib/game.js';
 import { urlVinculo, identificarViewer, twitchConfigurada, urlAutorizacaoBroadcaster, concluirAutorizacaoBroadcaster, cronPresenca } from './_lib/twitch.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -141,8 +141,57 @@ async function buscarOuCriarContaGoogle(me, sessaoAtual){
   }
 
   if(!sessaoAtual){
-    const [contaLocal] = await redis([['HGET', 'email_idx', email]]);
-    if(contaLocal) throw new Error('Este e-mail já possui acesso por senha. Entre com e-mail e senha para vincular outra opção.');
+    const [contaLocalId] = await redis([['HGET', 'email_idx', email]]);
+    if(contaLocalId){
+      const idLocal = String(contaLocalId);
+      const [contaRaw, donoGoogle, donoEmailGoogle] = await redis([
+        ['HGET', 'accounts', idLocal],
+        ['HGET', 'google_idx', sub],
+        ['HGET', 'google_email_idx', email]
+      ]);
+      const contaLocal = jparse(contaRaw, null);
+      if(!contaLocal) throw new Error('Conta local inconsistente. Entre em contato com a Soso.');
+      if(contaLocal.emailVerificado === true || contaLocal.google?.sub){
+        throw new Error('Este e-mail já está associado a uma conta verificada. Entre pelo método já vinculado.');
+      }
+      if((donoGoogle && String(donoGoogle) !== idLocal) || (donoEmailGoogle && String(donoEmailGoogle) !== idLocal)){
+        throw new Error('Esta identidade Google já está vinculada a outra conta.');
+      }
+
+      // Uma conta criada por senha sem confirmação de e-mail não pode reservar
+      // indefinidamente o endereço do verdadeiro proprietário. O Google só
+      // chega a este ponto depois de validar email_verified=true.
+      contaLocal.google = { sub, email, name: String(me.name || ''), picture: me.picture || null };
+      contaLocal.email = email;
+      contaLocal.emailVerificado = true;
+      contaLocal.loginProvider = 'google';
+      contaLocal.sv = Math.max(1, Number(contaLocal.sv) || 1) + 1;
+      delete contaLocal.senha;
+      const atualizada = JSON.stringify(contaLocal);
+      const VINCULAR_GOOGLE_LOCAL_LUA = `
+        if redis.call('HGET', KEYS[1], ARGV[1]) ~= ARGV[2] then return -1 end
+        if redis.call('HGET', KEYS[2], ARGV[3]) ~= ARGV[1] then return -2 end
+        local subOwner = redis.call('HGET', KEYS[3], ARGV[4])
+        if subOwner and subOwner ~= ARGV[1] then return -3 end
+        local emailOwner = redis.call('HGET', KEYS[4], ARGV[3])
+        if emailOwner and emailOwner ~= ARGV[1] then return -4 end
+        redis.call('HSET', KEYS[1], ARGV[1], ARGV[5])
+        redis.call('HSET', KEYS[3], ARGV[4], ARGV[1])
+        redis.call('HSET', KEYS[4], ARGV[3], ARGV[1])
+        redis.call('HDEL', KEYS[2], ARGV[3])
+        return 1
+      `;
+      const [vinculado] = await redis([[
+        'EVAL', VINCULAR_GOOGLE_LOCAL_LUA, '4',
+        'accounts', 'email_idx', 'google_idx', 'google_email_idx',
+        idLocal, String(contaRaw), email, sub, atualizada
+      ]]);
+      if(Number(vinculado) !== 1){
+        throw new Error('Não foi possível vincular o Google à conta existente. Atualize a página e tente novamente.');
+      }
+      await sincronizarPerfil(contaLocal);
+      return { conta: contaLocal, novo: false, vinculado: true };
+    }
   }
 
   const [idEmail] = await redis([['HGET', 'google_email_idx', email]]);
@@ -250,6 +299,10 @@ export default async function handler(req, res){
 
       const atual = lerSessao(req);
       const resultado = await buscarOuCriarContaGoogle(me, atual);
+      if(resultado.novo || resultado.vinculado){
+        try { await evento(resultado.conta.id, 'cadastro', 'conta-criada'); }
+        catch(error){ console.error('[Economia] Bônus de cadastro Google pendente:', error?.message || error); }
+      }
       const cargo = await emitirSessao(res, resultado.conta);
       const qs = new URLSearchParams({ login: 'ok' });
       if(resultado.novo) qs.set('novo', '1');
@@ -299,6 +352,7 @@ export default async function handler(req, res){
       };
       await salvarConta(conta);
       await sincronizarPerfil(conta);
+      // O bônus de cadastro é liberado quando a identidade é verificada (Google/Twitch).
       const cargo = await emitirSessao(res, conta);
       return res.status(200).json({ ...publico(conta, cargo), novo: true });
     }
@@ -309,7 +363,8 @@ export default async function handler(req, res){
       const identificador = safeStr(req.body?.email || req.body?.usuario, 254).toLowerCase();
       const senha = String(req.body?.senha || '');
       const ip = ipDe(req);
-      if(!(await rateLimit(`rl:login:ip:${ip}`, 20, 900)) || !(await rateLimit(`rl:login:u:${identificador.slice(0, 120)}`, 8, 900)))
+      const chaveIdentificadorIp = createHash('sha256').update(`${ip}|${identificador.slice(0, 120)}`).digest('hex').slice(0, 32);
+      if(!(await rateLimit(`rl:login:ip:${ip}`, 20, 900)) || !(await rateLimit(`rl:login:ipuser:${chaveIdentificadorIp}`, 8, 900)))
         return res.status(429).json({ error: 'Muitas tentativas. Aguarde alguns minutos.' });
       if(!identificador || !senha) return res.status(401).json({ error: ERRO_LOGIN });
 
@@ -328,6 +383,8 @@ export default async function handler(req, res){
 
     /* ====================== LOGOUT ====================== */
     if(action === 'logout'){
+      if(req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido.' });
+      if(!origemOk(req)) return res.status(403).json({ error: 'Origem inválida.' });
       limparSessao(res);
       return res.status(200).json({ ok: true });
     }
@@ -375,6 +432,9 @@ export default async function handler(req, res){
       if(!(await rateLimit(`rl:pw:${conta.id}`, 5, 900))) return res.status(429).json({ error: 'Muitas tentativas. Aguarde.' });
 
       const atual = String(req.body?.atual || ''), nova = String(req.body?.nova || '');
+      if(!conta.senha?.salt || !conta.senha?.hash){
+        return res.status(400).json({ error: 'Esta conta usa login Google/Twitch e não possui senha local. Entre pelo provedor vinculado.' });
+      }
       if(nova.length < 8 || nova.length > 72) return res.status(400).json({ error: 'A nova senha precisa ter de 8 a 72 caracteres.' });
       if(!(await conferirSenha(atual, conta.senha.salt, conta.senha.hash))) return res.status(403).json({ error: 'Senha atual incorreta.' });
 
@@ -471,6 +531,7 @@ export default async function handler(req, res){
         const [donoRaw] = await redis([['HGET', 'twitch_idx', tw.id]]);
         let conta = donoRaw ? await pegarConta(donoRaw) : null;
         let novo = false;
+        let primeiroVinculo = false;
         if(!conta){
           if(donoRaw) await redis([['HDEL', 'twitch_idx', tw.id]]);
           const id = 'u_' + randomBytes(8).toString('hex');
@@ -493,8 +554,10 @@ export default async function handler(req, res){
           await redis([['HSET', 'twitch_idx', tw.id, id]]);
           await sincronizarPerfil(conta);
           novo = true;
+          primeiroVinculo = true;
         } else {
           if(!conta.twitch || String(conta.twitch.id) !== tw.id){
+            primeiroVinculo = true;
             const [dono] = await redis([['HGET', 'twitch_idx', tw.id]]);
             if(dono && String(dono) !== String(conta.id)){ res.writeHead(302, { Location: '/?login=twitch-em-uso' }); return res.end(); }
             conta.twitch = { id: tw.id, login: tw.login, nome: tw.nome, desde: conta.twitch?.desde || Date.now() };
@@ -503,6 +566,14 @@ export default async function handler(req, res){
           await salvarConta(conta);
           await redis([['HSET', 'twitch_idx', tw.id, conta.id]]);
           await sincronizarPerfil(conta);
+        }
+        if(primeiroVinculo){
+          // A primeira identidade Twitch verificada libera o bônus de boas-vindas
+          // para contas que nasceram por senha e ainda não tinham e-mail validado.
+          try { await evento(conta.id, 'cadastro', 'conta-criada'); }
+          catch(eventError){ console.error('[Economia] Bônus de cadastro Twitch pendente:', eventError?.message || eventError); }
+          try { await evento(conta.id, 'vincular_twitch', 'primeiro-vinculo'); }
+          catch(eventError){ console.error('[Economia] Bônus de vínculo Twitch pendente:', eventError?.message || eventError); }
         }
         const cargo = await emitirSessao(res, conta);
         const qs = new URLSearchParams({ login: 'ok', provider: 'twitch' });
@@ -525,6 +596,7 @@ export default async function handler(req, res){
       // 1 conta da Twitch ↔ 1 conta do site (impede dividir horas entre contas)
       const [dono] = await redis([['HGET', 'twitch_idx', tw.id]]);
       if(dono && dono !== conta.id){ res.writeHead(302, { Location: '/?twitch=em-uso' }); return res.end(); }
+      const primeiroVinculo = !conta.twitch || String(conta.twitch.id) !== String(tw.id);
       if(conta.twitch && conta.twitch.id !== tw.id) await redis([['HDEL', 'twitch_idx', conta.twitch.id]]);
 
       conta.twitch = { id: tw.id, login: tw.login, nome: tw.nome, desde: Date.now() };
@@ -532,6 +604,12 @@ export default async function handler(req, res){
       await salvarConta(conta);
       await redis([['HSET', 'twitch_idx', tw.id, conta.id]]);
       await sincronizarPerfil(conta);
+      if(primeiroVinculo){
+        try { await evento(conta.id, 'cadastro', 'conta-criada'); }
+        catch(eventError){ console.error('[Economia] Bônus de cadastro Twitch pendente:', eventError?.message || eventError); }
+        try { await evento(conta.id, 'vincular_twitch', 'primeiro-vinculo'); }
+        catch(eventError){ console.error('[Economia] Bônus de vínculo Twitch pendente:', eventError?.message || eventError); }
+      }
       res.writeHead(302, { Location: '/?twitch=ok' });
       return res.end();
     }

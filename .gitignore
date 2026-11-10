@@ -1,0 +1,15 @@
+# Segredos e ambientes locais
+.env
+.env.*
+!.env.example
+.vercel/
+
+# Dependências e saídas locais
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# Backups locais com dados da comunidade
+backup-*.json
+backups/

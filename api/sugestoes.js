@@ -11,20 +11,6 @@ const LIST_KEY = 'sugestoes:lista';
 const MAX_ITENS = 200;
 const MAX_TEXTO = 200;
 const MIN_TEXTO = 10;
-const AUTO_TRANSICAO_MS = 90 * 1000;
-const AUTO_TRANSICAO_LUA = `
-local raw = redis.call('LINDEX', KEYS[1], ARGV[1])
-if not raw then return 0 end
-local ok, item = pcall(cjson.decode, raw)
-if not ok or type(item) ~= 'table' then return 0 end
-if tostring(item.id or '') ~= ARGV[2] then return 0 end
-if (item.status or 'nova') ~= 'nova' or tostring(item.data or '') ~= ARGV[3] then return 0 end
-item.status = 'analise'
-item.atualizadoEm = ARGV[4]
-item.atualizadoPor = 'auto'
-redis.call('LSET', KEYS[1], ARGV[1], cjson.encode(item))
-return 1
-`;
 
 function safeUrl(value) {
   const url = safeStr(value, 500);
@@ -58,44 +44,29 @@ function validarTexto(msg) {
   return null;
 }
 
-async function aplicarAutoTransicao(itens) {
-  const agora = Date.now();
-  const pendentes = [];
-  const comandos = [];
-  for (let index = 0; index < itens.length; index++) {
-    const item = itens[index];
-    if ((item.status || 'nova') !== 'nova' || !item.data) continue;
-    const data = Date.parse(item.data);
-    if (!Number.isFinite(data) || agora - data < AUTO_TRANSICAO_MS) continue;
-    pendentes.push({ item, agoraIso: new Date(agora).toISOString() });
-    comandos.push(['EVAL', AUTO_TRANSICAO_LUA, '1', LIST_KEY, String(index), String(item.id), String(item.data), new Date(agora).toISOString()]);
-  }
-
-  if (!comandos.length) return false;
-  const resultados = await redis(comandos);
-  let mudou = false;
-  resultados.forEach((resultado, index) => {
-    if (Number(resultado) !== 1) return;
-    const { item, agoraIso } = pendentes[index];
-    item.status = 'analise';
-    item.atualizadoEm = agoraIso;
-    item.atualizadoPor = 'auto';
-    mudou = true;
-  });
-  return mudou;
-}
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=45');
     try {
       const [flat] = await redis([['LRANGE', LIST_KEY, '0', '-1']]);
+      // Resposta pública usa uma projeção explícita: nunca envia userId, avatar,
+      // dados internos de moderação ou qualquer informação da conta.
       const itens = (flat || [])
         .map(raw => { try { return JSON.parse(raw); } catch { return null; } })
         .filter(Boolean)
-        .filter(item => !pareceTeste(item));
-      await aplicarAutoTransicao(itens);
+        .filter(item => !pareceTeste(item))
+        .map(item => ({
+          id: safeStr(item.id, 80),
+          nome: safeStr(item.nome || 'Anônimo', 40),
+          tipo: safeStr(item.tipo || 'Sugestão / ideia', 40),
+          texto: safeStr(item.texto, MAX_TEXTO),
+          status: ['nova','analise','aceita','recusada','concluido'].includes(item.status) ? item.status : 'nova',
+          data: safeStr(item.data, 40),
+          motivo: item.status === 'recusada' ? safeStr(item.motivo, 200) : null
+        }));
       return res.status(200).json({ itens });
     } catch (error) {
       console.error('[Sugestões] Falha ao consultar lista:', error?.message || error);
@@ -129,6 +100,12 @@ export default async function handler(req, res) {
     }
 
     const sessao = await validarSessao(req);
+    // O modo anônimo oculta a autoria pública, mas não pode ser usado para
+    // contornar a moderação de uma conta autenticada que esteja banida.
+    if(sessao?.id){
+      const [banido] = await redis([['HEXISTS', 'banidos', String(sessao.id)]]);
+      if(Number(banido) === 1) return res.status(403).json({ error: 'Sua conta não pode enviar sugestões nesta comunidade.' });
+    }
     const enviarAnonimo = anonimo === true || anonimo === 'true';
     const userId = !enviarAnonimo && sessao?.id ? String(sessao.id) : null;
     const usernameLogado = userId && sessao?.username ? safeStr(sessao.username, 60) : null;

@@ -11,7 +11,7 @@ Este pacote reúne o redesign visual do site da Soso. A implementação prioriza
 - **Identidade:** lavanda e violeta como acentos, sem depender de brilho ou gradientes luminosos.
 - **Componentes:** cantos pequenos, bordas finas e sombras contidas.
 
-Os tokens e os principais ajustes estão em `css/redesign.css`, carregado por último no `index.html` para centralizar a nova camada visual sem apagar as folhas específicas das páginas.
+Os tokens e os principais ajustes estão em `public/css/redesign.css`, carregado por último em `public/index.html` para centralizar a nova camada visual sem apagar as folhas específicas das páginas.
 
 ## Navegação
 
@@ -37,28 +37,28 @@ O redesign é de apresentação e navegação. Os contratos de integração fora
 - apoiadores e meta do MidPix;
 - navegação entre seções, comunidade, perfil, Setup e administração.
 
-Os arquivos da pasta `api/` foram mantidos byte a byte iguais aos do projeto enviado. Não foram alteradas rotas, variáveis de ambiente, regras de autenticação, armazenamento ou contratos com serviços externos.
+A camada visual preserva os identificadores e contratos usados pelas integrações. Em uma rodada técnica posterior, APIs e módulos internos receberam correções de segurança, consistência de economia, proteção de dados e backup. Consulte `README-AUDITORIA-TECNICA.md` para o inventário dessas alterações e para as limitações que ainda exigem validação no ambiente Vercel/Upstash real.
 
 ## Arquivos principais alterados
 
-- `index.html` — fontes, estrutura do login, navegação, masthead e ordem semântica da Home.
-- `css/redesign.css` — nova camada de identidade visual, sidebar, Home e refinamentos das páginas.
-- `css/core.css` — tokens base e remoção do cenário virtual e dos antigos estilos de vidro do login.
-- `css/components.css` — remoção de efeitos decorativos globais que deixaram de ser usados.
-- `css/home.css` — limpeza de regras antigas do banner e de estilos responsivos obsoletos.
-- `js/main.js` — remoção de tilt/parallax decorativos, sincronização de navegação e fechamento acessível do menu.
-- `js/twitch.js` — remoção somente da atualização do banner que saiu da Home.
+- `public/index.html` — fontes, estrutura do login, navegação, masthead e ordem semântica da Home.
+- `public/css/redesign.css` — nova camada de identidade visual, sidebar, Home e refinamentos das páginas.
+- `public/css/core.css` — tokens base e remoção do cenário virtual e dos antigos estilos de vidro do login.
+- `public/css/components.css` — remoção de efeitos decorativos globais que deixaram de ser usados.
+- `public/css/home.css` — limpeza de regras antigas do banner e de estilos responsivos obsoletos.
+- `public/js/main.js` — remoção de tilt/parallax decorativos, sincronização de navegação e fechamento acessível do menu.
+- `public/js/twitch.js` — remoção somente da atualização do banner que saiu da Home.
 
-As folhas `pages.css`, `setup.css` e `admin.css` continuam separadas para preservar a organização e os comportamentos específicos de cada área. O Setup mantém sua camada lúdica por ser uma experiência interativa própria do site.
+As folhas `public/css/pages.css`, `public/css/setup.css` e `public/css/admin.css` continuam separadas para preservar a organização e os comportamentos específicos de cada área. O Setup mantém sua camada lúdica por ser uma experiência interativa própria do site.
 
 ## Validações realizadas
 
-- HTML analisado: IDs duplicados, IDs de integração e referências locais.
-- CSS: parsing de todas as folhas sem erros de sintaxe.
-- JavaScript: `node --check` em todos os arquivos JS.
+- HTML (`public/index.html`) analisado: IDs duplicados, IDs de integração e referências locais.
+- CSS: parsing de todas as folhas em `public/css/` sem erros de sintaxe.
+- JavaScript: `node --check` em todos os arquivos JS de `api/` e `public/js/`.
 - IDs usados por autenticação, Twitch, Spotify, votação e MidPix conferidos.
 - Referências locais para imagens, scripts e folhas de estilo conferidas.
-- Arquivos de API comparados com o ZIP original e confirmados sem alterações.
+- Funções de API revisadas e corrigidas; não foram removidos endpoints públicos do projeto.
 
 ## Antes de publicar
 

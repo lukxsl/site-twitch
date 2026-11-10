@@ -34,6 +34,36 @@ function normalizeUsername(value) {
   return String(value || '').trim().replace(/^@/, '').toLowerCase();
 }
 
+function textoPublico(value, max = 120) {
+  return String(value == null ? '' : value).replace(/[<>\u0000-\u001F\u007F]/g, '').trim().slice(0, max);
+}
+function urlPublica(value) {
+  const raw = textoPublico(value, 500);
+  try { const u = new URL(raw); return u.protocol === 'https:' ? u.href : null; }
+  catch { return null; }
+}
+function projetarAtividades(payload) {
+  const rows = Array.isArray(payload) ? payload
+    : [payload?.docs, payload?.activities, payload?.items, payload?.data].find(Array.isArray) || [];
+  return rows.slice(0, 100).map(item => ({
+    username: textoPublico(item?.username || item?.userName || item?.user?.username || item?.user?.name, 60),
+    tipo: textoPublico(item?.type || item?.activityType || item?.event, 40),
+    valor: Number.isFinite(Number(item?.amount)) ? Number(item.amount) : null,
+    moeda: textoPublico(item?.currency || item?.currencyCode, 12),
+    data: textoPublico(item?.createdAt || item?.timestamp || item?.date, 40),
+    mensagem: textoPublico(item?.message || item?.messageText, 240)
+  })).filter(item => item.username || item.tipo);
+}
+function projetarCanal(payload) {
+  const item = payload?.channel || payload?.data || payload || {};
+  return {
+    username: textoPublico(item.username || item.name, 60),
+    displayName: textoPublico(item.displayName || item.display_name, 80),
+    provider: textoPublico(item.provider, 24),
+    avatar: urlPublica(item.profileImage || item.profilePicture || item.avatar || item.logo)
+  };
+}
+
 function subscriberUsername(subscriber) {
   if (!subscriber || typeof subscriber !== 'object') return '';
   return (subscriber.username || subscriber.userName || subscriber.name || subscriber.displayName || subscriber.user?.username || subscriber.user?.userName || subscriber.user?.name || subscriber.user?.displayName || '');
@@ -421,14 +451,30 @@ export default async function handler(req, res) {
     }
 
     if (action === 'status-perfil') {
+      const cacheKey = 'cache:twitch:status-perfil';
       try {
+        const [cached] = await redis([['GET', cacheKey]]);
+        if(cached){
+          res.setHeader('Cache-Control', 'public, s-maxage=20, stale-while-revalidate=60');
+          return res.status(200).json(JSON.parse(cached));
+        }
         const token = await twitchToken();
-        const u = await (await fetch(`https://api.twitch.tv/helix/users?login=asemtet0`, { headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` } })).json();
+        const userResponse = await fetch(`https://api.twitch.tv/helix/users?login=asemtet0`, { headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) });
+        const u = await userResponse.json();
         const id = u?.data?.[0]?.id;
-        if (!id) return res.status(200).json({ online: false });
-        const s = await (await fetch(`https://api.twitch.tv/helix/streams?user_id=${id}`, { headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` } })).json();
-        return res.status(200).json({ online: Array.isArray(s?.data) && s.data.length > 0 });
-      } catch(e) { return res.status(200).json({ online: false }); }
+        let output = { online: false };
+        if(id){
+          const streamResponse = await fetch(`https://api.twitch.tv/helix/streams?user_id=${id}`, { headers: { 'Client-ID': TWITCH_ID, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) });
+          const stream = await streamResponse.json();
+          output = { online: Array.isArray(stream?.data) && stream.data.length > 0 };
+        }
+        await redis([['SET', cacheKey, JSON.stringify(output), 'EX', '30']]);
+        res.setHeader('Cache-Control', 'public, s-maxage=20, stale-while-revalidate=60');
+        return res.status(200).json(output);
+      } catch(e) {
+        res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=30');
+        return res.status(200).json({ online: false });
+      }
     }
 
     // ==========================================
@@ -439,6 +485,33 @@ export default async function handler(req, res) {
       const requestedUsername = action === 'issub' ? normalizeUsername(req.query?.user) : '';
       if (action === 'issub' && !requestedUsername) {
         return res.status(400).json({ error: 'Informe o usuário na query: ?action=issub&user=NOME_DO_USUARIO.' });
+      }
+
+      if(action === 'atividades' || action === 'channel-info'){
+        if(!(await rateLimit(`ratelimit:se-proxy:${ipDe(req)}`, 30, 60, true))) {
+          return res.status(429).json({ error: 'Muitas consultas ao StreamElements. Aguarde um pouco.' });
+        }
+        const limit = action === 'atividades' ? Math.min(100, Math.max(1, parseInt(req.query?.limit || '25', 10) || 25)) : 0;
+        const offset = action === 'atividades' ? Math.min(100000, Math.max(0, parseInt(req.query?.offset || '0', 10) || 0)) : 0;
+        const cacheKey = `cache:se-proxy:${action}:${limit}:${offset}`;
+        const [cached] = await redis([['GET', cacheKey]]);
+        if(cached){
+          res.setHeader('Cache-Control', 'public, s-maxage=20, stale-while-revalidate=60');
+          return res.status(200).json(JSON.parse(cached));
+        }
+        const channelId = await getChannelId();
+        let output;
+        if(action === 'atividades'){
+          const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+          const payload = await seFetch(`/activities/${encodeURIComponent(channelId)}?${params.toString()}`);
+          output = { atividades: projetarAtividades(payload) };
+        } else {
+          const payload = await seFetch(`/channels/${encodeURIComponent(channelId)}/details`);
+          output = { channel: projetarCanal(payload) };
+        }
+        await redis([['SET', cacheKey, JSON.stringify(output), 'EX', '60']]);
+        res.setHeader('Cache-Control', 'public, s-maxage=20, stale-while-revalidate=60');
+        return res.status(200).json(output);
       }
 
       const channelId = await getChannelId();
@@ -467,17 +540,6 @@ export default async function handler(req, res) {
         res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
         return res.status(200).json({ ranking: r.lista.map(x => ({ username: x.nome, points: x.pontos, watchtime: x.minutos })), total: r.total });
       }
-      if (action === 'atividades') {
-        const limit = Math.min(100, Math.max(1, parseInt(req.query?.limit || 25)));
-        const offset = Math.min(100000, Math.max(0, parseInt(req.query?.offset || 0)));
-        const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
-        const activities = await seFetch(`/activities/${encodeURIComponent(channelId)}?${params.toString()}`);
-        return res.status(200).json({ atividades: activities });
-      }
-      if (action === 'channel-info') {
-        const channel = await seFetch(`/channels/${encodeURIComponent(channelId)}/details`);
-        return res.status(200).json({ channel });
-      }
     }
     // ==========================================
     // FIM DAS NOVAS ROTAS
@@ -491,6 +553,7 @@ export default async function handler(req, res) {
     let aviso = null;
     try { aviso = avisoRaw ? JSON.parse(avisoRaw) : null; } catch (e) {}
 
+    res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=90');
     return res.status(200).json({
       aviso: sanitizarAviso(aviso),
       manutencao: manutRaw === '1', recado: safeStr(recadoRaw, 500), horasMes: safeStr(horasRaw, 30),
@@ -498,7 +561,8 @@ export default async function handler(req, res) {
       votosFechamento: safeStr(votosFechRaw, 40) || null
     });
   } catch (e) {
+    console.error('[config] Falha ao processar configuração pública:', e?.message || e);
     const statusCode = Number(e?.statusCode) || 502;
-    return res.status(statusCode).json({ error: e?.message || 'Erro inesperado no config.' });
+    return res.status(statusCode).json({ error: 'Não foi possível carregar as informações agora.' });
   }
 }

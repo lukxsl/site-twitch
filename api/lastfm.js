@@ -13,7 +13,6 @@ const CACHE_KEY = 'cache:musica';
 const CACHE_TTL = 5;
 const SPOTIFY_USER_TOKEN_KEY = 'cache:spotify_user_token';
 const SPOTIFY_APP_TOKEN_KEY = 'cache:spotify_app_token';
-const SPOTIFY_ANON_TOKEN_KEY = 'cache:spotify_anon_token';
 
 function safeStr(v, max = 200) { return String(v == null ? '' : v).trim().slice(0, max); }
 function safeUrl(v) {
@@ -106,35 +105,6 @@ async function spotifyAppToken() {
   } catch(e) { return null; }
 }
 
-async function spotifyAnonToken() {
-  try {
-    const [raw] = await redis([['GET', SPOTIFY_ANON_TOKEN_KEY]]);
-    if (raw) { const c = JSON.parse(raw); if (c.exp && c.exp > Date.now()) return c.token; }
-  } catch(e) {}
-  try {
-    const r = await fetch('https://open.spotify.com/embed/track/4cOdK2wGLETKBW3PvgPWqT', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8'
-      }
-    });
-    if (!r.ok) return null;
-    const html = await r.text();
-    const patterns = [
-      /"accessToken"\s*:\s*"([^"]+)"/,
-      /"access_token"\s*:\s*"([^"]+)"/,
-      /"session"\s*:\s*\{\s*"accessToken"\s*:\s*"([^"]+)"/
-    ];
-    let token = null;
-    for (const p of patterns) {
-      const m = html.match(p);
-      if (m && m[1] && m[1].length > 20) { token = m[1]; break; }
-    }
-    if (!token) return null;
-    try { await redis([['SET', SPOTIFY_ANON_TOKEN_KEY, JSON.stringify({ token, exp: Date.now() + 40 * 60 * 1000 }), 'EX', '2400']]); } catch(e) {}
-    return token;
-  } catch(e) { return null; }
-}
 
 /* ============ NOW PLAYING (opcional) ============ */
 async function spotifyNowPlaying() {
@@ -215,8 +185,8 @@ async function lastfmDados() {
 
 /* ============ SPOTIFY SEARCH → TRACK COMPLETO (com match de nome + artista) ============ */
 async function spotifySearchTrack(faixa, artista) {
+  // Pesquisa usa somente o token oficial da aplicação Spotify.
   let token = await spotifyAppToken();
-  if (!token) token = await spotifyAnonToken();
   if (!token) return null;
 
   const f = limparNome(faixa);
@@ -244,8 +214,8 @@ async function spotifySearchTrack(faixa, artista) {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (r.status === 401) {
-        try { await redis([['DEL', SPOTIFY_APP_TOKEN_KEY], ['DEL', SPOTIFY_ANON_TOKEN_KEY]]); } catch(e) {}
-        token = await spotifyAppToken() || await spotifyAnonToken();
+        try { await redis([['DEL', SPOTIFY_APP_TOKEN_KEY]]); } catch(e) {}
+        token = await spotifyAppToken();
         if (!token) return null;
         continue;
       }

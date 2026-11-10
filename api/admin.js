@@ -2,6 +2,8 @@ import { timingSafeEqual, randomUUID } from 'crypto';
 import { redis, validarSessao, origemOk, hojeBR } from './_lib/core.js';
 import { executarDiagnostico } from './_lib/diagnostico.js';
 import { pareceTeste } from './_lib/dados-teste.js';
+import { sanitizarListaTier } from './_lib/tierlist.js';
+import { evento } from './_lib/game.js';
 
 const URL_ = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
@@ -957,17 +959,14 @@ export default async function handler(req, res){
         ['GET','tierlist:seedFeito'], ['GET','tierlist:seed-clean-v2']
       ]);
       const parse = raw => { try { const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v : []; } catch(e){ return []; } };
-      let jogos = parse(jogosRaw), filmes = parse(filmesRaw), animes = parse(animesRaw);
+      let jogos = sanitizarListaTier(parse(jogosRaw), 'jogos'), filmes = sanitizarListaTier(parse(filmesRaw), 'filmes'), animes = sanitizarListaTier(parse(animesRaw), 'animes');
       // Remove apenas os itens de demonstração antigos, uma única vez. Itens criados/importados
       // pela Soso são preservados, inclusive se compartilham a mesma categoria.
       if(seedFeitoRaw === '1' && cleanRaw !== '1'){
+        // GET só projeta a lista limpa. A persistência acontece quando a
+        // administração salvar a Tier List, nunca como efeito colateral da leitura.
         jogos = jogos.filter(it => !['red-dead-2','hollow-knight','stardew-valley'].includes(String(it.id || '')));
         filmes = filmes.filter(it => String(it.id || '') !== 'interestelar');
-        await redis([
-          ['SET','tierlist:jogos',JSON.stringify(jogos)],
-          ['SET','tierlist:filmes',JSON.stringify(filmes)],
-          ['SET','tierlist:seed-clean-v2','1']
-        ]);
       }
       return res.status(200).json({ jogos, filmes, animes });
     }
@@ -982,23 +981,18 @@ export default async function handler(req, res){
         try { atuais = rawAtuais ? JSON.parse(rawAtuais) : []; } catch(e) {}
         if(rawAtuais && !Array.isArray(atuais)) throw new Error('A Tier List salva no Redis não é uma lista válida; nada foi sobrescrito.');
         const processados = await prepararJogosManuais(jogos, atuais);
-        cmds.push(['SET', 'tierlist:jogos', JSON.stringify(processados)]);
+        cmds.push(['SET', 'tierlist:jogos', JSON.stringify(sanitizarListaTier(processados, 'jogos'))]);
       }
-      if(Array.isArray(filmes)) cmds.push(['SET', 'tierlist:filmes', JSON.stringify(filmes.slice(0, 500))]);
+      if(Array.isArray(filmes)) cmds.push(['SET', 'tierlist:filmes', JSON.stringify(sanitizarListaTier(filmes, 'filmes'))]);
       if(Array.isArray(animes)) {
-        const limpos = animes.slice(0, 500).map(it => ({
-          id: String(it.id || '').slice(0, 100), nome: String(it.nome || '').slice(0, 180),
-          tier: ['S','A','B','C','NR'].includes(it.tier) ? it.tier : 'NR',
-          status: ['Assistindo','Assistido','Dropado','Na fila'].includes(it.status) ? it.status : 'Na fila',
-          nota: Math.max(0, Math.min(10, Number(it.nota) || 0)),
-          capa: typeof it.capa === 'string' ? it.capa.slice(0, 1500) : null,
-          comentario: String(it.comentario || '').slice(0, 4200), generos: Array.isArray(it.generos) ? it.generos.slice(0, 8).map(x => String(x).slice(0, 60)) : [],
-          ano: Number(it.ano) || null, episodios: Number(it.episodios) || null, episodiosVistos: Number(it.episodiosVistos) || 0,
-          adicionadoEm: it.adicionadoEm || new Date().toISOString()
-        })).filter(it => it.nome);
-        cmds.push(['SET','tierlist:animes',JSON.stringify(limpos)]);
+        cmds.push(['SET', 'tierlist:animes', JSON.stringify(sanitizarListaTier(animes, 'animes'))]);
       }
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
+      // Marca a limpeza dos itens de demonstração somente numa gravação POST,
+      // nunca como efeito colateral da leitura GET.
+      if(Array.isArray(jogos) && Array.isArray(filmes) && Array.isArray(animes)) {
+        cmds.push(['SET', 'tierlist:seed-clean-v2', '1']);
+      }
       await redis(cmds);
       if(acao) await logAcao(quem, sessao.cargo, acao);
       return res.status(200).json({ ok: true });
@@ -1111,19 +1105,39 @@ export default async function handler(req, res){
     if(req.method === 'POST' && action === 'banidos-add'){
       if(!(await temPermissao(sessao, 'editar_banidos'))) return res.status(403).json({ error: 'Sem permissão' });
       const { userId, motivo, username, avatar } = req.body || {};
-      if(!userId) return res.status(400).json({ error: 'ID obrigatório' });
-      const payload = JSON.stringify({ username: username || null, avatar: avatar || null, motivo: motivo || null, ts: Date.now() });
-      await redis([['HSET', 'banidos', String(userId), payload]]);
-      await logAcao(quem, sessao.cargo, `Baniu ${userId} (${motivo || 'sem motivo'})`);
+      const idAlvo = String(userId || '').trim();
+      if(!/^[a-zA-Z0-9_-]{1,80}$/.test(idAlvo)) return res.status(400).json({ error: 'ID inválido' });
+      if(idAlvo === String(sessao.id)) return res.status(400).json({ error: 'Você não pode aplicar banimento à própria conta.' });
+      if(ENV_ADMINS.includes(idAlvo)) return res.status(403).json({ error: 'Contas administrativas fixas não podem ser banidas.' });
+      const [adminAlvoRaw] = await redis([['HGET', 'admins', idAlvo]]);
+      let adminAlvo = {};
+      try { adminAlvo = adminAlvoRaw ? JSON.parse(adminAlvoRaw) : {}; } catch(_) {}
+      const nivelAlvo = NIVEIS[adminAlvo.cargo] || 0;
+      if(adminAlvo.cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Somente Dev pode moderar uma conta Dev.' });
+      if(sessao.cargo !== 'dev' && nivelAlvo >= meNivel) return res.status(403).json({ error: 'Você não pode banir alguém com cargo igual ou superior ao seu.' });
+      const motivoSeguro = String(motivo || '').replace(/[<>\u0000-\u001F\u007F]/g, '').trim().slice(0, 200) || null;
+      const nomeSeguro = String(username || '').replace(/[<>\u0000-\u001F\u007F]/g, '').trim().slice(0, 60) || null;
+      let avatarSeguro = null;
+      try { const u = new URL(String(avatar || '')); if(u.protocol === 'https:') avatarSeguro = u.href.slice(0, 500); } catch(_) {}
+      const payload = JSON.stringify({ username: nomeSeguro, avatar: avatarSeguro, motivo: motivoSeguro, ts: Date.now(), aplicadoPor: String(sessao.id) });
+      await redis([['HSET', 'banidos', idAlvo, payload]]);
+      await logAcao(quem, sessao.cargo, `Baniu ${idAlvo} (${motivoSeguro || 'sem motivo'})`);
       return res.status(200).json({ ok: true });
     }
 
     if(req.method === 'POST' && action === 'banidos-remove'){
       if(!(await temPermissao(sessao, 'editar_banidos'))) return res.status(403).json({ error: 'Sem permissão' });
-      const { userId } = req.body || {};
-      if(!userId) return res.status(400).json({ error: 'ID obrigatório' });
-      await redis([['HDEL', 'banidos', String(userId)]]);
-      await logAcao(quem, sessao.cargo, `Desbaniu ${userId}`);
+      const idAlvo = String(req.body?.userId || '').trim();
+      if(!/^[a-zA-Z0-9_-]{1,80}$/.test(idAlvo)) return res.status(400).json({ error: 'ID inválido' });
+      if(ENV_ADMINS.includes(idAlvo)) return res.status(403).json({ error: 'Contas administrativas fixas não podem ser alteradas.' });
+      const [adminAlvoRaw] = await redis([['HGET', 'admins', idAlvo]]);
+      let adminAlvo = {};
+      try { adminAlvo = adminAlvoRaw ? JSON.parse(adminAlvoRaw) : {}; } catch(_) {}
+      const nivelAlvo = NIVEIS[adminAlvo.cargo] || 0;
+      if(adminAlvo.cargo === 'dev' && sessao.cargo !== 'dev') return res.status(403).json({ error: 'Somente Dev pode moderar uma conta Dev.' });
+      if(sessao.cargo !== 'dev' && nivelAlvo >= meNivel) return res.status(403).json({ error: 'Você não pode alterar o banimento de alguém com cargo igual ou superior ao seu.' });
+      await redis([['HDEL', 'banidos', idAlvo]]);
+      await logAcao(quem, sessao.cargo, `Desbaniu ${idAlvo}`);
       return res.status(200).json({ ok: true });
     }
 
@@ -1164,6 +1178,11 @@ export default async function handler(req, res){
       }
       cmds.push(['SET', 'config:updatedAt', agora]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
+      // Marca a limpeza dos itens de demonstração somente numa gravação POST,
+      // nunca como efeito colateral da leitura GET.
+      if(Array.isArray(jogos) && Array.isArray(filmes) && Array.isArray(animes)) {
+        cmds.push(['SET', 'tierlist:seed-clean-v2', '1']);
+      }
       await redis(cmds);
       await logAcao(quem, sessao.cargo, `Salvou config geral${manutencao ? ' (manutenção)' : ''}`);
       return res.status(200).json({ ok: true, updatedAt: agora });
@@ -1177,6 +1196,11 @@ export default async function handler(req, res){
       if(setup && Array.isArray(setup)) cmds.push(['SET', 'setup:data', JSON.stringify(setup)]);
       if(sonhos && Array.isArray(sonhos)) cmds.push(['SET', 'setup:sonhos', JSON.stringify(sonhos)]);
       if(!cmds.length) return res.status(400).json({ error: 'Nada pra salvar' });
+      // Marca a limpeza dos itens de demonstração somente numa gravação POST,
+      // nunca como efeito colateral da leitura GET.
+      if(Array.isArray(jogos) && Array.isArray(filmes) && Array.isArray(animes)) {
+        cmds.push(['SET', 'tierlist:seed-clean-v2', '1']);
+      }
       await redis(cmds);
       await logAcao(quem, sessao.cargo, `Editou setup dos sonhos (${sonhos ? sonhos.length : 0} sonhos)`);
       return res.status(200).json({ ok: true });
@@ -1223,6 +1247,11 @@ export default async function handler(req, res){
       let item;
       try { item = JSON.parse(retorno[0]); } catch { return res.status(500).json({ error: 'Não foi possível confirmar a atualização da sugestão' }); }
       const statusAnterior = String(retorno[1] || 'nova');
+
+      if(status === 'aceita' && statusAnterior !== 'aceita' && item.userId){
+        try { await evento(String(item.userId), 'sugestao_aprovada', String(item.id)); }
+        catch(error){ console.error('[Economia] Bônus de sugestão aprovada pendente:', error?.message || error); }
+      }
 
       await notificarStatus(item, status, item.motivo, quem);
       const label = status === 'recusada' ? `recusou (motivo: ${item.motivo})` : `mudou para ${status}`;
@@ -1272,9 +1301,8 @@ export default async function handler(req, res){
     return res.status(400).json({ error: 'Ação inválida: ' + action, action, requestId });
   } catch(e){
     console.error('[admin]', requestId, action, e);
-    const msg = e?.message || 'erro inesperado';
     return res.status(500).json({
-      error: `Falha ao executar "${action || 'requisição'}": ${msg}`,
+      error: 'Não foi possível concluir a operação. Consulte os logs com o código informado.',
       action,
       requestId
     });

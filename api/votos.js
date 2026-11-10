@@ -1,7 +1,7 @@
 // Vercel serverless: /api/votos.js
 // Voto e contagem são atualizados dentro de um único script Redis para
 // evitar contagens negativas ou duplicadas quando duas requisições chegam juntas.
-import { redis, validarSessao, rateLimit, origemOk, safeStr } from './_lib/core.js';
+import { redis, validarSessao, rateLimit, origemOk, safeStr, jparse } from './_lib/core.js';
 import { evento } from './_lib/game.js';
 
 const OPCOES_PADRAO = [
@@ -107,6 +107,17 @@ export default async function handler(req, res) {
     let jaVotou = false;
 
     if (req.method === 'POST') {
+      // Votos exigem uma identidade verificável: Google com e-mail confirmado
+      // ou Twitch vinculada por OAuth. Contas locais sem verificação continuam
+      // podendo consultar o resultado, mas não multiplicar votos por cadastro.
+      const [contaRaw] = await redis([['HGET', 'accounts', String(sessao.id)]]);
+      const conta = jparse(contaRaw, null);
+      const identidadeVerificada = Boolean(
+        (conta?.google?.sub && conta?.google?.email) || conta?.twitch?.id
+      );
+      if(!identidadeVerificada){
+        return res.status(403).json({ error: 'Para votar, entre com Google (e-mail verificado) ou vincule sua conta da Twitch ao perfil.' });
+      }
       if (!(await rateLimit(`ratelimit:voto:${sessao.id}`, 1, 1))) {
         return res.status(429).json({ error: 'Calma! Aguarde um instante.' });
       }

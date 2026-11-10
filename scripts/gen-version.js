@@ -26,5 +26,7 @@ const versao = {
   branch
 };
 
-fs.writeFileSync(path.join(raiz, 'version.json'), JSON.stringify(versao, null, 2) + '\n', 'utf8');
-console.log('[gen-version] version.json gerado:', versao.commit || '(sem commit)', '-', versao.branch);
+const pastaPublica = path.join(raiz, 'public');
+fs.mkdirSync(pastaPublica, { recursive: true });
+fs.writeFileSync(path.join(pastaPublica, 'version.json'), JSON.stringify(versao, null, 2) + '\n', 'utf8');
+console.log('[gen-version] public/version.json gerado:', versao.commit || '(sem commit)', '-', versao.branch);

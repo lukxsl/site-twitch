@@ -208,6 +208,10 @@ function _atualizarStatsStrip(data){
   const live = document.getElementById('stripLive');
   const liveSep = document.getElementById('stripLiveSep');
   const viewers = document.getElementById('stripViewers');
+  const strip = document.getElementById('statsStrip');
+  const temEstatistica = [data.followers, data.horasMes, data.discord]
+    .some(valor => valor !== null && valor !== undefined && Number.isFinite(Number(valor)));
+  if(strip) strip.hidden = !temEstatistica;
 
   const flash = (el, novoValor) => {
     if(!el) return;
@@ -341,7 +345,7 @@ async function verificarStatusTwitch(){
         if(panel){
           panel.style.display = 'flex';
           panel.innerHTML = `
-            <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
+            <img id="offlineAvatarImg" src="img/avatar.webp" alt="Soso" onerror="this.style.display='none'">
             <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
             <h4>O cantinho tá descansando 💜</h4>
             <p>Siga o canal pra ser avisada(o) quando a Soso entrar ao vivo!</p>

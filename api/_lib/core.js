@@ -64,7 +64,11 @@ export async function rateLimit(chave, limite, janelaSeg, failClosed = true){
   }
 }
 export function ipDe(req){
-  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
+  // Vercel fornece x-real-ip como IP do cliente; x-forwarded-for fica como fallback.
+  const real = String(req.headers['x-real-ip'] || '').trim();
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  const candidato = real || forwarded || 'unknown';
+  return candidato.replace(/[^0-9a-fA-F:.]/g, '').slice(0, 64) || 'unknown';
 }
 
 /* ---------------- Datas ---------------- */
@@ -145,13 +149,18 @@ export function pegarCookie(req, nome){
   return m ? m[1] : null;
 }
 
-/* Defesa extra contra CSRF em POST: se vier Origin, tem que ser o nosso site. */
+/* Defesa CSRF: exige Origin válido ou Fetch Metadata same-origin. */
 export function origemOk(req){
   const o = req.headers.origin;
-  if(!o) return true;
+  if(!o){
+    const fetchSite = String(req.headers['sec-fetch-site'] || '').toLowerCase();
+    return fetchSite === 'same-origin' || fetchSite === 'none';
+  }
   try {
-    const host = new URL(o).host;
-    return host === req.headers.host || host === new URL(SITE).host;
+    const origin = new URL(o);
+    const hostRecebido = String(req.headers.host || '').toLowerCase();
+    const hostPermitido = new URL(SITE).host.toLowerCase();
+    return origin.protocol === 'https:' && (origin.host.toLowerCase() === hostRecebido || origin.host.toLowerCase() === hostPermitido);
   } catch { return false; }
 }
 

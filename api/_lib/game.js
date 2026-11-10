@@ -238,6 +238,7 @@ local streak = (ultima == num - 1) and (atual + 1) or 1
 local novoMelhor = math.max(melhor, streak)
 redis.call('HSET', KEYS[2], 'ultimaLiveN', tostring(num), 'streak', tostring(streak), 'melhorStreak', tostring(novoMelhor))
 redis.call('HINCRBY', KEYS[2], 'lives', 1)
+redis.call('HINCRBY', KEYS[4], 'lives', 1)
 local xp = (tonumber(ARGV[5]) or 30) + math.min(streak, tonumber(ARGV[6]) or 10) * (tonumber(ARGV[7]) or 5)
 local marcos = cjson.decode(ARGV[8] or '{}')
 local coins = tonumber(marcos[tostring(streak)]) or 0
@@ -255,7 +256,7 @@ return {1, streak, novoMelhor, xp, coins, antes, depois, newXP, totalCoins}
 export async function registrarPresenca(id, num){
   // HSETNX, streak, estatísticas, XP, moedas e ranking são atualizados juntos.
   const [resultado] = await redis([[
-    'EVAL', PRESENCA_LUA, '3', `att:${num}`, `g:${id}`, 'rank:xp',
+    'EVAL', PRESENCA_LUA, '4', `att:${num}`, `g:${id}`, 'rank:xp', `activity:${id}`,
     String(id), String(Date.now()), String(400 * 86400), String(num),
     String(LIVE.XP_PRESENCA), '10', String(LIVE.XP_STREAK_POR_LIVE), JSON.stringify(LIVE.MARCOS_STREAK)
   ]]);

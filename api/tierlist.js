@@ -1,3 +1,4 @@
+import { sanitizarListaTier } from './_lib/tierlist.js';
 // Vercel serverless endpoint: /api/tierlist
 // A Tier List pública é lida do Redis (Upstash); não exponha tokens ao navegador.
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -14,7 +15,7 @@ function parseLista(valor) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Método não permitido' });
@@ -48,9 +49,9 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
-      jogos: parseLista(dados[0]?.result),
-      filmes: parseLista(dados[1]?.result),
-      animes: parseLista(dados[2]?.result)
+      jogos: sanitizarListaTier(parseLista(dados[0]?.result), 'jogos'),
+      filmes: sanitizarListaTier(parseLista(dados[1]?.result), 'filmes'),
+      animes: sanitizarListaTier(parseLista(dados[2]?.result), 'animes')
     });
   } catch (error) {
     return res.status(502).json({ error: 'Falha ao consultar o Redis', jogos: [], filmes: [], animes: [] });

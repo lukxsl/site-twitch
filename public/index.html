@@ -23,7 +23,7 @@
 <meta content="https://asemtet0.vercel.app/img/banner.png" name="twitter:image"/>
 <meta content="#0B0A0F" name="theme-color"/>
 <link href="img/favicon.svg" rel="icon" type="image/svg+xml"/>
-<link href="img/avatar.png" rel="apple-touch-icon"/>
+<link href="img/apple-touch-icon.png" rel="apple-touch-icon"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://player.twitch.tv" rel="preconnect"/>
@@ -41,6 +41,7 @@
 </script>
 </head>
 <body>
+<a class="skip-link" href="#main-content">Pular para o conteúdo principal</a>
 <!-- ==================== ÍCONES (sprite SVG único) ==================== -->
 <svg aria-hidden="true" class="ico-sprite" focusable="false" height="0" style="position:absolute;overflow:hidden" width="0">
 <defs>
@@ -220,7 +221,7 @@
 </div>
 </div>
 </nav>
-<main class="wrapper">
+<main class="wrapper" id="main-content" tabindex="-1">
 <!-- ==================== INÍCIO ==================== -->
 <section class="page-section ativo" id="sec-inicio">
 <div class="home-masthead reveal">
@@ -234,10 +235,10 @@
 </div>
 </div>
 <figure class="home-portrait reveal">
-<img alt="Soso, streamer do canal asemtet0" fetchpriority="high" src="img/avatar.png"/>
+<img alt="Soso, streamer do canal asemtet0" fetchpriority="high" src="img/avatar.webp"/>
 <figcaption><span>ASEMTET0</span><span>STREAMER / CRIADORA</span></figcaption>
 </figure>
-<div class="stats-strip reveal" id="statsStrip">
+<div class="stats-strip reveal" hidden="" id="statsStrip">
 <span class="strip-item"><span class="strip-ic"><svg aria-hidden="true" class="ico" focusable="false"><use href="#i-users"></use></svg></span> <b id="stripSeg">—</b> seguidores</span>
 <span class="strip-sep">·</span>
 <span class="strip-item"><span class="strip-ic"><svg aria-hidden="true" class="ico" focusable="false"><use href="#i-clock"></use></svg></span> <b id="stripHoras">—</b>h esse mês</span>
@@ -266,7 +267,7 @@
 </div>
 <div class="twitch-player">
 <div class="offline-panel" id="offlinePanel">
-<img alt="Soso" id="offlineAvatarImg" loading="lazy" onerror="this.style.display='none'" src="img/avatar.png"/>
+<img alt="Soso" id="offlineAvatarImg" loading="lazy" onerror="this.style.display='none'" src="img/avatar.webp"/>
 <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
 <h4>O cantinho tá descansando 💜</h4>
 <p>Siga o canal pra ser avisada(o) quando a Soso entrar ao vivo!</p>
@@ -293,7 +294,7 @@
 </article><article class="card profile-card home-profile reveal">
 <div class="profile-head">
 <div class="profile-avatar-container">
-<img alt="Soso" onerror="this.style.display='none'" src="img/avatar.png"/>
+<img alt="Soso" onerror="this.style.display='none'" src="img/avatar.webp"/>
 <span class="av-status" id="profileStatus" title="Carregando..."></span>
 </div>
 <div class="profile-id">
@@ -385,7 +386,7 @@
 </div>
 </article><article class="card recado-card home-recado reveal" id="recadoCard">
 <div class="recado-av">
-<img alt="Soso" loading="lazy" onerror="this.style.display='none'" src="img/avatar.png"/>
+<img alt="Soso" loading="lazy" onerror="this.style.display='none'" src="img/avatar.webp"/>
 <span aria-hidden="true">💌</span>
 </div>
 <div class="recado-bubble">
@@ -740,7 +741,7 @@
 <div aria-live="polite" class="luk-bubble" id="lukBubble" role="status"></div>
 <div class="luk-flip">
 <div class="luk-squash">
-<img alt="Lukzin" class="luk-sprite" decoding="async" draggable="false" height="415" loading="lazy" src="img/lukzin.png" width="188"/>
+<img alt="Lukzin" class="luk-sprite" decoding="async" draggable="false" height="415" loading="lazy" src="img/lukzin.webp" width="188"/>
 </div>
 </div>
 <div class="luk-shadow"></div>
@@ -753,7 +754,7 @@
 <div class="rpg-dialogue enter" id="setupDialogue">
 <button aria-label="Fechar diálogo" class="rpg-close" id="dlgClose" type="button">✕</button>
 <div class="rpg-avatar">
-<img alt="Lukzin" class="rpg-avatar-img" loading="lazy" src="img/lukzin.png"/>
+<img alt="Lukzin" class="rpg-avatar-img" loading="lazy" src="img/lukzin.webp"/>
 </div>
 <div class="rpg-content">
 <div class="rpg-name" id="dlgNameContainer">
@@ -1003,7 +1004,7 @@
   Voltar pra live
 </button>
 <!-- ==================== MENU INFERIOR (mobile) ==================== -->
-<nav aria-label="Navegação principal" class="bottom-nav" id="bottomNav">
+<nav aria-label="Navegação rápida para dispositivos móveis" class="bottom-nav" id="bottomNav">
 <button aria-current="page" class="bn-item on" data-aba="inicio" type="button">
 <svg aria-hidden="true" class="ico" focusable="false"><use href="#i-home"></use></svg>
 <span>Início</span>
