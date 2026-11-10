@@ -17,7 +17,7 @@
     if(!Array.isArray(ranking) || !ranking.length){
       const vazio = document.createElement('li');
       vazio.className = 'midpix-empty';
-      vazio.textContent = 'Seja a primeira pessoa a apoiar o cantinho 💜';
+      vazio.textContent = 'Seu apoio pode abrir a lista por aqui.';
       lista.append(vazio);
       return;
     }

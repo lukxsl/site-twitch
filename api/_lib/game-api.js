@@ -6,21 +6,9 @@
 //   GET  /api/game?action=perfil            (logado)   XP, nível, saldo e posição
 //   GET  /api/game?action=cron-presenca     (Bearer CRON_SECRET)  tempo de tela / streak
 import { timingSafeEqual } from 'crypto';
-import { ENV, redis, jparse, lerSessao, cargoDe } from './core.js';
+import { ENV, redis, jparse, validarSessao, cargoDe } from './core.js';
 import { MOEDA, NIVEL_MAX, infoNivel, xpDoNivel, lerStats } from './game.js';
 import { cronPresenca } from './twitch.js';
-
-/* sessão válida (para contas próprias confere a versão → senha trocada derruba o resto) */
-async function sessaoValida(req){
-  const s = lerSessao(req);
-  if(!s) return null;
-  if(s.tipo === 'own'){
-    const [raw] = await redis([['HGET', 'accounts', String(s.id)]]);
-    const c = jparse(raw);
-    if(!c || c.sv !== s.sv) return null;
-  }
-  return s;
-}
 
 export default async function handler(req, res){
   const action = (req.query && req.query.action) || '';
@@ -73,7 +61,7 @@ export default async function handler(req, res){
     if(!ENV.SESSION_SECRET) return res.status(500).json({ error: 'SESSION_SECRET não configurado' });
 
     /* ============ daqui pra baixo: precisa de login ============ */
-    const sessao = await sessaoValida(req);
+    const sessao = await validarSessao(req);
     if(!sessao) return res.status(401).json({ error: 'Faça login' });
     res.setHeader('Cache-Control', 'no-store');
     const id = String(sessao.id);

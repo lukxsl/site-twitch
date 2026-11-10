@@ -259,7 +259,7 @@ function renderRecado(){
     noteEl.classList.remove('recado');
     if(!assistindoVod){
       noteEl.textContent = ultVivo
-        ? 'Transmitindo ao vivo agora 💜'
+        ? 'Transmitindo ao vivo agora.'
         : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
     }
   }
@@ -279,7 +279,7 @@ function renderRecado(){
     if(dataEl){
       const ts = CONFIG_GERAL.updatedAt || CONFIG_GERAL.atualizadoEm;
       const quando = ts ? tempoAtras(ts) : '';
-      dataEl.textContent = quando ? `Recado ${quando}` : 'Um oi rapidinho da Sophs 💜';
+      dataEl.textContent = quando ? `Recado ${quando}` : 'Um oi rapidinho da Sophs.';
     }
     card.style.display = '';
   }
@@ -313,8 +313,8 @@ function escolherDestaques(lista, max = 6){
 function emoteTile(e, comNome){
   const nome = esc(e.nome || '');
   const legenda = comNome ? `<span class="emote-name">${nome}</span>` : '';
-  if(e.img) return `<div class="emote" title="${nome}"><img src="${esc(e.img)}" alt="${nome}" width="112" height="112" loading="lazy" decoding="async" onerror="this.replaceWith(document.createTextNode('💜'))">${legenda}</div>`;
-  return `<div class="emote" title="${nome}"><span class="emote-fallback">${e.emoji || '💜'}</span>${legenda}</div>`;
+  if(e.img) return `<div class="emote" title="${nome}"><img src="${esc(e.img)}" alt="${nome}" width="112" height="112" loading="lazy" decoding="async" onerror="this.replaceWith(document.createTextNode('✦'))">${legenda}</div>`;
+  return `<div class="emote" title="${nome}"><span class="emote-fallback">${e.emoji || '✦'}</span>${legenda}</div>`;
 }
 function renderEmotes(){
   const todos = EMOTES_TODOS || EMOTES;
@@ -508,7 +508,7 @@ function renderOuvindo(){
     <div class="music-idle">
       <div class="music-idle-head">
         <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="ouvindo-vazio-txt">Nada tocando agora.<br>As últimas músicas aparecem aqui. 💜</div>
+        <div class="ouvindo-vazio-txt">Nada tocando agora.<br>As últimas músicas aparecem aqui.</div>
       </div>
       ${destaque}
     </div>`;
@@ -910,7 +910,7 @@ async function editarNotaTier(index){
   try{
     const r = await fetch('/api/admin?action=tierlist-set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const d = await r.json(); if(!r.ok) throw new Error(d.error || 'Não foi possível salvar');
-    desenharStats(); desenhar(); toast('Nota atualizada 💜','ok');
+    desenharStats(); desenhar(); toast('Nota atualizada.','ok');
   }catch(e){ item.nota = notaAnterior; desenhar(); window.alert(e.message || 'Falha ao salvar a nota.'); }
 }
 window.editarNotaTier = editarNotaTier;
@@ -1288,7 +1288,7 @@ function aplicarManutencao(){
         <div class="manutencao-ic">🔧</div>
         <h1>Estamos em manutenção</h1>
         <p>Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
-        <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Ir pra Twitch 💜</a>
+        <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Ir pra Twitch</a>
       `;
       document.body.appendChild(overlay);
     }
@@ -1410,7 +1410,7 @@ function renderVotacao(){
       <div class="voto-bloqueado">
         <span class="loot">🔒</span>
         <b>Só falta você escolher!</b>
-        <p>Entre rapidinho no site para votar e ajudar a decidir o próximo jogo da live 💜</p>
+        <p>Entre rapidinho no site para votar e ajudar a decidir o próximo jogo da live.</p>
         <button type="button" class="btn-entrar" onclick="AuthUI.open('entrar')">
           🕹️ Entrar no site
         </button>
@@ -1426,13 +1426,13 @@ function renderVotacao(){
   if(!VOTOS_DADOS.length){
     destBox.innerHTML = '';
     const mensagem = votoStatus === 'erro' ? 'Não foi possível carregar a votação agora.' : votoStatus === 'carregando' ? 'Carregando votação…' : 'A Soso ainda não adicionou opções nesta votação.';
-    const apoio = votoStatus === 'ok' ? 'Quando as opções forem publicadas, você poderá votar por aqui. 💜' : 'Tente novamente em alguns instantes.';
+    const apoio = votoStatus === 'ok' ? 'Quando as opções forem publicadas, você poderá votar por aqui.' : 'Tente novamente em alguns instantes.';
     listaBox.innerHTML = `<div class="vazio-voto voto-empty-state"><span>🗳️</span><b>${mensagem}</b><small>${apoio}</small></div>`;
     if(proxCover) proxCover.style.display = 'none';
     if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
     if(proxNome) proxNome.textContent = votoStatus === 'erro' ? 'Placar indisponível' : 'Sem opções ainda';
-    if(proxInfo) proxInfo.textContent = fechada ? 'Aguardando nova votação 💜' : 'A próxima votação ainda não foi aberta.';
+    if(proxInfo) proxInfo.textContent = fechada ? 'Aguardando nova votação' : 'A próxima votação ainda não foi aberta.';
     renderProxExtra({ estado: votoStatus, fechada, countdown });
     return;
   }
@@ -1475,7 +1475,7 @@ function renderVotacao(){
     if(segundo && segundo.votos > 0){
       const diff = l.votos - segundo.votos;
       vantagemTxt = diff === 0 ? 'Empatado com o 2º lugar 🔥' : `${diff} ${plural(diff, 'voto', 'votos')} de vantagem`;
-    } else if(l.votos > 1){ vantagemTxt = 'Unanimidade 💜'; }
+    } else if(l.votos > 1){ vantagemTxt = 'Unanimidade'; }
 
     const capaL = l.capa
       ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">`
@@ -1507,7 +1507,7 @@ function renderVotacao(){
     if(proxCoverFallback) proxCoverFallback.style.display = '';
     if(proxBarWrap) proxBarWrap.style.visibility = 'hidden';
     if(proxNome) proxNome.textContent = fechada ? 'Votação encerrada' : 'Votação aberta';
-    if(proxInfo) proxInfo.textContent = fechada ? 'Aguardando nova votação 💜' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';
+    if(proxInfo) proxInfo.textContent = fechada ? 'Aguardando nova votação' : 'Ainda sem votos. Seja a primeira pessoa a escolher!';
   }
 
   renderProxExtra({ ord, total, fechada, countdown });
@@ -1581,7 +1581,7 @@ function votoBurst(rect){
   const wrap = document.createElement('div');
   wrap.className = 'vburst';
   wrap.style.transform = `translate(${rect.left + rect.width / 2}px, ${rect.top + rect.height / 2}px)`;
-  const em = ['💜', '✨', '💖', '⭐', '🎮'];
+  const em = ['✦', '✨', '💖', '⭐', '🎮'];
   for(let i = 0; i < 16; i++){
     const p = document.createElement('i');
     const ang = Math.random() * Math.PI * 2, d = 50 + Math.random() * 90;
@@ -1641,7 +1641,7 @@ async function votar(id, event){
     }
     if(!r.ok){ reverter(); toast('Não consegui registrar o voto. Tenta de novo!', 'erro'); return; }
     aplicarVotos(await r.json());
-    toast('Voto registrado! 💜', 'ok');
+    toast('Voto registrado!', 'ok');
     if(votoAssinatura() !== otimista) renderVotacao();   // só redesenha se o servidor divergiu
   }catch(e){
     reverter(); toast('Sem conexão com o servidor.', 'erro');
@@ -1754,7 +1754,7 @@ async function enviarSugestao(){
   if($('sugSite').value) return;
   if(!texto || texto.length < SUG_MIN_CHARS){
     $('sugTexto').classList.add('erro');
-    toast(`Escreva pelo menos ${SUG_MIN_CHARS} caracteres. 💜`, 'warn');
+    toast(`Escreva pelo menos ${SUG_MIN_CHARS} caracteres.`, 'warn');
     return;
   }
   if(texto.length > SUG_MAX_CHARS){ toast(`Máx ${SUG_MAX_CHARS} caracteres.`, 'warn'); return; }
@@ -1774,7 +1774,7 @@ async function enviarSugestao(){
       const counter = $('sugCounter');
       if(counter){ counter.textContent = `0 / ${SUG_MAX_CHARS}`; counter.classList.remove('warn','danger'); }
       if(success){ success.hidden = false; setTimeout(() => { success.hidden = true; }, 6000); }
-      toast('Ideia enviada! Obrigado 💜', 'ok');
+      toast('Ideia enviada! Obrigado.', 'ok');
       carregarUltimasIdeias();
     } else if(res.status === 429){ toast('Calma! Aguarde alguns segundos.', 'warn'); }
     else { toast(dados?.error || 'Não consegui enviar agora.', 'erro'); }
@@ -1833,7 +1833,7 @@ function renderSirLista(){
   const lista = $('sirLista'); if(!lista) return;
   const itens = SIR_ITENS_CACHE;
   if(!itens.length){
-    lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhuma ideia ainda. Seja a primeira 💜</small></div>`;
+    lista.innerHTML = `<div class="sir-empty"><span>✨</span><small>Nenhuma ideia ainda. Seja a primeira.</small></div>`;
     return;
   }
   const filtrados = sirFiltro === 'all' ? itens : itens.filter(i => tipoInfoSug(i.tipo).label === sirFiltro);
@@ -2089,7 +2089,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   await carregarConfigPublica();
   verificarStatusTwitch();
-  setInterval(verificarStatusTwitch, 60000);
+  setInterval(() => { if(!document.hidden) verificarStatusTwitch(); }, 60000);
   carregarOuvindoAgora();
   setInterval(() => { if(!document.hidden) carregarOuvindoAgora(); }, 15000);
   carregarBiblioteca();
@@ -2100,7 +2100,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   setInterval(() => { if(VOTOS_FECHAMENTO) renderVotacao(); }, 60000);
 
   setInterval(() => {
-    if(ultVivo && ultGame) atualizarFoco(ultGame, ultVivo);
+    if(!document.hidden && ultVivo && ultGame) atualizarFoco(ultGame, ultVivo);
   }, 30000);
+
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden) {
+      verificarStatusTwitch();
+      carregarOuvindoAgora();
+    }
+  });
 
 });

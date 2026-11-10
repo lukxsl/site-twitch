@@ -440,7 +440,7 @@ async function renderAdminConfig(){
     area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `
       <div class="config-tabs">
         <button class="config-tab ${tab === 'aviso' ? 'on' : ''}" onclick="adminIrConfigTab('aviso')">📢 Aviso</button>
-        <button class="config-tab ${tab === 'aparencia' ? 'on' : ''}" onclick="adminIrConfigTab('aparencia')">💜 Aparência</button>
+        <button class="config-tab ${tab === 'aparencia' ? 'on' : ''}" onclick="adminIrConfigTab('aparencia')">Aparência</button>
         <button class="config-tab ${tab === 'sistema' ? 'on' : ''}" onclick="adminIrConfigTab('sistema')">🔧 Sistema</button>
       </div>
 
@@ -475,7 +475,7 @@ async function renderAdminConfig(){
         <div class="admin-card">
           <h3>💬 Recado da Soso</h3>
           <div class="admin-form">
-            <div><label>Texto do recado</label><textarea id="cfgRecado" rows="3" placeholder="Ex: Essa semana tem live de terror! 💜">${esc(d.recado || '')}</textarea></div>
+            <div><label>Texto do recado</label><textarea id="cfgRecado" rows="3" placeholder="Ex: Essa semana tem live de terror!">${esc(d.recado || '')}</textarea></div>
           </div>
         </div>
       </div>
@@ -494,7 +494,7 @@ async function renderAdminConfig(){
           </div>
         </div>
         <div class="admin-card">
-          <h3>💜 Cliques no MidPix</h3>
+          <h3>Cliques no MidPix</h3>
           <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Quantas vezes alguém clicou em “Apoiar via Pix (MidPix)” na home e na aba Comunidade.</p>
           ${midpix ? `
             <div class="midpix-stats">

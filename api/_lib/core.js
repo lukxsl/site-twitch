@@ -24,7 +24,8 @@ export async function redis(cmds){
   const r = await fetch(`${ENV.URL.replace(/\/+$/, '')}/pipeline`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${ENV.TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(cmds)
+    body: JSON.stringify(cmds),
+    signal: AbortSignal.timeout(8000)
   });
   let data;
   try { data = await r.json(); } catch { throw new Error(`Redis: resposta inválida (HTTP ${r.status})`); }

@@ -1,17 +1,19 @@
 # asemtet0 — Redesign editorial
 
+> Atualização: a segunda camada visual e a revisão de copy/código de novembro de 2026 estão documentadas em `README-ENTREGA-2026.md`. A camada atualmente carregada por último é `public/css/identity.css`.
+
 Este pacote reúne o redesign visual do site da Soso. A implementação prioriza uma identidade editorial escura, tipografia forte, superfícies sólidas, linhas discretas e uma navegação lateral no desktop.
 
 ## Direção visual
 
-- **Títulos:** Archivo.
+- **Títulos:** Instrument Serif.
 - **Texto e interface:** DM Sans.
 - **Metadados e etiquetas:** IBM Plex Mono.
-- **Base:** preto carvão e superfícies grafite.
-- **Identidade:** lavanda e violeta como acentos, sem depender de brilho ou gradientes luminosos.
+- **Base:** carvão, superfícies grafite e texto marfim.
+- **Identidade:** lavanda como acento e dourado quente nos detalhes; gradientes são usados apenas para profundidade e hierarquia, não como efeito decorativo em cada componente.
 - **Componentes:** cantos pequenos, bordas finas e sombras contidas.
 
-Os tokens e os principais ajustes estão em `public/css/redesign.css`, carregado por último em `public/index.html` para centralizar a nova camada visual sem apagar as folhas específicas das páginas.
+Os tokens e os principais ajustes da identidade atual estão em `public/css/identity.css`, carregado por último em `public/index.html`. `redesign.css` continua preservado como base anterior; `identity.css` centraliza a camada final sem apagar as folhas específicas das páginas.
 
 ## Navegação
 
@@ -22,7 +24,7 @@ Os tokens e os principais ajustes estão em `public/css/redesign.css`, carregado
 
 ## Home
 
-A Home agora usa um masthead editorial com retrato e chamada textual, em vez do banner horizontal ocupando a abertura inteira. O banner original foi preservado em metadados de compartilhamento e na identidade visual do login.
+A Home agora usa um masthead editorial com retrato e chamada textual, em vez do banner horizontal ocupando a abertura inteira. O banner original foi preservado para metadados de compartilhamento; o login e o fallback usam o retrato vertical já otimizado (`img/avatar.webp`), sem o lettering antigo do banner.
 
 Os cards da Home estão diretamente dentro da grade e seguem a ordem de leitura: transmissão, perfil, música, jogos, recado, apoiadores e assinatura. A grade é assimétrica no desktop e vira uma coluna no celular.
 
@@ -42,7 +44,8 @@ A camada visual preserva os identificadores e contratos usados pelas integraçõ
 ## Arquivos principais alterados
 
 - `public/index.html` — fontes, estrutura do login, navegação, masthead e ordem semântica da Home.
-- `public/css/redesign.css` — nova camada de identidade visual, sidebar, Home e refinamentos das páginas.
+- `public/css/redesign.css` — camada editorial anterior, mantida como base de compatibilidade.
+- `public/css/identity.css` — camada visual atual, carregada por último e responsável pela identidade consolidada entre páginas.
 - `public/css/core.css` — tokens base e remoção do cenário virtual e dos antigos estilos de vidro do login.
 - `public/css/components.css` — remoção de efeitos decorativos globais que deixaram de ser usados.
 - `public/css/home.css` — limpeza de regras antigas do banner e de estilos responsivos obsoletos.

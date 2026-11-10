@@ -30,7 +30,7 @@ function atualizarFoco(game, isLive){
     if(meta) meta.innerHTML = '';
     if(horas){
       horas.hidden = false;
-      horas.textContent = isLive ? 'Sem categoria definida na Twitch.' : 'Quando a Soso jogar, aparece aqui. 💜';
+      horas.textContent = isLive ? 'Sem categoria definida na Twitch.' : 'Quando a Soso jogar, aparece aqui.';
     }
     if(bar) bar.style.display = 'none';
     const s0 = document.getElementById('focoSub'); if(s0) s0.hidden = true;
@@ -92,7 +92,7 @@ function atualizarFoco(game, isLive){
       horas.textContent = '';
     } else {
       horas.hidden = false;
-      horas.textContent = isLive ? 'Assistindo agora na Twitch 💜' : 'Sem dados extras na tier list ainda.';
+      horas.textContent = isLive ? 'Assistindo agora na Twitch' : 'Sem dados extras na tier list ainda.';
     }
   }
 
@@ -274,7 +274,7 @@ async function verificarStatusTwitch(){
 
     if(live && !toastLiveMostrado){
       toastLiveMostrado = true;
-      setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat 💜', 'ok'), 800);
+      setTimeout(() => toast('🔴 Soso tá ao vivo! Vem pro chat!', 'ok'), 800);
     }
 
     if(data.discord && $('dcMembros'))
@@ -304,7 +304,7 @@ async function verificarStatusTwitch(){
         panel.classList.add('is-mature');
         panel.style.backgroundImage = 'linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85))';
         const st18 = data.stream;
-        const fundo18 = st18.thumbnail || (data.game && data.game.box_art) || (data.user && data.user.offline_image_url) || (data.user && data.user.profile_image_url) || 'img/banner.png';
+        const fundo18 = st18.thumbnail || (data.game && data.game.box_art) || (data.user && data.user.offline_image_url) || (data.user && data.user.profile_image_url) || 'img/avatar.webp';
         const chips18 = [];
         if(st18.uptime) chips18.push(`<span>⏱ no ar há ${esc(st18.uptime)}</span>`);
         chips18.push(`<span>👀 ${Number(st18.viewer_count || 0).toLocaleString('pt-BR')} assistindo</span>`);
@@ -347,10 +347,10 @@ async function verificarStatusTwitch(){
           panel.innerHTML = `
             <img id="offlineAvatarImg" src="img/avatar.webp" alt="Soso" onerror="this.style.display='none'">
             <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
-            <h4>O cantinho tá descansando 💜</h4>
-            <p>Siga o canal pra ser avisada(o) quando a Soso entrar ao vivo!</p>
+            <h4>Hoje tô fora do ar.</h4>
+            <p>Quando eu voltar, a live aparece por aqui. Os avisos chegam no Discord.</p>
             <div class="offline-info">
-              <span>📅 Lives toda semana</span>
+              <span>Ao vivo quando der</span>
               <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
             </div>
             <div class="offline-actions">

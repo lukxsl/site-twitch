@@ -14,12 +14,17 @@ const OPCOES_PADRAO = [
 ];
 
 const safeId = (value, max = 40) => String(value == null ? '' : value).trim().slice(0, max);
+const RECOMPENSA_PENDENTE_TTL = String(90 * 86400);
 function safeUrl(value) {
   const url = safeStr(value, 500);
   return /^https?:\/\//i.test(url) ? url : null;
 }
 
 const REGISTRAR_VOTO_LUA = `
+-- Revalida banimento e ciclo no instante do commit, não antes dele.
+if redis.call('HEXISTS', KEYS[5], ARGV[1]) == 1 then return {-2, 'banido'} end
+local cicloAtual = tonumber(redis.call('GET', KEYS[4]) or '1') or 1
+if cicloAtual ~= (tonumber(ARGV[5]) or 1) then return {-3, 'ciclo-alterado'} end
 local fechamento = tonumber(ARGV[4]) or 0
 if fechamento > 0 then
   local agora = redis.call('TIME')
@@ -44,8 +49,9 @@ if anterior ~= ARGV[2] then
   end
   redis.call('HINCRBY', KEYS[2], ARGV[2], 1)
   redis.call('HSET', KEYS[1], ARGV[1], ARGV[3])
-  -- A estatística do perfil é atualizada na mesma operação do voto.
+  -- A estatística do perfil e a marca de recompensa pendente nascem junto do voto.
   redis.call('HINCRBY', KEYS[3], 'votes', 1)
+  redis.call('SET', KEYS[6], '1', 'NX', 'EX', tonumber(ARGV[6]) or 7776000)
   mudou = 1
 end
 return {mudou, anterior or ''}
@@ -84,6 +90,21 @@ function lerVoto(raw) {
   }
 }
 
+async function processarRecompensaPendente(userId, ciclo) {
+  const key = `votos:recompensa-pendente:${ciclo}:${userId}`;
+  const [pendente] = await redis([['GET', key]]);
+  if (!pendente) return;
+  try {
+    // evento() é idempotente pelo par usuário/evento/ciclo. Se o crédito já
+    // aconteceu antes de uma falha no DEL, repetir não paga duas vezes.
+    await evento(String(userId), 'voto', String(ciclo));
+    await redis([['DEL', key]]);
+  } catch (error) {
+    // A marca permanece para a próxima consulta/voto do mesmo usuário.
+    console.error('[Votos] Recompensa pendente; será tentada novamente:', error?.message || error);
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -97,10 +118,12 @@ export default async function handler(req, res) {
   if (!sessao?.id) return res.status(401).json({ error: 'Faça login para votar.' });
 
   try {
+    const ciclo = await pegarCiclo();
+    await processarRecompensaPendente(sessao.id, ciclo);
+
     const [banido] = await redis([['HEXISTS', 'banidos', String(sessao.id)]]);
     if (Number(banido) === 1) return res.status(403).json({ error: 'Você foi banido de votar' });
 
-    const ciclo = await pegarCiclo();
     const opcoes = await pegarOpcoes();
     const keyVotos = `votos:${ciclo}`;
     const keyUsuarios = `votos_usuarios:${ciclo}`;
@@ -141,20 +164,26 @@ export default async function handler(req, res) {
           return res.status(503).json({ error: 'Não foi possível validar o horário de encerramento da votação.' });
         }
       }
+      const recompensaKey = `votos:recompensa-pendente:${ciclo}:${sessao.id}`;
       const [resultado] = await redis([[
-        'EVAL', REGISTRAR_VOTO_LUA, '3', keyUsuarios, keyVotos, `activity:${sessao.id}`,
-        String(sessao.id), id, payload, String(fechamentoMs)
+        'EVAL', REGISTRAR_VOTO_LUA, '6', keyUsuarios, keyVotos, `activity:${sessao.id}`,
+        'votos:ciclo_atual', 'banidos', recompensaKey,
+        String(sessao.id), id, payload, String(fechamentoMs), ciclo, RECOMPENSA_PENDENTE_TTL
       ]]);
       if (Number(resultado?.[0]) === -1) {
-        return res.status(403).json({ error: 'A votação já foi encerrada. Obrigado por participar! 💜' });
+        return res.status(403).json({ error: 'A votação já foi encerrada. Obrigado por participar!' });
+      }
+      if (Number(resultado?.[0]) === -2) {
+        return res.status(403).json({ error: 'Você foi banido de votar.' });
+      }
+      if (Number(resultado?.[0]) === -3) {
+        return res.status(409).json({ error: 'A votação mudou enquanto você votava. Atualize a página e tente novamente.' });
       }
       jaVotou = Number(resultado?.[0]) === 0;
 
-      // O contador do perfil já foi atualizado junto com o voto no Redis.
-      if(Number(resultado?.[0]) === 1){
-        try { await evento(String(sessao.id), 'voto', ciclo); }
-        catch(error){ console.error('[Votos] XP/moedas do voto não creditados:', error?.message || error); }
-      }
+      // Se o processo cair entre o commit e o crédito, a marca fica no Redis
+      // e será processada na próxima consulta autenticada dessa pessoa.
+      if (Number(resultado?.[0]) === 1) await processarRecompensaPendente(sessao.id, ciclo);
     }
 
     const [flat, meuRaw] = await redis([

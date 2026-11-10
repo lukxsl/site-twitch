@@ -86,7 +86,7 @@
     const avatar = usuario.avatar || usuario.google?.picture || '';
     setText('pfBannerNome', `@${nick.replace(/^@/, '')}`);
     setText('pfNickLarge', nick);
-    setText('pfBannerStatus', usuario.twitch?.login ? `Twitch conectada · @${usuario.twitch.login}` : 'Bem-vinda(o) ao cantinho da Soso');
+    setText('pfBannerStatus', usuario.twitch?.login ? `Twitch conectada · @${usuario.twitch.login}` : 'Seu espaço por aqui, com a Soso');
     setText('pfProfileMethod', rotulo);
     setText('pfLivesCount', numero(atividade.lives));
     setText('pfWatchHoursCount', tempo(atividade.minutes));

@@ -62,7 +62,7 @@ async function renderAdminHome(){
     const total = Number(shared.midpix.total) || 0;
     const hoje = Number(shared.midpix.hoje) || 0;
     const pulse = kpiChanged('midpix', total);
-    kpis.push({ icon:'💜', value: total, label:'cliques MidPix', sub: `${hoje} hoje`, href:'config', accent:'pink', pulse });
+    kpis.push({ icon:'✦', value: total, label:'cliques MidPix', sub: `${hoje} hoje`, href:'config', accent:'pink', pulse });
   }
 
   const kpiHTML = kpis.length ? `
@@ -233,7 +233,7 @@ function verComoVisitante(){
   const url = window.location.origin + '/?preview=1';
   const w = window.open(url, '_blank', 'noopener');
   if(!w){ toast('Permita popups pra abrir o preview', 'warn'); return; }
-  toast('Home aberta em nova aba 💜', 'ok');
+  toast('Home aberta em nova aba.', 'ok');
 }
 window.verComoVisitante = verComoVisitante;
 
@@ -305,7 +305,7 @@ function renderAdminSonhosLista(sonhos){
           </div>
 
           <div style="margin-top:8px">
-            <label>💜 Contribuintes (${(s.contribuintes || []).length})</label>
+            <label>Contribuintes (${(s.contribuintes || []).length})</label>
             <div>
               ${(s.contribuintes || []).map((c, ci) => `
                 <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">

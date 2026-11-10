@@ -249,13 +249,13 @@ const ORDEM_TOUR = ['monitor', 'webcam', 'teclado', 'mouse', 'headset', 'gabinet
 const RARIDADE = { lendario: 'Lendário', epico: 'Épico', raro: 'Raro' };
 const GATO_CLIQUES = 5;
 
-const BAO_GREETING = 'Tudo bão? 💜 Clica em mim!';
+const BAO_GREETING = 'Tudo bão? Clica em mim!';
 const BAO_FALAS = [
-  'Tudo bão? 💜',
+  'Tudo bão?',
   'Fica bão demais, né? ✨',
   'Tá bão ou quer mais? 😄',
   'Ô sô, que setup bão! 🎮',
-  'Bão demais ter você aqui! 💜',
+  'Bão demais ter você aqui!',
   'Chega mais, tá bão? Clica nos pontinhos!'
 ];
 
@@ -374,12 +374,12 @@ function interagir() {
   snd('playPop');
 
   if (S.tourOferecido) {
-    falaTemporaria('O tour já está pronto! Use o botão “Iniciar Tour Guiado” se quiser passear de novo. 💜');
+    falaTemporaria('O tour já está pronto! Use o botão “Iniciar Tour Guiado” se quiser passear de novo.');
     return;
   }
   const ultima = S.falaIndex >= BAO_FALAS.length - 1;
   const fala = ultima
-    ? 'Agora que você já me conhece, vou te mostrar o cantinho inteiro. No final, te levo até a cadeira da Soso! 🪑'
+    ? 'Agora que você já me conhece, vou te mostrar o site por dentro. No final, te levo até a cadeira da Soso! 🪑'
     : BAO_FALAS[S.falaIndex];
   S.falaIndex = Math.min(S.falaIndex + 1, BAO_FALAS.length);
   falaTemporaria(fala, ultima ? 5200 : 4200);
@@ -612,7 +612,7 @@ async function recapFinal(run) {
 
   sparks();
   snd('playSuccess');
-  mostrarBalao('Setup completo, tá bão demais! 💜', 50);
+  mostrarBalao('Setup completo, tá bão demais!', 50);
   setProgresso(ORDEM_TOUR.length, ORDEM_TOUR.length, 'Concluído! ✅');
   prepararDialogo();
   $('setupDialogue').classList.add('is-recap');

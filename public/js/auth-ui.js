@@ -18,10 +18,10 @@
     welcome.innerHTML = `
       <div class="auth-shell">
         <button type="button" class="auth-close" data-close aria-label="Fechar">×</button>
-        <div class="auth-brandline"><span class="auth-brand-symbol">S</span><span>SEU CANTINHO</span></div>
+        <div class="auth-brandline"><span class="auth-brand-symbol">S</span><span>ASEMTET0 / COMUNIDADE</span></div>
         <div class="auth-content">
           <span class="auth-eyebrow">ACESSO CONFIRMADO</span>
-          <h2>Bem-vinda(o), <span data-nick>pessoa</span>!</h2>
+          <h2>Boa, <span data-nick>pessoa</span>!</h2>
           <p class="auth-intro">Sua conta está pronta. Agora você pode participar das votações, enviar sugestões e acompanhar sua presença nas lives.</p>
           <div class="auth-welcome-steps">
             <div><span>01</span><b>Complete seu perfil</b><small>Escolha como quer aparecer na comunidade.</small></div>
@@ -183,7 +183,7 @@
     try { await window.checarLogin?.(); } catch(_) {}
     window.dispatchEvent(new CustomEvent('soso:login', { detail: result.data }));
     if(result.data?.novo) showWelcome(result.data);
-    else window.toast?.(`Bem-vinda(o), ${result.data?.nick || 'pessoa'}! 💜`, 'ok');
+    else window.toast?.(`Opa, ${result.data?.nick || 'pessoa'}! Você voltou.`, 'ok');
   }
 
   /* ================== retorno do OAuth ================== */
@@ -198,7 +198,7 @@
       setTimeout(async () => {
         try { await window.checarLogin?.(); } catch(_) {}
         if(novo){ const user = typeof USUARIO !== 'undefined' ? USUARIO : null; showWelcome(user); }
-        else window.toast?.(provider === 'twitch' ? 'Login pela Twitch realizado com sucesso. 💜' : 'Login realizado com sucesso. 💜', 'ok');
+        else window.toast?.(provider === 'twitch' ? 'Login pela Twitch realizado com sucesso.' : 'Login realizado com sucesso.', 'ok');
       }, 80);
     } else if(login && login !== 'ok'){
       const mensagens = {

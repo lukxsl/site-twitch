@@ -15,6 +15,7 @@
 //  O ID público do canal é descoberto pelo login asemtet0. A autorização OAuth
 //  da broadcaster é feita por um link temporário no Diagnóstico DEV e fica no Redis.
 // ============================================================================
+import { randomUUID } from 'crypto';
 import { redis, jparse } from './core.js';
 import { registrarPresenca, LIVE } from './game.js';
 
@@ -24,6 +25,8 @@ const BC_ID_ENV = String(process.env.TWITCH_BROADCASTER_ID || '').trim();
 const BC_LOGIN = String(process.env.TWITCH_BROADCASTER_LOGIN || 'asemtet0').trim().replace(/^@/, '').toLowerCase();
 const BC_REFRESH_ENV = String(process.env.TWITCH_BROADCASTER_REFRESH || '').trim();
 const BC_REFRESH_LOCK = 'twitch:bc:refresh-lock';
+const LIBERAR_REFRESH_LOCK_LUA = `if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end return 0`;
+const fetchT = (url, options = {}) => fetch(url, { ...options, signal: options.signal || AbortSignal.timeout(8000) });
 const BC_SCOPE = 'moderator:read:chatters';
 const TWITCH_REDIRECT_URI = String(process.env.TWITCH_REDIRECT_URI || `${String(process.env.SITE_URL || 'https://asemtet0.vercel.app').trim().replace(/\/+$/, '')}/api/twitch-callback`).trim().replace(/\/+$/, '');
 let broadcasterCache = { value: null, expiresAt: 0 };
@@ -127,7 +130,7 @@ export function urlVinculo(redirectUri, state){
   return `https://id.twitch.tv/oauth2/authorize?${p}`;
 }
 export async function identificarViewer(code, redirectUri){
-  const t = await fetch('https://id.twitch.tv/oauth2/token', {
+  const t = await fetchT('https://id.twitch.tv/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -136,7 +139,7 @@ export async function identificarViewer(code, redirectUri){
     })
   }).then(r => r.json());
   if(!t.access_token) return null;
-  const u = await fetch('https://api.twitch.tv/helix/users', {
+  const u = await fetchT('https://api.twitch.tv/helix/users', {
     headers: { Authorization: `Bearer ${t.access_token}`, 'Client-Id': CLIENT_ID }
   }).then(r => r.json());
   const me = u && u.data && u.data[0];
@@ -149,7 +152,7 @@ export async function identificarViewer(code, redirectUri){
 async function tokenApp(){
   const [c] = await redis([['GET', 'twitch:apptoken']]);
   if(c) return c;
-  const t = await fetch('https://id.twitch.tv/oauth2/token', {
+  const t = await fetchT('https://id.twitch.tv/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'client_credentials' })
@@ -172,7 +175,7 @@ export async function obterBroadcasterInfo(){
   const query = BC_ID_ENV
     ? `id=${encodeURIComponent(BC_ID_ENV)}`
     : `login=${encodeURIComponent(BC_LOGIN)}`;
-  const response = await fetch(`https://api.twitch.tv/helix/users?${query}`, {
+  const response = await fetchT(`https://api.twitch.tv/helix/users?${query}`, {
     headers: { Authorization: `Bearer ${token}`, 'Client-Id': CLIENT_ID }
   });
   const payload = await response.json().catch(() => null);
@@ -204,7 +207,7 @@ export async function urlAutorizacaoBroadcaster(redirectUri, state){
 
 export async function concluirAutorizacaoBroadcaster(code, redirectUri, expectedUserId){
   if(!CLIENT_ID || !CLIENT_SECRET) throw new Error('O aplicativo Twitch não está configurado.');
-  const response = await fetch('https://id.twitch.tv/oauth2/token', {
+  const response = await fetchT('https://id.twitch.tv/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -217,7 +220,7 @@ export async function concluirAutorizacaoBroadcaster(code, redirectUri, expected
     throw new Error(`A Twitch não concluiu a autorização (HTTP ${response.status}). Gere um link novo e tente novamente.`);
   }
 
-  const validationResponse = await fetch('https://id.twitch.tv/oauth2/validate', {
+  const validationResponse = await fetchT('https://id.twitch.tv/oauth2/validate', {
     headers: { Authorization: `OAuth ${token.access_token}` }
   });
   const validation = await validationResponse.json().catch(() => null);
@@ -252,7 +255,7 @@ export async function concluirAutorizacaoBroadcaster(code, redirectUri, expected
 async function validarAutorizacaoBroadcaster(){
   const channel = await obterBroadcasterInfo();
   const access = await tokenBroadcaster();
-  const response = await fetch('https://id.twitch.tv/oauth2/validate', {
+  const response = await fetchT('https://id.twitch.tv/oauth2/validate', {
     headers: { Authorization: `OAuth ${access}` }
   });
   const validation = await response.json().catch(() => null);
@@ -298,7 +301,8 @@ async function tokenBroadcaster(){
 
   // O refresh token da Twitch é rotativo e de uso único. Um lock evita que
   // duas execuções simultâneas invalidem o refresh token uma da outra.
-  const [lock] = await redis([['SET', BC_REFRESH_LOCK, String(Date.now()), 'NX', 'EX', '30']]);
+  const lockToken = randomUUID();
+  const [lock] = await redis([['SET', BC_REFRESH_LOCK, lockToken, 'NX', 'EX', '45']]);
   if(!lock){
     for(let tentativa = 0; tentativa < 12; tentativa++){
       await new Promise(resolve => setTimeout(resolve, 250));
@@ -314,7 +318,7 @@ async function tokenBroadcaster(){
     if(bc && bc.access && bc.exp > Date.now() + 120000) return bc.access;
     const refresh = (bc && bc.refresh) || BC_REFRESH_ENV;
     if(!refresh) throw new Error('Twitch: o canal ainda não autorizou a integração do site. Gere um link seguro no Diagnóstico DEV.');
-    const response = await fetch('https://id.twitch.tv/oauth2/token', {
+    const response = await fetchT('https://id.twitch.tv/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'refresh_token', refresh_token: refresh })
@@ -325,7 +329,8 @@ async function tokenBroadcaster(){
     await redis([['SET', 'twitch:bc', JSON.stringify(bc)]]);
     return bc.access;
   } finally {
-    await redis([['DEL', BC_REFRESH_LOCK]]).catch(() => {});
+    // Só o dono do lock pode liberá-lo. Uma execução antiga nunca apaga o lock novo.
+    await redis([['EVAL', LIBERAR_REFRESH_LOCK_LUA, '1', BC_REFRESH_LOCK, lockToken]]).catch(() => {});
   }
 }
 
@@ -333,7 +338,7 @@ async function tokenBroadcaster(){
 async function streamAtual(broadcasterId){
   const id = String(broadcasterId || (await obterBroadcasterInfo()).id);
   const consultar = async token => {
-    const response = await fetch(`https://api.twitch.tv/helix/streams?user_id=${encodeURIComponent(id)}`, {
+    const response = await fetchT(`https://api.twitch.tv/helix/streams?user_id=${encodeURIComponent(id)}`, {
       headers: { Authorization: `Bearer ${token}`, 'Client-Id': CLIENT_ID }
     });
     const dados = await response.json().catch(() => null);
@@ -360,7 +365,7 @@ async function chattersAgora(broadcasterId){
   let cursor = '';
   for(let pagina = 0; pagina < 20; pagina++){ // até 20k chatters
     const url = `https://api.twitch.tv/helix/chat/chatters?broadcaster_id=${encodeURIComponent(id)}&moderator_id=${encodeURIComponent(id)}&first=1000${cursor ? '&after=' + encodeURIComponent(cursor) : ''}`;
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, 'Client-Id': CLIENT_ID } });
+    const response = await fetchT(url, { headers: { Authorization: `Bearer ${token}`, 'Client-Id': CLIENT_ID } });
     const dados = await response.json().catch(() => null);
     if(!response.ok){
       const dica = response.status === 401 || response.status === 403
