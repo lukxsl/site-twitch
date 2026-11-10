@@ -1,68 +1,42 @@
-# asemtet0 — Redesign editorial
+# asemtet0 — Broadcast Club redesign
 
-> Atualização: a segunda camada visual e a revisão de copy/código de novembro de 2026 estão documentadas em `README-ENTREGA-2026.md`. A camada atualmente carregada por último é `public/css/identity.css`.
+> Direção de arte: Broadcast Club, edição Soso. Esta versão substitui a direção editorial minimalista anterior por uma linguagem mais viva, gráfica e ligada à cultura de streaming e comunidade.
 
-Este pacote reúne o redesign visual do site da Soso. A implementação prioriza uma identidade editorial escura, tipografia forte, superfícies sólidas, linhas discretas e uma navegação lateral no desktop.
+## Conceito visual
 
-## Direção visual
+O site combina 70% Broadcast Club, 20% Internet Scrapbook e 10% Pixel Universe: uma base escura com acentos violeta, rosa, amarelo e ciano; títulos expressivos; composições assimétricas; molduras e selos gráficos; e pequenas referências à cultura de transmissão.
 
-- **Títulos:** Instrument Serif.
-- **Texto e interface:** DM Sans.
-- **Metadados e etiquetas:** IBM Plex Mono.
-- **Base:** carvão, superfícies grafite e texto marfim.
-- **Identidade:** lavanda como acento e dourado quente nos detalhes; gradientes são usados apenas para profundidade e hierarquia, não como efeito decorativo em cada componente.
-- **Componentes:** cantos pequenos, bordas finas e sombras contidas.
+- **Títulos:** Bricolage Grotesque, com peso forte e proporções expressivas.
+- **Texto e interface:** Space Grotesk.
+- **Metadados:** IBM Plex Mono.
+- **Cores:** carvão e superfícies arroxeadas, violeta elétrico, rosa, amarelo quente e ciano.
+- **Home:** masthead em formato de capa de canal, retrato real com moldura e selos visuais, CTAs de alto contraste e faixa de assuntos.
+- **Áreas internas:** hierarquias próprias para Tier List, Ranking, Comunidade, Setup, Sugestões e Perfil. O Setup preserva sua identidade pixel art.
 
-Os tokens e os principais ajustes da identidade atual estão em `public/css/identity.css`, carregado por último em `public/index.html`. `redesign.css` continua preservado como base anterior; `identity.css` centraliza a camada final sem apagar as folhas específicas das páginas.
+## Implementação
 
-## Navegação
+A direção visual está consolidada em `public/css/identity.css`, carregado por último em `public/index.html`. As folhas `core.css`, `components.css`, `pages.css`, `setup.css`, `admin.css`, `home.css` e `redesign.css` foram preservadas porque contêm a base de componentes, comportamentos e estilos especializados utilizados por diferentes páginas. A nova camada aplica os tokens e a direção visual final sem remover esses contratos.
 
-- **Desktop (acima de 1180 px):** navegação fixa no canto esquerdo.
-- **Tablet (até 1180 px):** barra superior compacta, com menu expansível.
-- **Celular (até 760 px):** barra inferior para as áreas principais e menu superior para as demais opções.
-- No menu expansível, `Escape` fecha a navegação e devolve o foco ao botão.
+O HTML ganhou apenas elementos editoriais não funcionais na Home (rótulo da edição e faixa temática), além da troca de tipografia e metadados de cor/nome. IDs, rotas, handlers, scripts, integrações e a ordem das áreas permanecem preservados.
 
-## Home
+## Responsividade e acessibilidade
 
-A Home agora usa um masthead editorial com retrato e chamada textual, em vez do banner horizontal ocupando a abertura inteira. O banner original foi preservado para metadados de compartilhamento; o login e o fallback usam o retrato vertical já otimizado (`img/avatar.webp`), sem o lettering antigo do banner.
+- Desktop com navegação lateral e grade assimétrica da Home.
+- Tablet com navegação compacta e grade adaptada.
+- Celular com composição em coluna, botões com área confortável e navegação inferior preservada.
+- Foco visível, contraste revisado para textos principais e respeito a `prefers-reduced-motion`.
 
-Os cards da Home estão diretamente dentro da grade e seguem a ordem de leitura: transmissão, perfil, música, jogos, recado, apoiadores e assinatura. A grade é assimétrica no desktop e vira uma coluna no celular.
+## Validações realizadas nesta entrega
 
-## Integrações e funcionalidades preservadas
+- `node --check` em todos os JavaScript de `api/` e `public/js/`.
+- Parsing das folhas CSS com `tinycss2` sem erros de sintaxe.
+- `vercel.json` e JSONs do projeto validados.
+- HTML conferido quanto a IDs duplicados, IDs críticos e referências locais a CSS, JS e imagens.
+- Arquivo ZIP verificado quanto à integridade.
+- Servidor HTTP estático local consultado para verificar o carregamento dos principais arquivos.
 
-O redesign é de apresentação e navegação. Os contratos de integração foram preservados, incluindo os identificadores usados pelos scripts de:
-
-- autenticação por e-mail/senha, Google e Twitch;
-- status, estatísticas e player da Twitch;
-- música atual e histórico do Spotify;
-- jogos, votação e resultados;
-- apoiadores e meta do MidPix;
-- navegação entre seções, comunidade, perfil, Setup e administração.
-
-A camada visual preserva os identificadores e contratos usados pelas integrações. Em uma rodada técnica posterior, APIs e módulos internos receberam correções de segurança, consistência de economia, proteção de dados e backup. Consulte `README-AUDITORIA-TECNICA.md` para o inventário dessas alterações e para as limitações que ainda exigem validação no ambiente Vercel/Upstash real.
-
-## Arquivos principais alterados
-
-- `public/index.html` — fontes, estrutura do login, navegação, masthead e ordem semântica da Home.
-- `public/css/redesign.css` — camada editorial anterior, mantida como base de compatibilidade.
-- `public/css/identity.css` — camada visual atual, carregada por último e responsável pela identidade consolidada entre páginas.
-- `public/css/core.css` — tokens base e remoção do cenário virtual e dos antigos estilos de vidro do login.
-- `public/css/components.css` — remoção de efeitos decorativos globais que deixaram de ser usados.
-- `public/css/home.css` — limpeza de regras antigas do banner e de estilos responsivos obsoletos.
-- `public/js/main.js` — remoção de tilt/parallax decorativos, sincronização de navegação e fechamento acessível do menu.
-- `public/js/twitch.js` — remoção somente da atualização do banner que saiu da Home.
-
-As folhas `public/css/pages.css`, `public/css/setup.css` e `public/css/admin.css` continuam separadas para preservar a organização e os comportamentos específicos de cada área. O Setup mantém sua camada lúdica por ser uma experiência interativa própria do site.
-
-## Validações realizadas
-
-- HTML (`public/index.html`) analisado: IDs duplicados, IDs de integração e referências locais.
-- CSS: parsing de todas as folhas em `public/css/` sem erros de sintaxe.
-- JavaScript: `node --check` em todos os arquivos JS de `api/` e `public/js/`.
-- IDs usados por autenticação, Twitch, Spotify, votação e MidPix conferidos.
-- Referências locais para imagens, scripts e folhas de estilo conferidas.
-- Funções de API revisadas e corrigidas; não foram removidos endpoints públicos do projeto.
+A captura por Chromium headless não foi concluída neste ambiente (o processo do navegador encerrou a rede/zygote). Portanto, não afirmamos ter validado visualmente cada breakpoint por screenshot nesta execução. O preview implantado na Vercel deve ser conferido em Chrome/Firefox/Safari reais, especialmente os estados dinâmicos que dependem de APIs externas.
 
 ## Antes de publicar
 
-Faça um preview no ambiente Vercel do projeto e valide as integrações com as credenciais reais da instalação. Em particular, teste login OAuth, player/status da Twitch, atualização do Spotify, votação e retorno do MidPix. Essas integrações dependem de serviços externos e credenciais que não podem ser simulados apenas pela validação estática local.
+Suba como Preview na Vercel e confirme: login local/Google/Twitch; status e player Twitch; dados de Spotify/Last.fm; votação e recompensa; ranking; MidPix; Setup; fluxo do admin; e teste de backup/restore somente em uma base descartável. A camada visual não requer novas variáveis de ambiente nem dependências de build.

@@ -41,8 +41,8 @@
   --sp-7: 40px;
   --sp-8: 56px;
   --sp-9: 72px;
-  --f-display: 'Archivo', sans-serif;
-  --f-body: 'DM Sans', sans-serif;
+  --f-display: 'Bricolage Grotesque', sans-serif;
+  --f-body: 'Space Grotesk', sans-serif;
   --f-mono: 'IBM Plex Mono', monospace;
   --t-xs: .72rem;
   --t-sm: .82rem;
@@ -66,13 +66,13 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;background:var(--bg);-webkit-text-size-adjust:100%;overflow-x:hidden}
 body{
-  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-family:'Space Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
   color:var(--ink); background:var(--bg);
   line-height:1.55; width:100%; overflow-x:hidden; min-height:100vh;
   -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   position:relative;
 }
-h1,h2,h3,h4{font-family:'Archivo','DM Sans',sans-serif;line-height:1.1;letter-spacing:-.02em;font-weight:700}
+h1,h2,h3,h4{font-family:'Bricolage Grotesque','Space Grotesk',sans-serif;line-height:1.1;letter-spacing:-.02em;font-weight:700}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit}
 img{max-width:100%}
@@ -102,7 +102,7 @@ body > nav.site-nav .wrapper{display:flex;align-items:center;justify-content:spa
 .logo-container:hover{background:rgba(120,90,170,.1)}
 .logo-mark{position:relative;width:38px;height:38px;display:grid;place-items:center;flex:none}
 .twitch-logo-img{width:32px;height:32px;object-fit:contain;border-radius:9px;position:relative;z-index:2}
-.logo-text{font-family:'Archivo',sans-serif;font-weight:800;font-size:1.24rem;letter-spacing:-.03em;color:var(--white)}
+.logo-text{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.24rem;letter-spacing:-.03em;color:var(--white)}
 .logo-text span{color:var(--purple-2);text-shadow:0 0 24px rgba(192,132,252,.6)}
 
 .nav-right{display:flex;align-items:center;gap:14px}
@@ -235,7 +235,7 @@ body.login-lock{overflow:hidden}
   padding:10px 16px;border-radius:99px;
   border:1px solid rgba(216,180,254,.2);
   background:rgba(18,10,32,.55);color:#e9defa;
-  font:700 .76rem 'DM Sans',sans-serif;letter-spacing:.02em;cursor:pointer;
+  font:700 .76rem 'Space Grotesk',sans-serif;letter-spacing:.02em;cursor:pointer;
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
   transition:background .2s,border-color .2s,transform .2s,color .2s;
 }
@@ -267,7 +267,7 @@ body.login-lock{overflow:hidden}
 .login-brand-mark{
   display:grid;place-items:center;width:31px;height:31px;border-radius:10px;flex:none;
   background:linear-gradient(135deg,#a855f7,#6d28d9);color:#fff;
-  font:900 .95rem 'Archivo',sans-serif;
+  font:900 .95rem 'Bricolage Grotesque',sans-serif;
   box-shadow:0 7px 22px rgba(120,90,170,.36);
 }
 .login-brand-copy{color:#c3addf;font-size:.63rem;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
@@ -275,7 +275,7 @@ body.login-lock{overflow:hidden}
 
 .login-head{position:relative;margin-bottom:20px}
 .login-eyebrow{display:block;margin-bottom:8px;color:#c084fc;font-size:.64rem;font-weight:900;letter-spacing:.16em}
-.login-head h2{margin:0;color:#fff;font:800 clamp(1.55rem,4.8vw,1.95rem)/1.06 'Archivo',sans-serif;letter-spacing:-.035em}
+.login-head h2{margin:0;color:#fff;font:800 clamp(1.55rem,4.8vw,1.95rem)/1.06 'Bricolage Grotesque',sans-serif;letter-spacing:-.035em}
 .login-head p{margin:9px 0 0;color:#b3a6c4;font-size:.84rem;line-height:1.55;text-wrap:pretty}
 
 /* provedores */
@@ -285,7 +285,7 @@ body.login-lock{overflow:hidden}
   min-height:48px;padding:9px 12px;min-width:0;
   border:1px solid rgba(218,194,255,.16);border-radius:13px;
   background:rgba(255,255,255,.055);color:#eee4f8;
-  font:700 .83rem 'DM Sans',sans-serif;cursor:pointer;
+  font:700 .83rem 'Space Grotesk',sans-serif;cursor:pointer;
   transition:transform .2s,border-color .2s,background .2s,box-shadow .2s;
 }
 .login-provider:hover{transform:translateY(-2px);border-color:rgba(192,132,252,.55);background:rgba(120,90,170,.16);box-shadow:0 10px 24px -12px rgba(120,90,170,.85)}
@@ -306,7 +306,7 @@ body.login-lock{overflow:hidden}
   width:100%;min-height:48px;padding:0 15px;
   border:1px solid rgba(218,194,255,.16);border-radius:12px;outline:none;
   background:rgba(6,4,12,.62);color:#fff;
-  font:500 .88rem 'DM Sans',sans-serif;
+  font:500 .88rem 'Space Grotesk',sans-serif;
   transition:border-color .2s,box-shadow .2s,background .2s;
 }
 .login-field input::placeholder{color:#6f6284}
@@ -318,7 +318,7 @@ body.login-lock{overflow:hidden}
   position:absolute;right:5px;top:50%;transform:translateY(-50%);
   display:inline-flex;align-items:center;gap:5px;height:36px;padding:0 10px;
   border:0;border-radius:9px;background:transparent;color:#a999bd;
-  font:700 .67rem 'DM Sans',sans-serif;cursor:pointer;
+  font:700 .67rem 'Space Grotesk',sans-serif;cursor:pointer;
   transition:color .2s,background .2s;
 }
 .login-pass-btn:hover{color:#f0e6ff;background:rgba(120,90,170,.18)}
@@ -333,7 +333,7 @@ body.login-lock{overflow:hidden}
   width:100%;min-height:49px;padding:12px 18px;
   border:1px solid rgba(216,180,254,.4);border-radius:12px;
   background:linear-gradient(110deg,#a855f7,#7c3aed 60%,#6d28d9);color:#fff;
-  font:800 .9rem 'DM Sans',sans-serif;letter-spacing:.01em;cursor:pointer;
+  font:800 .9rem 'Space Grotesk',sans-serif;letter-spacing:.01em;cursor:pointer;
   box-shadow:0 10px 26px rgba(109,40,217,.36);
   transition:filter .2s,transform .2s,box-shadow .2s;
 }
@@ -345,7 +345,7 @@ body.login-lock{overflow:hidden}
 .login-switch{margin:15px 0 0;text-align:center;color:#8a7ca0;font-size:.75rem}
 .login-switch button{
   border:0;background:none;padding:0 0 0 3px;color:#c084fc;
-  font:800 .75rem 'DM Sans',sans-serif;cursor:pointer;
+  font:800 .75rem 'Space Grotesk',sans-serif;cursor:pointer;
   text-decoration:underline;text-underline-offset:3px;transition:color .2s;
 }
 .login-switch button:hover{color:#e9d5ff}

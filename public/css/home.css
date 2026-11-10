@@ -18,13 +18,13 @@
   --h-gold:#ffd166;
   --h-r:6px;
   padding-top:0;
-  font-family:'DM Sans','DM Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-family:'Space Grotesk','Space Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 #sec-inicio h1,
 #sec-inicio h2,
 #sec-inicio h3,
 #sec-inicio h4{
-  font-family:'Archivo','Archivo',sans-serif;
+  font-family:'Bricolage Grotesque','Bricolage Grotesque',sans-serif;
   letter-spacing:-.03em;
 }
 
@@ -57,7 +57,7 @@
   max-width:12ch;
   margin:0 0 20px;
   color:var(--h-ink);
-  font-family:'Archivo','Archivo',sans-serif;
+  font-family:'Bricolage Grotesque','Bricolage Grotesque',sans-serif;
   font-size:clamp(2.8rem,7vw,6rem);
   font-weight:800;
   line-height:.86;
@@ -91,7 +91,7 @@
   min-height:44px;
   padding:11px 18px;
   border-radius:3px;
-  font:700 .78rem 'DM Sans','DM Sans',sans-serif;
+  font:700 .78rem 'Space Grotesk','Space Grotesk',sans-serif;
   letter-spacing:.01em;
   text-decoration:none;
   transition:background .2s,color .2s,border-color .2s;
@@ -181,7 +181,7 @@
 #sec-inicio .aviso-ic{font-size:1.35rem}
 #sec-inicio .aviso-tx b{
   color:var(--h-ink);
-  font-family:'Archivo',sans-serif;
+  font-family:'Bricolage Grotesque',sans-serif;
   font-size:.88rem;
 }
 #sec-inicio .aviso-tx span{color:var(--h-mute);font-size:.84rem}
@@ -284,7 +284,7 @@
 }
 #sec-inicio .offline-badge i{box-shadow:none}
 #sec-inicio .offline-panel h4{
-  font-family:'Archivo',sans-serif;
+  font-family:'Bricolage Grotesque',sans-serif;
   font-size:1.08rem;
 }
 #sec-inicio .offline-panel p{color:var(--h-mute);text-shadow:none}
@@ -315,7 +315,7 @@
   border-top:1px solid var(--h-line);
   background:var(--h-panel-2);
 }
-#sec-inicio .live-bar-title{font-family:'Archivo',sans-serif;font-size:.84rem}
+#sec-inicio .live-bar-title{font-family:'Bricolage Grotesque',sans-serif;font-size:.84rem}
 #sec-inicio .lnchip{
   border:1px solid var(--h-line);
   border-radius:2px;
@@ -377,7 +377,7 @@
   justify-content:flex-start;
   margin:0;
   color:var(--h-ink);
-  font-family:'Archivo',sans-serif;
+  font-family:'Bricolage Grotesque',sans-serif;
   font-size:1.35rem;
   font-weight:800;
   letter-spacing:-.035em;
@@ -443,7 +443,7 @@
   background-image:none;
   color:#0a0511;
   box-shadow:none;
-  font-family:'DM Sans','DM Sans',sans-serif;
+  font-family:'Space Grotesk','Space Grotesk',sans-serif;
   font-weight:700;
   letter-spacing:.01em;
   transition:background .2s,color .2s,border-color .2s;
@@ -493,7 +493,7 @@
 }
 #sec-inicio .music-info h3{
   color:var(--h-ink);
-  font-family:'Archivo',sans-serif;
+  font-family:'Bricolage Grotesque',sans-serif;
   font-size:1rem;
 }
 #sec-inicio .music-info p{color:var(--h-mute);font-size:.72rem}
@@ -502,7 +502,7 @@
   border-radius:3px;
   background:transparent;
   color:var(--h-purple-2);
-  font-family:'DM Sans','DM Sans',sans-serif;
+  font-family:'Space Grotesk','Space Grotesk',sans-serif;
   font-weight:700;
 }
 #sec-inicio .music-link-playlist:hover{
@@ -584,7 +584,7 @@
 }
 #sec-inicio .foco-info h3{
   color:var(--h-ink);
-  font-family:'Archivo',sans-serif;
+  font-family:'Bricolage Grotesque',sans-serif;
   font-size:1rem;
 }
 #sec-inicio .foco-sub,
@@ -665,7 +665,7 @@
   right:18px;
   top:-38px;
   color:rgba(178,148,230,.07);
-  font:700 11rem/1 'Archivo',sans-serif;
+  font:700 11rem/1 'Bricolage Grotesque',sans-serif;
   pointer-events:none;
 }
 #sec-inicio .recado-av{position:relative;z-index:1;width:42px;height:42px}
@@ -701,7 +701,7 @@
   align-items:center;
   max-width:88%;
   color:var(--h-ink);
-  font:600 1.45rem/1.24 'Archivo',sans-serif;
+  font:600 1.45rem/1.24 'Bricolage Grotesque',sans-serif;
   letter-spacing:-.02em;
 }
 #sec-inicio .recado-card.vazio .recado-bubble{
@@ -733,7 +733,7 @@
 #sec-inicio .sub-hero-box h3{
   margin:9px 0 5px;
   color:var(--h-ink);
-  font-family:'Archivo',sans-serif;
+  font-family:'Bricolage Grotesque',sans-serif;
   font-size:1.4rem;
 }
 #sec-inicio .sub-hero-box .sub-hero-top p{color:var(--h-mute);font-size:.8rem}
@@ -791,7 +791,7 @@
 #sec-inicio .midpix-box h3{
   margin:6px 0 0;
   color:var(--h-ink);
-  font-family:'Archivo',sans-serif;
+  font-family:'Bricolage Grotesque',sans-serif;
   font-size:1.2rem;
 }
 #sec-inicio .midpix-box p{color:var(--h-mute);font-size:.79rem}

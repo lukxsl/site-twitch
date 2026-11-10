@@ -71,3 +71,13 @@
 - O ZIP de entrega preserva todas as páginas, endpoints, imagens e folhas CSS antigas.
 - As mudanças estão concentradas nos arquivos listados acima. Em caso de regressão, reverta o commit da entrega ou restaure esses arquivos a partir do backup do repositório.
 - Não apague `banner.png`, folhas CSS antigas, IDs ou endpoints nesta etapa.
+
+---
+
+# Rodada visual adicional — Broadcast Club
+
+A direção editorial anterior foi substituída por uma identidade mais expressiva e colorida, com a combinação de Broadcast Club, scrapbook digital e detalhes pixel art. A tipografia agora usa Bricolage Grotesque em títulos, Space Grotesk na interface e IBM Plex Mono em metadados. A paleta ganhou violeta, rosa, amarelo e ciano sobre superfícies escuras.
+
+A Home recebeu uma nova composição: chamada maior, retrato com moldura e selos gráficos, botões de alto contraste e faixa de assuntos. Tier List, Ranking, Comunidade, Setup, Sugestões, Perfil, Login, Admin, navegação e rodapé também receberam uma camada visual coerente. Nenhum endpoint, identificador de integração, arquivo JavaScript ou folha específica de página foi removido nesta rodada.
+
+Validações desta rodada: sintaxe JavaScript, parsing CSS, JSON, IDs/referências locais do HTML, integridade do ZIP e respostas HTTP do servidor estático. O Chromium headless disponível no ambiente encerrou a própria rede/zygote antes de produzir uma captura; por isso screenshots de desktop/mobile não puderam ser confirmados aqui. O teste visual final deve ocorrer no Preview implantado com navegador normal.
