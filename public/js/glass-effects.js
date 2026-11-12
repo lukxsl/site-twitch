@@ -6,7 +6,7 @@
   const finePointer = window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
   if (reducedMotion || !finePointer) return;
 
-  const selector = '.card, .home-masthead, .home-portrait, .admin-menu-card2, .cm-perk, .community-stat-card, .rk-pod';
+  const selector = '.card, .admin-menu-card2, .cm-perk, .community-stat-card, .rk-pod';
   let active = null;
   let pending = null;
   let raf = 0;
