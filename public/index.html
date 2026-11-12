@@ -36,6 +36,7 @@
 <link href="css/admin.css" rel="stylesheet"/>
 <link href="css/home.css" rel="stylesheet"/>
 <link href="css/redesign.css" rel="stylesheet"/>
+<link href="css/home-broadcast.css" rel="stylesheet"/>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"asemtet0 — Broadcast Club","alternateName":"asemtet0","url":"https://asemtet0.vercel.app/","inLanguage":"pt-BR","description":"Lives na Twitch, tier list de jogos, ranking da comunidade, setup e votação do próximo jogo.","author":{"@type":"Person","name":"asemtet0","alternateName":"Soso","url":"https://www.twitch.tv/asemtet0","sameAs":["https://www.twitch.tv/asemtet0","https://www.instagram.com/asemtet0/","https://www.tiktok.com/@sososemtet0"]}}
 </script>
@@ -226,7 +227,7 @@
 <section class="page-section ativo" id="sec-inicio">
 <div class="home-masthead reveal">
 <div class="home-masthead-content">
-<p class="home-eyebrow"><span>ASEMTET0</span> / Broadcast Club</p>
+<p class="home-eyebrow"><span>ASEMTET0</span> Broadcast Club</p>
 <h1 class="home-display">Chega mais,<br/>sou a <em>Soso</em>.</h1>
 <p class="home-lede">Jogo, escuto música alta e falo demais no chat. Quando a live tá no ar ela aparece aqui embaixo; quando não tá, sobra votação pro próximo jogo, tier list e o setup pra xeretar.</p>
 <div class="home-actions">
@@ -235,7 +236,18 @@
 </div>
 </div>
 <figure class="home-portrait reveal">
+<div class="portrait-monitor">
+<div aria-hidden="true" class="portrait-bar">
+<span class="pb-dots"><i></i><i></i><i></i></span>
+<span class="pb-label">cam 01 · asemtet0</span>
+<span class="pb-led" id="portraitLed"></span>
+</div>
+<div class="portrait-screen">
 <img alt="Soso, streamer do canal asemtet0" fetchpriority="high" src="img/avatar.webp"/>
+<span aria-hidden="true" class="portrait-scan"></span>
+<span class="portrait-state" id="portraitState">offline</span>
+</div>
+</div>
 <figcaption><span>ASEMTET0</span><span>STREAMER / CRIADORA</span></figcaption>
 </figure>
 <div class="stats-strip reveal" hidden="" id="statsStrip">
@@ -259,6 +271,7 @@
 </div>
 <div class="home-grid"><article class="card twitch-player-box home-player reveal">
 <div class="twitch-player-header">
+<span aria-hidden="true" class="monitor-dots"><i></i><i></i><i></i></span>
 <div class="twitch-player-title">
 <span class="live-indicator" id="headerLiveDot"></span>
             CANAL DA SOSO
@@ -267,6 +280,10 @@
 </div>
 <div class="twitch-player">
 <div class="offline-panel" id="offlinePanel">
+<div aria-hidden="true" class="off-art" id="offlineArt" style="background-image:url('img/banner-detail.webp')"></div>
+<div class="off-core">
+<div class="off-photo"><img alt="Soso" id="offlineFoto" src="img/avatar.webp"/></div>
+<div class="off-copy">
 <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
 <h4>Hoje tô fora do ar.</h4>
 <p>Quando eu voltar, a live aparece aqui. Enquanto isso, tem clipe, reprise e votação pra espiar.</p>
@@ -277,6 +294,8 @@
 <div class="offline-actions">
 <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" rel="noopener" target="_blank">Seguir na Twitch</a>
 <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live</button>
+</div>
+</div>
 </div>
 </div>
 <iframe allowfullscreen="" id="twitchIframe" scrolling="no" src="about:blank" style="display:none" title="Live da Soso na Twitch"></iframe>
@@ -309,6 +328,12 @@
 <p class="profile-description">
           Oie, eu sou a Soso — Sophs ou Teto também serve. Por aqui tem jogo, música, votação e uma galera que deixa cada live mais divertida.
         </p>
+<div class="profile-tags">
+<span class="profile-tag">🎮 games</span>
+<span class="profile-tag">🎧 música</span>
+<span class="profile-tag">🗳️ votação</span>
+<span class="profile-tag">💬 chat</span>
+</div>
 <div class="profile-socials">
 <a class="profile-social-btn" href="https://www.instagram.com/asemtet0/" rel="noopener" target="_blank" title="Instagram">
 <svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.6a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z"></path><path d="M16 2H8a6 6 0 0 0-6 6v8a6 6 0 0 0 6 6h8a6 6 0 0 0 6-6V8a6 6 0 0 0-6-6Zm4.2 14a4.2 4.2 0 0 1-4.2 4.2H8A4.2 4.2 0 0 1 3.8 16V8A4.2 4.2 0 0 1 8 3.8h8A4.2 4.2 0 0 1 20.2 8v8Z"></path></svg>
@@ -1070,6 +1095,7 @@
 <script defer="" src="js/twitch.js"></script>
 <script defer="" src="js/setup.js"></script>
 <script defer="" src="js/main.js"></script>
+<script defer="" src="js/home-effects.js"></script>
 <script defer="" src="js/profile.js"></script>
 <script defer="" src="js/ranking.js"></script>
 </body>

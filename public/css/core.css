@@ -78,6 +78,9 @@ button{font-family:inherit}
 img{max-width:100%}
 [hidden]{display:none !important}
 a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--purple-2);outline-offset:3px;border-radius:6px}
+/* Títulos recebem tabindex="-1" e foco programático ao trocar de aba (a11y).
+   Eles não são alcançáveis por Tab, então o anel nativo só polui o visual. */
+[tabindex="-1"]:focus{outline:none}
 ::selection{background:rgba(120,90,170,.4);color:#fff}
 
 .wrapper{width:100%;max-width:1440px;margin:0 auto;padding:0 clamp(16px,3vw,40px);position:relative;z-index:1}

@@ -173,6 +173,49 @@ window.assistirVod = assistirVod;
 
 let toastLiveMostrado = false;
 
+/* Estado "ao vivo" da Home inteira (LED do monitor, etiqueta do retrato). */
+function _atualizarHero(isLive){
+  const sec = document.getElementById('sec-inicio');
+  if(sec) sec.classList.toggle('is-live', !!isLive);
+  const estado = document.getElementById('portraitState');
+  if(estado) estado.textContent = isLive ? 'ao vivo' : 'offline';
+}
+
+/* Arte de fundo do monitor offline: thumb da última live (real, vinda da API)
+   ou o recorte do banner do canal. */
+function _arteOffline(data){
+  return (data && data.video && data.video.thumbnail) || 'img/banner-detail.webp';
+}
+
+/* Painel offline com a foto de perfil real da Twitch dentro do monitor. */
+function _painelOffline(data){
+  const foto = (data && data.user && data.user.profile_image_url) || 'img/avatar.webp';
+  const vod = data && data.video;
+  const quando = vod && vod.created_at
+    ? `⏱ última live ${tempoAtras(vod.created_at)}`
+    : '📅 sem lives recentes';
+  return `
+    <div class="off-art" aria-hidden="true" style="background-image:url('${esc(_arteOffline(data))}')"></div>
+    <div class="off-core">
+      <div class="off-photo">
+        <img src="${esc(foto)}" alt="Soso" loading="lazy" onerror="this.onerror=null;this.style.display='none'"/>
+      </div>
+      <div class="off-copy">
+        <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
+        <h4>Hoje tô fora do ar.</h4>
+        <p>Quando eu voltar, a live aparece aqui mesmo. Enquanto isso dá pra ver a última live, votar no próximo jogo e xeretar o setup.</p>
+        <div class="offline-info">
+          <span>${esc(quando)}</span>
+          <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
+        </div>
+        <div class="offline-actions">
+          <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
+          <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:${vodAtual ? '' : 'none'}">▶ Última live${canalMature ? ' ↗' : ''}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
 function _atualizarPlayerHeader(isLive){
   const titleEl = document.querySelector('.twitch-player-title');
   if(!titleEl) return;
@@ -267,6 +310,7 @@ async function verificarStatusTwitch(){
 
     const live = !!data.stream;
     _atualizarPlayerHeader(live);
+    _atualizarHero(live);
     _atualizarProfileStatus(live, data);
     _atualizarLiveNow(data);
 
@@ -284,19 +328,13 @@ async function verificarStatusTwitch(){
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
 
-    if(data.user){
-      if(data.user.offline_image_url && panel && !live){
-        panel.style.backgroundImage = `linear-gradient(90deg,rgba(8,5,14,.97),rgba(8,5,14,.9) 34%,rgba(8,5,14,.5) 64%,rgba(8,5,14,.12)),url(${data.user.offline_image_url})`;
-      }
-    }
-
     if(panel) panel.classList.remove('is-mature');
 
     if(data.stream && isMature){
       assistindoVod = false;
       if(iframe){ iframe.style.display = 'none'; iframe.src = 'about:blank'; }
       if(panel){
-        panel.style.display = 'flex';
+        panel.style.display = 'grid';
         panel.classList.add('is-mature');
         panel.style.backgroundImage = 'linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85))';
         const st18 = data.stream;
@@ -339,24 +377,10 @@ async function verificarStatusTwitch(){
       if(!assistindoVod){
         if(iframe){ iframe.style.display = 'none'; iframe.src = 'about:blank'; }
         if(panel){
-          panel.style.display = 'flex';
-          panel.innerHTML = `
-            <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
-            <h4>Hoje tô fora do ar.</h4>
-            <p>Quando eu voltar, a live aparece por aqui. Os avisos chegam no Discord.</p>
-            <div class="offline-info">
-              <span>Ao vivo quando der</span>
-              <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
-            </div>
-            <div class="offline-actions">
-              <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
-              <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live${canalMature ? ' ↗' : ''}</button>
-            </div>
-          `;
-          if(data.user && data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(90deg,rgba(8,5,14,.97),rgba(8,5,14,.9) 34%,rgba(8,5,14,.5) 64%,rgba(8,5,14,.12)),url(${data.user.offline_image_url})`;
-          else panel.style.backgroundImage = ''; // volta a arte de fundo (espaço) do CSS
-          const btnVodEl = g('btnVod');
-          if(btnVodEl) btnVodEl.style.display = vodAtual ? '' : 'none';
+          panel.style.display = 'grid';
+          panel.classList.remove('is-mature');
+          panel.style.backgroundImage = '';
+          panel.innerHTML = _painelOffline(data);
         }
         const noteEl = g('playerNoteText');
         if(noteEl && !noteEl.classList.contains('recado')){
@@ -381,6 +405,7 @@ async function verificarStatusTwitch(){
     if(typeof window.setJogoAoVivo === 'function') window.setJogoAoVivo(null);
     ['goalSeg','goalDc'].forEach(p => { const el = $(p + 'Num'); if(el && el.textContent === '…') atualizarMeta(p, null); });
     setLivePulse(false);
+    _atualizarHero(false);
     _atualizarPlayerHeader(false);
     _atualizarProfileStatus(false, null);
     _atualizarLiveNow(null);
