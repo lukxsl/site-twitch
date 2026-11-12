@@ -1,5 +1,8 @@
 # Checklist — ASEMTET0 Glass Arcade
 
+> **Nota (12/11/2026):** a camada *Glass Arcade* descrita abaixo foi removida do site. `public/css/identity.css` e `public/js/glass-effects.js` não existem mais; a base visual voltou para `core.css` + `components.css` + `pages.css` + `setup.css` + `admin.css` + `home.css` + `redesign.css`, e o topo da home foi redesenhado. Este documento fica como registro da rodada anterior.
+
+
 Use esta lista no Preview da Vercel antes de promover a versão para produção.
 
 ## 1. Verificações locais já executadas

@@ -536,12 +536,7 @@ input:focus, textarea:focus, select:focus {
 #sec-inicio .twitch-player-title { color: var(--h-mute); font: 500 .65rem var(--f-mono); letter-spacing: .12em; }
 #sec-inicio .twitch-player-status { color: var(--h-purple-2); font: 500 .65rem var(--f-mono); }
 #sec-inicio .twitch-player { min-height: 0; aspect-ratio: 16 / 9; background: #050508; }
-#sec-inicio .offline-panel {
-  background: #100E15;
-  background-image: linear-gradient(145deg, #17131E, #0B0A0F 75%);
-}
-#sec-inicio .offline-panel::before { display: none; }
-#sec-inicio .offline-panel img { border: 1px solid var(--h-line-2); border-radius: 50%; box-shadow: none; }
+/* painel offline definido em home.css */
 #sec-inicio .offline-badge { border: 1px solid var(--h-line); border-radius: 3px; background: #17141E; color: var(--h-mute); backdrop-filter: none; }
 #sec-inicio .offline-panel h4 { color: var(--h-ink); font: 700 1.15rem var(--f-display) !important; }
 #sec-inicio .offline-panel p { color: var(--h-mute); text-shadow: none; }

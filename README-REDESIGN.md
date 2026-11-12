@@ -1,5 +1,8 @@
 # ASEMTET0 — Glass Arcade
 
+> **Nota (12/11/2026):** a camada *Glass Arcade* descrita abaixo foi removida do site. `public/css/identity.css` e `public/js/glass-effects.js` não existem mais; a base visual voltou para `core.css` + `components.css` + `pages.css` + `setup.css` + `admin.css` + `home.css` + `redesign.css`, e o topo da home foi redesenhado. Este documento fica como registro da rodada anterior.
+
+
 ## Direção visual
 
 A identidade desta rodada recupera a estética de vidro do site antigo, com mais controle de contraste, profundidade e legibilidade.

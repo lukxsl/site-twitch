@@ -285,12 +285,8 @@ async function verificarStatusTwitch(){
     videosTw = data.videos || (data.video ? [data.video] : []);
 
     if(data.user){
-      if(data.user.profile_image_url){
-        const av = g('offlineAvatarImg');
-        if(av) av.src = data.user.profile_image_url;
-      }
       if(data.user.offline_image_url && panel && !live){
-        panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85)),url(${data.user.offline_image_url})`;
+        panel.style.backgroundImage = `linear-gradient(90deg,rgba(8,5,14,.97),rgba(8,5,14,.9) 34%,rgba(8,5,14,.5) 64%,rgba(8,5,14,.12)),url(${data.user.offline_image_url})`;
       }
     }
 
@@ -345,7 +341,6 @@ async function verificarStatusTwitch(){
         if(panel){
           panel.style.display = 'flex';
           panel.innerHTML = `
-            <img id="offlineAvatarImg" src="img/avatar.webp" alt="Soso" onerror="this.style.display='none'">
             <span class="offline-badge"><i aria-hidden="true"></i> Offline</span>
             <h4>Hoje tô fora do ar.</h4>
             <p>Quando eu voltar, a live aparece por aqui. Os avisos chegam no Discord.</p>
@@ -358,7 +353,7 @@ async function verificarStatusTwitch(){
               <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live${canalMature ? ' ↗' : ''}</button>
             </div>
           `;
-          if(data.user && data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85)),url(${data.user.offline_image_url})`;
+          if(data.user && data.user.offline_image_url) panel.style.backgroundImage = `linear-gradient(90deg,rgba(8,5,14,.97),rgba(8,5,14,.9) 34%,rgba(8,5,14,.5) 64%,rgba(8,5,14,.12)),url(${data.user.offline_image_url})`;
           else panel.style.backgroundImage = ''; // volta a arte de fundo (espaço) do CSS
           const btnVodEl = g('btnVod');
           if(btnVodEl) btnVodEl.style.display = vodAtual ? '' : 'none';
