@@ -708,72 +708,19 @@ window.abrirRankingMusicas = abrirRankingMusicas;
 
 function setLivePulse(isLive){
   document.querySelectorAll('.live-indicator').forEach(el => el.classList.toggle('live', !!isLive));
-  const badge = $('bannerLiveBadge');
-  if(badge) badge.classList.toggle('live', !!isLive);
-}
-
-/* ============================================================
-   NAVEGAÇÃO
-   ============================================================ */
-let _ultimaAba = null;
-let _mudarAbaTimer = null;
-let _mudarAbaPendente = null;
-const ABAS_VALIDAS = ['inicio','tierlist','ranking','comunidade','setup','sugestoes','perfil','admin'];
-
-function _executarMudarAba(nome, salvar){
-  if(!ABAS_VALIDAS.includes(nome)) nome = 'inicio';
-  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('ativo'));
-  document.querySelectorAll('nav ul button').forEach(b => b.classList.remove('on'));
-  const section = $('sec-' + nome), button = $('btn-' + nome);
-  if(section) section.classList.add('ativo');
-  if(button) button.classList.add('on');
-
-  const adminBtn = $('btn-admin');
-  if(adminBtn) adminBtn.classList.toggle('on', nome === 'admin');
-
-  // Mantém a última seção do painel Admin ao navegar para outras páginas.
-  if(nome === 'admin'){
-    const hash = (location.hash || '').replace(/^#/, '');
-    if(hash.startsWith('admin/')){
-      const p = hash.slice(6);
-      if(typeof VALID_ADMIN_PAGES !== 'undefined' && VALID_ADMIN_PAGES.includes(p)) ADMIN_PAGE = p;
-    }
+  const cam = $('camCard');
+  if(cam) cam.classList.toggle('is-live', !!isLive);
+  const selo = $('camSelo');
+  if(selo) selo.textContent = isLive ? 'AO VIVO' : 'OFFLINE';
+  if(window.Navbar && typeof window.Navbar.setLive === 'function'){
+    const viewers = window.__streamInfo && window.__streamInfo.viewer_count != null
+      ? window.__streamInfo.viewer_count : null;
+    const jogo = window.__streamInfo && window.__streamInfo.game_name
+      ? window.__streamInfo.game_name : '';
+    window.Navbar.setLive(isLive, { viewers, jogo });
   }
-  _ultimaAba = nome;
-  window.dispatchEvent(new CustomEvent('soso:aba', { detail: nome }));
-
-  try {
-    if(nome !== 'admin') history.replaceState(null, '', '#' + nome);
-  } catch(e){}
-
-  window.scrollTo({ top:0, behavior:'smooth' });
-
-  if(nome === 'admin'){
-    garantirAdminCarregado()
-      .then(() => { if(typeof carregarAdmin === 'function') carregarAdmin(); })
-      .catch(err => {
-        console.error('Erro admin:', err);
-        const area = $('adminArea');
-        if(area) area.innerHTML = `<div class="admin-vazio"><b>Erro ao carregar</b>Recarregue a página.</div>`;
-      });
-  }
-
-  if(section) section.querySelectorAll('.reveal:not(.in)').forEach(el => revealObs && revealObs.observe(el));
-
-  setTimeout(() => setupCardTilt(), 100);
 }
-
-function mudarAba(nome, salvar = true){
-  if(_mudarAbaPendente === nome) return;
-  _mudarAbaPendente = nome;
-  if(_mudarAbaTimer) clearTimeout(_mudarAbaTimer);
-  _mudarAbaTimer = setTimeout(() => {
-    _mudarAbaTimer = null;
-    _mudarAbaPendente = null;
-    _executarMudarAba(nome, salvar);
-  }, 60);
-}
-window.mudarAba = mudarAba;
+window.setLivePulse = setLivePulse;
 
 function abrirSejaSub(){
   mudarAba('comunidade');
@@ -2059,18 +2006,23 @@ function setupBurger(){
 function setupFloatingLive(){
   const btn = document.getElementById('floatLiveBtn');
   if(!btn) return;
+  const irParaCam = () => {
+    const cam = document.getElementById('camCard');
+    if(!cam) return;
+    cam.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'center'
+    });
+  };
   window.addEventListener('scroll', () => {
     if(!ultVivo) { btn.classList.remove('show'); return; }
-    const player = document.querySelector('.twitch-player-box');
-    if(!player) { btn.classList.remove('show'); return; }
-    const r = player.getBoundingClientRect();
+    const cam = document.getElementById('camCard');
+    if(!cam) { btn.classList.remove('show'); return; }
+    const r = cam.getBoundingClientRect();
     if(r.bottom < 100) btn.classList.add('show');
     else btn.classList.remove('show');
   }, { passive: true });
-  btn.addEventListener('click', () => {
-    const player = document.querySelector('.twitch-player-box');
-    if(player) player.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+  btn.addEventListener('click', irParaCam);
 }
 
 /* ============================================================
@@ -2079,17 +2031,6 @@ function setupFloatingLive(){
 window.addEventListener('DOMContentLoaded', async () => {
   const isPreview = location.search.includes('preview=1');
   if(isPreview){ try { localStorage.removeItem('abaAtiva'); } catch(e){} }
-
-  const hashRaw = (location.hash || '').replace(/^#/, '');
-  let abaInicial = 'inicio';
-  if(!isPreview){
-    if(hashRaw === 'admin' || hashRaw.startsWith('admin/')) abaInicial = 'admin';
-    else if(hashRaw && ABAS_VALIDAS.includes(hashRaw)) abaInicial = hashRaw;
-  }
-  if(!document.getElementById('sec-' + abaInicial)) abaInicial = 'inicio';
-
-  _ultimaAba = null;
-  _executarMudarAba(abaInicial, false);
 
   renderAviso(); renderEmotes(); carregarEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
@@ -2182,8 +2123,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   setupReveal();
-  setupRoomParallax();
-  setupBurger();
   setupFloatingLive();
 
   await carregarConfigPublica();

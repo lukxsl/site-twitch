@@ -1,0 +1,75 @@
+/* ============================================================
+   ASEMTET0 — DESIGN TOKENS
+   Fonte única de verdade para cor, espaço, tipo e movimento.
+   ============================================================ */
+:root{
+  /* Superfícies */
+  --bg:#0b0a10;
+  --surface:#12101a;
+  --surface-2:#181526;
+  --line:rgba(255,255,255,.08);
+  --line-strong:rgba(255,255,255,.14);
+
+  /* Texto */
+  --ink:#f4f2fb;
+  --ink-2:#a8a3b8;
+  --ink-3:#6f6980;
+
+  /* Marca */
+  --purple:#8b5cf6;
+  --purple-2:#a78bfa;
+  --pink:#f472b6;
+  --red:#ff3b5c;
+  --green:#34d399;
+  --amber:#fbbf24;
+  --grad:linear-gradient(90deg,#a78bfa,#f472b6);
+
+  /* Raios */
+  --r-pill:999px;
+  --r-card:20px;
+  --r-input:12px;
+  --r-sm:10px;
+
+  /* Tipografia */
+  --font-display:'Bricolage Grotesque','DM Sans',sans-serif;
+  --font-body:'DM Sans',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+
+  /* Movimento */
+  --t:220ms cubic-bezier(.2,.7,.2,1);
+  --t-fast:160ms cubic-bezier(.2,.7,.2,1);
+
+  /* Sombras — só brilho controlado, sem vidro */
+  --glow:0 8px 30px -12px rgba(139,92,246,.55);
+  --glow-cam:0 30px 70px -40px rgba(139,92,246,.55);
+
+  /* Layout */
+  --sidebar-w:248px;
+  --content-max:1200px;
+  --gutter:clamp(20px,3.4vw,40px);
+  --topbar-h:56px;
+  --bottomnav-h:66px;
+
+  /* Aliases temporários: mantêm os CSS legados funcionando até a fase 4. */
+  --bg-2:#12101a;
+  --wall-1:#181526;
+  --wall-2:#0b0a10;
+  --surface-solid:var(--surface-2);
+  --mute:var(--ink-2);
+  --dim:var(--ink-3);
+  --white:#fff;
+  --purple-3:#6d4bd8;
+  --cyan:#67e8f9;
+  --warm:#fbbf24;
+  --gold:#fbbf24;
+  --line-2:rgba(255,255,255,.14);
+  --r-xl:24px;
+  --r-lg:var(--r-card);
+  --r:var(--r-input);
+  --r-xs:8px;
+  --sh-floor:0 20px 40px -30px #000;
+  --sh:0 8px 24px -16px #000;
+  --sh-lg:var(--glow-cam);
+  --sh-glow:var(--glow);
+  --ease:var(--t);
+}
