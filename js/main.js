@@ -716,7 +716,6 @@ function setupComunidadeTabs(){
       p.classList.toggle('on', p.dataset.panel === tab);
     });
     if(tab === 'playlist') renderPlaylistComunidade();
-    setTimeout(() => setupCardTilt(), 100);
   };
   const salva = localStorage.getItem('comunidade:tab') || 'discord';
   ativarTab(salva);
@@ -1887,96 +1886,7 @@ function setupReveal(){
     });
   }, { rootMargin: '0px 0px -60px 0px', threshold: 0.05 });
 
-  document.querySelectorAll('.bento-col').forEach(col => {
-    col.querySelectorAll('.card.reveal').forEach((card, i) => {
-      if(i > 0) card.style.transitionDelay = (i * 70) + 'ms';
-    });
-  });
-
   document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
-
-  setupCardTilt();
-}
-
-function setupCardTilt(){
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  document.querySelectorAll('.card').forEach(card => {
-    if(card.dataset.tiltBound === '1') return;
-    if(card.closest('dialog')) return;
-    card.dataset.tiltBound = '1';
-
-    let raf = 0, ev = null;
-    const aplicar = () => {
-      raf = 0;
-      if(!ev) return;
-      const rect = card.getBoundingClientRect();
-      const px = ev.clientX - rect.left, py = ev.clientY - rect.top;
-      card.style.setProperty('--mx', px.toFixed(0) + 'px');
-      card.style.setProperty('--my', py.toFixed(0) + 'px');
-      if(matchMedia('(max-width: 960px)').matches) return;
-      const max = rect.width > 560 ? 2.2 : 5;
-      const x = px / rect.width - 0.5, y = py / rect.height - 0.5;
-      card.style.setProperty('--tilt-ry', (x * max).toFixed(2) + 'deg');
-      card.style.setProperty('--tilt-rx', (-y * max).toFixed(2) + 'deg');
-    };
-
-    card.addEventListener('mousemove', (e) => {
-      ev = e;
-      if(!raf) raf = requestAnimationFrame(aplicar);
-    }, { passive: true });
-
-    card.addEventListener('mouseleave', () => {
-      ev = null;
-      card.style.setProperty('--tilt-ry', '0deg');
-      card.style.setProperty('--tilt-rx', '0deg');
-    });
-  });
-}
-window.setupCardTilt = setupCardTilt;
-
-function setupRoomParallax(){
-  const room = document.querySelector('.room');
-  if(!room) return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const layers = room.querySelectorAll('[data-depth]');
-  if(!layers.length) return;
-  let mx = 0, my = 0, cx = 0, cy = 0;
-  window.addEventListener('mousemove', (e) => {
-    mx = (e.clientX / window.innerWidth - 0.5) * 2;
-    my = (e.clientY / window.innerHeight - 0.5) * 2;
-  }, { passive: true });
-  (function tick(){
-    cx += (mx - cx) * 0.06;
-    cy += (my - cy) * 0.06;
-    layers.forEach(el => {
-      const d = parseFloat(el.dataset.depth) || 1;
-      el.style.transform = `translate3d(${cx * d * 12}px, ${cy * d * 12}px, 0)`;
-    });
-    requestAnimationFrame(tick);
-  })();
-}
-
-function setupBurger(){
-  const burger = document.getElementById('navBurger');
-  const navRight = document.getElementById('navRight');
-  if(!burger || !navRight) return;
-  burger.addEventListener('click', () => {
-    const open = navRight.classList.toggle('open');
-    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
-  });
-  navRight.querySelectorAll('.nav-links button').forEach(b => {
-    b.addEventListener('click', () => {
-      navRight.classList.remove('open');
-      burger.setAttribute('aria-expanded', 'false');
-    });
-  });
-  document.addEventListener('click', (e) => {
-    if(!navRight.classList.contains('open')) return;
-    if(navRight.contains(e.target) || burger.contains(e.target)) return;
-    navRight.classList.remove('open');
-    burger.setAttribute('aria-expanded', 'false');
-  });
 }
 
 function setupFloatingLive(){
@@ -2116,8 +2026,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     if(ultVivo && ultGame) atualizarFoco(ultGame, ultVivo);
   }, 30000);
 
-  setTimeout(() => setupCardTilt(), 800);
-  setTimeout(() => setupCardTilt(), 2000);
 });
 
 /* ============================================================

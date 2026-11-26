@@ -4,59 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>asemtet0 | Streamer & Comunidade</title>
-<meta name="description" content="Oie! Eu sou a Soso (asemtet0). Games, caos, conversa e muita gameplay duvidosa. Vem pro cantinho! 💜">
-<meta property="og:title" content="asemtet0 — Streamer & Comunidade 💜">
-<meta property="og:description" content="Games, caos e gameplay duvidosa. Vem pro cantinho!">
+<meta name="description" content="Oie! Eu sou a Soso (asemtet0). Games, caos e conversa no QG do canal.">
+<meta property="og:title" content="asemtet0 — Streamer & Comunidade">
+<meta property="og:description" content="Games, caos e conversa no QG da Soso.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://asemtet0.vercel.app/">
-<meta property="og:image" content="https://asemtet0.vercel.app/img/banner.png">
+<meta property="og:image" content="https://asemtet0.vercel.app/img/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#0a0511">
+<meta name="twitter:image" content="https://asemtet0.vercel.app/img/og.png">
+<link rel="canonical" href="https://asemtet0.vercel.app/">
+<meta name="theme-color" content="#0b0a10">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/layout.css">
-<link rel="stylesheet" href="css/components.css">
-<link rel="stylesheet" href="css/setup.css">
-<link rel="stylesheet" href="css/admin.css">
-<link rel="stylesheet" href="css/tierlist.css">
-
-<link rel="stylesheet" href="css/ranking.css">
-<link rel="stylesheet" href="css/auth-new.css">
-<link rel="stylesheet" href="css/profile-clean.css">
-<link rel="stylesheet" href="css/refinements.css">
-<link rel="stylesheet" href="css/home-fixes.css">
-
-<!-- Sistema novo (tokens e componentes sobrescrevem os remendos antigos) -->
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/shell.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/setup.css">
+<!-- Folhas de página carregadas sob demanda pelo router -->
 </head>
 <body>
 
-<div class="room" aria-hidden="true">
-  <div class="room-wall" data-depth="0.3"></div>
-  <div class="room-wallpaper"></div>
-  <div class="room-window" data-depth="0.9"><span class="rw-frame"></span><span class="rw-light"></span></div>
-  <div class="room-shelf" data-depth="0.7">
-    <span class="rs-book" style="--c:#a855f7;--h:88%"></span>
-    <span class="rs-book" style="--c:#ec4899;--h:72%"></span>
-    <span class="rs-book" style="--c:#7c3aed;--h:95%"></span>
-    <span class="rs-book" style="--c:#06b6d4;--h:65%"></span>
-    <span class="rs-book" style="--c:#f59e0b;--h:80%"></span>
-    <span class="rs-book" style="--c:#c084fc;--h:70%"></span>
-    <span class="rs-board"></span>
-  </div>
-  <div class="room-floor" data-depth="1.4"><div class="rf-glow"></div></div>
-  <div class="room-vignette"></div>
-  <div class="room-grain"></div>
-</div>
 
-<!-- Sprite de ícones (traço 1.5, estilo Lucide) -->
 <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
   <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 21v-7h6v7"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
@@ -177,7 +152,8 @@
   <div id="moreUser"></div>
 </dialog>
 
-<main class="wrapper">
+<main class="app-main">
+<div class="app-container">
 
 <!-- ==================== INÍCIO ==================== -->
 <section id="sec-inicio" class="page-section ativo home">
@@ -607,88 +583,13 @@
   <header class="section-header reveal">
     <span class="section-kicker">🖥️ Hardware</span>
     <h2>Meu Setup</h2>
-    <p>Passeie pelo quarto com o Lukzin ou abra o catálogo com as fichas técnicas.</p>
+    <p>As peças do setup com especificações e links para comprar.</p>
   </header>
 
-  <div class="setup-game-container reveal">
-
-    <!-- Alternador de visualização -->
-    <div class="setup-tabs" role="tablist" aria-label="Modo de visualização do setup" data-view="game">
-      <span class="setup-tabs-glider" aria-hidden="true"></span>
-      <button type="button" class="setup-tab on" role="tab" aria-selected="true"  data-view="game">🎮 Mini-game</button>
-      <button type="button" class="setup-tab"    role="tab" aria-selected="false" data-view="catalog">🗂️ Catálogo</button>
-    </div>
-
-    <!-- ============ VISÃO 1: MINI-GAME ============ -->
-    <div class="setup-view" id="viewGame">
-      <div class="setup-controls">
-        <button type="button" id="btnTourSetup" class="btn btn-tour" data-state="idle">
-          <span class="play-icon" aria-hidden="true">▶</span>
-          <span class="btn-tour-label">Iniciar Tour Guiado</span>
-        </button>
-
-        <button type="button" id="btnLukFala" class="btn-icon" title="Chamar o Lukzin" aria-label="Conversar com o Lukzin">💬</button>
-        <button type="button" id="btnMute" class="btn-icon" title="Ligar/Desligar som" aria-label="Ligar/Desligar som">🔊</button>
-
-        <div class="setup-progress" id="setupProgress" hidden>
-          <span id="setupProgressTxt">0 / 0</span>
-          <span class="setup-progress-bar"><i id="setupProgressBar"></i></span>
-        </div>
-      </div>
-
-      <div class="setup-scene-wrap" id="setupScene">
-        <div class="scene-world" id="sceneWorld">
-          <div class="scene-bg"></div>
-
-          <!-- Tela do Stardew encaixada no monitor da imagem -->
-          <div class="monitor-screen" id="stardewScreen" style="background-image: url('img/stardew-screen.png');"></div>
-
-          <!-- Hotspots visíveis são gerados pelo JS -->
-          <div id="sceneHotspots"></div>
-
-          <!-- Hotspot invisível do gato (Easter Egg: 5 cliques) -->
-          <div class="hotspot-invisible" id="catHotspot" style="left: 42.5%; top: 10.5%; width: 19%; height: 20%;" title="Miau?"></div>
-
-          <!-- Lukzin (sprite em pixel art) -->
-          <div class="luk-character" id="lukChar" data-dir="right" style="left: 17%; top: 90%;">
-            <div class="luk-bubble" id="lukBubble" role="status" aria-live="polite"></div>
-            <div class="luk-flip">
-              <div class="luk-squash">
-                <img src="img/lukzin.png" alt="Lukzin" class="luk-sprite" width="188" height="415" draggable="false" decoding="async" loading="lazy">
-              </div>
-            </div>
-            <div class="luk-shadow"></div>
-          </div>
-        </div>
-
-        <div class="scene-overlay"></div>
-        <div class="scene-sparks" id="sceneSparks" aria-hidden="true"></div>
-      </div>
-
-      <!-- Caixa de diálogo RPG -->
-      <div class="rpg-dialogue enter" id="setupDialogue">
-        <button type="button" class="rpg-close" id="dlgClose" aria-label="Fechar diálogo">✕</button>
-        <div class="rpg-avatar">
-          <img src="img/lukzin.png" alt="Lukzin" class="rpg-avatar-img" loading="lazy">
-        </div>
-        <div class="rpg-content">
-          <div class="rpg-name" id="dlgNameContainer">
-            <span class="rpg-name-main">Lukzin</span>
-            <span class="rpg-badge">DEV</span>
-          </div>
-          <div class="rpg-text" id="dlgText">E aí, tudo bão? Clica nos pontinhos roxos pra ver as peças do setup da Soso, ou me chama no Tour ali em cima que fica bão demais! Ah, e pode clicar em mim também. 💜</div>
-          <div class="rpg-chips" id="dlgChips"></div>
-          <div class="rpg-recap" id="dlgRecap" hidden></div>
-          <div class="rpg-actions" id="dlgActions" hidden>
-            <button type="button" class="btn-mini" id="dlgFicha">📋 Ver ficha completa</button>
-          </div>
-        </div>
-        <div class="rpg-continue" aria-hidden="true">▼</div>
-      </div>
-    </div>
+  <div class="setup-catalog reveal">
 
     <!-- ============ VISÃO 2: CATÁLOGO ============ -->
-    <div class="setup-view" id="viewCatalog" hidden>
+    <div class="setup-view" id="viewCatalog">
       <div class="cat-toolbar">
         <div class="cat-chips" id="catChips" role="group" aria-label="Filtrar por categoria"></div>
         <label class="cat-search">
@@ -933,6 +834,7 @@
   <span class="flb-dot"></span>
   Voltar pra live
 </button>
+</div>
 </main>
 
 <footer class="site-footer">
@@ -941,14 +843,6 @@
     <p>Configurações atualizadas em <b id="siteUpdated">—</b></p>
   </div>
 </footer>
-
-<dialog id="pcModal" style="background: #1a102d; color: #fff; border: 1px solid #a855f7; border-radius: 16px; padding: 20px; max-width: 400px; width: 90%;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <h3 id="pcModalTitle" style="font-size: 1.2rem; margin: 0; color: #c084fc;">Componente</h3>
-    <button onclick="document.getElementById('pcModal').close()" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
-  </div>
-  <div id="pcModalBody"></div>
-</dialog>
 
 <dialog id="dlg" aria-labelledby="dTitle">
   <div class="dh">
@@ -972,7 +866,6 @@
 
 <script src="js/utils/dom.js" defer></script>
 <script src="js/utils/format.js" defer></script>
-<script src="js/utils/audio.js" defer></script>
 <script src="js/api/client.js" defer></script>
 <script src="js/auth-ui.js" defer></script>
 <script src="js/navbar.js" defer></script>
