@@ -19,6 +19,7 @@
 .hero-meta{display:flex;align-items:center;gap:10px;color:var(--ink-3);font:600 11px/1.4 var(--font-mono);letter-spacing:.1em;text-transform:uppercase}
 
 /* ---------- Cartão da câmera ---------- */
+.cam-col{display:grid;gap:8px;justify-items:center;min-width:0}
 .cam-card{
   position:relative;
   padding:10px;
@@ -55,12 +56,12 @@
   background:linear-gradient(transparent,rgba(9,7,15,.92) 45%);
   text-align:left
 }
-.cam-offline h3{font-size:1.45rem}
+.cam-offline-titulo{font-family:var(--font-display);font-weight:800;letter-spacing:-.04em;line-height:.95;font-size:1.45rem}
 .cam-offline p{color:var(--ink-2);font-size:.85rem}
 .cam-offline .btn{justify-self:start;margin-top:6px}
 .cam-viewers{font:600 11px/1 var(--font-mono);color:var(--ink-2);letter-spacing:.08em}
 .cam-card.is-live .cam-viewers{color:#ffd7de}
-.cam-note{margin-top:-8px;color:var(--ink-3);font-size:.78rem;text-align:center}
+.cam-note{color:var(--ink-3);font-size:.78rem;text-align:center}
 .cam-mature{
   position:absolute;inset:0;z-index:3;display:grid;align-content:center;gap:10px;
   padding:24px;text-align:center;background:rgba(9,7,15,.94)

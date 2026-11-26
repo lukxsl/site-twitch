@@ -78,7 +78,7 @@
     const ultima = info && info.ultima ? String(info.ultima) : '';
     document.querySelectorAll('[data-live-chip]').forEach(chip => {
       chip.classList.toggle('is-live', live);
-      chip.setAttribute('aria-label', live ? 'Soso ao vivo — ir para o player' : 'Soso offline');
+      chip.title = live ? 'Soso ao vivo — ir para o player' : 'Soso offline — ir para o canal';
       const texto = chip.querySelector('[data-live-text]');
       if(texto) texto.textContent = live ? 'AO VIVO' : 'OFFLINE';
       const count = chip.querySelector('[data-live-count]');

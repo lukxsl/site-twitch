@@ -81,7 +81,7 @@
     </button>
   </div>
 
-  <a class="side-chip" data-live-chip id="sideStatusChip" href="#inicio" aria-label="Soso offline">
+  <a class="side-chip" data-live-chip id="sideStatusChip" href="#inicio" title="Soso offline — ir para o canal">
     <span class="dot-live" aria-hidden="true"></span>
     <span class="side-chip-copy">
       <span data-live-text>OFFLINE</span>
@@ -121,7 +121,7 @@
     <img src="img/twitch.png" alt="" width="24" height="24">
     <span class="brand-name">asemtet<span>0</span></span>
   </a>
-  <a class="side-chip" data-live-chip href="#inicio" aria-label="Soso offline">
+  <a class="side-chip" data-live-chip href="#inicio" title="Soso offline — ir para o canal">
     <span class="dot-live" aria-hidden="true"></span>
     <span class="side-chip-copy"><span data-live-text>OFFLINE</span></span>
     <b data-live-count></b>
@@ -172,6 +172,7 @@
       <p class="hero-meta">📍 Maceió · streamer desde 2025</p>
     </div>
 
+    <div class="cam-col">
     <div class="cam-card" id="camCard">
       <div class="cam-head">
         <span class="mono">CAM 01 · ASEMTET0</span>
@@ -182,7 +183,7 @@
         <div class="cam-scanlines" aria-hidden="true"></div>
         <div class="cam-offline" id="camOffline">
           <span class="mono">OFFLINE</span>
-          <h3>Volto já 💜</h3>
+          <p class="cam-offline-titulo">Volto já 💜</p>
           <p id="camLastLive">Enquanto isso, dá uma olhada no cantinho.</p>
           <button class="btn btn-sm" id="btnVod" type="button" hidden><svg class="ic ic-sm"><use href="#i-play"></use></svg> Última live</button>
         </div>
@@ -199,8 +200,9 @@
         <span class="cam-viewers" id="viewerCountStatus" aria-live="polite">@asemtet0</span>
       </div>
     </div>
+    <p class="cam-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui.</p>
+    </div>
   </article>
-  <p class="cam-note" id="playerNoteText">Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮</p>
 
   <div class="stats-pills" id="statsStrip" aria-label="Estatísticas do canal">
     <span class="stat-pill"><svg class="ic"><use href="#i-users"></use></svg><b class="skeleton" id="stripSeg"></b> seguidores</span>
@@ -472,7 +474,7 @@
         <span class="cm-float f1">🎮</span>
         <span class="cm-float f2">💬</span>
         <span class="cm-float f3">📢</span>
-        <span class="cm-float f4">🎬</span>
+        <span class="cm-float f5">🎬</span>
       </div>
     </div>
     <div class="cm-perks">
