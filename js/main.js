@@ -222,39 +222,31 @@ function atualizarMeta(pre, atual, marcos = MARCOS, animar = false){
 
 function renderRecado(){
   const noteEl = $('playerNoteText');
-  if(noteEl){
-    noteEl.classList.remove('recado');
-    if(!assistindoVod){
-      noteEl.textContent = ultVivo
-        ? 'Transmitindo ao vivo agora 💜'
-        : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
-    }
+  if(noteEl && !assistindoVod){
+    noteEl.textContent = ultVivo
+      ? 'Transmitindo ao vivo agora 💜'
+      : 'Quando a Soso estiver ao vivo, a transmissão aparece aqui.';
   }
 
   const card = $('recadoCard');
   const texto = $('recadoTexto');
   if(card && texto){
     const recado = (CONFIG_GERAL.recado || '').trim();
-    if(recado){
-      texto.textContent = recado;
-      card.classList.remove('vazio');
-    } else {
-      texto.textContent = '💭 Sem recadinho por hoje. A Soso volta logo com novidades!';
-      card.classList.add('vazio');
-    }
-    card.style.display = '';
+    card.hidden = !recado;
+    card.classList.toggle('vazio', !recado);
+    if(recado) texto.textContent = recado;
   }
 }
 
 function renderAviso(){
   const box = $('avisoBox'); if(!box) return;
-  if(AVISO && AVISO.ativo && AVISO.texto){
-    $('avisoTexto').textContent = AVISO.texto;
-    $('avisoTitulo').textContent = AVISO.titulo || 'Aviso';
-    $('avisoIcon').textContent = AVISO.icone || '📢';
-    box.className = 'aviso reveal in ' + (AVISO.tipo === 'warn' ? 'warn' : '');
-    box.style.display = 'flex';
-  } else box.style.display = 'none';
+  const ativo = !!(AVISO && AVISO.ativo && AVISO.texto);
+  box.hidden = !ativo;
+  if(!ativo) return;
+  $('avisoTexto').textContent = AVISO.texto;
+  $('avisoTitulo').textContent = AVISO.titulo || 'Aviso';
+  $('avisoIcon').textContent = '';
+  box.classList.toggle('warn', AVISO.tipo === 'warn');
 }
 
 // 'asemtetHype' -> 'Hype' (tira o prefixo minúsculo do canal)
@@ -313,28 +305,12 @@ function renderHomeExtras(){
 }
 
 /* ============================================================
-   SUB SHORTCUTS (legado)
+   HOME — eventos delegados
    ============================================================ */
-function setupSubShortcuts(){
-  const wrap = document.querySelector('.sub-shortcuts');
-  if(!wrap || wrap.dataset.bound) return;
-  wrap.dataset.bound = '1';
-  wrap.addEventListener('click', e => {
-    const btn = e.target.closest('.sub-shortcut');
-    if(!btn) return;
-    const card = btn.closest('.sub-hero-box');
-    if(!card) return;
-    card.querySelectorAll('.sub-shortcut').forEach(t => t.classList.toggle('on', t === btn));
-    card.querySelectorAll('.sub-shortcut-content').forEach(c =>
-      c.classList.toggle('on', c.dataset.subContent === btn.dataset.subTab)
-    );
-    if(btn.dataset.subTab === 'emotes'){
-      const grid = document.getElementById('emotesGrid');
-      if(grid){
-        grid.classList.add('counter-up');
-        setTimeout(() => grid.classList.remove('counter-up'), 1200);
-      }
-    }
+function setupHomeDelegates(){
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-ranking-musicas]');
+    if(btn){ e.preventDefault(); abrirRankingMusicas(); }
   });
 }
 
@@ -585,8 +561,8 @@ function renderOuvindo(){
     painel.innerHTML = `
       <div class="music-idle">
         <div class="music-idle-head">
-          <div class="disco-fantasma" aria-hidden="true"><span class="df-ic">🎵</span></div>
-          <div class="ouvindo-vazio-txt">Carregando…</div>
+          <span class="skeleton music-skeleton" aria-label="Carregando música"></span>
+          <span class="skeleton music-skeleton music-skeleton-sm" aria-hidden="true"></span>
         </div>
       </div>`;
     return;
@@ -608,7 +584,7 @@ function renderOuvindo(){
         <div class="music-now-info">
           <b>${esc(d.faixa || '—')}</b>
           <span>${esc(d.artista || '')}${d.album ? ' · ' + esc(d.album) : ''}</span>
-          <button type="button" class="music-rank-inline" onclick="abrirRankingMusicas()">🏆 Ver Ranking de Músicas</button>
+          <button type="button" class="btn btn-sm" data-ranking-musicas><svg class="ic ic-sm"><use href="#i-trophy"></use></svg> Ver Ranking de Músicas</button>
         </div>
       </div>
       ${destaque}`;
@@ -2035,7 +2011,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderAviso(); renderEmotes(); carregarEmotes(); renderSiteUpdate();
   renderChips(); renderComandos(); renderHomeExtras();
   setupComunidadeTabs();
-  setupSubShortcuts();
+  setupHomeDelegates();
   iniciarHall();
   renderOuvindo();
 

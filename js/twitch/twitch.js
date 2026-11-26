@@ -159,13 +159,13 @@ function assistirVod(v){
     return;
   }
   assistindoVod = true;
-  const panel = document.getElementById('offlinePanel');
-  if(panel) panel.style.display = 'none';
+  const panel = document.getElementById('camOffline');
+  if(panel) panel.hidden = true;
   const f = document.getElementById('twitchIframe');
   if(!f) return;
-  f.style.display = 'block';
+  f.hidden = false;
   f.src = `https://player.twitch.tv/?video=v${vodAtual.id}&parent=${HOST}&autoplay=false`;
-  const area = document.querySelector('.twitch-player');
+  const area = document.getElementById('camFrame');
   if(area){
     let fb = document.getElementById('vodFallback');
     if(!fb){
@@ -176,15 +176,18 @@ function assistirVod(v){
     }
     fb.href = urlTwitch;
     fb.textContent = 'Pediu login? Assistir na Twitch ↗';
-    fb.style.display = '';
+    fb.hidden = false;
   }
   const noteEl = document.getElementById('playerNoteText');
   if(noteEl){
     noteEl.classList.remove('recado');
     noteEl.innerHTML = `Reprise: ${esc(vodAtual.title)} · <a href="${urlTwitch}" target="_blank" rel="noopener">Não carregou? Abrir na Twitch ↗</a>`;
   }
-  const box = document.querySelector('.twitch-player-box');
-  if(box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const box = document.getElementById('camCard');
+  if(box) box.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    block: 'center'
+  });
 }
 window.assistirVod = assistirVod;
 
@@ -199,9 +202,6 @@ setInterval(tickUptime, 30000);
 let toastLiveMostrado = false;
 
 function _atualizarPlayerHeader(isLive){
-  const titleEl = document.querySelector('.twitch-player-title');
-  if(!titleEl) return;
-  titleEl.innerHTML = `<span class="live-indicator" id="headerLiveDot"></span>${isLive ? ' AO VIVO NA TWITCH' : ' CANAL DA SOSO'}`;
   if(typeof setLivePulse === 'function') setLivePulse(isLive);
 }
 
@@ -237,61 +237,51 @@ function _atualizarStatsStrip(data){
   const liveSep = document.getElementById('stripLiveSep');
   const viewers = document.getElementById('stripViewers');
 
-  const flash = (el, novoValor) => {
-    if(!el) return;
-    const valorAntigo = el.dataset.valor || el.textContent;
-    const novo = String(novoValor);
+  const flash = (el, valor) => {
+    if(!el || valor == null) return;
+    const novo = Number(valor).toLocaleString('pt-BR');
+    const antigo = el.dataset.valor;
+    el.classList.remove('skeleton');
     el.textContent = novo;
     el.dataset.valor = novo;
-    if(valorAntigo && valorAntigo !== '—' && valorAntigo !== novo){
+    if(antigo && antigo !== novo){
       el.classList.add('flash');
       setTimeout(() => el.classList.remove('flash'), 1200);
     }
   };
 
-  if(seg) flash(seg, data.followers != null ? Number(data.followers).toLocaleString('pt-BR') : '—');
-  if(horas) flash(horas, data.horasMes != null ? Number(data.horasMes).toLocaleString('pt-BR') : '—');
-  if(discord) flash(discord, data.discord != null ? Number(data.discord).toLocaleString('pt-BR') : '—');
+  if(seg) flash(seg, data.followers);
+  if(horas) flash(horas, data.horasMes);
+  if(discord) flash(discord, data.discord);
 
   const isLive = !!(data.stream && data.stream.viewer_count != null);
-  if(live) live.style.display = isLive ? '' : 'none';
-  if(liveSep) liveSep.style.display = isLive ? '' : 'none';
+  if(live) live.hidden = !isLive;
+  if(liveSep) liveSep.hidden = !isLive;
   if(viewers && isLive) viewers.textContent = Number(data.stream.viewer_count).toLocaleString('pt-BR');
 }
 
-function _atualizarBanner(data){
-  const overlay = document.getElementById('bannerOverlay');
-  const badge = document.getElementById('bannerLiveBadge');
-  const kicker = document.getElementById('bannerKicker');
-  const title = document.getElementById('bannerTitle');
-  const liveText = document.getElementById('bannerLiveText');
-
+function _atualizarCam(data){
+  const cam = document.getElementById('camCard');
+  const selo = document.getElementById('camSelo');
+  const ultima = document.getElementById('camLastLive');
   const isLive = !!data.stream;
-  if(isLive){
-    const game = data.stream.game_name || 'Jogando';
-    const viewers = Number(data.stream.viewer_count || 0);
-    if(badge){
-      badge.style.display = 'flex';
-      badge.classList.add('live');
-    }
-    if(liveText) liveText.textContent = 'AO VIVO AGORA';
-    if(overlay){
-      overlay.style.display = '';
-      if(kicker) kicker.textContent = `🎮 Jogando: ${game}`;
-      if(title) title.innerHTML = `Assistindo agora com <em>${viewers.toLocaleString('pt-BR')} ${viewers === 1 ? 'viewer' : 'viewers'}</em>`;
-    }
-  } else {
-    if(badge){
-      badge.style.display = 'none';
-      badge.classList.remove('live');
-    }
-    if(overlay) overlay.style.display = 'none';
+
+  if(cam) cam.classList.toggle('is-live', isLive);
+  if(selo) selo.textContent = isLive ? 'AO VIVO' : 'OFFLINE';
+  if(ultima && data.video && data.video.created_at){
+    ultima.textContent = `Última live ${tempoAtras(data.video.created_at)}.`;
+  } else if(ultima){
+    ultima.textContent = 'Enquanto isso, dá uma olhada no cantinho.';
+  }
+  if(!isLive){
+    const mature = document.getElementById('camMature');
+    if(mature) mature.hidden = true;
   }
 }
 
 async function verificarStatusTwitch() {
   const g = id => document.getElementById(id);
-  const iframe = g('twitchIframe'), panel = g('offlinePanel');
+  const iframe = g('twitchIframe'), panel = g('camOffline');
   try {
     const response = await fetch('/api/twitch');
     if (!response.ok) throw new Error('api');
@@ -312,7 +302,7 @@ async function verificarStatusTwitch() {
 
     _atualizarPlayerHeader(live);
     _atualizarProfileStatus(live, data);
-    _atualizarBanner(data);
+    _atualizarCam(data);
 
     // Força o bloqueio se a API avisar que é adulto OU se o jogo for conhecido como +18
     const isMature = !!(data.stream && (data.stream.is_mature || data.canal_mature));
@@ -329,98 +319,45 @@ async function verificarStatusTwitch() {
     vodAtual = data.video;
     videosTw = data.videos || (data.video ? [data.video] : []);
 
-    if (data.user) {
-      if (data.user.profile_image_url) {
-        const av = g('offlineAvatarImg');
-        if (av) av.src = data.user.profile_image_url;
-      }
-      if (data.user.offline_image_url && panel) {
-        panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
-      }
-    }
-
-    if (panel) panel.classList.remove('is-mature');
+    const matureBox = g('camMature');
+    if (matureBox) matureBox.hidden = !(data.stream && isMature);
     if (data.stream && isMature) {
       assistindoVod = false;
-      if(iframe){
-        iframe.style.display = 'none';
-        iframe.src = 'about:blank';
-      }
-      if(panel){
-        panel.style.display = 'flex';
-        panel.classList.add('is-mature');
-        panel.style.backgroundImage = 'linear-gradient(rgba(10,5,17,.55),rgba(10,5,17,.85))';
-        const fundo18 = data.stream.thumbnail || (data.game && data.game.box_art) || (data.user && data.user.offline_image_url) || (data.user && data.user.profile_image_url) || '';
-        panel.innerHTML = `
-          ${fundo18 ? `<div class="mature-bg" aria-hidden="true" style="background-image:url('${esc(fundo18)}')"></div>` : ''}
-          <div style="font-size:2.6rem;line-height:1">🔞</div>
-          <h4>Conteúdo +18 agora</h4>
-          <p>A Soso tá jogando algo com classificação adulta. O Twitch bloqueia o player embutido nesses casos — assista direto no site deles:</p>
-          <div class="offline-actions">
-            <a class="btn" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">▶ Assistir na Twitch</a>
-          </div>
-        `;
-      }
-      g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
+      if(iframe){ iframe.hidden = true; iframe.src = 'about:blank'; }
+      if(panel) panel.hidden = true;
+      const cnt = g('viewerCountStatus');
+      if(cnt) cnt.textContent = `${data.stream.viewer_count} assistindo`;
       const noteEl = g('playerNoteText');
-      if(noteEl){
-        noteEl.classList.remove('recado');
-        noteEl.textContent = `🔞 Conteúdo +18 — clique em "Assistir na Twitch" acima.`;
-      }
+      if(noteEl) noteEl.textContent = 'Conteúdo +18 — abra na Twitch para assistir.';
     } else if (data.stream) {
       assistindoVod = false;
-      if(panel) panel.style.display = 'none';
+      if(panel) panel.hidden = true;
       if(iframe){
-        iframe.style.display = 'block';
+        iframe.hidden = false;
         const novoSrc = `https://player.twitch.tv/?channel=asemtet0&parent=${HOST}`;
         if (iframe.src !== novoSrc) iframe.src = novoSrc;
       }
-      g('viewerCountStatus').textContent = `${data.stream.viewer_count} assistindo`;
+      const cnt = g('viewerCountStatus');
+      if(cnt) cnt.textContent = `${data.stream.viewer_count} assistindo`;
       const noteEl = g('playerNoteText');
-      if(noteEl){
-        if(!noteEl.classList.contains('recado')){
-          noteEl.textContent = `Transmitindo: ${data.stream.title}`;
-        }
-      }
+      if(noteEl && !noteEl.classList.contains('recado')) noteEl.textContent = `Transmitindo: ${data.stream.title}`;
     } else {
-      g('viewerCountStatus').textContent = '@asemtet0';
+      const cnt = g('viewerCountStatus');
+      if(cnt) cnt.textContent = '@asemtet0';
       if (!assistindoVod) {
-        if(iframe){
-          iframe.style.display = 'none';
-          iframe.src = 'about:blank';
-        }
-        if(panel){
-          panel.style.display = 'flex';
-          panel.innerHTML = `
-            <img id="offlineAvatarImg" src="img/avatar.png" alt="Soso" onerror="this.style.display='none'">
-            <h4>Estamos offline por agora 💜</h4>
-            <p>Siga o canal pra ser avisado quando a Soso entrar ao vivo!</p>
-            <div class="offline-info">
-              <span>📅 Lives toda semana</span>
-              <a href="https://discord.gg/J4gGaKWFPZ" target="_blank" rel="noopener">🔔 Avisos no Discord</a>
-            </div>
-            <div class="offline-actions">
-              <a class="btn twitch-accent" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Seguir na Twitch</a>
-              <button class="btn ghost" id="btnVod" onclick="assistirVod()" style="display:none">▶ Última live${canalMature ? ' ↗' : ''}</button>
-            </div>
-          `;
-          if(data.user && data.user.offline_image_url){
-            panel.style.backgroundImage = `url(${data.user.offline_image_url})`;
-          }
-          const btnVodEl = g('btnVod');
-          if(btnVodEl) btnVodEl.style.display = vodAtual ? '' : 'none';
-        }
+        if(iframe){ iframe.hidden = true; iframe.src = 'about:blank'; }
+        if(panel) panel.hidden = false;
         const noteEl = g('playerNoteText');
-        if(noteEl){
-          if(!noteEl.classList.contains('recado')){
-            noteEl.textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui. 🎮';
-          }
+        if(noteEl && !noteEl.classList.contains('recado')){
+          noteEl.textContent = 'Quando a Soso estiver ao vivo, a transmissão aparece aqui.';
         }
       }
     }
+    const btnVodEl = g('btnVod');
+    if(btnVodEl) btnVodEl.hidden = !vodAtual;
 
     const fbVod = g('vodFallback');
-    if(fbVod) fbVod.style.display = assistindoVod ? '' : 'none';
+    if(fbVod) fbVod.hidden = !assistindoVod;
 
     window.__streamInfo = data.stream || null;
     atualizarFoco(data.game, !!data.stream);
@@ -437,10 +374,8 @@ async function verificarStatusTwitch() {
     setLivePulse(false);
     _atualizarPlayerHeader(false);
     _atualizarProfileStatus(false, null);
-    const overlay = document.getElementById('bannerOverlay');
-    if(overlay) overlay.style.display = 'none';
-    const badge = document.getElementById('bannerLiveBadge');
-    if(badge) badge.style.display = 'none';
+    const matureBox = document.getElementById('camMature');
+    if(matureBox) matureBox.hidden = true;
   }
 }
 
