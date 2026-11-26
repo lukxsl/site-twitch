@@ -35,9 +35,18 @@
 .clips-box h3{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-size:1.3rem}
 .clips-box h3 a{color:var(--purple-2);font:700 .8rem var(--font-body)}
 .clips-grid-4{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-.clip{display:grid;gap:8px;padding:0;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface);overflow:hidden;text-align:left;color:var(--ink)}
+.clip{position:relative;display:grid;gap:8px;padding:0;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface);overflow:hidden;text-align:left;color:var(--ink)}
 .clip img{width:100%;aspect-ratio:16/9;object-fit:cover}
+.clip .play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:rgba(11,10,16,.8);color:#fff}
+.clip .vw,.clip .ct{padding:0 14px;font-size:.78rem;color:var(--ink-2)}
+.clip .vw{font-family:var(--font-mono);color:var(--purple-2)}
+.clip .ct{padding-top:4px;padding-bottom:14px;color:var(--ink);font-weight:700}
 .clip strong{padding:0 14px 14px;font-size:.85rem}
+.clips-vazio{padding:20px;text-align:center;color:var(--ink-2)}
+.music-playlist-link{margin-top:14px}
+.cmds-hint{color:var(--ink-2);font-size:.85rem;margin-bottom:10px}
+.honeypot{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.sir-head-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;width:100%}
 
 .music-full{padding:22px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface)}
 .music-full-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}

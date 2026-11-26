@@ -1,6 +1,50 @@
 /* ============================================================
    ADMIN — CORE (Rotas, Sidebar, Estado)
    ============================================================ */
+
+/* Ações delegadas: substitui onclick/onchange dos templates (CSP). */
+function argsAdmin(texto){
+  if(texto == null || texto === '') return [];
+  return String(texto).split(',').map(parte => {
+    const v = parte.trim().replace(/^['"]|['"]$/g, '');
+    if(v === 'true') return true;
+    if(v === 'false') return false;
+    if(/^-?\d+(\.\d+)?$/.test(v)) return Number(v);
+    return v;
+  });
+}
+function acaoAdmin(el){
+  const acao = el.dataset.adminAction;
+  if(!acao) return;
+  if(acao === 'toggle-open'){ el.parentElement?.classList.toggle('open'); return; }
+  if(acao === 'close-dlg'){ document.getElementById('dlg')?.close(); return; }
+  if(acao === 'abrir-login'){ window.AuthUI?.open?.(); return; }
+  if(acao === 'sug-tipo'){
+    window.ADMIN_SUG_TIPO = el.dataset.arg;
+    if(typeof renderAdminSugestoes === 'function') renderAdminSugestoes();
+    return;
+  }
+  if(acao === 'logs-mais'){
+    window.LOGS_STATE.limite += 20;
+    if(typeof renderLogsLista === 'function') renderLogsLista(aplicarFiltrosLogs(window.__logsCache || []));
+    return;
+  }
+  const fn = window[acao];
+  if(typeof fn !== 'function'){ console.warn('[admin] ação indisponível:', acao); return; }
+  const args = argsAdmin(el.dataset.arg);
+  if(acao === 'mudar-status-sug') args.push(el.value);
+  fn(...args);
+}
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-admin-action]');
+  if(!el || el.matches('select')) return;
+  e.preventDefault();
+  acaoAdmin(el);
+});
+document.addEventListener('change', e => {
+  const el = e.target.closest('[data-admin-action]');
+  if(el && el.matches('select')) acaoAdmin(el);
+});
 function adminIrPara(pagina){
   if(pagina === 'votacao') ADMIN_TAB = 'votos';
   if(pagina === 'sugestoes') ADMIN_SUG_STATUS = 'all';
@@ -127,10 +171,10 @@ function bindSidebarOnce(){
 
 function adminVoltarHTML(titulo, extraRight = ''){
   return `<div class="admin-crumbs">
-    <button type="button" onclick="adminIrPara('home')">⚙️ Admin</button>
+    <button type="button" data-admin-action="adminIrPara" data-arg="home">⚙️ Admin</button>
     <span class="crumb-sep">›</span>
     <span class="crumb-current">${titulo}</span>
-    ${extraRight ? `<span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center">${extraRight}</span>` : ''}
+    ${extraRight ? `<span class="u-style-7">${extraRight}</span>` : ''}
   </div>`;
 }
 
@@ -196,7 +240,7 @@ async function carregarAdmin(){
     area.innerHTML = `<div class="admin-vazio">
       <b>🔒 Acesso restrito</b>
       Só administradores do site podem ver esta área.
-      ${!USUARIO ? '<br><button type="button" class="btn-entrar" onclick="AuthUI.open(\'entrar\')">Entrar no site</button>' : ''}
+      ${!USUARIO ? '<br><button type="button" class="btn-entrar" data-admin-action="abrir-login">Entrar no site</button>' : ''}
     </div>`;
     return;
   }

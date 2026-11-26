@@ -12,7 +12,7 @@ async function renderAdminHome(){
   const area = document.getElementById('adminArea');
   if(!area) return;
 
-  const visitanteBtn = `<button type="button" class="ver-visitante" onclick="verComoVisitante()" title="Abrir home numa nova aba">👁️ Ver como visitante</button>`;
+  const visitanteBtn = `<button type="button" class="ver-visitante" data-admin-action="verComoVisitante" title="Abrir home numa nova aba">👁️ Ver como visitante</button>`;
   const crumbs = adminVoltarHTML('⚙️ Painel', visitanteBtn);
   const adminAccount = (typeof USUARIO !== 'undefined' && USUARIO) ? USUARIO : {};
   const adminNick = String(adminAccount.nick || adminAccount.username || 'Admin').replace(/[<>]/g, '');
@@ -86,7 +86,7 @@ async function renderAdminHome(){
         <b>Modo manutenção está LIGADO</b>
         <span>Quem não é admin vê uma tela de "Estamos em manutenção".</span>
       </div>
-      ${podeEditarConfig ? `<button type="button" class="aa-btn" onclick="desligarManutencao()">🔓 Desligar agora</button>` : ''}
+      ${podeEditarConfig ? `<button type="button" class="aa-btn" data-admin-action="desligarManutencao">🔓 Desligar agora</button>` : ''}
     </div>` : '';
   const seAlertHTML = streamElementsFalhou ? `
     <div class="admin-alert admin-alert-warn">
@@ -265,14 +265,14 @@ async function renderAdminSetup(){
   area.innerHTML = adminVoltarHTML('🖥️ Setup dos sonhos') + `
     <div class="admin-card">
       <h3>✨ Sonhos ativos <span class="cont">${sonhos.length}</span></h3>
-      <p style="color:var(--mute);font-size:.84rem;margin-bottom:14px">
+      <p class="u-style-8">
         Edite as metas e contribuições. Depois clica em <b>Salvar tudo</b>.
       </p>
       <div id="adminSonhosLista"></div>
       <div class="admin-actions">
-        <button class="admin-btn" onclick="adicionarSonho()">+ Adicionar sonho</button>
-        <button class="admin-btn" onclick="salvarSonhosAPI()">💾 Salvar tudo</button>
-        <button class="admin-btn ghost" onclick="renderAdminSetup()">🔄 Recarregar</button>
+        <button class="admin-btn" data-admin-action="adicionarSonho">+ Adicionar sonho</button>
+        <button class="admin-btn" data-admin-action="salvarSonhosAPI">💾 Salvar tudo</button>
+        <button class="admin-btn ghost" data-admin-action="renderAdminSetup">🔄 Recarregar</button>
       </div>
     </div>
 
@@ -295,9 +295,9 @@ function renderAdminSonhosLista(sonhos){
   el.innerHTML = sonhos.map((s, idx) => {
     const pct = s.meta > 0 ? Math.min(100, Math.round((s.arrecadado / s.meta) * 100)) : 0;
     return `
-      <div class="admin-card" style="background:rgba(255,255,255,.02);margin-bottom:12px">
-        <h3 style="font-size:.98rem">
-          <span style="font-size:1.4rem">${s.icon || '✨'}</span>
+      <div class="admin-card u-style-9">
+        <h3 class="u-style-10">
+          <span class="u-style-11">${s.icon || '✨'}</span>
           ${esc(s.nome)}
           <span class="cont">${pct}%</span>
         </h3>
@@ -313,22 +313,22 @@ function renderAdminSonhosLista(sonhos){
             <div><label>Arrecadado (R$)</label><input type="number" id="sonho-${idx}-arr" min="0" step="1" value="${Number(s.arrecadado) || 0}"></div>
           </div>
 
-          <div style="margin-top:8px">
+          <div class="u-style-12">
             <label>💜 Contribuintes (${(s.contribuintes || []).length})</label>
             <div>
               ${(s.contribuintes || []).map((c, ci) => `
-                <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
-                  <input type="text" id="sonho-${idx}-c-${ci}-nome" value="${esc(c.nome || '')}" placeholder="Nome" style="flex:1">
-                  <input type="number" id="sonho-${idx}-c-${ci}-val" value="${Number(c.valor) || 0}" placeholder="R$" style="width:110px">
-                  <button type="button" class="btn-mini danger" onclick="removerContribuinte(${idx}, ${ci})">✕</button>
+                <div class="u-style-13">
+                  <input type="text" id="sonho-${idx}-c-${ci}-nome" value="${esc(c.nome || '')}" placeholder="Nome" class="u-style-14">
+                  <input type="number" id="sonho-${idx}-c-${ci}-val" value="${Number(c.valor) || 0}" placeholder="R$" class="u-style-15">
+                  <button type="button" class="btn-mini danger" data-admin-action="removerContribuinte" data-arg="${idx}, ${ci}">✕</button>
                 </div>
-              `).join('') || '<small style="color:var(--mute)">Ninguém ainda</small>'}
+              `).join('') || '<small class="u-style-16">Ninguém ainda</small>'}
             </div>
-            <button type="button" class="btn-mini" style="margin-top:6px" onclick="adicionarContribuinte(${idx})">+ Contribuinte</button>
+            <button type="button" class="btn-mini u-style-17" data-admin-action="adicionarContribuinte" data-arg="${idx}">+ Contribuinte</button>
           </div>
 
-          <div class="admin-actions" style="justify-content:flex-end">
-            <button type="button" class="admin-btn perigo" onclick="removerSonho(${idx})">🗑️ Remover sonho</button>
+          <div class="admin-actions u-style-18">
+            <button type="button" class="admin-btn perigo" data-admin-action="removerSonho" data-arg="${idx}">🗑️ Remover sonho</button>
           </div>
         </div>
       </div>
@@ -356,8 +356,8 @@ function renderAdminApoiadoresLista(sonhos){
   });
   const ranking = Object.values(porPessoa).sort((a,b) => b.total - a.total);
   el.innerHTML = ranking.map((p, i) => `
-    <div class="admin-voto" style="margin-bottom:6px">
-      <span style="font-size:1.3rem;flex:none;width:32px;text-align:center">${['🥇','🥈','🥉'][i] || '🎗️'}</span>
+    <div class="admin-voto u-style-19">
+      <span class="u-style-20">${['🥇','🥈','🥉'][i] || '🎗️'}</span>
       <div class="admin-voto-info">
         <b>@${esc(p.nome)}</b>
         <small>${p.sonhos.join(' · ')}</small>

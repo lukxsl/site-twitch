@@ -39,9 +39,9 @@ function renderAdminVotacao(){
 
   area.innerHTML = adminVoltarHTML('🗳️ Votação') + `
     <div class="votacao-tabs">
-      <button class="${ADMIN_TAB === 'votos' ? 'on' : ''}" onclick="adminIrAba('votos')">Votos (${totalVotos})</button>
-      ${podeEditar ? `<button class="${ADMIN_TAB === 'opcoes' ? 'on' : ''}" onclick="adminIrAba('opcoes')">Opções</button>` : ''}
-      ${podeEditar ? `<button class="${ADMIN_TAB === 'prazo' ? 'on' : ''}" onclick="adminIrAba('prazo')">⏰ Prazo</button>` : ''}
+      <button class="${ADMIN_TAB === 'votos' ? 'on' : ''}" data-admin-action="adminIrAba" data-arg="votos">Votos (${totalVotos})</button>
+      ${podeEditar ? `<button class="${ADMIN_TAB === 'opcoes' ? 'on' : ''}" data-admin-action="adminIrAba" data-arg="opcoes">Opções</button>` : ''}
+      ${podeEditar ? `<button class="${ADMIN_TAB === 'prazo' ? 'on' : ''}" data-admin-action="adminIrAba" data-arg="prazo">⏰ Prazo</button>` : ''}
     </div>
     <div id="adminConteudo"></div>
   `;
@@ -59,7 +59,7 @@ function renderAdminVotos(usuarios, mapaOpcao, contagem, podeResetar){
         <h3>🗳️ Votos</h3>
         <div class="logs-empty"><b>Ninguém votou ainda</b>A votação tá aberta, mas ninguém escolheu nada por enquanto.</div>
         <div class="admin-actions">
-          <button class="admin-btn ghost" onclick="carregarAdminVotacao()">🔄 Atualizar</button>
+          <button class="admin-btn ghost" data-admin-action="carregarAdminVotacao">🔄 Atualizar</button>
         </div>
       </div>`;
     return;
@@ -82,7 +82,7 @@ function renderAdminVotos(usuarios, mapaOpcao, contagem, podeResetar){
           const votos = porOpcao[opId];
           return `
             <div class="votos-group">
-              <div class="votos-group-head" onclick="this.parentElement.classList.toggle('open')">
+              <div class="votos-group-head" data-admin-action="toggle-open">
                 <span class="vgh-arrow">▶</span>
                 <span class="vgh-titulo">${esc(nomeOpcao)}</span>
                 <span class="vgh-count">${votos.length} voto${votos.length === 1 ? '' : 's'}</span>
@@ -93,7 +93,7 @@ function renderAdminVotos(usuarios, mapaOpcao, contagem, podeResetar){
                   return `
                     <div class="admin-voto">
                       ${temDados && u.avatar
-                        ? `<img class="admin-voto-avatar" src="${esc(u.avatar)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'admin-voto-ph',textContent:'👤'}))">`
+                        ? `<img class="admin-voto-avatar" src="${esc(u.avatar)}" alt="" data-fallback-class="admin-voto-ph" data-fallback-text="👤">`
                         : '<div class="admin-voto-ph">👤</div>'}
                       <div class="admin-voto-info">
                         <b>${temDados ? '@' + esc(u.username) : 'Sem nick'}</b>
@@ -110,8 +110,8 @@ function renderAdminVotos(usuarios, mapaOpcao, contagem, podeResetar){
         }).join('')}
       </div>
       <div class="admin-actions">
-        <button class="admin-btn ghost" onclick="carregarAdminVotacao()">🔄 Atualizar</button>
-        ${podeResetar ? `<button class="admin-btn perigo" onclick="resetarVotacao()">🗑️ Resetar votação</button>` : ''}
+        <button class="admin-btn ghost" data-admin-action="carregarAdminVotacao">🔄 Atualizar</button>
+        ${podeResetar ? `<button class="admin-btn perigo" data-admin-action="resetarVotacao">🗑️ Resetar votação</button>` : ''}
       </div>
     </div>`;
 }
@@ -123,7 +123,7 @@ function renderAdminOpcoes(opcoes, contagem){
   const maxVotos = Math.max(1, ...Object.values(contagem).map(Number));
 
   const vazio = `
-    <div class="admin-vazio" style="padding:40px 20px">
+    <div class="admin-vazio u-style-21">
       <b>🗳️ Nenhuma opção cadastrada</b>
       Enquanto não tiver opções, a votação fica desativada e a aba mostra uma mensagem amigável pro pessoal.
     </div>`;
@@ -139,27 +139,27 @@ function renderAdminOpcoes(opcoes, contagem){
           const lider = votos > 0 && votos === maxVotos;
           return `
             <div class="opcao-row">
-              ${o.capa ? `<img src="${esc(o.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph4',textContent:'🎮'}))">` : '<div class="ph4">🎮</div>'}
+              ${o.capa ? `<img src="${esc(o.capa)}" alt="" data-fallback-class="ph4" data-fallback-text="🎮">` : '<div class="ph4">🎮</div>'}
               <div class="opcao-info">
                 <div class="opcao-top">
                   <b>${esc(o.nome)}</b>
                   <span class="votos">${votos} voto${votos === 1 ? '' : 's'} · ${pct}%</span>
                 </div>
-                <div class="opcao-bar"><i style="width:${barW}%"></i></div>
-                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                  <small style="color:var(--mute);font-size:.7rem">${o.tipo === 'filme' ? '🎬 Filme' : '🎮 Jogo'}</small>
+                <div class="opcao-bar"><i data-css="width:${barW}%"></i></div>
+                <div class="u-style-22">
+                  <small class="u-style-23">${o.tipo === 'filme' ? '🎬 Filme' : '🎮 Jogo'}</small>
                   ${lider ? '<span class="opcao-leader">👑 Líder</span>' : ''}
                 </div>
               </div>
-              <button class="btn-mini" onclick="editarOpcao(${i})">Editar</button>
+              <button class="btn-mini" data-admin-action="editarOpcao" data-arg="${i}">Editar</button>
             </div>
           `;
         }).join('') : vazio}
       </div>
       <div class="admin-actions">
-        <button class="admin-btn" onclick="adicionarOpcao()">+ Adicionar opção</button>
-        ${lista.length ? `<button class="admin-btn ghost" onclick="restaurarPadraoVotacao()">Restaurar padrão</button>` : ''}
-        ${lista.length ? `<button class="admin-btn perigo" onclick="removerTodasOpcoes()">🚫 Remover todas</button>` : ''}
+        <button class="admin-btn" data-admin-action="adicionarOpcao">+ Adicionar opção</button>
+        ${lista.length ? `<button class="admin-btn ghost" data-admin-action="restaurarPadraoVotacao">Restaurar padrão</button>` : ''}
+        ${lista.length ? `<button class="admin-btn perigo" data-admin-action="removerTodasOpcoes">🚫 Remover todas</button>` : ''}
       </div>
     </div>`;
 }
@@ -172,7 +172,7 @@ function renderAdminPrazo(fechamento, fechamentoTxt){
   el.innerHTML = `
     <div class="admin-card">
       <h3>⏰ Prazo de encerramento</h3>
-      <p style="color:var(--mute);font-size:.85rem;margin-bottom:14px">
+      <p class="u-style-24">
         Quando passar desse horário, a votação fecha automaticamente. Os visitantes não vão poder votar.
       </p>
       <div class="admin-form">
@@ -180,11 +180,11 @@ function renderAdminPrazo(fechamento, fechamentoTxt){
           <label>Fecha em</label>
           <input id="cfgVotosFechamento" type="datetime-local" value="${esc(localIso)}">
         </div>
-        <div class="admin-actions" style="justify-content:flex-start">
-          <button class="admin-btn" onclick="salvarPrazoVotacao()">💾 Salvar prazo</button>
-          <button class="admin-btn ghost" onclick="limparPrazoVotacao()">🧹 Limpar prazo</button>
+        <div class="admin-actions u-style-25">
+          <button class="admin-btn" data-admin-action="salvarPrazoVotacao">💾 Salvar prazo</button>
+          <button class="admin-btn ghost" data-admin-action="limparPrazoVotacao">🧹 Limpar prazo</button>
         </div>
-        <div class="aviso-preview" style="margin-top:14px">
+        <div class="aviso-preview u-style-26">
           <span class="ap-label">Status atual</span>
           <span class="ap-ic">⏰</span>
           <div class="ap-tx">
@@ -283,9 +283,9 @@ function editarOpcao(i){
         <label>Nome do jogo/filme</label>
         <div class="busca-row">
           <input id="editNome" type="text" value="${esc(o.nome || '')}" placeholder="Ex: Elden Ring">
-          <button type="button" onclick="buscarCapaOpcao()">🔍 Buscar capa</button>
+          <button type="button" data-admin-action="buscarCapaOpcao">🔍 Buscar capa</button>
         </div>
-        <div id="buscaOpcaoStatus" style="font-size:.72rem;color:var(--mute);margin-top:6px"></div>
+        <div id="buscaOpcaoStatus" class="u-style-27"></div>
       </div>
       <div>
         <label>Tipo</label>
@@ -297,13 +297,13 @@ function editarOpcao(i){
       <div>
         <label>URL da capa (opcional)</label>
         <input id="editCapa" type="text" value="${esc(o.capa || '')}" placeholder="https://...">
-        <div style="margin-top:8px">
-          <img class="mini-capa" id="editCapaPreview" src="${esc(o.capa || '')}" style="${o.capa ? '' : 'display:none'}" onerror="this.style.display='none'">
+        <div class="u-style-12">
+          <img class="mini-capa" id="editCapaPreview" src="${esc(o.capa || '')}" data-css="${o.capa ? '' : 'display:none'}" data-fallback="hide">
         </div>
       </div>
-      <div class="admin-actions" style="justify-content:flex-end">
-        <button class="admin-btn ghost" onclick="removerOpcao(${i})">Remover</button>
-        <button class="admin-btn" onclick="salvarOpcao(${i})">Salvar</button>
+      <div class="admin-actions u-style-18">
+        <button class="admin-btn ghost" data-admin-action="removerOpcao" data-arg="${i}">Remover</button>
+        <button class="admin-btn" data-admin-action="salvarOpcao" data-arg="${i}">Salvar</button>
       </div>
     </div>`;
   document.getElementById('dlg').showModal();
@@ -321,9 +321,9 @@ function adicionarOpcao(){
         <label>Nome do jogo/filme</label>
         <div class="busca-row">
           <input id="editNome" type="text" placeholder="Ex: Elden Ring">
-          <button type="button" onclick="buscarCapaOpcao()">🔍 Buscar capa</button>
+          <button type="button" data-admin-action="buscarCapaOpcao">🔍 Buscar capa</button>
         </div>
-        <div id="buscaOpcaoStatus" style="font-size:.72rem;color:var(--mute);margin-top:6px"></div>
+        <div id="buscaOpcaoStatus" class="u-style-27"></div>
       </div>
       <div>
         <label>Tipo</label>
@@ -335,12 +335,12 @@ function adicionarOpcao(){
       <div>
         <label>URL da capa (opcional)</label>
         <input id="editCapa" type="text" placeholder="https://...">
-        <div style="margin-top:8px">
-          <img class="mini-capa" id="editCapaPreview" style="display:none">
+        <div class="u-style-12">
+          <img class="mini-capa" id="editCapaPreview" class="u-style-28">
         </div>
       </div>
-      <div class="admin-actions" style="justify-content:flex-end">
-        <button class="admin-btn" onclick="salvarOpcao(${i}, true)">Adicionar</button>
+      <div class="admin-actions u-style-18">
+        <button class="admin-btn" data-admin-action="salvarOpcao" data-arg="${i}, true">Adicionar</button>
       </div>
     </div>`;
   document.getElementById('dlg').showModal();
@@ -435,16 +435,16 @@ async function renderAdminConfig(){
 
     area.innerHTML = adminVoltarHTML('⚙️ Config geral') + `
       <div class="config-tabs">
-        <button class="config-tab ${tab === 'aviso' ? 'on' : ''}" onclick="adminIrConfigTab('aviso')">📢 Aviso</button>
-        <button class="config-tab ${tab === 'aparencia' ? 'on' : ''}" onclick="adminIrConfigTab('aparencia')">💜 Aparência</button>
-        <button class="config-tab ${tab === 'sistema' ? 'on' : ''}" onclick="adminIrConfigTab('sistema')">🔧 Sistema</button>
+        <button class="config-tab ${tab === 'aviso' ? 'on' : ''}" data-admin-action="adminIrConfigTab" data-arg="aviso">📢 Aviso</button>
+        <button class="config-tab ${tab === 'aparencia' ? 'on' : ''}" data-admin-action="adminIrConfigTab" data-arg="aparencia">💜 Aparência</button>
+        <button class="config-tab ${tab === 'sistema' ? 'on' : ''}" data-admin-action="adminIrConfigTab" data-arg="sistema">🔧 Sistema</button>
       </div>
 
       <div class="config-panel ${tab === 'aviso' ? 'on' : ''}">
         <div class="admin-card">
           <h3>📢 Aviso da home</h3>
           <div class="admin-form">
-            <div><label style="display:flex;align-items:center;gap:8px;text-transform:none"><input type="checkbox" id="cfgAvisoAtivo" ${av.ativo ? 'checked' : ''} style="width:auto"> Mostrar aviso na home</label></div>
+            <div><label class="u-style-29"><input type="checkbox" id="cfgAvisoAtivo" ${av.ativo ? 'checked' : ''} class="u-style-30"> Mostrar aviso na home</label></div>
             <div class="row">
               <div><label>Ícone</label><input id="cfgAvisoIcone" type="text" value="${esc(av.icone || '📢')}"></div>
               <div><label>Tipo</label>
@@ -483,14 +483,14 @@ async function renderAdminConfig(){
         </div>
         <div class="admin-card">
           <h3>🏆 Top 3 apoiadores</h3>
-          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Um por linha, formato: <code>Nome | valor</code>.</p>
+          <p class="u-style-31">Um por linha, formato: <code>Nome | valor</code>.</p>
           <div class="admin-form">
             <div><label>Linhas (até 3)</label><textarea id="cfgTop3" rows="4" placeholder="lukxsl | R$ 250">${esc(top3Txt)}</textarea></div>
           </div>
         </div>
         <div class="admin-card">
           <h3>👑 Hall da fama</h3>
-          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Um por linha, formato: <code>Nome | tempo</code>.</p>
+          <p class="u-style-31">Um por linha, formato: <code>Nome | tempo</code>.</p>
           <div class="admin-form">
             <div><label>Linhas (até 5)</label><textarea id="cfgHall" rows="6" placeholder="gabizinha | 14 meses">${esc(hallTxt)}</textarea></div>
           </div>
@@ -507,14 +507,14 @@ async function renderAdminConfig(){
               <span>As horas do mês são atualizadas conforme os VODs do canal.</span>
               <span class="sync-val" id="syncHoras">${esc(d.horasMes || '—')}</span>
             </div>
-            <button type="button" class="admin-btn ghost" id="btnSyncHoras" onclick="sincronizarHoras()">🔄 Sincronizar</button>
+            <button type="button" class="admin-btn ghost" id="btnSyncHoras" data-admin-action="sincronizarHoras">🔄 Sincronizar</button>
           </div>
         </div>
         <div class="admin-card">
           <h3>🔧 Modo manutenção</h3>
-          <p style="color:var(--mute);font-size:.85rem;margin-bottom:12px">Quando ligado, quem não é admin vê uma tela de manutenção.</p>
-          <label style="display:flex;align-items:center;gap:10px;font-weight:700">
-            <input type="checkbox" id="cfgManutencao" ${d.manutencao ? 'checked' : ''} style="width:auto">
+          <p class="u-style-31">Quando ligado, quem não é admin vê uma tela de manutenção.</p>
+          <label class="u-style-32">
+            <input type="checkbox" id="cfgManutencao" ${d.manutencao ? 'checked' : ''} class="u-style-30">
             Ligar modo manutenção
           </label>
         </div>
@@ -522,9 +522,9 @@ async function renderAdminConfig(){
 
       ${podeEditar ? `
         <div class="admin-actions">
-          <button class="admin-btn" onclick="salvarConfig()">💾 Salvar tudo</button>
-          <button class="admin-btn ghost" onclick="renderAdminConfig()">🔄 Recarregar</button>
-        </div>` : `<p style="color:var(--mute);font-size:.82rem;text-align:center;margin-top:14px">Você não tem permissão pra editar.</p>`}
+          <button class="admin-btn" data-admin-action="salvarConfig">💾 Salvar tudo</button>
+          <button class="admin-btn ghost" data-admin-action="renderAdminConfig">🔄 Recarregar</button>
+        </div>` : `<p class="u-style-33">Você não tem permissão pra editar.</p>`}
     `;
 
     ['cfgAvisoIcone','cfgAvisoTitulo','cfgAvisoTexto','cfgAvisoTipo'].forEach(id => {

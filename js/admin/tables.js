@@ -29,17 +29,17 @@ function renderAdminTierList(){
   const podeEditar = temPerm('editar_tierlist');
   const podeImportar = temPerm('importar_steam');
   const botaoImport = (ADMIN_TIER_TAB === 'jogos' && podeImportar)
-    ? `<button class="admin-btn" onclick="importarSteam()" id="btnImportarSteam">📥 Importar da Steam</button>` : '';
+    ? `<button class="admin-btn" data-admin-action="importarSteam" id="btnImportarSteam">📥 Importar da Steam</button>` : '';
   const botaoSync = (ADMIN_TIER_TAB === 'jogos' && podeImportar)
-    ? `<button class="admin-btn ghost" onclick="sincronizarHoras()" id="btnSyncHoras">🔄 Sincronizar horas</button>` : '';
+    ? `<button class="admin-btn ghost" data-admin-action="sincronizarHoras" id="btnSyncHoras">🔄 Sincronizar horas</button>` : '';
   const todosSel = lista.length > 0 && ADMIN_MULTISEL.ids.size === lista.length;
   const barraSel = ADMIN_MULTISEL.ativo ? `
     <div class="admin-bar">
       <b>☑️ ${ADMIN_MULTISEL.ids.size} de ${lista.length} selecionado${ADMIN_MULTISEL.ids.size === 1 ? '' : 's'}</b>
-      <div class="admin-actions" style="margin:0">
-        <button class="admin-btn ghost" onclick="toggleSelTodos()">${todosSel ? '☐ Desmarcar tudo' : '☑️ Selecionar tudo'}</button>
-        <button class="admin-btn perigo" onclick="apagarSelecionados()" ${ADMIN_MULTISEL.ids.size ? '' : 'disabled'}>🗑️ Apagar selecionados</button>
-        <button class="admin-btn ghost" onclick="cancelarMultiSel()">Cancelar</button>
+      <div class="admin-actions u-style-34">
+        <button class="admin-btn ghost" data-admin-action="toggleSelTodos">${todosSel ? '☐ Desmarcar tudo' : '☑️ Selecionar tudo'}</button>
+        <button class="admin-btn perigo" data-admin-action="apagarSelecionados" ${ADMIN_MULTISEL.ids.size ? '' : 'disabled'}>🗑️ Apagar selecionados</button>
+        <button class="admin-btn ghost" data-admin-action="cancelarMultiSel">Cancelar</button>
       </div>
     </div>` : '';
 
@@ -47,32 +47,32 @@ function renderAdminTierList(){
     if(ADMIN_MULTISEL.ativo){
       const sel = ADMIN_MULTISEL.ids.has(it.id);
       return `
-        <div class="admin-item-select ${sel ? 'sel' : ''}" onclick="toggleSelItem('${esc(it.id)}')">
+        <div class="admin-item-select ${sel ? 'sel' : ''}" data-admin-action="toggleSelItem" data-arg="${esc(it.id)}">
           <span class="cb"></span>
-          ${it.capa ? `<img src="${esc(it.capa)}" alt="" style="width:44px;height:58px;border-radius:6px;object-fit:cover;flex:none;background:#1d1433;border:1px solid var(--line)" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3" style="width:44px;height:58px;display:grid;place-items:center;background:#1d1433;border:1px solid var(--line);border-radius:6px">🎮</div>'}
-          <div class="admin-item-info" style="flex:1;min-width:0">
-            <b style="color:var(--white);font-size:.9rem">${esc(it.nome)}</b>
-            <small style="color:var(--mute);font-size:.68rem">Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
+          ${it.capa ? `<img src="${esc(it.capa)}" alt="" class="u-style-35" data-fallback-class="ph3" data-fallback-text="🎮">` : '<div class="ph3 u-style-36">🎮</div>'}
+          <div class="admin-item-info u-style-37">
+            <b class="u-style-38">${esc(it.nome)}</b>
+            <small class="u-style-39">Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}</small>
           </div>
         </div>`;
     }
     return `
       <div class="admin-item">
-        ${it.capa ? `<img src="${esc(it.capa)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph3',textContent:'🎮'}))">` : '<div class="ph3">🎮</div>'}
+        ${it.capa ? `<img src="${esc(it.capa)}" alt="" data-fallback-class="ph3" data-fallback-text="🎮">` : '<div class="ph3">🎮</div>'}
         <div class="admin-item-info">
           <b>${esc(it.nome)}</b>
           <small>Tier ${esc(it.tier || '—')} · ${esc(it.status || '')}${it.nota ? ' · ⭐ ' + n1(it.nota) : ''}${(it.generos && it.generos.length) ? ' · ' + it.generos.join(', ') : ''}</small>
         </div>
-        ${podeEditar ? `<button class="btn-mini" onclick="editarItemTier(${i})">Editar</button>` : ''}
-        ${podeEditar ? `<button class="btn-mini danger" onclick="removerItemTier(${i})">Remover</button>` : ''}
+        ${podeEditar ? `<button class="btn-mini" data-admin-action="editarItemTier" data-arg="${i}">Editar</button>` : ''}
+        ${podeEditar ? `<button class="btn-mini danger" data-admin-action="removerItemTier" data-arg="${i}">Remover</button>` : ''}
       </div>`;
   };
 
   area.innerHTML = adminVoltarHTML('🎮 Tier List') + `
     <div class="admin-tabs">
-      <button class="${ADMIN_TIER_TAB === 'jogos' ? 'on' : ''}" onclick="adminIrTierTab('jogos')">🎮 Jogos (${ADMIN_TIER.jogos.length})</button>
-      <button class="${ADMIN_TIER_TAB === 'filmes' ? 'on' : ''}" onclick="adminIrTierTab('filmes')">🎬 Filmes (${ADMIN_TIER.filmes.length})</button>
-      <button class="${ADMIN_TIER_TAB === 'animes' ? 'on' : ''}" onclick="adminIrTierTab('animes')">🍥 Animes (${ADMIN_TIER.animes.length})</button>
+      <button class="${ADMIN_TIER_TAB === 'jogos' ? 'on' : ''}" data-admin-action="adminIrTierTab" data-arg="jogos">🎮 Jogos (${ADMIN_TIER.jogos.length})</button>
+      <button class="${ADMIN_TIER_TAB === 'filmes' ? 'on' : ''}" data-admin-action="adminIrTierTab" data-arg="filmes">🎬 Filmes (${ADMIN_TIER.filmes.length})</button>
+      <button class="${ADMIN_TIER_TAB === 'animes' ? 'on' : ''}" data-admin-action="adminIrTierTab" data-arg="animes">🍥 Animes (${ADMIN_TIER.animes.length})</button>
     </div>
     ${barraSel}
     <div class="admin-card">
@@ -81,11 +81,11 @@ function renderAdminTierList(){
         ${lista.length ? lista.map(itemHTML).join('') : '<div class="logs-empty"><b>Nenhum item ainda</b>Adiciona o primeiro.</div>'}
       </div>
       <div class="admin-actions">
-        ${podeEditar && !ADMIN_MULTISEL.ativo && lista.length ? `<button class="admin-btn ghost" onclick="ativarMultiSel()">☑️ Selecionar vários</button>` : ''}
-        ${podeEditar ? `<button class="admin-btn" onclick="adicionarItemTier()">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : ADMIN_TIER_TAB === 'filmes' ? 'filme' : 'anime'}</button>` : ''}
+        ${podeEditar && !ADMIN_MULTISEL.ativo && lista.length ? `<button class="admin-btn ghost" data-admin-action="ativarMultiSel">☑️ Selecionar vários</button>` : ''}
+        ${podeEditar ? `<button class="admin-btn" data-admin-action="adicionarItemTier">+ Adicionar ${ADMIN_TIER_TAB === 'jogos' ? 'jogo' : ADMIN_TIER_TAB === 'filmes' ? 'filme' : 'anime'}</button>` : ''}
         ${botaoImport}
         ${botaoSync}
-        <button class="admin-btn ghost" onclick="carregarAdminTierList()">🔄 Recarregar</button>
+        <button class="admin-btn ghost" data-admin-action="carregarAdminTierList">🔄 Recarregar</button>
       </div>
     </div>`;
 }
@@ -207,9 +207,9 @@ function abrirModalItemTier(i){
         <label>Nome</label>
         <div class="busca-row">
           <input id="itemNome" type="text" value="${esc(it.nome || '')}">
-          <button type="button" onclick="buscarItemAuto()">🔍 Buscar</button>
+          <button type="button" data-admin-action="buscarItemAuto">🔍 Buscar</button>
         </div>
-        <div id="buscaStatus" style="font-size:.72rem;color:var(--mute);margin-top:6px"></div>
+        <div id="buscaStatus" class="u-style-27"></div>
       </div>
       <div class="row">
         <div><label>Tier</label>
@@ -228,11 +228,11 @@ function abrirModalItemTier(i){
         ${tipo === 'jogos' ? `
           <div><label>Horas</label><input id="itemHoras" type="number" min="0" step="0.1" value="${it.horas || 0}"></div>
           <div>
-            <label style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <label class="u-style-40">
               <span>Conquistas (obtidas/total)</span>
-              ${it.appid ? `<button type="button" class="btn-mini" id="btnConqAuto" onclick="buscarConquistasAuto(${it.appid})">🏆 Buscar</button>` : ''}
+              ${it.appid ? `<button type="button" class="btn-mini" id="btnConqAuto" data-admin-action="buscarConquistasAuto" data-arg="${it.appid}">🏆 Buscar</button>` : ''}
             </label>
-            <div style="display:flex;gap:6px">
+            <div class="u-style-41">
               <input id="itemConqObt" type="number" min="0" value="${it.conquistas?.obtidas || 0}" placeholder="15">
               <input id="itemConqTot" type="number" min="0" value="${it.conquistas?.total || 0}" placeholder="50">
             </div>
@@ -246,24 +246,24 @@ function abrirModalItemTier(i){
         `}
       </div>
       <div>
-        <label>🎭 Gêneros <small style="color:var(--mute);text-transform:none;font-weight:500;letter-spacing:0">(separe por vírgula)</small></label>
+        <label>🎭 Gêneros <small class="u-style-42">(separe por vírgula)</small></label>
         <input id="itemGeneros" type="text" value="${esc((it.generos || []).join(', '))}" placeholder="Ex: Ação, Aventura, RPG">
       </div>
       <div>
         <label>URL da capa</label>
         <input id="itemCapa" type="text" value="${esc(it.capa || '')}">
-        <div style="margin-top:8px">
-          ${it.capa ? `<img src="${esc(it.capa)}" class="mini-capa" id="itemCapaPreview" onerror="this.style.display='none'">` : `<img class="mini-capa" id="itemCapaPreview" style="display:none">`}
+        <div class="u-style-12">
+          ${it.capa ? `<img src="${esc(it.capa)}" class="mini-capa" id="itemCapaPreview" data-fallback="hide">` : `<img class="mini-capa" id="itemCapaPreview" class="u-style-28">`}
         </div>
       </div>
       <div>
         <label>Comentário / Sinopse</label>
         <textarea id="itemComentario">${esc(it.comentario || it.sinopse || '')}</textarea>
-        <button type="button" class="admin-btn ghost" style="margin-top:6px;font-size:.72rem;padding:6px 12px" onclick="traduzirComentario()">🌐 Traduzir EN→PT</button>
+        <button type="button" class="admin-btn ghost u-style-43" data-admin-action="traduzirComentario">🌐 Traduzir EN→PT</button>
       </div>
-      <div class="admin-actions" style="justify-content:flex-end">
-        <button class="admin-btn ghost" onclick="document.getElementById('dlg').close()">Cancelar</button>
-        <button class="admin-btn" onclick="salvarItemTier(${i})">${ehNovo ? 'Adicionar' : 'Salvar'}</button>
+      <div class="admin-actions u-style-18">
+        <button class="admin-btn ghost" data-admin-action="close-dlg">Cancelar</button>
+        <button class="admin-btn" data-admin-action="salvarItemTier" data-arg="${i}">${ehNovo ? 'Adicionar' : 'Salvar'}</button>
       </div>
     </div>`;
   document.getElementById('dlg').showModal();
@@ -491,13 +491,13 @@ function renderAdminSugestoes(){
 
   const chipStatus = (id, label, count) => `
     <button type="button" class="sug-filter-chip ${ADMIN_SUG_STATUS === id ? 'on' : ''}"
-            onclick="adminIrSugFiltro('${id}')">
+            data-admin-action="adminIrSugFiltro" data-arg="${id}">
       ${label}${count !== undefined ? ` <b>${count}</b>` : ''}
     </button>
   `;
   const chipTipo = (id, label) => `
     <button type="button" class="sug-filter-chip ${ADMIN_SUG_TIPO === id ? 'on' : ''}"
-            onclick="ADMIN_SUG_TIPO='${id}';renderAdminSugestoes()">
+            data-admin-action="sug-tipo" data-arg="${id}">
       ${label}
     </button>
   `;
@@ -506,7 +506,7 @@ function renderAdminSugestoes(){
     const st = _sugStatusInfo(i);
     const ti = _sugTipoInfo(i.tipo);
     const motivoHTML = (i.status === 'recusada' && i.motivo)
-      ? `<div class="sir-motivo" style="margin-top:8px">${esc(i.motivo)}</div>` : '';
+      ? `<div class="sir-motivo u-style-12">${esc(i.motivo)}</div>` : '';
     const metaInfo = [
       i.data ? tempoAtras(i.data) : null,
       i.atualizadoEm ? `atualizada ${tempoAtras(i.atualizadoEm)}` : null,
@@ -515,7 +515,7 @@ function renderAdminSugestoes(){
 
     const dropdown = podeEditar ? `
       <div class="sug-status-actions">
-        <select class="sug-status-select" onchange="mudarStatusSug('${esc(i.id)}', this.value)">
+        <select class="sug-status-select" data-admin-action="mudar-status-sug" data-arg="${esc(i.id)}">
           <option value="">Mudar status…</option>
           <option value="nova">🟡 Nova</option>
           <option value="analise">👀 Em análise</option>
@@ -523,7 +523,7 @@ function renderAdminSugestoes(){
           <option value="recusada">❌ Recusada</option>
           <option value="concluido">🏁 Concluído</option>
         </select>
-        <button class="btn-mini danger" onclick="excluirSugestao('${esc(i.id)}')">🗑️</button>
+        <button class="btn-mini danger" data-admin-action="excluirSugestao" data-arg="${esc(i.id)}">🗑️</button>
       </div>` : '';
 
     return `
@@ -575,11 +575,11 @@ function renderAdminSugestoes(){
       </div>
 
       <div class="admin-actions">
-        <button class="admin-btn ghost" onclick="carregarAdminSugestoes()">🔄 Recarregar</button>
+        <button class="admin-btn ghost" data-admin-action="carregarAdminSugestoes">🔄 Recarregar</button>
         ${podeEditar ? `
-          <button class="admin-btn ghost" onclick="limparSugestoes('concluidas')">🧹 Limpar concluídas</button>
-          <button class="admin-btn ghost" onclick="limparSugestoes('recusadas')">🧹 Limpar recusadas</button>
-          <button class="admin-btn perigo" onclick="limparSugestoes('tudo')">🚨 Limpar TUDO</button>
+          <button class="admin-btn ghost" data-admin-action="limparSugestoes" data-arg="concluidas">🧹 Limpar concluídas</button>
+          <button class="admin-btn ghost" data-admin-action="limparSugestoes" data-arg="recusadas">🧹 Limpar recusadas</button>
+          <button class="admin-btn perigo" data-admin-action="limparSugestoes" data-arg="tudo">🚨 Limpar TUDO</button>
         ` : ''}
       </div>
     </div>`;
@@ -628,16 +628,16 @@ function _abrirModalMotivoRecusa(){
     ).join('');
 
     dBody.innerHTML = `
-      <p style="color:var(--mute);font-size:.86rem;margin-bottom:10px">
+      <p class="u-style-44">
         Escolhe um motivo. Isso ajuda a pessoa a entender o porquê.
       </p>
       <div class="sug-motivo-grid">${botoes}</div>
-      <div id="sugMotivoCustomWrap" style="display:none;margin-top:12px">
-        <label style="display:block;font-size:.72rem;font-weight:800;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Motivo</label>
+      <div id="sugMotivoCustomWrap" class="u-style-45">
+        <label class="u-style-46">Motivo</label>
         <input id="sugMotivoCustom" type="text" maxlength="200" placeholder="Escreve o motivo..."
-               style="width:100%;background:rgba(26,16,45,.75);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font-family:inherit;font-size:.88rem">
+               class="u-style-47">
       </div>
-      <div class="admin-actions" style="justify-content:flex-end;margin-top:16px">
+      <div class="admin-actions u-style-48">
         <button class="admin-btn ghost" id="sugMotivoCancel">Cancelar</button>
         <button class="admin-btn perigo" id="sugMotivoOk" disabled>Recusar</button>
       </div>
@@ -758,17 +758,17 @@ async function renderAdminAdmins(){
     const nivelAlvo = NIVEIS[a.cargo] || 0;
     const podeEditar = podeGerenciar && (podeMexerDev || nivelAlvo < nivelMeu) && a.id !== USUARIO.id;
     return `
-      <div class="admin-voto" style="flex-wrap:wrap">
+      <div class="admin-voto u-style-49">
         ${a.avatar
-          ? `<img class="admin-voto-avatar" src="${esc(a.avatar)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'admin-voto-ph',textContent:'👤'}))">`
+          ? `<img class="admin-voto-avatar" src="${esc(a.avatar)}" alt="" data-fallback-class="admin-voto-ph" data-fallback-text="👤">`
           : '<div class="admin-voto-ph">👤</div>'}
         <div class="admin-voto-info">
           <b>${a.username ? '@' + esc(a.username) : 'Sem nick'}</b>
           <small>${esc(a.id)}</small>
         </div>
-        <div class="admin-voto-opcao" style="gap:6px">
+        <div class="admin-voto-opcao u-style-50">
           <b>${LABEL_CARGO[a.cargo] || a.cargo}${a.fixo ? ' 🔒' : ''}</b>
-          <div style="display:flex;gap:6px;margin-top:4px">
+          <div class="u-style-51">
             ${podeEditar ? `<button class="btn-mini" data-admin-editar data-id="${esc(a.id)}" data-nome="${esc(a.username||'')}" data-avatar="${esc(a.avatar||'')}" data-cargo="${esc(a.cargo)}">Editar</button>` : ''}
             ${podeEditar ? `<button class="btn-mini danger" data-admin-remover data-id="${esc(a.id)}">Remover</button>` : ''}
           </div>
@@ -784,20 +784,20 @@ async function renderAdminAdmins(){
       <p class="admin-field-help">A pessoa precisa criar uma conta no site primeiro. Donos gerenciam Moderadores e Administradores; somente Devs podem gerenciar cargos de Dono ou Dev. O servidor confere essas regras em cada ação.</p>
       ${dados.admins && dados.admins.length ? `<div class="admin-votos">${adminsHTML}</div>` : '<div class="logs-empty"><b>Nenhum admin cadastrado</b>Adiciona o primeiro.</div>'}
       <div class="admin-actions">
-        ${podeGerenciar ? `<button class="admin-btn" onclick="adicionarAdmin()">+ Adicionar admin</button>` : ''}
-        <button class="admin-btn ghost" onclick="renderAdminAdmins()">🔄 Atualizar</button>
+        ${podeGerenciar ? `<button class="admin-btn" data-admin-action="adicionarAdmin">+ Adicionar admin</button>` : ''}
+        <button class="admin-btn ghost" data-admin-action="renderAdminAdmins">🔄 Atualizar</button>
       </div>
     </div>
 
     <div class="admin-card">
       <h3>🔐 Permissões por cargo</h3>
-      <p style="color:var(--mute);font-size:.82rem;margin-bottom:14px">Clica num cargo pra ver/editar.</p>
+      <p class="u-style-52">Clica num cargo pra ver/editar.</p>
       <div id="permsAccordion"></div>
       ${podeEditarPerms ? `
         <div class="admin-actions">
-          <button class="admin-btn" onclick="salvarPermissoes()">💾 Salvar permissões</button>
-          <button class="admin-btn ghost" onclick="carregarPermissoes()">🔄 Recarregar</button>
-          <button class="admin-btn ghost" onclick="restaurarPermissoesPadrao()">♻️ Restaurar padrão</button>
+          <button class="admin-btn" data-admin-action="salvarPermissoes">💾 Salvar permissões</button>
+          <button class="admin-btn ghost" data-admin-action="carregarPermissoes">🔄 Recarregar</button>
+          <button class="admin-btn ghost" data-admin-action="restaurarPermissoesPadrao">♻️ Restaurar padrão</button>
         </div>` : ''}
     </div>`;
   if(podeEditarPerms) carregarPermissoes();
@@ -857,7 +857,7 @@ function renderPermissoes(){
       </div>`;
     return `
       <div class="admin-accordion" data-cargo="${cargo}">
-        <div class="admin-accordion-head" onclick="this.parentElement.classList.toggle('open')">
+        <div class="admin-accordion-head" data-admin-action="toggle-open">
           <span class="aah-ic">${icone}</span>
           <span class="aah-tx"><b>${nomeCargo}</b><small>Clique pra ver</small></span>
           ${tag}<span class="aah-arrow">▶</span>
@@ -931,7 +931,7 @@ function editarAdmin(id, username, avatar, cargoAtual){
           <option value="moderador" ${cargoAtual==='moderador'?'selected':''}>🔰 Moderador</option>
         </select>
       </div>
-      <div class="admin-actions" style="justify-content:flex-end">
+      <div class="admin-actions u-style-18">
         <button class="admin-btn" id="btnSalvarAdminEdit">Salvar</button>
       </div>
     </div>`;
@@ -969,8 +969,8 @@ function adicionarAdmin(){
           <option value="dev">🛠️ Dev</option>
         </select>
       </div>
-      <div class="admin-actions" style="justify-content:flex-end">
-        <button class="admin-btn" onclick="salvarNovoAdmin()">Adicionar</button>
+      <div class="admin-actions u-style-18">
+        <button class="admin-btn" data-admin-action="salvarNovoAdmin">Adicionar</button>
       </div>
     </div>`;
   document.getElementById('dlg').showModal();
@@ -1028,20 +1028,20 @@ async function renderAdminBanidos(){
       <h3>🚫 Banidos de votar <span class="cont">${banidos.length}</span></h3>
       ${banidos.length ? `<div class="admin-votos">${banidos.map(b => `
         <div class="admin-voto">
-          ${b.avatar ? `<img class="admin-voto-avatar" src="${esc(b.avatar)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'admin-voto-ph',textContent:'👤'}))">` : '<div class="admin-voto-ph">👤</div>'}
+          ${b.avatar ? `<img class="admin-voto-avatar" src="${esc(b.avatar)}" alt="" data-fallback-class="admin-voto-ph" data-fallback-text="👤">` : '<div class="admin-voto-ph">👤</div>'}
           <div class="admin-voto-info">
             <b>${b.username ? '@' + esc(b.username) : 'Sem nick'}</b>
             <small>${esc(b.id)} · ${esc(b.motivo || 'Sem motivo')}</small>
           </div>
           <div class="admin-voto-opcao">
             <small>${b.ts ? tempoAtras(new Date(b.ts).toISOString()) : ''}</small>
-            ${podeGerenciar ? `<button class="btn-mini danger" style="margin-top:6px" onclick="removerBanido('${esc(b.id)}')">Desbanir</button>` : ''}
+            ${podeGerenciar ? `<button class="btn-mini danger u-style-17" data-admin-action="removerBanido" data-arg="${esc(b.id)}">Desbanir</button>` : ''}
           </div>
         </div>`).join('')}</div>`
         : '<div class="logs-empty"><b>Ninguém banido</b>Quando alguém for banido, aparece aqui.</div>'}
       <div class="admin-actions">
-        ${podeGerenciar ? `<button class="admin-btn" onclick="adicionarBanido()">+ Banir usuário</button>` : ''}
-        <button class="admin-btn ghost" onclick="renderAdminBanidos()">🔄 Atualizar</button>
+        ${podeGerenciar ? `<button class="admin-btn" data-admin-action="adicionarBanido">+ Banir usuário</button>` : ''}
+        <button class="admin-btn ghost" data-admin-action="renderAdminBanidos">🔄 Atualizar</button>
       </div>
     </div>`;
 }
@@ -1053,8 +1053,8 @@ function adicionarBanido(){
     <div class="admin-form">
       <div><label>ID do Discord</label><input id="banirId" type="text" placeholder="123456789012345678"></div>
       <div><label>Motivo (opcional)</label><input id="banirMotivo" type="text" placeholder="Ex: votou com multis"></div>
-      <div class="admin-actions" style="justify-content:flex-end">
-        <button class="admin-btn perigo" onclick="salvarBanido()">Banir</button>
+      <div class="admin-actions u-style-18">
+        <button class="admin-btn perigo" data-admin-action="salvarBanido">Banir</button>
       </div>
     </div>`;
   document.getElementById('dlg').showModal();
@@ -1181,7 +1181,7 @@ async function renderAdminLogs(){
       <div class="logs-summary" id="logsSummary"></div>
       <div id="logsLista"></div>
     </div>
-    <div class="admin-actions"><button class="admin-btn ghost" onclick="renderAdminLogs()">🔄 Atualizar</button></div>
+    <div class="admin-actions"><button class="admin-btn ghost" data-admin-action="renderAdminLogs">🔄 Atualizar</button></div>
   `;
 
   const filtrados = aplicarFiltrosLogs(logs);
@@ -1235,8 +1235,8 @@ function renderLogsLista(filtrados){
       }).join('')}
     </div>
   `).join('') + (temMais ? `
-    <div style="text-align:center;margin-top:12px">
-      <button class="admin-btn ghost" onclick="LOGS_STATE.limite += 20; renderLogsLista(aplicarFiltrosLogs(window.__logsCache||[]))">
+    <div class="u-style-53">
+      <button class="admin-btn ghost" data-admin-action="logs-mais">
         ⬇️ Carregar mais (${filtrados.length - LOGS_STATE.limite} restantes)
       </button>
     </div>` : '');
@@ -1258,21 +1258,21 @@ async function renderAdminBackup(){
   area.innerHTML = adminVoltarHTML('💾 Backup') + `
     <div class="admin-card">
       <h3>💾 Backups automáticos <span class="cont">${backups.length} / 5</span></h3>
-      <p style="color:var(--mute);font-size:.85rem;margin-bottom:14px">Um backup automático é criado todo dia às 3h. Os 5 mais recentes são mantidos.</p>
+      <p class="u-style-24">Um backup automático é criado todo dia às 3h. Os 5 mais recentes são mantidos.</p>
       ${backups.length ? backups.map(b => `
         <div class="backup-item">
           <div class="bkp-ic">📦</div>
           <div class="bkp-info"><b>${esc(b.id)}</b><small>${fmtDataHora(b.criadoEm)} · ${fmtTamanho(b.tamanho || 0)} · por @${esc(b.criadoPor || 'sistema')}</small></div>
           <div class="bkp-actions">
             <a class="admin-btn ghost" href="/api/backup?action=download&id=${encodeURIComponent(b.id)}" download>⬇️ Baixar</a>
-            <button class="admin-btn ghost" onclick="restaurarBackup('${esc(b.id)}')">♻️ Restaurar</button>
-            <button class="admin-btn perigo" onclick="apagarBackup('${esc(b.id)}')">🗑️</button>
+            <button class="admin-btn ghost" data-admin-action="restaurarBackup" data-arg="${esc(b.id)}">♻️ Restaurar</button>
+            <button class="admin-btn perigo" data-admin-action="apagarBackup" data-arg="${esc(b.id)}">🗑️</button>
           </div>
         </div>`).join('')
         : '<div class="logs-empty"><b>Nenhum backup ainda</b>Clica em "Criar backup agora" pra começar.</div>'}
       <div class="admin-actions">
-        <button class="admin-btn" onclick="criarBackupManual()">➕ Criar backup agora</button>
-        <button class="admin-btn ghost" onclick="renderAdminBackup()">🔄 Atualizar</button>
+        <button class="admin-btn" data-admin-action="criarBackupManual">➕ Criar backup agora</button>
+        <button class="admin-btn ghost" data-admin-action="renderAdminBackup">🔄 Atualizar</button>
       </div>
     </div>`;
 }

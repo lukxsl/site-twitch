@@ -112,6 +112,65 @@ function plural(n, singular, plural){
   return Number(n) === 1 ? singular : plural;
 }
 
+function comTimeout(fn, ms, nome){
+  return Promise.race([
+    Promise.resolve().then(fn),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('tempo esgotado: ' + nome)), ms))
+  ]);
+}
+
+/* Fallback de imagens sem handler inline (CSP-safe). */
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if(!(img instanceof HTMLImageElement)) return;
+  if(img.dataset.appid && !img.dataset.f){
+    img.dataset.f = '1';
+    img.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${encodeURIComponent(img.dataset.appid)}/header.jpg`;
+    return;
+  }
+  const modo = img.dataset.fallback;
+  if(modo === 'remove'){ img.remove(); return; }
+  if(modo === 'hide'){ img.hidden = true; return; }
+  const div = document.createElement('div');
+  div.className = img.dataset.fallbackClass || 'ph';
+  div.textContent = img.dataset.fallbackText || '🎮';
+  if(img.dataset.h) div.style.setProperty('--h', img.dataset.h);
+  img.replaceWith(div);
+}, true);
+
+/* Aplica estilos dinâmicos vindos de data-css sem atributos inline no markup. */
+if('MutationObserver' in window){
+  const observerCss = new MutationObserver(registros => {
+    registros.forEach(registro => {
+      registro.addedNodes.forEach(no => {
+        if(no.nodeType !== 1) return;
+        const alvos = [];
+        if(no.matches && no.matches('[data-css]')) alvos.push(no);
+        if(no.querySelectorAll) alvos.push(...no.querySelectorAll('[data-css]'));
+        alvos.forEach(el => {
+          if(el.dataset.cssAplicado) return;
+          el.dataset.cssAplicado = '1';
+          String(el.dataset.css || '').split(';').forEach(declaracao => {
+            const i = declaracao.indexOf(':');
+            if(i < 0) return;
+            el.style.setProperty(declaracao.slice(0, i).trim(), declaracao.slice(i + 1).trim());
+          });
+        });
+      });
+    });
+  });
+  observerCss.observe(document.documentElement, { childList:true, subtree:true });
+}
+
+/* Ações delegadas da home/tier list. */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-acao]');
+  if(!btn) return;
+  const acao = btn.dataset.acao;
+  if(acao === 'editar-nota' && typeof editarNotaTier === 'function') editarNotaTier(Number(btn.dataset.i));
+  if(acao === 'abrir-login') window.AuthUI?.open?.();
+});
+
 /* ============================================================
    LAZY LOAD — ADMIN
    ============================================================ */
@@ -266,7 +325,7 @@ function escolherDestaques(lista, max = 6){
 function emoteTile(e, comNome){
   const nome = esc(e.nome || '');
   const legenda = comNome ? `<span class="emote-name">${nome}</span>` : '';
-  if(e.img) return `<div class="emote" title="${nome}"><img src="${esc(e.img)}" alt="${nome}" width="112" height="112" loading="lazy" decoding="async" onerror="this.replaceWith(document.createTextNode('💜'))">${legenda}</div>`;
+  if(e.img) return `<div class="emote" title="${nome}"><img src="${esc(e.img)}" alt="${nome}" width="112" height="112" loading="lazy" decoding="async" data-fallback-class="emote-fallback" data-fallback-text="💜">${legenda}</div>`;
   return `<div class="emote" title="${nome}"><span class="emote-fallback">${e.emoji || '💜'}</span>${legenda}</div>`;
 }
 function renderEmotes(){
@@ -336,7 +395,7 @@ function hallAvatar(p, cls){
   let hue = 0; for(const c of nome) hue = (hue * 31 + c.charCodeAt(0)) % 360;
   const ini = esc((nome.charAt(0) || '?').toUpperCase());
   if(p.avatar) return `<img class="hall-av ${cls}" src="${esc(p.avatar)}" alt="" loading="lazy" decoding="async" data-ini="${ini}" data-h="${hue}">`;
-  return `<div class="hall-av ${cls} ph" style="--h:${hue}">${ini}</div>`;
+  return `<div class="hall-av ${cls} ph" data-css="--h:${hue}">${ini}</div>`;
 }
 
 function hallValor(p){
@@ -351,8 +410,8 @@ function hallPodioHTML(itens){
   const medalha = ['🥇', '🥈', '🥉'];
   return `<div class="podium">` + ordem.map(i => {
     const p = itens[i];
-    if(!p) return `<div class="pod ${cls[i]} vazio" style="--d:${i * 90}ms"><div class="hall-av pod-av ph">?</div><span class="pod-name">Você?</span><span class="pod-val">vaga livre</span></div>`;
-    return `<div class="pod ${cls[i]}" style="--d:${i * 90}ms">
+    if(!p) return `<div class="pod ${cls[i]} vazio" data-css="--d:${i * 90}ms"><div class="hall-av pod-av ph">?</div><span class="pod-name">Você?</span><span class="pod-val">vaga livre</span></div>`;
+    return `<div class="pod ${cls[i]}" data-css="--d:${i * 90}ms">
       ${i === 0 ? '<span class="pod-crown" aria-hidden="true">👑</span>' : ''}
       ${hallAvatar(p, 'pod-av')}
       <span class="pod-medal" aria-hidden="true">${medalha[i]}</span>
@@ -442,7 +501,7 @@ async function pintarMetaHall(){
   const box = $('hallMeta');
   if(!box || !HALL_META) return;
   const p = Math.min(100, Math.round(HALL_META.atual / HALL_META.meta * 100));
-  box.innerHTML = `<div class="hv-meta-top"><span>🎯 Meta de doações</span><b>${p}%</b></div><div class="goal-bar"><i style="width:${p}%"></i></div><small>${esc(fmtBRL(HALL_META.atual))} de ${esc(fmtBRL(HALL_META.meta))}</small>`;
+  box.innerHTML = `<div class="hv-meta-top"><span>🎯 Meta de doações</span><b>${p}%</b></div><div class="goal-bar"><i data-css="width:${p}%"></i></div><small>${esc(fmtBRL(HALL_META.atual))} de ${esc(fmtBRL(HALL_META.meta))}</small>`;
   box.hidden = false;
 }
 
@@ -475,13 +534,13 @@ function setupHallTabs(){
 function iniciarHall(){
   setupHallTabs();
   renderHall();
+  if(window.Scheduler){
+    Scheduler.add('hall', carregarHall, 60000);
+    return;
+  }
   carregarHall();
   if(HALL_TIMER) clearInterval(HALL_TIMER);
-  HALL_TIMER = setInterval(() => {
-    if(document.hidden) return;
-    carregarHall();
-  }, 60000);
-  document.addEventListener('visibilitychange', () => { if(!document.hidden) carregarHall(); });
+  HALL_TIMER = setInterval(() => { if(!document.hidden) carregarHall(); }, 60000);
 }
 
 /* ============================================================
@@ -506,7 +565,7 @@ function _fmtMs(ms){
 function _capaFaixaHTML(x, classe){
   const ini = esc(_iniciaisFaixa(x && x.faixa));
   const img = x && x.capa
-    ? `<img src="${esc(x.capa)}" alt="" loading="lazy" onerror="this.remove()">`
+    ? `<img src="${esc(x.capa)}" alt="" loading="lazy" data-fallback="remove">`
     : '';
   return `<span class="${classe}">${img}<span class="mf-ph">${ini}</span></span>`;
 }
@@ -574,7 +633,7 @@ function renderOuvindo(){
     if(painel.dataset.sig === sig) return;
     painel.dataset.sig = sig;
     const capaHTML = d.capa
-      ? `<img src="${esc(d.capa)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'disco-fallback',textContent:'${_iniciaisFaixa(d.faixa)}'}))">`
+      ? `<img src="${esc(d.capa)}" alt="" loading="lazy" data-fallback-class="disco-fallback" data-fallback-text="${_iniciaisFaixa(d.faixa)}">`
       : `<div class="disco-fallback">${_iniciaisFaixa(d.faixa)}</div>`;
     painel.innerHTML = `
       <div class="music-playing">
@@ -651,9 +710,15 @@ async function carregarOuvindoAgora(){
 function renderPlaylistComunidade(){
   const embed = $('musicEmbedComunidade'); if(!embed) return;
   const url = CONFIG.spotifyPlaylist;
-  if(!url){ embed.innerHTML = `<p class="music-placeholder">🎧 Playlist em breve!</p>`; return; }
+  if(!url || !url.match(/playlist\/([a-zA-Z0-9]+)/)){
+    embed.replaceChildren();
+    const skel = document.createElement('div');
+    skel.className = 'skeleton music-skeleton';
+    skel.setAttribute('aria-label', 'Carregando playlist');
+    embed.append(skel);
+    return;
+  }
   const m = url.match(/playlist\/([a-zA-Z0-9]+)/);
-  if(!m){ embed.innerHTML = `<p class="music-placeholder">🎧 Link inválido</p>`; return; }
   embed.innerHTML = `<iframe src="https://open.spotify.com/embed/playlist/${m[1]}?theme=0"
     width="100%" height="380" frameborder="0" allowtransparency="true"
     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
@@ -733,9 +798,9 @@ function renderComandos(filtroTxt = ''){
   const lista = COMANDOS_LISTA.filter(x => !q || x.c.toLowerCase().includes(q) || x.d.toLowerCase().includes(q));
   const body = $('cmdsBody'); if(!body) return;
   body.innerHTML = lista.map(x =>
-    `<tr><td>${esc(x.c)}</td><td>${esc(x.d)}</td><td style="text-align:right"><button data-c="${esc(x.c)}">Copiar</button></td></tr>`
+    `<tr><td>${esc(x.c)}</td><td>${esc(x.d)}</td><td class="u-style-1"><button data-c="${esc(x.c)}">Copiar</button></td></tr>`
   ).join('');
-  const e = $('cmdsEmpty'); if(e) e.style.display = lista.length ? 'none' : '';
+  const e = $('cmdsEmpty'); if(e) e.hidden = !!lista.length;
 }
 
 /* ============================================================
@@ -832,8 +897,8 @@ function renderPodium(){
       ? `<span class="podium-chip">⏱ ${fh(j.horas)}</span>`
       : (j.duracao > 0 ? `<span class="podium-chip">${fmtDuracao(j.duracao)}</span>` : '');
     const capaHTML = j.capa
-      ? `<img class="podium-img" src="${esc(j.capa)}" alt="${esc(j.nome)}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'podium-img',style:'display:grid;place-items:center;font-size:1.6rem',textContent:'🎮'}))">`
-      : `<div class="podium-img" style="display:grid;place-items:center;font-size:1.6rem">🎮</div>`;
+      ? `<img class="podium-img" src="${esc(j.capa)}" alt="${esc(j.nome)}" loading="lazy" data-fallback-class="podium-img" data-fallback-text="🎮">`
+      : `<div class="podium-img u-style-2">🎮</div>`;
     return `
       <div class="podium-card pos-${pos}">
         <span class="podium-medal">${medalhas[i]}</span>
@@ -909,7 +974,7 @@ function aplicarModo(novo, salvar = true){
   $('tlSub').textContent = m.sub;
   $('q').placeholder = m.busca;
   renderChips(); desenharStats(); desenhar();
-  const note = $('tmdbNote'); if(note) note.style.display = modo === 'filmes' ? '' : 'none';
+  const note = $('tmdbNote'); if(note) note.hidden = modo !== 'filmes';
   if(salvar){ try{ localStorage.setItem('modoTier', modo); }catch(e){} }
 }
 
@@ -932,9 +997,9 @@ function cartao(j,i){
 
   const card = `
     <button class="g ${tierCls}" data-i="${i}" draggable="${podeArrastar}" aria-label="${esc(j.nome)}"${tooltip}>
-      <div class="cv" style="position:relative;width:100%;aspect-ratio:2/3;background:#1d1433">
+      <div class="cv u-style-3">
         <div class="ph">${esc(ini)}</div>
-        ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" onerror="${j.appid ? `if(!this.dataset.f){this.dataset.f=1;this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${j.appid}/header.jpg'}else this.remove()` : 'this.remove()'}">` : ''}
+        ${j.capa ? `<img src="${esc(j.capa)}" alt="" loading="lazy" draggable="false" data-appid="${j.appid || ''}" data-fallback="remove">` : ''}
         ${j.status === 'Jogando' ? '<span class="pl" title="Jogando agora"></span>' : ''}
         ${liveBadge}
         ${novo}
@@ -948,7 +1013,7 @@ function cartao(j,i){
       </div>
       ${conq}
     </button>`;
-  return podeArrastar ? `<div class="g-admin-wrap">${card}<button type="button" class="g-quick-edit" onclick="editarNotaTier(${i})" title="Editar nota sem abrir o Admin" aria-label="Editar nota de ${esc(j.nome)}">✎</button></div>` : card;
+  return podeArrastar ? `<div class="g-admin-wrap">${card}<button type="button" class="g-quick-edit" data-acao="editar-nota" data-i="${i}" title="Editar nota sem abrir o Admin" aria-label="Editar nota de ${esc(j.nome)}">✎</button></div>` : card;
 }
 
 
@@ -1222,12 +1287,12 @@ function aplicarManutencao(){
     if(!overlay){
       overlay = document.createElement('div');
       overlay.id = 'manutencaoOverlay';
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:radial-gradient(circle at 50% 30%,rgba(168,85,247,.25),#0a0511 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:#f5f3ff;font-family:DM Sans,sans-serif';
+      overlay.className = 'manutencao-overlay';
       overlay.innerHTML = `
-        <div style="font-size:4rem;line-height:1;margin-bottom:20px">🔧</div>
-        <h1 style="font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;margin-bottom:10px">Estamos em manutenção</h1>
-        <p style="max-width:400px;color:#b0a5c9;line-height:1.6">Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
-        <a href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener" style="margin-top:20px;background:#a855f7;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;text-decoration:none">Ir pra Twitch 💜</a>
+        <span class="mo-ic" aria-hidden="true">🔧</span>
+        <h1>Estamos em manutenção</h1>
+        <p>Voltamos logo! Enquanto isso, dá uma passada na Twitch:</p>
+        <a class="btn btn-primary" href="https://www.twitch.tv/asemtet0" target="_blank" rel="noopener">Ir pra Twitch</a>
       `;
       document.body.appendChild(overlay);
     }
@@ -1318,7 +1383,6 @@ function aplicarVotos(d){
 }
 
 async function carregarVotosApi(){
-  await checarLogin();
   if(!USUARIO){ votoStatus = 'sem-login'; renderVotacao(); return; }
   try{
     const r = await fetch('/api/votos');
@@ -1345,7 +1409,7 @@ function renderProxExtra({ ord = [], total = 0, fechada = false, countdown = nul
   } else {
     rank.innerHTML = ord.slice(0, 3).map((it, i) => {
       const p = pct(it.votos);
-      return `<li><span class="pr-n">${i + 1}</span><span class="pr-name" title="${esc(it.nome)}">${esc(it.nome)}</span><span class="pr-pct">${total ? p + '%' : 'sem votos'}</span><i style="--p:${p}%"></i></li>`;
+      return `<li><span class="pr-n">${i + 1}</span><span class="pr-name" title="${esc(it.nome)}">${esc(it.nome)}</span><span class="pr-pct">${total ? p + '%' : 'sem votos'}</span><i data-css="--p:${p}%"></i></li>`;
     }).join('');
   }
   const chips = [];
@@ -1393,7 +1457,7 @@ function renderVotacao(){
         <span class="loot">🔒</span>
         <b>Só falta você escolher!</b>
         <p>Entre rapidinho no site para votar e ajudar a decidir o próximo jogo da live 💜</p>
-        <button type="button" class="btn-entrar" onclick="AuthUI.open('entrar')">
+        <button type="button" class="btn-entrar" data-acao="abrir-login">
           🕹️ Entrar no site
         </button>
       </div>`;
@@ -1463,17 +1527,17 @@ function renderVotacao(){
     } else if(l.votos > 1){ vantagemTxt = 'Unanimidade 💜'; }
 
     const capaL = l.capa
-      ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'ph2',textContent:'🎮'}))">`
+      ? `<img src="${esc(l.capa)}" alt="${esc(l.nome)}" data-fallback-class="ph2" data-fallback-text="🎮">`
       : '<div class="ph2">🎮</div>';
     destBox.innerHTML = `
       <div class="vhero ${fechada ? 'fechada' : ''} ${meuVoto === l.id ? 'meu' : ''} ${justId === l.id ? 'just-voted' : ''}" data-id="${esc(l.id)}">
-        ${l.capa ? `<div class="vhero-bg" style="background-image:url('${esc(l.capa)}')"></div>` : ''}
+        ${l.capa ? `<div class="vhero-bg" data-css="background-image:url('${esc(l.capa)}')"></div>` : ''}
         <div class="vhero-poster">${capaL}<span class="vhero-crown" aria-hidden="true">${fechada ? '🏆' : '👑'}</span></div>
         <div class="vhero-info">
           <span class="vhero-kicker">${fechada ? 'Vencedora da votação' : 'Líder da votação'}</span>
           <h4 class="vhero-nome">${esc(l.nome)}</h4>
           <div class="vhero-pct"><b data-count="${p}" data-from="${prev(l.id)}">${p}</b><span>%</span><small>${l.votos}/${total} ${plural(total, 'voto', 'votos')}</small></div>
-          <div class="vbar" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><i style="--from:${prev(l.id)}%;--to:${p}%"></i></div>
+          <div class="vbar" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><i data-css="--from:${prev(l.id)}%;--to:${p}%"></i></div>
           ${vantagemTxt ? `<span class="vhero-meta">${vantagemTxt}</span>` : ''}
         </div>
         <div class="vhero-cta">${vBtn(l)}</div>
@@ -1513,10 +1577,10 @@ function renderVotacao(){
     else if (diff === 1) { statusTxt = 'Só 1 voto atrás do líder'; statusCls = 'close'; }
     else { statusTxt = `${diff} votos atrás do líder`; statusCls = ''; }
     const img = it.capa
-      ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'vc-ph',textContent:'🎮'}))">`
+      ? `<img src="${esc(it.capa)}" alt="${esc(it.nome)}" loading="lazy" decoding="async" data-fallback-class="vc-ph" data-fallback-text="🎮">`
       : '<div class="vc-ph">🎮</div>';
     return `
-      <article class="vc ${meu ? 'meu' : ''} ${justId === it.id ? 'just-voted' : ''}" data-id="${esc(it.id)}" style="--i:${i}">
+      <article class="vc ${meu ? 'meu' : ''} ${justId === it.id ? 'just-voted' : ''}" data-id="${esc(it.id)}" data-css="--i:${i}">
         <div class="vc-poster">
           ${img}
           ${medalha ? `<span class="vc-rank" title="${posicao}º lugar">${medalha}</span>` : ''}
@@ -1527,7 +1591,7 @@ function renderVotacao(){
           </div>
         </div>
         <div class="vc-body">
-          <div class="vbar"><i style="--from:${prev(it.id)}%;--to:${p}%"></i></div>
+          <div class="vbar"><i data-css="--from:${prev(it.id)}%;--to:${p}%"></i></div>
           <span class="vc-stat ${statusCls}"><span class="pip"></span>${statusTxt}</span>
           ${vBtn(it)}
         </div>
@@ -1690,11 +1754,17 @@ function setupSugForm(){
     else if(n >= Math.floor(SUG_MAX_CHARS * 0.9)) counter.classList.add('warn');
   }
   function atualizarEstadoBtn(){
-    if(!btn) return;
     const txt = (ta?.value || '').trim();
-    btn.disabled = txt.length < SUG_MIN_CHARS;
+    const faltam = Math.max(0, SUG_MIN_CHARS - txt.length);
+    if(btn){
+      btn.disabled = faltam > 0;
+      btn.title = faltam ? `Escreva mais ${faltam} caracter${faltam === 1 ? '' : 'es'} para enviar` : 'Pronto para enviar';
+    }
+    const ajuda = $('sugBtnAjuda');
+    if(ajuda) ajuda.textContent = faltam ? `Escreva mais ${faltam} caracter${faltam === 1 ? '' : 'es'} para enviar.` : 'Tudo pronto! Pode enviar 💜';
   }
   if(ta){ ta.addEventListener('input', () => { ta.classList.remove('erro'); atualizarContador(); atualizarEstadoBtn(); }); }
+  if(btn) btn.addEventListener('click', enviarSugestao);
   atualizarContador(); atualizarEstadoBtn();
 }
 
@@ -1983,7 +2053,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       : '';
     $('dBody').innerHTML = `
       <div class="mrow">
-        ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" onerror="this.style.display='none'">` : '<div></div>'}
+        ${j.capa ? `<img src="${esc(j.capa)}" alt="${esc(j.nome)}" data-fallback="hide">` : '<div></div>'}
         <div class="mside">
           <div class="badges">
             <span class="bd">${j.tier === 'NR' ? 'Sem tier' : 'Tier ' + j.tier}</span>
@@ -2011,21 +2081,31 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupReveal();
   setupFloatingLive();
 
-  await carregarConfigPublica();
-  verificarStatusTwitch();
-  setInterval(verificarStatusTwitch, 60000);
-  carregarOuvindoAgora();
-  setInterval(() => { if(!document.hidden) carregarOuvindoAgora(); }, 15000);
-  carregarBiblioteca();
-  setupTierList();
-  carregarVotosApi();
+  const iniciais = [
+    ['config', () => carregarConfigPublica()],
+    ['login', () => checarLogin()],
+    ['twitch', () => verificarStatusTwitch()],
+    ['musica', () => carregarOuvindoAgora()],
+    ['emotes', () => carregarEmotes()],
+    ['biblioteca', () => carregarBiblioteca()]
+  ];
 
-  setInterval(() => { if(VOTOS_FECHAMENTO) renderVotacao(); }, 60000);
-
-  setInterval(() => {
-    if(ultVivo && ultGame) atualizarFoco(ultGame, ultVivo);
-  }, 30000);
-
+  Promise.allSettled(iniciais.map(([nome, fn]) => comTimeout(fn, 9000, nome)))
+    .then(resultados => {
+      resultados.forEach((r, i) => {
+        if(r.status === 'rejected') console.warn(`[boot] ${iniciais[i][0]}:`, r.reason);
+      });
+      return carregarVotosApi();
+    })
+    .then(() => {
+      setupTierList();
+      if(!window.Scheduler) return;
+      Scheduler.add('twitch', verificarStatusTwitch, 60000);
+      Scheduler.add('musica', carregarOuvindoAgora, 15000);
+      Scheduler.add('votos', () => { if(VOTOS_FECHAMENTO) renderVotacao(); }, 60000);
+      Scheduler.add('foco', () => { if(ultVivo && ultGame) atualizarFoco(ultGame, ultVivo); }, 30000);
+    })
+    .catch(err => console.warn('[boot] etapa final:', err));
 });
 
 /* ============================================================
@@ -2034,10 +2114,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 function abrirBuscaItem(produto){
   $('dTitle').textContent = produto;
   $('dBody').innerHTML = `
-    <p style="color:var(--mute);font-size:.85rem;margin-bottom:10px">Ajuste o termo se quiser e escolha a loja:</p>
+    <p class="u-style-4">Ajuste o termo se quiser e escolha a loja:</p>
     <input id="buscaTermo" type="text" value="${esc(produto)}"
-      style="width:100%;background:#1a102d;border:1px solid var(--line);border-radius:10px;padding:10px 14px;color:var(--ink);font-family:inherit;font-size:.9rem;margin-bottom:12px">
-    <div style="display:flex;flex-direction:column;gap:8px">
+      class="u-style-5">
+    <div class="u-style-6">
       <a class="busca-loja kb" id="lnkKabum" href="#" target="_blank" rel="noopener">🛒 KaBuM!</a>
       <a class="busca-loja am" id="lnkAmazon" href="#" target="_blank" rel="noopener">🛒 Amazon</a>
     </div>

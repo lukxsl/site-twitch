@@ -256,7 +256,7 @@
           <span class="chip" id="votoCountdown">—</span>
         </div>
         <div id="destaqueBox"></div>
-        <div id="votoLista"></div>
+        <div id="votoLista" aria-live="polite"></div>
         <div class="voto-foot">
           <b id="votoStatOpcoes">0</b> opções <span aria-hidden="true">·</span>
           <b id="votoStatVotos">0</b> votos <span aria-hidden="true">·</span>
@@ -371,7 +371,7 @@
     <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> desfaz</span>
   </p>
   <div class="tl-board" id="tiers"></div>
-  <p class="tmdb-note" id="tmdbNote" style="display:none">Pôsteres e dados dos filmes fornecidos por: TMDB.</p>
+  <p class="tmdb-note" id="tmdbNote" hidden>Pôsteres e dados dos filmes fornecidos por: TMDB.</p>
 </section>
 
 <dialog id="roletaDlg" class="tl-roll-dlg" aria-labelledby="roletaDesc">
@@ -394,7 +394,7 @@
 <section id="sec-ranking" class="page-section">
   <header class="section-header reveal">
     <span class="section-kicker"><svg class="ic ic-sm"><use href="#i-trophy"></use></svg> Ranking</span>
-    <h2>Ranking</h2>
+    <h1 tabindex="-1">Ranking</h1>
     <p>Quem mais brilha no cantinho: horas assistidas, pontos, chat e apoiadores — tudo direto do StreamElements.</p>
   </header>
 
@@ -412,11 +412,11 @@
     </div>
 
     <nav class="rk-tabs" role="tablist" aria-label="Categoria do ranking">
-      <button type="button" role="tab" class="is-active" data-ranking-mode="horas" aria-selected="true"><span class="rk-tab-ic">⏱️</span><span>Horas assistidas</span></button>
-      <button type="button" role="tab" data-ranking-mode="pontos" aria-selected="false"><span class="rk-tab-ic">💎</span><span>Pontos</span></button>
-      <button type="button" role="tab" data-ranking-mode="chat" aria-selected="false"><span class="rk-tab-ic">💬</span><span>Chat</span></button>
-      <button type="button" role="tab" data-ranking-mode="doadores" aria-selected="false"><span class="rk-tab-ic">💜</span><span>Doadores</span></button>
-      <button type="button" role="tab" data-ranking-mode="musicas" aria-selected="false"><span class="rk-tab-ic">🎵</span><span>Músicas</span></button>
+      <button type="button" role="tab" class="is-active" data-ranking-mode="horas" aria-selected="true"><svg class="ic rk-tab-ic"><use href="#i-clock"></use></svg><span>Horas assistidas</span></button>
+      <button type="button" role="tab" data-ranking-mode="pontos" aria-selected="false"><svg class="ic rk-tab-ic"><use href="#i-star"></use></svg><span>Pontos</span></button>
+      <button type="button" role="tab" data-ranking-mode="chat" aria-selected="false"><svg class="ic rk-tab-ic"><use href="#i-message"></use></svg><span>Chat</span></button>
+      <button type="button" role="tab" data-ranking-mode="doadores" aria-selected="false"><svg class="ic rk-tab-ic"><use href="#i-heart"></use></svg><span>Doadores</span></button>
+      <button type="button" role="tab" data-ranking-mode="musicas" aria-selected="false"><svg class="ic rk-tab-ic"><use href="#i-music"></use></svg><span>Músicas</span></button>
     </nav>
 
     <div class="rk-stats" id="rkStats" hidden></div>
@@ -427,7 +427,7 @@
       <section class="rk-board" aria-live="polite">
         <div class="rk-board-head">
           <h3>Classificação</h3>
-          <label class="rk-search"><span aria-hidden="true">🔎</span><input type="search" id="rkSearch" placeholder="Buscar nick…" autocomplete="off" maxlength="30" aria-label="Buscar no ranking"></label>
+          <label class="rk-search"><svg class="ic ic-sm" aria-hidden="true"><use href="#i-search"></use></svg><input type="search" id="rkSearch" placeholder="Buscar nick…" autocomplete="off" maxlength="30" aria-label="Buscar no ranking"></label>
         </div>
         <div class="rk-list" id="rankingList"></div>
         <button class="rk-more" type="button" id="rkMore" hidden>Mostrar mais</button>
@@ -445,7 +445,7 @@
 <section id="sec-comunidade" class="page-section">
   <header class="section-header reveal">
     <span class="section-kicker"><svg class="ic ic-sm"><use href="#i-users"></use></svg> Comunidade</span>
-    <h2>Faz parte do cantinho</h2>
+    <h1 tabindex="-1">Faz parte do cantinho</h1>
     <p>Entre no Discord, veja os clipes, escute a playlist e conheça as regras.</p>
   </header>
   <div class="sub-tabs reveal" id="comunidadeTabs">
@@ -483,29 +483,29 @@
     </div>
     <div class="metas-comunidade reveal">
       <span class="ap-h">🎯 Metas da comunidade <small class="ap-sub">a gente chega lá junto</small></span>
-      <div class="goals3" style="grid-template-columns:1fr 1fr;margin:0">
+      <div class="goals3">
         <div class="goalc">
           <div class="gc-top"><span>💜 Seguidores</span><b id="goalSegNum">…</b></div>
-          <div class="goal-bar"><i id="goalSegBar" style="width:0%"></i></div>
+          <div class="goal-bar"><i id="goalSegBar"></i></div>
           <small id="goalSegDesc">Carregando…</small>
         </div>
         <div class="goalc">
           <div class="gc-top"><span>🎮 Discord</span><b id="goalDcNum">…</b></div>
-          <div class="goal-bar"><i id="goalDcBar" style="width:0%"></i></div>
+          <div class="goal-bar"><i id="goalDcBar"></i></div>
           <small id="goalDcDesc">Carregando…</small>
         </div>
       </div>
     </div>
   </div>
   <div class="sub-panel" data-panel="clipes">
-    <div class="clips-box" id="clipsBox" style="display:none">
+    <div class="clips-box" id="clipsBox" hidden>
       <h3>
         <span id="clipsTitulo">🎬 Clipes em destaque</span>
         <a href="https://www.twitch.tv/asemtet0/clips" target="_blank" rel="noopener">Ver todos →</a>
       </h3>
       <div class="clips-grid-4" id="clipsGrid"></div>
     </div>
-    <p class="tm-h4" id="clipsVazio" style="padding:20px;text-align:center;display:none">Nenhum clipe disponível agora. Volta mais tarde! 💜</p>
+    <p class="tm-h4 clips-vazio" id="clipsVazio" hidden>Nenhum clipe disponível agora. Volta mais tarde! 💜</p>
   </div>
   <div class="sub-panel" data-panel="playlist">
     <div class="card music-full reveal">
@@ -521,7 +521,7 @@
       <div class="music-embed" id="musicEmbedComunidade">
         <p class="music-placeholder">🎧 Playlist em breve — a Soso está montando!</p>
       </div>
-      <a class="btn big block" href="https://open.spotify.com/playlist/0OV32Qe5e7BJY33rL4tpXk" target="_blank" rel="noopener" style="margin-top:14px">
+      <a class="btn big block music-playlist-link" href="https://open.spotify.com/playlist/0OV32Qe5e7BJY33rL4tpXk" target="_blank" rel="noopener">
         🎧 Abrir no Spotify →
       </a>
     </div>
@@ -553,13 +553,13 @@
     <div class="info-grid">
       <div class="cmds-wrap reveal">
         <h3>🤖 Comandos do chat</h3>
-        <p style="color:var(--mute);font-size:.85rem">Busque rápido e copie com 1 clique.</p>
-        <input class="cmds-search" id="buscaCmd" type="search" placeholder="Buscar comando (ex: discord, uptime...)">
+        <p class="cmds-hint">Busque rápido e copie com 1 clique.</p>
+        <input class="cmds-search" id="buscaCmd" type="search" placeholder="Buscar comando (ex: discord, uptime...)" aria-label="Buscar comando">
         <table class="cmds-table" id="tabelaCmds">
           <thead><tr><th>Comando</th><th>O que faz</th><th></th></tr></thead>
           <tbody id="cmdsBody"></tbody>
         </table>
-        <p class="cmds-empty" id="cmdsEmpty" style="display:none">Nenhum comando encontrado.</p>
+        <p class="cmds-empty" id="cmdsEmpty" hidden>Nenhum comando encontrado.</p>
       </div>
       <div class="rules-wrap reveal">
         <h3>📜 Regras da comunidade</h3>
@@ -581,7 +581,7 @@
 <section id="sec-setup" class="page-section">
   <header class="section-header reveal">
     <span class="section-kicker"><svg class="ic ic-sm"><use href="#i-monitor"></use></svg> Hardware</span>
-    <h2>Meu Setup</h2>
+    <h1 tabindex="-1">Meu Setup</h1>
     <p>As peças do setup com especificações e links para comprar.</p>
   </header>
 
@@ -593,7 +593,7 @@
         <div class="cat-chips" id="catChips" role="group" aria-label="Filtrar por categoria"></div>
         <label class="cat-search">
           <span aria-hidden="true">🔎</span>
-          <input type="search" id="catSearch" placeholder="Buscar peça…" autocomplete="off">
+          <input type="search" id="catSearch" placeholder="Buscar peça…" autocomplete="off" aria-label="Buscar peça do setup">
         </label>
       </div>
       <div class="cat-stats" id="catStats"></div>
@@ -610,7 +610,7 @@
 <section id="sec-sugestoes" class="page-section">
   <header class="section-header reveal">
     <span class="section-kicker"><svg class="ic ic-sm"><use href="#i-bulb"></use></svg> Sua voz conta</span>
-    <h2>Sugestões & Votação</h2>
+    <h1 tabindex="-1">Sugestões & Votação</h1>
     <p>Vote no próximo jogo ou mande uma ideia.</p>
     <div class="sug-tabs" id="sugTabs">
       <button type="button" class="sug-tab on" data-tab="votar">🗳️ Votar</button>
@@ -670,11 +670,12 @@
                 <span class="sug-counter" id="sugCounter">0 / 200</span>
               </div>
             </div>
-            <input type="text" id="sugSite" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+            <input type="text" id="sugSite" class="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true">
           </div>
           <div class="sug-actions">
-            <button class="btn big" id="sugBtn" onclick="enviarSugestao()" disabled>🚀 Enviar Ideia</button>
-            <div class="sug-success" id="sugSuccess" hidden>
+            <button class="btn big btn-primary" id="sugBtn" type="button" disabled title="Escreva pelo menos 10 caracteres para enviar"><svg class="ic"><use href="#i-send"></use></svg> Enviar ideia</button>
+            <small class="sug-ajuda" id="sugBtnAjuda" aria-live="polite">Escreva pelo menos 10 caracteres para enviar.</small>
+            <div class="sug-success" id="sugSuccess" role="status" aria-live="polite" hidden>
               <span>✅</span>
               <div>
                 <b>Ideia enviada!</b>
@@ -685,7 +686,7 @@
         </div>
         <div class="sir-list-col">
           <div class="sir-head">
-            <div class="sir-head-top" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;width:100%">
+            <div class="sir-head-top">
               <span class="sir-kicker">💡 Últimas ideias</span>
             </div>
             <div class="sir-filtros" id="sirFiltros"></div>
@@ -815,6 +816,7 @@
 
 <!-- ==================== ADMIN ==================== -->
 <section id="sec-admin" class="page-section">
+  <h1 class="sr-only" tabindex="-1">Painel administrativo</h1>
   <div class="admin-shell">
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Navegação admin">
       <div class="admin-sidebar-head">
@@ -869,6 +871,7 @@
 <script src="js/auth-ui.js" defer></script>
 <script src="js/navbar.js" defer></script>
 <script src="js/router.js" defer></script>
+<script src="js/scheduler.js" defer></script>
 <script src="js/twitch/twitch.js" defer></script>
 <script src="js/setup/setup.js" defer></script>
 <script src="js/main.js" defer></script>

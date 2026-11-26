@@ -146,6 +146,8 @@
   window.addEventListener('hashchange', sincronizar);
   window.addEventListener('popstate', sincronizar);
 
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => aplicar(rotaDoHash(), false));
-  else aplicar(rotaDoHash(), false);
+  // Com scripts defer, readyState é "interactive" durante a avaliação; esperar
+  // o DOMContentLoaded garante que main.js já tenha exposto garantirAdminCarregado.
+  if(document.readyState === 'complete') aplicar(rotaDoHash(), false);
+  else document.addEventListener('DOMContentLoaded', () => aplicar(rotaDoHash(), false));
 })();

@@ -191,14 +191,6 @@ function assistirVod(v){
 }
 window.assistirVod = assistirVod;
 
-function tickUptime(){
-  const el = $('tmUp'); if(!el) return;
-  if(!inicioLive){ el.textContent = 'Offline'; return; }
-  const m = Math.max(0, Math.floor((Date.now() - inicioLive) / 60000));
-  el.textContent = `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
-}
-setInterval(tickUptime, 30000);
-
 let toastLiveMostrado = false;
 
 function _atualizarPlayerHeader(isLive){
@@ -391,25 +383,49 @@ function renderClips(list){
   if(clipsOk) return;
   const vazio = $('clipsVazio'), box = $('clipsBox');
   if(!list || !list.length){
-    if(vazio) vazio.style.display = 'block';
-    if(box) box.style.display = 'none';
+    if(vazio) vazio.hidden = false;
+    if(box) box.hidden = true;
     return;
   }
   clipsOk = true;
   clipsCache = list.slice(0, 4);
   const totalViews = clipsCache.reduce((a, c) => a + (Number(c.views) || 0), 0);
   const titulo = $('clipsTitulo');
-  if(titulo) titulo.textContent = `🎬 Clipes em destaque · 👁 ${totalViews.toLocaleString('pt-BR')} views`;
-  if(box) box.style.display = '';
-  if(vazio) vazio.style.display = 'none';
-  $('clipsGrid').innerHTML = clipsCache.map(c =>
-    `<button class="clip" data-id="${esc(c.id)}" aria-label="${esc(c.title)}">
-      <img src="${esc(c.thumbnail)}" alt="" loading="lazy">
-      <span class="play">▶</span>
-      <span class="vw">👁 ${Number(c.views || 0).toLocaleString('pt-BR')}</span>
-      <span class="ct">${esc(c.title)}</span>
-    </button>`
-  ).join('');
+  if(titulo) titulo.textContent = `Clipes em destaque · ${totalViews.toLocaleString('pt-BR')} views`;
+  if(box) box.hidden = false;
+  if(vazio) vazio.hidden = true;
+
+  const grid = $('clipsGrid');
+  if(grid){
+    const botoes = clipsCache.map(c => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'clip';
+      btn.dataset.id = String(c.id || '');
+      btn.setAttribute('aria-label', String(c.title || 'Assistir clipe'));
+      if(c.thumbnail){
+        const img = document.createElement('img');
+        img.src = String(c.thumbnail);
+        img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        btn.append(img);
+      }
+      const play = document.createElement('span');
+      play.className = 'play';
+      play.setAttribute('aria-hidden','true');
+      play.textContent = '▶';
+      const views = document.createElement('span');
+      views.className = 'vw';
+      views.textContent = `${Number(c.views || 0).toLocaleString('pt-BR')} views`;
+      const title = document.createElement('span');
+      title.className = 'ct';
+      title.textContent = String(c.title || '');
+      btn.append(play, views, title);
+      return btn;
+    });
+    grid.replaceChildren(...botoes);
+  }
 }
 function getDlgClip(){
   if(dlgClip) return dlgClip;
